@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+
+export default function OptionalChild() {
+  const [children, setChildren] = useState<number[]>([]);
+
+  const addChild = () => {
+    const newChildId = children.length > 0 ? Math.max(...children) + 1 : 1;
+    setChildren([...children, newChildId]);
+  };
+
+  const removeChild = (childId: number) => {
+    setChildren(children.filter((id) => id !== childId));
+  };
+
+  return (
+    <div>
+      {/* Always show the "Add another child" checkbox */}
+      <div className="flex items-center gap-2 mt-3">
+        <input
+          type="checkbox"
+          id="addAnotherChild"
+          onChange={(e) => {
+            if (e.target.checked) {
+              addChild();
+              e.target.checked = false; // Reset checkbox after adding
+            }
+          }}
+          className="w-4 h-4 cursor-pointer text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2"
+        />
+        <label
+          htmlFor="addAnotherChild"
+          className="text-sm font-medium text-gray-700 cursor-pointer"
+        >
+          Add another child
+        </label>
+      </div>
+
+      {/* Render all additional children */}
+      {children.map((childId, index) => (
+        <div
+          key={childId}
+          className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-md font-medium text-gray-800">
+              Additional Child #{index + 1}
+            </h4>
+            <button
+              type="button"
+              onClick={() => removeChild(childId)}
+              className="text-red-600 cursor-pointer hover:text-red-800 text-sm font-medium"
+            >
+              Remove
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Child&apos;s Name *
+              </label>
+              <input
+                type="text"
+                name={`childName${childId}`}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
+                placeholder="Enter your child's name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Child&apos;s Age *
+              </label>
+              <input
+                type="number"
+                name={`childAge${childId}`}
+                min="1"
+                max="18"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
+                placeholder="Enter age"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

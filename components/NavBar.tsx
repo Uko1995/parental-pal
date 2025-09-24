@@ -1,5 +1,6 @@
 "use client";
 
+import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +9,7 @@ import { useState, useEffect } from "react";
 export default function NavBar() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   interface NavItem {
     name: string;
@@ -86,6 +87,45 @@ export default function NavBar() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="hidden md:block">
+            {session?.user ? (
+              <div className="ml-4 flex items-center md:ml-6">
+                <Image
+                  src={`${session?.user?.image}`}
+                  alt={`${session?.user?.name}`}
+                  width={30}
+                  height={30}
+                  className="rounded-full mr-2 object-cover"
+                />
+                <Link
+                  href={`/user/${session.user.id}`}
+                  className={`${
+                    isTransparent ? "text-white" : "text-gray-800"
+                  } mr-4 font-medium`}
+                >
+                  {session.user.name}
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="ml-4 flex items-center md:ml-6">
+                <button
+                  onClick={() => signIn("google")}
+                  className={`bg-[#90AC19] hover:bg-[#7A9216] ${
+                    status === "loading" ? "cursor-progress" : "cursor-pointer"
+                  }  text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300`}
+                >
+                  {status === "loading" ? "Loading..." : "LOGIN"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}

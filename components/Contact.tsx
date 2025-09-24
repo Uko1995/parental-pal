@@ -49,7 +49,7 @@ export default function Contact() {
         </svg>
       ),
       title: "Email",
-      details: ["info@parentalpal.com", "support@parentalpal.com"],
+      details: ["admin@parentalpal.org", "parentalpal@gmail.com"],
       description: "We'll respond within 24 hours",
     },
     {

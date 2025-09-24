@@ -7,7 +7,8 @@ PARENTALPAL is a full-stack childcare solutions platform built with Next.js (App
 ## Architecture & Key Patterns
 
 - **App Directory Structure**: Uses Next.js 14+ App Router. Each route is a folder in `app/` (e.g., `app/tutors/page.tsx`).
-- **Components**: Shared React components are in `app/components/` (e.g., `NavBar.tsx`, `Hero.tsx`).
+- **Components**: Shared React components are in `app/components/` (e.g., `NavBar.tsx`, `Hero.tsx`). all components must typed or interfaces defined
+
 - **Styling**: Tailwind CSS is imported in `app/globals.css`. Brand colors are: primary color: #90AC19, secondary color: #E8931A, accent color: #A25F97, cream: #FFEACF.
 - **Fonts**: Uses Manrope font via `next/font` in `app/layout.tsx`.
 - **Navigation**: The `NavBar` is fixed, always white, and uses Next.js `Link` for navigation. Active links are highlighted with the brand color.

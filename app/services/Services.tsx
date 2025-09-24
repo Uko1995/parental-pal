@@ -1,130 +1,129 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Services() {
-  const services = [
-    {
-      id: "childcare",
-      title: "Professional Childcare Services",
-      shortDescription:
-        "Safe, nurturing environment with qualified caregivers for your peace of mind.",
-      fullDescription:
-        "Our professional childcare services provide a secure, loving environment where children can learn, play, and grow. With qualified caregivers, educational activities, and flexible scheduling options.",
-      image: "/childcare.jpg",
-      features: [
-        "Qualified and vetted caregivers",
-        "Age-appropriate learning activities",
-        "Flexible scheduling options",
-        "Nutritious meals and snacks",
-        "Regular progress updates",
-        "Emergency care protocols",
-      ],
-      ageGroups: "6 months - 10 years",
-      pricing: "₦6,000/day, 15% discount for monthly bookings",
-      availability: "Monday - Friday",
-    },
-    {
-      id: "homeschooling",
-      title: "Comprehensive Homeschooling Program",
-      shortDescription:
-        "Complete educational curriculum and support for families choosing alternative education.",
-      fullDescription:
-        "Our homeschooling program offers a complete educational experience with certified teachers, structured curriculum, and personalized learning plans tailored to each child's unique needs and learning style.",
-      image: "/homeschooling.jpg",
-      features: [
-        "Certified teacher supervision",
-        "Personalized curriculum planning",
-        "Progress tracking and assessment",
-        "Social interaction opportunities",
-        "College preparation support",
-        "Flexible learning schedules",
-      ],
-      ageGroups: "2 - 10 years",
-      pricing: "From ₦250,000/month",
-      availability: "Monday - Sunday",
-    },
-    {
-      id: "tutoring",
-      title: "Academic Tutoring Excellence",
-      shortDescription:
-        "One-on-one and group tutoring sessions with qualified educators across all subjects.",
-      fullDescription:
-        "Boost your child's academic performance with our expert tutoring services. Our qualified educators provide personalized instruction in all subjects, helping students build confidence and achieve their full potential.",
-      image: "/tutoring.jpg",
-      features: [
-        "Subject-specific expertise",
-        "Personalized learning plans",
-        "Exam preparation support",
-        "Homework assistance",
-        "Progress monitoring",
-        "Both online and in-person options",
-      ],
-      ageGroups: "2 - 10 years",
-      pricing: "From ₦15,000/hour",
-      availability: "7 days a week",
-    },
-    {
-      id: "space-rental",
-      title: "Flexible Space Rentals",
-      shortDescription:
-        "Modern, safe spaces for educational activities, parties, and community events.",
-      fullDescription:
-        "Rent our fully equipped, child-friendly spaces for your events. Perfect for birthday parties, educational workshops, community gatherings, and special celebrations.",
-      image: "/space.webp",
-      features: [
-        "Fully equipped facilities",
-        "Child-safe environments",
-        "Audio/visual equipment",
-        "Flexible booking options",
-        "Event planning assistance",
-        "Catering arrangements available",
-      ],
-      ageGroups: "All ages welcome",
-      pricing: "From ₦350,000/day",
-      availability: "Weekends",
-    },
-    {
-      id: "kiddies-enrichment",
-      title: "Kids Enrichment Session",
-      shortDescription:
-        "Engaging educational sessions designed to enhance children's creativity, critical thinking, and social skills.",
-      fullDescription:
-        "Our Kids Enrichment Sessions provide structured activities that stimulate learning beyond traditional academics. Through interactive workshops, creative projects, and skill-building exercises, we help children develop confidence, creativity, and essential life skills in a fun, supportive environment.",
-      image: "/Party.webp",
-      features: [
-        "Creative arts and crafts workshops",
-        "STEM learning activities",
-        "Social skills development",
-        "Critical thinking exercises",
-        "Team building activities",
-        "Skill-based games and challenges",
-      ],
-      ageGroups: "2 - 10 years",
-      pricing: "₦8,000 per session",
-      availability: "Weekdays & Weekends",
-    },
-    {
-      id: "holiday-camps",
-      title: "Exciting Holiday Camps",
-      shortDescription:
-        "Fun-filled holiday programs with educational activities, sports, and creative workshops.",
-      fullDescription:
-        "Keep your children engaged during school holidays with our exciting camp programs. Featuring educational activities, sports, arts and crafts, and field trips in a safe, supervised environment.",
-      image: "/childcare.jpg",
-      features: [
-        "Diverse activity programs",
-        "Professional supervision",
-        "Educational field trips",
-        "Sports and recreation",
-        "Arts and crafts workshops",
-        "Healthy meals included",
-      ],
-      ageGroups: "2 - 10 years",
-      pricing: "From ₦30,000/week",
-      availability: "School Holidays and Midterm Breaks",
-    },
-  ];
+const services = [
+  {
+    id: "childcare",
+    title: "Professional Childcare Services",
+    shortDescription:
+      "Safe, nurturing environment with qualified caregivers for your peace of mind.",
+    fullDescription:
+      "Our professional childcare services provide a secure, loving environment where children can learn, play, and grow. With qualified caregivers, educational activities, and flexible scheduling options.",
+    image: "/childcare.jpg",
+    features: [
+      "Qualified and vetted caregivers",
+      "Age-appropriate learning activities",
+      "Flexible timing options",
+      "Regular progress updates",
+      "Emergency care protocols",
+    ],
+    ageGroups: "6 months - 10 years",
+    pricing: "₦5,000/day, 15% discount for monthly bookings",
+    availability: "Monday - Friday",
+  },
+  {
+    id: "homeschooling",
+    title: "Comprehensive Homeschooling Program",
+    shortDescription:
+      "Complete educational curriculum and support for families choosing alternative education.",
+    fullDescription:
+      "Our homeschooling program offers a complete educational experience with certified teachers, structured curriculum, and personalized learning plans tailored to each child's unique needs and learning style.",
+    image: "/homeschooling.jpg",
+    features: [
+      "Certified teacher supervision",
+      "Personalized curriculum planning",
+      "Progress tracking and assessment",
+      "Social interaction opportunities",
+      "College preparation support",
+      "Flexible learning schedules",
+    ],
+    ageGroups: "2 - 10 years",
+    pricing: "From ₦250,000/term",
+    availability: "Monday - Sunday",
+  },
+  {
+    id: "tutoring",
+    title: "Academic Tutoring Excellence",
+    shortDescription:
+      "One-on-one and group tutoring sessions with qualified educators across all subjects.",
+    fullDescription:
+      "Boost your child's academic performance with our expert tutoring services. Our qualified educators provide personalized instruction in all subjects, helping students build confidence and achieve their full potential.",
+    image: "/tutoring.jpg",
+    features: [
+      "Subject-specific expertise",
+      "Personalized learning plans",
+      "Exam preparation support",
+      "Homework assistance",
+      "Progress monitoring",
+      "Both online and in-person options",
+    ],
+    ageGroups: "2 - 10 years",
+    pricing: "From ₦15,000/hour",
+    availability: "7 days a week",
+  },
+  {
+    id: "space-rental",
+    title: "Flexible Space Rentals",
+    shortDescription:
+      "Modern, safe spaces for educational activities, parties, and community events.",
+    fullDescription:
+      "Rent our fully equipped, child-friendly spaces for your events. Perfect for birthday parties, educational workshops, community gatherings, and special celebrations.",
+    image: "/space.webp",
+    features: [
+      "Fully equipped facilities",
+      "Child-safe environments",
+      "Audio/visual equipment",
+      "Flexible booking options",
+      "Event planning assistance",
+      "Catering arrangements available",
+    ],
+    ageGroups: "All ages welcome",
+    pricing: "From ₦250,000/day",
+    availability: "Weekends",
+  },
+  {
+    id: "kiddies-enrichment",
+    title: "Kids Enrichment Session",
+    shortDescription:
+      "Engaging educational sessions designed to enhance children's creativity, critical thinking, and social skills.",
+    fullDescription:
+      "Our Kids Enrichment Sessions provide structured activities that stimulate learning beyond traditional academics. Through interactive workshops, creative projects, and character building exercises, we help children develop confidence, creativity, and essential life skills in a fun, supportive environment.",
+    image: "/Party.webp",
+    features: [
+      "Creative arts and crafts workshops",
+      "STEM learning activities",
+      "Social skills development",
+      "Critical thinking exercises",
+      "Team building activities",
+      "Skill-based games and challenges",
+    ],
+    ageGroups: "2 - 10 years",
+    pricing: "₦8,000 per session",
+    availability: "Weekdays & Weekends",
+  },
+  {
+    id: "holiday-camps",
+    title: "Exciting Holiday Camps",
+    shortDescription:
+      "Fun-filled holiday programs with educational activities, sports, and creative workshops.",
+    fullDescription:
+      "Keep your children engaged during school holidays with our exciting camp programs. Featuring educational activities, sports, arts and crafts, and field trips in a safe, supervised environment.",
+    image: "/childcare.jpg",
+    features: [
+      "Diverse activity programs",
+      "Professional supervision",
+      "Educational field trips",
+      "Sports and recreation",
+      "Arts and crafts workshops",
+      "Healthy meals included",
+    ],
+    ageGroups: "2 - 10 years",
+    pricing: "From ₦30,000/week",
+    availability: "School Holidays and Midterm Breaks",
+  },
+];
 
+export default function Services() {
   return (
     <section className="py-10 px-4 bg-gradient-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50">
       <div className="max-w-7xl mx-auto">
@@ -135,8 +134,9 @@ export default function Services() {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Discover our full range of childcare and educational services
-            designed to support your family's journey. From professional
-            childcare to academic excellence, we're here for every milestone.
+            designed to support your family&apos;s journey. From professional
+            childcare to academic excellence, we&apos;re here for every
+            milestone.
           </p>
           <div className="mt-8 flex justify-center">
             <div className="bg-[#90AC19] w-24 h-1 rounded-full"></div>
@@ -145,7 +145,7 @@ export default function Services() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-          {services.map((service, index) => (
+          {services.map((service) => (
             <div
               key={service.id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden group border border-gray-100"
@@ -225,7 +225,7 @@ export default function Services() {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
-                    href={`/services/${service.id}`}
+                    href={`/register?service=${service.id}`}
                     className="flex-1 bg-[#90AC19] hover:bg-[#7A9216] text-white text-center py-3 px-6 rounded-lg font-semibold transition-colors duration-300 shadow-md hover:shadow-lg"
                   >
                     Register your child
@@ -290,8 +290,8 @@ export default function Services() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Personalized Care</h3>
               <p className="text-white/90">
-                Tailored services that adapt to your family's unique needs and
-                schedule
+                Tailored services that adapt to your family&apos;s unique needs
+                and schedule
               </p>
             </div>
           </div>
@@ -303,8 +303,8 @@ export default function Services() {
             Ready to Get Started?
           </h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Contact us today to discuss your family's needs and discover how we
-            can support your journey.
+            Contact us today to discuss your family&apos;s needs and discover
+            how we can support your journey.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

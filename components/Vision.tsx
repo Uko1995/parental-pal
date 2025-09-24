@@ -4,10 +4,10 @@ import Link from "next/link";
 export default function Vision() {
   const ageGroups = [
     {
-      range: "2-4 Years",
-      title: "Early Foundation",
+      range: "0-4 Years",
+      title: "Nuture",
       description:
-        "Play-based learning with focus on social skills, basic concepts, and emotional development",
+        "Our early foundation program is a montesorri inspired learning with focus on basic math, literacy and cultural skills",
       features: [
         "Interactive play sessions",
         "Basic numeracy & literacy",
@@ -17,7 +17,7 @@ export default function Vision() {
     },
     {
       range: "5-6 Years",
-      title: "School Readiness",
+      title: "Empower",
       description:
         "Preparing children for formal education with structured learning and independence building",
       features: [
@@ -29,7 +29,7 @@ export default function Vision() {
     },
     {
       range: "7-10 Years",
-      title: "Academic Growth",
+      title: "Lead",
       description:
         "Supporting school curriculum with advanced concepts and critical thinking development",
       features: [
@@ -43,30 +43,82 @@ export default function Vision() {
 
   const sessionTypes = [
     {
-      type: "Virtual Sessions",
+      category: "Tutoring Services",
       description:
-        "Online learning from the comfort of home with interactive tools and personalized attention",
-      features: [
-        "1-on-1 tutoring",
-        "Interactive whiteboards",
-        "Screen sharing",
-        "Flexible scheduling",
+        "Personalized academic support tailored to your child's needs",
+      services: [
+        {
+          type: "Virtual Tutoring",
+          description:
+            "One-on-one academic support with qualified tutors using interactive digital tools",
+          features: [
+            "1-on-1 subject tutoring",
+            "Interactive whiteboards",
+            "Screen sharing & recording",
+            "Homework assistance",
+            "Progress tracking",
+            "Flexible timing",
+          ],
+          subjects: ["Mathematics", "English", "Science", "Social Studies"],
+        },
+        {
+          type: "On-Site Tutoring",
+          description:
+            "Face-to-face academic support with hands-on learning activities",
+          features: [
+            "Personal attention",
+            "Hands-on materials",
+            "Immediate feedback",
+            "Study skills development",
+            "Learning environment",
+            "Social interaction",
+          ],
+          subjects: [
+            "All Academic Subjects",
+            "Exam Preparation",
+            "Study Skills",
+          ],
+        },
       ],
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
     {
-      type: "Physical Sessions",
+      category: "Homeschooling Programs",
       description:
-        "In-person learning in our safe, nurturing environment with hands-on activities",
-      features: [
-        "Face-to-face interaction",
-        "Hands-on materials",
-        "Group learning",
-        "Safe environment",
+        "Comprehensive educational programs for complete learning experience",
+      services: [
+        {
+          type: "Virtual Homeschooling",
+          description:
+            "Comprehensive curriculum delivery with structured learning modules",
+          features: [
+            "Full curriculum coverage",
+            "Live interactive classes",
+            "Digital learning materials",
+            "Weekly assessments",
+            "Parent progress reports",
+            "Personalized discussions",
+          ],
+          subjects: ["Complete K-12 Curriculum", "Specialized Programs"],
+        },
+        {
+          type: "On-Site Homeschooling",
+          description:
+            "Traditional classroom experience with personalized curriculum",
+          features: [
+            "Structured classroom setting",
+            "Physical learning materials",
+            "Group activities",
+            "Science experiments",
+            "Art & craft sessions",
+            "Peer collaboration",
+          ],
+          subjects: ["Core Subjects", "STEM Programs", "Arts & Humanities"],
+        },
       ],
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -104,7 +156,7 @@ export default function Vision() {
               We recognize that parents have the biggest responsibility in
               raising children right so we provide support just as the parent
               would, but with the additional advantage of qualified and
-              experienced hands. So in our approach to teaching, we put
+              experienced hands. So in our approach to care and teaching, we put
               ourselves in the shoes of the parents to guide the kids through
               the following activities:
             </p>
@@ -161,8 +213,8 @@ export default function Vision() {
                   </svg>
                 </div>
                 <span className="text-gray-700">
-                  Advising them on self-management & socially acceptable ethics
-                  to dealing with people/work.
+                  Advising children on self-management & socially acceptable
+                  ethics to dealing with people/work.
                 </span>
               </li>
             </ul>
@@ -207,68 +259,95 @@ export default function Vision() {
           </div>
         </div>
 
-        {/* Session Types & Membership */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-          {/* Session Types */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">
-              Learning Options
-            </h3>
-            <div className="space-y-6">
-              {sessionTypes.map((session, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="text-[#90AC19] flex-shrink-0">
-                      {session.icon}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                        {session.type}
-                      </h4>
-                      <p className="text-gray-600 mb-4">
-                        {session.description}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {session.features.map((feature, featureIndex) => (
+        {/* Learning Options - Virtual and Physical Sessions Side by Side */}
+        <div className="mb-16">
+          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+            Learning Options
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {sessionTypes?.map((category, categoryIndex) => (
+              <div key={categoryIndex} className="space-y-4">
+                {/* Category Header */}
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="text-[#90AC19] flex-shrink-0">
+                    {category.icon}
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-semibold text-gray-900">
+                      {category.category}
+                    </h4>
+                    <p className="text-gray-600 text-sm">
+                      {category.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Services under this category */}
+                <div className="space-y-4">
+                  {category.services?.map((service, serviceIndex) => (
+                    <div
+                      key={serviceIndex}
+                      className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-[#90AC19]"
+                    >
+                      <div className="mb-4">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-2">
+                          {service.type}
+                        </h5>
+                        <p className="text-gray-600 text-sm mb-3">
+                          {service.description}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {service.subjects?.map((subject, subjectIndex) => (
+                            <span
+                              key={subjectIndex}
+                              className="text-xs bg-[#E8931A]/10 text-[#E8931A] px-2 py-1 rounded-full font-medium"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {service.features?.map((feature, featureIndex) => (
                           <span
                             key={featureIndex}
-                            className="text-xs bg-[#90AC19]/10 text-[#90AC19] px-2 py-1 rounded-full"
+                            className="text-xs bg-[#90AC19]/10 text-[#90AC19] px-2 py-1 rounded-full flex items-center"
                           >
+                            <div className="w-1.5 h-1.5 bg-[#90AC19] rounded-full mr-2"></div>
                             {feature}
                           </span>
                         ))}
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* Membership & Support */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">
+        {/* Membership & Support - Now Below Learning Options */}
+        <div className="mb-16">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
               Membership & Support
             </h3>
 
             {/* Membership Card */}
-            <div className="bg-[url('/orangeBG.jpg')] object-cover rounded-xl p-6 text-white mb-6 relative">
+            <div className="bg-[url('/orangeBG.jpg')] object-cover rounded-xl p-8 text-white relative">
               <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
-              <div className="relative z-10 text-white">
-                <h4 className="text-xl font-semibold mb-4">
+              <div className="relative z-10 text-white text-center">
+                <h4 className="text-2xl font-semibold mb-4">
                   Premium Membership
                 </h4>
-                <p className="mb-4">
+                <p className="mb-6 text-lg">
                   Join our premium membership for exclusive benefits and
                   priority access to all services.
                 </p>
-                <ul className="space-y-2 mb-6">
-                  <li className="flex items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-5 h-5 mr-3"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -279,10 +358,10 @@ export default function Vision() {
                       />
                     </svg>
                     Priority booking for sessions
-                  </li>
-                  <li className="flex items-center">
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-5 h-5 mr-3"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -292,11 +371,11 @@ export default function Vision() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    15% discount on all services
-                  </li>
-                  <li className="flex items-center">
+                    20% discount on all services
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-5 h-5 mr-3"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -307,10 +386,10 @@ export default function Vision() {
                       />
                     </svg>
                     Monthly progress reports
-                  </li>
-                  <li className="flex items-center">
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-5 h-5 mr-3"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -321,10 +400,10 @@ export default function Vision() {
                       />
                     </svg>
                     24/7 support access
-                  </li>
-                </ul>
+                  </div>
+                </div>
                 <Link href={"/about"} passHref>
-                  <button className="bg-white font-bold text-[#90AC19] cursor-pointer px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-300">
+                  <button className="bg-white font-bold text-[#90AC19] cursor-pointer px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-300 text-lg">
                     Learn More
                   </button>
                 </Link>

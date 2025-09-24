@@ -43,7 +43,7 @@ export default function Statistics() {
     {
       number: "6+ Years",
       label: "Experience",
-      description: "Trusted childcare solutions since 2020",
+      description: "Trusted childcare solutions since 2019",
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
           <path

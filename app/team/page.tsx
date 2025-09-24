@@ -1,7 +1,5 @@
-import OurTeam from "../components/OurTeam";
+import OurTeam from "./OurTeam";
 
 export default function Page() {
-    return (
-        <OurTeam />
-    )
+  return <OurTeam />;
 }

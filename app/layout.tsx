@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavBar from "./components/NavBar";
-import Footer from "./components/Footer"
+import NavBar from "../components/NavBar";
+import Footer from "../components/Footer";
+import { SessionProvider } from "next-auth/react";
 
 const manRope = Manrope({
   subsets: ["latin"],
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${manRope.className}  antialiased`}>
-        <NavBar />
-        <main className="pt-16">{children}</main>
-        <Footer />
+        <SessionProvider>
+          <NavBar />
+          <main className="pt-16">{children}</main>
+          <Footer />
+        </SessionProvider>
       </body>
     </html>
   );
