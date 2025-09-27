@@ -28,10 +28,16 @@ export default function MiniServices() {
       img: "/space.webp",
     },
     {
-      title: "Kiddies Party/ Event Planning",
+      title: "Kids Enrichment Session",
       description:
-        "Comprehensive event planning services for children&apos;s parties, including themes, activities, and logistics.",
+        "Engaging educational sessions designed to enhance children's creativity, critical thinking, and social skills.",
       img: "/Party.webp",
+    },
+    {
+      title: "Exciting Holiday Camps",
+      description:
+        "Fun-filled holiday programs with educational activities, sports, and creative workshops.",
+      img: "/camp.jpg",
     },
   ];
 
