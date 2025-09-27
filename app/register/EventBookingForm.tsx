@@ -1,6 +1,64 @@
-import React from "react";
+"use client";
 
-function EventBookingForm() {
+import React, { useState, useImperativeHandle, forwardRef } from "react";
+import PaymentSchedule from "./PaymentSchedule";
+
+export interface EventBookingFormRef {
+  resetForm: () => void;
+}
+
+const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [carersQuantity, setCarersQuantity] = useState(1);
+  const [eventMode, setEventMode] = useState<string>("");
+
+  const handleServiceChange = (service: string, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedServices((prev) => [...prev, service]);
+    } else {
+      setSelectedServices((prev) => prev.filter((s) => s !== service));
+      if (service === "carers") {
+        setCarersQuantity(1); // Reset carers quantity when unchecked
+      }
+    }
+  };
+
+  // Create the final services array including carers with quantity
+  const getServicesWithQuantity = () => {
+    const services = [...selectedServices];
+
+    // If carers is selected, replace it with carers object including quantity
+    if (selectedServices.includes("carers")) {
+      const servicesWithoutCarers = services.filter((s) => s !== "carers");
+      return [
+        ...servicesWithoutCarers,
+        {
+          service: "carers",
+          quantity: carersQuantity,
+        },
+      ];
+    }
+
+    return services;
+  };
+
+  const updateCarersQuantity = (newQuantity: number) => {
+    setCarersQuantity(newQuantity);
+  };
+
+  const handleEventModeChange = (mode: string) => {
+    setEventMode(mode);
+  };
+
+  const resetForm = () => {
+    setSelectedServices([]);
+    setCarersQuantity(1);
+    setEventMode("");
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetForm,
+  }));
   return (
     <div>
       <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -88,6 +146,8 @@ function EventBookingForm() {
               id="indoor"
               name="eventMode"
               value="indoor"
+              checked={eventMode === "indoor"}
+              onChange={(e) => handleEventModeChange(e.target.value)}
               className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
             />
             <span className="select-none">Indoor</span>
@@ -101,9 +161,26 @@ function EventBookingForm() {
               id="outdoor"
               name="eventMode"
               value="outdoor"
+              checked={eventMode === "outdoor"}
+              onChange={(e) => handleEventModeChange(e.target.value)}
               className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
             />
             <span className="select-none">Outdoor</span>
+          </label>
+          <label
+            htmlFor="indoorAndOutdoor"
+            className="flex items-center cursor-pointer text-base font-medium text-gray-700 hover:text-[#90AC19] transition-colors duration-300"
+          >
+            <input
+              type="radio"
+              id="indoorAndOutdoor"
+              name="eventMode"
+              value="indoorAndOutdoor"
+              checked={eventMode === "indoorAndOutdoor"}
+              onChange={(e) => handleEventModeChange(e.target.value)}
+              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+            />
+            <span className="select-none">Indoor & Outdoor</span>
           </label>
         </div>
       </div>
@@ -137,19 +214,127 @@ function EventBookingForm() {
       </div>
 
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
           Extra Services *
         </label>
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* DJ Service */}
+          <label className="flex justify-center items-center p-3 cursor-pointer">
+            <input
+              type="checkbox"
+              value="dj"
+              checked={selectedServices.includes("dj")}
+              onChange={(e) => handleServiceChange("dj", e.target.checked)}
+              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              DJ Service
+            </span>
+          </label>
+
+          {/* Carers Service */}
+          <div className="p-3 flex justify-center items-center cursor-pointer">
+            <div className="flex justify-center items-center mb-3">
+              <input
+                type="checkbox"
+                value="carers"
+                id="carersService"
+                checked={selectedServices.includes("carers")}
+                onChange={(e) =>
+                  handleServiceChange("carers", e.target.checked)
+                }
+                className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+              />
+              <label
+                htmlFor="carersService"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Carers
+              </label>
+            </div>
+            <div className="flex justify-center items-center border border-gray-300 rounded-lg p-2 ms-2 space-x-2">
+              <button
+                type="button"
+                onClick={() =>
+                  updateCarersQuantity(Math.max(1, carersQuantity - 1))
+                }
+                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 font-bold transition-colors duration-300 text-sm"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                name="carersQuantity"
+                min="1"
+                max="10"
+                value={carersQuantity}
+                onChange={(e) =>
+                  updateCarersQuantity(parseInt(e.target.value) || 1)
+                }
+                className="w-10 px-1 py-1 text-center text-xs border border-gray-300 rounded focus:ring-1 focus:ring-[#90AC19] focus:border-[#90AC19]"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  updateCarersQuantity(Math.min(10, carersQuantity + 1))
+                }
+                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 font-bold transition-colors duration-300 text-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* MC Service */}
+          <label className="flex justify-center items-center p-3 rounded-lg cursor-pointer">
+            <input
+              type="checkbox"
+              value="mc"
+              checked={selectedServices.includes("mc")}
+              onChange={(e) => handleServiceChange("mc", e.target.checked)}
+              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              MC (Master of Ceremonies)
+            </span>
+          </label>
+
+          {/* Event Planning Service */}
+          <label className="flex justify-center items-center p-3 cursor-pointer">
+            <input
+              type="checkbox"
+              value="eventPlanning"
+              checked={selectedServices.includes("eventPlanning")}
+              onChange={(e) =>
+                handleServiceChange("eventPlanning", e.target.checked)
+              }
+              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Event Planning
+            </span>
+          </label>
+        </div>
+
+        {/* Payment Schedule */}
+        <PaymentSchedule
+          event={true}
+          eventMode={eventMode}
+          selectedServices={getServicesWithQuantity()}
+          serviceCost={0}
+        />
+
+        {/* Hidden inputs for form submission */}
         <input
-          type="text"
+          type="hidden"
           name="extraServices"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-          placeholder="Enter any extra services required (e.g., Catering, Equipments, Decorations, Carers etc)"
-          required
+          value={JSON.stringify(getServicesWithQuantity())}
         />
       </div>
     </div>
   );
-}
+});
+
+EventBookingForm.displayName = "EventBookingForm";
 
 export default EventBookingForm;

@@ -1,13 +1,28 @@
 import OptionalChild from "./OptionalChild";
-import WeekdaysSchedule from "./WeekdaysSchedule";
-import { useState } from "react";
+import PaymentSchedule from "./PaymentSchedule";
+import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
+import { useState, useImperativeHandle, forwardRef, useRef } from "react";
 
-function TutoringForm() {
+export interface TutoringFormRef {
+  resetForm: () => void;
+}
+
+const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
   const [totalHours, setTotalHours] = useState(0);
+  const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
 
   const handleHoursChange = (totalHours: number) => {
     setTotalHours(totalHours);
   };
+
+  const resetForm = () => {
+    setTotalHours(0);
+    weekdaysScheduleRef.current?.resetSchedule();
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetForm,
+  }));
   return (
     <div>
       {/* Parent Information Section */}
@@ -173,18 +188,16 @@ function TutoringForm() {
 
         {/* Weekdays and Schedule Selection */}
         <div className="mt-4">
-          <WeekdaysSchedule onHoursChange={handleHoursChange} />
+          <WeekdaysSchedule ref={weekdaysScheduleRef} onHoursChange={handleHoursChange} />
         </div>
-        <div className="mt-4 text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
-          <span className="font-bold">📚 Academic tutoring (₦15,000/hour)</span>
-          <span>
-            Total: {totalHours} hour{totalHours !== 1 ? "s" : ""} • Cost:{" "}
-            <b>₦{(totalHours * 15000).toLocaleString()}</b>
-          </span>
-        </div>
+
+        {/* Summary of Total Hours and Cost */}
+        <PaymentSchedule totalHours={totalHours} serviceCost={15000} />
       </div>
     </div>
   );
-}
+});
+
+TutoringForm.displayName = "TutoringForm";
 
 export default TutoringForm;

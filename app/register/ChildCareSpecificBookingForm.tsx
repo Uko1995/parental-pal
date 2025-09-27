@@ -1,6 +1,39 @@
+import { useState, useImperativeHandle, forwardRef, useRef } from "react";
 import OptionalChild from "./OptionalChild";
+import PaymentSchedule from "./PaymentSchedule";
+import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
 
-function ChildCareSpecificBookingForm() {
+export interface ChildCareSpecificBookingFormRef {
+  resetForm: () => void;
+}
+
+const ChildCareSpecificBookingForm = forwardRef<ChildCareSpecificBookingFormRef>((props, ref) => {
+  const [totalDays, setTotalDays] = useState(0);
+  const [isMonthSelected, setIsMonthSelected] = useState(false);
+  const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+
+  const resetForm = () => {
+    setTotalDays(0);
+    setIsMonthSelected(false);
+    weekdaysScheduleRef.current?.resetSchedule();
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetForm,
+  }));
+
+  const monthlyChildcareDiscount = 0.15;
+  const monthlyChildcareRate =
+    5 * 4 * 5000 - 5 * 4 * 5000 * monthlyChildcareDiscount;
+
+  const handleOnDaysChange = (totalDays: number) => {
+    setTotalDays(totalDays);
+  };
+
+  const handleOnMonthSelected = (isMonthSelected: boolean) => {
+    setIsMonthSelected(isMonthSelected);
+  };
+
   return (
     <div>
       {/* Parent Information Section */}
@@ -124,8 +157,32 @@ function ChildCareSpecificBookingForm() {
         </div>
         <OptionalChild />
       </div>
+
+      {/* Divider */}
+      <div className="border-t border-gray-200 my-8"></div>
+
+      <WeekdaysSchedule
+        ref={weekdaysScheduleRef}
+        childcare={true}
+        onDaysChange={handleOnDaysChange}
+        onMonthSelected={handleOnMonthSelected}
+      />
+      {totalDays > 0 && (
+        <PaymentSchedule
+          serviceCost={5000}
+          childcare={true}
+          totalDays={totalDays}
+          monthlyChildcareRate={monthlyChildcareRate}
+          isMonthSelected={isMonthSelected}
+        />
+      )}
+
+      {/* Divider */}
+      <div className="border-t border-gray-200 my-8"></div>
     </div>
   );
-}
+});
+
+ChildCareSpecificBookingForm.displayName = "ChildCareSpecificBookingForm";
 
 export default ChildCareSpecificBookingForm;

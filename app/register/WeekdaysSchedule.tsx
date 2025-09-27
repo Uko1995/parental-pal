@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 
 interface DaySchedule {
   day: string;
@@ -10,12 +10,26 @@ interface DaySchedule {
 
 interface WeekdaysScheduleProps {
   onHoursChange?: (totalHours: number) => void;
+  onDaysChange?: (totalDays: number) => void;
+  onMonthSelected?: (isMonthSelected: boolean) => void;
+  childcare?: boolean;
 }
 
-export default function WeekdaysSchedule({
-  onHoursChange,
-}: WeekdaysScheduleProps) {
+export interface WeekdaysScheduleRef {
+  resetSchedule: () => void;
+}
+
+const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
+  ({ onHoursChange, onDaysChange, onMonthSelected, childcare }, ref) => {
   const [daySchedules, setDaySchedules] = useState<DaySchedule[]>([]);
+
+  const resetSchedule = () => {
+    setDaySchedules([]);
+  };
+
+  useImperativeHandle(ref, () => ({
+    resetSchedule,
+  }));
 
   // Calculate total hours and notify parent
   const calculateTotalHours = (schedules: DaySchedule[]) => {
@@ -24,6 +38,10 @@ export default function WeekdaysSchedule({
       0
     );
   };
+  // Calculate total number of days selected
+  const calculateTotalDays = (schedules: DaySchedule[]) => {
+    return schedules.length;
+  };
 
   // Use useEffect to call the callback after state updates
   useEffect(() => {
@@ -31,7 +49,17 @@ export default function WeekdaysSchedule({
       const totalHours = calculateTotalHours(daySchedules);
       onHoursChange(totalHours);
     }
-  }, [daySchedules, onHoursChange]);
+    if (onDaysChange) {
+      const totalDays = calculateTotalDays(daySchedules);
+      onDaysChange(totalDays);
+    }
+    if (onMonthSelected) {
+      const isMonthSelected = daySchedules.some(
+        (schedule) => schedule.day === "month"
+      );
+      onMonthSelected(isMonthSelected);
+    }
+  }, [daySchedules, onHoursChange, onDaysChange, onMonthSelected]);
 
   const weekdays = [
     { value: "monday", label: "Mon" },
@@ -51,8 +79,16 @@ export default function WeekdaysSchedule({
         // Remove the day if it's already selected
         return prev.filter((_, index) => index !== existingIndex);
       } else {
-        // Add the day with empty start time and 1 hour default
-        return [...prev, { day, startTime: "", hours: 1 }];
+        // If "month" is clicked, clear all other selections
+        if (day === "month") {
+          return [{ day: "month", startTime: "", hours: 1 }];
+        }
+
+        // If any weekday is clicked, remove "month" if it exists and add the new day
+        const filteredSchedules = prev.filter(
+          (schedule) => schedule.day !== "month"
+        );
+        return [...filteredSchedules, { day, startTime: "", hours: 1 }];
       }
     });
   };
@@ -77,6 +113,12 @@ export default function WeekdaysSchedule({
     return daySchedules.some((schedule) => schedule.day === day);
   };
 
+  const childcareDays = weekdays
+    .slice(0, 5)
+    .concat([{ value: "month", label: "Month" }]);
+
+  const days = childcare === true ? childcareDays : weekdays;
+
   return (
     <div className="space-y-4">
       {/* Weekdays Selection */}
@@ -85,7 +127,7 @@ export default function WeekdaysSchedule({
           Preferred Days *
         </label>
         <div className="flex flex-wrap gap-2">
-          {weekdays.map((day) => (
+          {days.map((day) => (
             <button
               key={day.value}
               type="button"
@@ -103,7 +145,7 @@ export default function WeekdaysSchedule({
       </div>
 
       {/* Schedule Selection - Only show when days are selected */}
-      {daySchedules.length > 0 && (
+      {!childcare && daySchedules.length > 0 && (
         <div className="animate-in slide-in-from-top-2 duration-300 space-y-4">
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Set Schedule for Each Day *
@@ -167,13 +209,6 @@ export default function WeekdaysSchedule({
             ))}
           </div>
 
-          {/* Hidden input for form submission - single array */}
-          <input
-            type="hidden"
-            name="daySchedules"
-            value={JSON.stringify(daySchedules)}
-          />
-
           <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
             <strong>Summary:</strong> {daySchedules.length} day(s) selected •{" "}
             {calculateTotalHours(daySchedules)} total hours
@@ -190,6 +225,29 @@ export default function WeekdaysSchedule({
           </div>
         </div>
       )}
+
+      {/* Hidden input for form submission - always render when days are selected */}
+      {daySchedules.length > 0 && (
+        <input
+          type="hidden"
+          name="daySchedules"
+          value={
+            childcare
+              ? daySchedules.some((ds) => ds.day === "month")
+                ? JSON.stringify([{ day: "month" }])
+                : JSON.stringify(
+                    daySchedules
+                      .filter((ds) => ds.day !== "month")
+                      .map((ds) => ({ day: ds.day }))
+                  )
+              : JSON.stringify(daySchedules)
+          }
+        />
+      )}
     </div>
   );
-}
+});
+
+WeekdaysSchedule.displayName = "WeekdaysSchedule";
+
+export default WeekdaysSchedule;
