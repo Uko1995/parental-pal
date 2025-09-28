@@ -133,7 +133,7 @@ export default function Vision() {
   ];
 
   return (
-    <section className="py-16 px-4 bg-[#FFEACF]/30">
+    <section className="py-16 px-4 ">
       <div className="max-w-7xl mx-auto">
         {/* Our Approach Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
@@ -160,64 +160,148 @@ export default function Vision() {
               ourselves in the shoes of the parents to guide the kids through
               the following activities:
             </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+              {/* Tutoring Approach */}
+              <div className="mb-8">
+                <h4 className="text-base font-semibold text-[#E8931A] mb-4 flex items-center">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                  </svg>
+                  Academic Tutoring
+                </h4>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Reinforcing concepts taught in school.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Gathering fun resources to explain difficult concepts.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Self-management & socially acceptable ethics to dealing
+                      with people/work.
+                    </span>
+                  </li>
+                </ul>
+              </div>
 
-            <ul className="space-y-4">
-              <li className="flex items-start">
-                <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+              {/* Childcare Approach */}
+              <div>
+                <h4 className="text-base font-semibold text-[#90AC19] mb-4 flex items-center">
                   <svg
-                    className="w-3 h-3 text-white"
+                    className="w-5 h-5 mr-2"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                   </svg>
-                </div>
-                <span className="text-gray-700">
-                  Reinforcing concepts taught in school.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <span className="text-gray-700">
-                  Gathering fun resources to explain difficult concepts.
-                </span>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <span className="text-gray-700">
-                  Advising children on self-management & socially acceptable
-                  ethics to dealing with people/work.
-                </span>
-              </li>
-            </ul>
+                  Childcare Services
+                </h4>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Childhood enrichment activites
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Life skill development
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">
+                      Building team spirit and cooperation.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -287,7 +371,7 @@ export default function Vision() {
                   {category.services?.map((service, serviceIndex) => (
                     <div
                       key={serviceIndex}
-                      className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-[#90AC19]"
+                      className="bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
                     >
                       <div className="mb-4">
                         <h5 className="text-lg font-semibold text-gray-900 mb-2">
@@ -335,7 +419,7 @@ export default function Vision() {
 
             {/* Membership Card */}
             <div className="bg-[url('/orangeBG.jpg')] object-cover rounded-xl p-8 text-white relative">
-              <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+              <div className="absolute inset-0 bg-orange-700/50 rounded-xl"></div>
               <div className="relative z-10 text-white text-center">
                 <h4 className="text-2xl font-semibold mb-4">
                   Premium Membership

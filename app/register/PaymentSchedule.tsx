@@ -8,20 +8,29 @@ interface PaymentScheduleProps {
   event?: boolean;
   eventMode?: string;
   selectedServices?: Array<string | { service: string; quantity: number }>;
+  holidayCamp?: boolean;
+  totalWeeks?: number;
 }
 
 function PaymentSchedule({
   totalHours,
+  totalWeeks,
   childcare,
   serviceCost,
   totalDays,
   isMonthSelected,
   monthlyChildcareRate,
   event,
+  holidayCamp,
   eventMode,
   selectedServices,
 }: PaymentScheduleProps) {
-  const totalTime = childcare === true ? totalDays : totalHours;
+  const totalTime =
+    holidayCamp === true
+      ? totalWeeks
+      : childcare === true
+      ? totalDays
+      : totalHours;
 
   // Use monthly rate if month is selected, otherwise use regular calculation
   const totalCost =
@@ -48,7 +57,7 @@ function PaymentSchedule({
     dj: 150000,
     mc: 60000,
     eventPlanning: 150000,
-    carers: 10000, // per carer
+    carers: 10000,
   };
 
   const calculateExtraServicesCost = () => {
@@ -76,23 +85,39 @@ function PaymentSchedule({
       {(totalHours || totalDays || event) && (
         <div className="mt-4 text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
           <span className="font-bold">
-            {event
-              ? "Event Services"
-              : childcare
-              ? isMonthSelected
-                ? " Childcare (₦5,000/day) 15% discount per month"
-                : " Childcare (₦5,000/day)"
-              : " Academic tutoring (₦15,000/hour)"}
+            {event ? (
+              "Event Services"
+            ) : holidayCamp ? (
+              <div>
+                Holiday Camp (₦30,000/week)
+                <br />
+                <span className="text-xs text-gray-500 font-normal">
+                  Exclusive of other activity costs
+                </span>
+              </div>
+            ) : childcare ? (
+              isMonthSelected ? (
+                " Childcare (₦5,000/day) 15% discount per month"
+              ) : (
+                " Childcare (₦5,000/day)"
+              )
+            ) : (
+              " Academic tutoring (₦15,000/hour)"
+            )}
           </span>
           <span>
             {event
               ? `Event Package • Cost: ₦${totalEventCost.toLocaleString()}`
+              : holidayCamp
+              ? `${totalDays} week${
+                  totalDays !== 1 ? "s" : ""
+                } • Cost: ₦${totalCost.toLocaleString()}`
               : isMonthSelected
               ? "Full Month"
               : `${totalTime}${childcare ? " day" : " hour"}${
                   totalTime !== 1 ? "s" : ""
                 }`}
-            {!event && (
+            {!event && !holidayCamp && (
               <>
                 {"   "}
                 {"   "}
@@ -103,7 +128,13 @@ function PaymentSchedule({
           <input
             type="hidden"
             name="totalCost"
-            value={event ? totalEventCost : totalCost}
+            value={
+              event
+                ? totalEventCost
+                : holidayCamp
+                ? (totalDays || 0) * serviceCost
+                : totalCost
+            }
           />
         </div>
       )}

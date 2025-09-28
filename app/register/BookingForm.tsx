@@ -5,8 +5,11 @@ import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
 import ChildBookingForm from "./ChildBookingForm";
-import ChildCareSpecificBookingForm, { ChildCareSpecificBookingFormRef } from "./ChildCareSpecificBookingForm";
+import ChildCareSpecificBookingForm, {
+  ChildCareSpecificBookingFormRef,
+} from "./ChildCareSpecificBookingForm";
 import TutoringForm, { TutoringFormRef } from "./TutoringForm";
+import HolidayCampForm, { HolidayCampFormRef } from "./HolidayCampForm";
 
 interface AboutUs {
   label: string;
@@ -32,26 +35,29 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [selectedService, setSelectedService] = useState(urlService || "");
   const [selectedHearAboutUs, setSelectedHearAboutUs] = useState<string>("");
   const [otherHearAboutUsText, setOtherHearAboutUsText] = useState<string>("");
-  
+
   // Refs for form components
   const eventFormRef = useRef<EventBookingFormRef>(null);
   const childCareFormRef = useRef<ChildCareSpecificBookingFormRef>(null);
   const tutoringFormRef = useRef<TutoringFormRef>(null);
+  const holidayCampFormRef = useRef<HolidayCampFormRef>(null);
 
   // Wrapper function to handle form reset after submission
   const handleFormSubmit = async (formData: FormData) => {
     try {
       await submitAction(formData);
-      
+
       // Reset forms after successful submission
       if (selectedService === "space-rental") {
         eventFormRef.current?.resetForm();
-      } else if (selectedService === "childcare" || selectedService === "holiday-camps") {
+      } else if (selectedService === "childcare") {
         childCareFormRef.current?.resetForm();
+      } else if (selectedService === "holiday-camps") {
+        holidayCampFormRef.current?.resetForm();
       } else if (selectedService === "tutoring") {
         tutoringFormRef.current?.resetForm();
       }
-      
+
       // Reset main form states
       setSelectedHearAboutUs("");
       setOtherHearAboutUsText("");
@@ -91,11 +97,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const renderFormContent = () => {
     if (selectedService === "space-rental") {
       return <EventBookingForm ref={eventFormRef} />;
-    } else if (
-      selectedService === "childcare" ||
-      selectedService === "holiday-camps"
-    ) {
+    } else if (selectedService === "childcare") {
       return <ChildCareSpecificBookingForm ref={childCareFormRef} />;
+    } else if (selectedService === "holiday-camps") {
+      return <HolidayCampForm ref={holidayCampFormRef} />;
     } else if (
       selectedService === "kiddies-enrichment" ||
       selectedService === "homeschooling"
@@ -153,16 +158,14 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
               required
             >
               <option value="">Select a service</option>
-              <option value="childcare">Professional Childcare Services</option>
-              <option value="homeschooling">
-                Comprehensive Homeschooling Program
-              </option>
-              <option value="tutoring">Academic Tutoring Excellence</option>
-              <option value="space-rental">Flexible Space Rentals</option>
+              <option value="childcare">Childcare Services</option>
+              <option value="tutoring">Academic Tutoring</option>
+              <option value="space-rental">Space Rentals</option>
+              <option value="homeschooling">Homeschooling Program</option>
               <option value="kiddies-enrichment">
                 Kids Enrichment Session
               </option>
-              <option value="holiday-camps">Exciting Holiday Camps</option>
+              <option value="holiday-camps">Holiday Camps</option>
             </select>
           </div>
         </div>

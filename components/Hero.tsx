@@ -12,9 +12,9 @@ export default function Hero() {
           Your one-stop solution for all childcare needs.
         </p>
         {/* CTA Buttons */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-4">
+        <div className="mt-8 flex text-lg flex-col sm:flex-row gap-4">
           <Link href={"/services"} passHref>
-            <button className="bg-[#90AC19] tracking-wide  cursor-pointer hover:bg-[#7A9216] text-white px-8 py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg">
+            <button className="bg-[#90AC19]  tracking-wide  cursor-pointer hover:bg-[#7A9216] text-white px-8 py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg">
               Services
             </button>
           </Link>

@@ -180,30 +180,6 @@ export default function Statistics() {
             ))}
           </div>
         </div>
-
-        {/* Trust Badges */}
-        <div className="mt-16 pt-12 border-t border-gray-200">
-          <div className="text-center">
-            <h4 className="text-xl font-semibold text-gray-900 mb-8">
-              Recognized & Certified By
-            </h4>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-              {/* Placeholder for certification logos */}
-              <div className="bg-gray-200 rounded-lg px-6 py-3 text-gray-600 font-medium">
-                Child Care Licensing
-              </div>
-              <div className="bg-gray-200 rounded-lg px-6 py-3 text-gray-600 font-medium">
-                Better Business Bureau
-              </div>
-              <div className="bg-gray-200 rounded-lg px-6 py-3 text-gray-600 font-medium">
-                National Association
-              </div>
-              <div className="bg-gray-200 rounded-lg px-6 py-3 text-gray-600 font-medium">
-                Safety First Certified
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

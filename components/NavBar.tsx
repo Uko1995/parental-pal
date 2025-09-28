@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function NavBar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const { data: session, status } = useSession();
@@ -130,6 +131,7 @@ export default function NavBar() {
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
               type="button"
               className={`inline-flex items-center justify-center p-2 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-inset ${
                 isTransparent
@@ -161,36 +163,38 @@ export default function NavBar() {
       </div>
 
       {/* Mobile menu */}
-      <div className="md:hidden" id="mobile-menu">
-        <div
-          className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t ${
-            isTransparent
-              ? "bg-black/20 backdrop-blur-md border-white/20"
-              : "bg-white border-gray-200"
-          }`}
-        >
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                  isActive
-                    ? isTransparent
-                      ? "bg-white/20 text-white"
-                      : "bg-[#90AC19]/10 text-[#90AC19]"
-                    : isTransparent
-                    ? "text-white/90 hover:text-white hover:bg-white/10"
-                    : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
-                }`}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
+      {isMenuOpen && (
+        <div className="md:hidden" id="mobile-menu">
+          <div
+            className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t ${
+              isTransparent
+                ? "bg-black/20 backdrop-blur-md border-white/20"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    isActive
+                      ? isTransparent
+                        ? "bg-white/20 text-white"
+                        : "bg-[#90AC19]/10 text-[#90AC19]"
+                      : isTransparent
+                      ? "text-white/90 hover:text-white hover:bg-white/10"
+                      : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }
