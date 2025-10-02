@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Manrope, Geist_Mono } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
-import NavBar from "../components/NavBar";
-import Footer from "../components/Footer";
 import { SessionProvider } from "next-auth/react";
+import ConditionalLayout from "../components/ConditionalLayout";
 
 const manRope = Manrope({
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -29,9 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${manRope.className}  antialiased`}>
         <SessionProvider>
-          <NavBar />
-          <main className="pt-16">{children}</main>
-          <Footer />
+          <ConditionalLayout>{children}</ConditionalLayout>
         </SessionProvider>
       </body>
     </html>

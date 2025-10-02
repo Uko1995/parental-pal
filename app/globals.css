@@ -1,8 +1,15 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Custom brand colors for DaisyUI */
+  --brand-primary: #90ac19;
+  --brand-secondary: #e8931a;
+  --brand-accent: #a25f97;
+  --brand-cream: #ffeacf;
 }
 
 @theme inline {
@@ -44,4 +51,27 @@ body {
     opacity: 0.7;
     transform: scale(1.05);
   }
+}
+
+/* Custom DaisyUI theme overrides */
+[data-theme="light"] {
+  --p: var(--brand-primary);
+  --s: var(--brand-secondary);
+  --a: var(--brand-accent);
+  --n: var(--brand-cream);
+}
+
+/* Dashboard specific styles */
+.dashboard-sidebar {
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary),
+    var(--brand-secondary)
+  );
+}
+
+.dashboard-card {
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
 }

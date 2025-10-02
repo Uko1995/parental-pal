@@ -225,7 +225,7 @@ export default function Services() {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
-                    href={`/register?service=${service.id}`}
+                    href={`/booking?service=${service.id}`}
                     className="flex-1 bg-[#90AC19] hover:bg-[#7A9216] text-white text-center py-3 px-6 rounded-lg font-semibold transition-colors duration-300 shadow-md hover:shadow-lg"
                   >
                     Register your child
