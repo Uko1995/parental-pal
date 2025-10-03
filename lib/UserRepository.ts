@@ -114,6 +114,14 @@ export class UserRepository {
     return (await collection.findOne({ googleId })) as UserInterface | null;
   }
 
+  // Find users by role
+  static async findByRole(
+    role: "admin" | "parent" | "tutor"
+  ): Promise<UserInterface[]> {
+    const collection = await getCollection<UserInterface>(this.collectionName);
+    return await collection.find({ role }).sort({ createdAt: -1 }).toArray();
+  }
+
   // Update user
   static async updateUser(
     id: string | ObjectId,
@@ -360,7 +368,9 @@ export class UserRepository {
     }
 
     // Get all bookings to match with children
-    const bookings = await bookingsCollection.find({}).toArray() as BookingData[];
+    const bookings = (await bookingsCollection
+      .find({})
+      .toArray()) as BookingData[];
 
     const allChildren: Array<{
       childId?: string;
@@ -381,44 +391,50 @@ export class UserRepository {
     }> = [];
 
     // Service statistics
-    const serviceStatsMap = new Map<string, { childrenSet: Set<string>, totalBookings: number }>();
+    const serviceStatsMap = new Map<
+      string,
+      { childrenSet: Set<string>; totalBookings: number }
+    >();
 
     parents.forEach((parent) => {
       if (parent.children && parent.children.length > 0) {
         parent.children.forEach((child, index) => {
           const childId = `${parent._id}_${index}`;
-          
+
           // Find bookings for this parent that might include this child
-          const parentBookings = bookings.filter((booking: BookingData) => 
-            booking.userId?.toString() === parent._id?.toString() ||
-            booking.parentEmail === parent.email
+          const parentBookings = bookings.filter(
+            (booking: BookingData) =>
+              booking.userId?.toString() === parent._id?.toString() ||
+              booking.parentEmail === parent.email
           );
 
           // Get services for this child
           const childServices = parentBookings
             .filter((booking: BookingData) => {
               // Check if this child is in the booking's children array
-              return booking.children?.some((bookingChild) => 
-                bookingChild.name === child.name && 
-                Math.abs(bookingChild.age - child.age) <= 1 // Allow for age differences due to time passage
+              return booking.children?.some(
+                (bookingChild) =>
+                  bookingChild.name === child.name &&
+                  Math.abs(bookingChild.age - child.age) <= 1 // Allow for age differences due to time passage
               );
             })
             .map((booking: BookingData) => ({
-              serviceType: booking.serviceType || 'unknown',
-              status: booking.status || 'unknown',
-              bookingId: booking.bookingId || booking._id?.toString() || 'unknown',
+              serviceType: booking.serviceType || "unknown",
+              status: booking.status || "unknown",
+              bookingId:
+                booking.bookingId || booking._id?.toString() || "unknown",
               createdAt: booking.createdAt || new Date(),
             }));
 
           // Update service statistics
-          childServices.forEach(service => {
+          childServices.forEach((service) => {
             if (!serviceStatsMap.has(service.serviceType)) {
               serviceStatsMap.set(service.serviceType, {
                 childrenSet: new Set(),
-                totalBookings: 0
+                totalBookings: 0,
               });
             }
-            
+
             const stats = serviceStatsMap.get(service.serviceType)!;
             stats.childrenSet.add(childId);
             stats.totalBookings++;
@@ -441,15 +457,19 @@ export class UserRepository {
     });
 
     // Convert service statistics to array format
-    const serviceStats = Array.from(serviceStatsMap.entries()).map(([serviceType, stats]) => ({
-      serviceType,
-      childrenCount: stats.childrenSet.size,
-      totalBookings: stats.totalBookings,
-    }));
+    const serviceStats = Array.from(serviceStatsMap.entries()).map(
+      ([serviceType, stats]) => ({
+        serviceType,
+        childrenCount: stats.childrenSet.size,
+        totalBookings: stats.totalBookings,
+      })
+    );
 
     return {
       children: allChildren.sort((a, b) => a.age - b.age),
-      serviceStats: serviceStats.sort((a, b) => b.childrenCount - a.childrenCount),
+      serviceStats: serviceStats.sort(
+        (a, b) => b.childrenCount - a.childrenCount
+      ),
     };
   }
 

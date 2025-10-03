@@ -179,9 +179,9 @@ GOOGLE_SCRIPT_URL=https://script.google.com/... (optional backup)
 
 - See `app/components/NavBar.tsx` for navigation and active link pattern
 - See `app/components/Vision.tsx` for service categorization (childcare vs tutoring)
-- See `app/register/BookingForm.tsx` for main form architecture
-- See `app/register/WeekdaysSchedule.tsx` for reusable scheduling component
-- See `app/register/action.ts` for server action with database integration
+- See `app/booking/BookingForm.tsx` for main form architecture
+- See `app/booking/WeekdaysSchedule.tsx` for reusable scheduling component
+- See `app/booking/action.ts` for server action with database integration
 - See `models/Booking.ts` for Mongoose schema patterns
 - See `app/api/bookings/route.ts` for API route structure
 
