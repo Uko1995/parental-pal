@@ -98,7 +98,7 @@ app/api/
 ### Database Patterns
 
 - **Connection Pooling**: MongoDB connection reuse in development, new connections in production
-- **Schema Validation**: Mongoose schemas with TypeScript interfaces
+- **Schema Validation**: Mongodb native schemas with TypeScript interfaces
 - **Error Handling**: Try-catch blocks with proper error responses
 - **Data Cleaning**: Filter Next.js internal form data before database operations
 
@@ -110,6 +110,73 @@ app/api/
 - **Responsive Design**: Mobile-first approach with breakpoint prefixes
 - **Color Usage**: Green `#90AC19` for success/active, Orange `#E8931A` for highlights, Purple `#A25F97` for accents
 - **Typography**: Consistent heading hierarchy and text sizes
+
+## User Feedback & Notifications
+
+- **Toast Notifications**: Use react-hot-toast for success/error messages instead of alert()
+
+  **Installation**: `npm install react-hot-toast`
+
+  **Setup** (in app/layout.tsx):
+
+  ```typescript
+  import { Toaster } from "react-hot-toast";
+
+  export default function RootLayout({ children }) {
+    return (
+      <html>
+        <body>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: "#363636",
+                color: "#fff",
+              },
+              success: {
+                iconTheme: {
+                  primary: "#90AC19",
+                  secondary: "#fff",
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: "#f87171",
+                  secondary: "#fff",
+                },
+              },
+            }}
+          />
+        </body>
+      </html>
+    );
+  }
+  ```
+
+  **Usage**:
+
+  ```typescript
+  import toast from "react-hot-toast";
+
+  // Simple notifications
+  toast.success("Tutor deleted successfully");
+  toast.error("Failed to delete tutor");
+
+  // Promise-based notifications
+  toast.promise(deleteTutorAPI(id), {
+    loading: "Deleting tutor...",
+    success: "Tutor deleted successfully!",
+    error: "Failed to delete tutor",
+  });
+  ```
+
+  **Benefits**: Better React integration, built-in animations, promise support, accessibility, cleaner API
+
+- **Modal Confirmations**: Use DaisyUI modal components for destructive actions (delete, etc.)
+- **Loading States**: Show loading spinners during async operations with disabled states
+- **State Management**: Update local component state instead of page reloads for better UX
 
 ## Service Configuration
 
@@ -149,8 +216,8 @@ GOOGLE_SCRIPT_URL=https://script.google.com/... (optional backup)
 - **DaisyUI**: Component library for consistent design system
 - **Tailwind CSS**: Utility-first styling with custom brand color extensions
 - **Heroicons**: Icon set for navigation and UI elements
-- **React Chart.js 2**: Charts and data visualization library
-- **Chart.js**: Core charting library with responsive design
+- **React Recharts**: Charts and data visualization library
+- **Recharts**: Core charting library with responsive design
 
 ### **Data Visualization**
 

@@ -2,9 +2,24 @@ import {
   AcademicCapIcon,
   PlusIcon,
   UserIcon,
+  ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
+import TutorTable from "./TutorTable";
+import TutorCharts from "./TutorCharts";
+import {
+  getTutors,
+  getTutorSubjectDistribution,
+  getTutorRegistrationTrends,
+} from "./action";
 
-export default function TutorsPage() {
+export default async function TutorsPage() {
+  // Fetch all data for tutors and charts
+  const [tutorsData, subjectData, registrationData] = await Promise.all([
+    getTutors(),
+    getTutorSubjectDistribution(),
+    getTutorRegistrationTrends(),
+  ]);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -12,7 +27,7 @@ export default function TutorsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tutors</h1>
           <p className="text-gray-600 mt-1">
-            Manage tutor profiles, qualifications, and assignments
+            Manage tutor profiles and information
           </p>
         </div>
         <button className="btn btn-primary">
@@ -21,54 +36,83 @@ export default function TutorsPage() {
         </button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-figure text-primary">
-            <AcademicCapIcon className="w-8 h-8" />
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Tutors</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {tutorsData?.tutorStats.totalTutors || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-full">
+                <AcademicCapIcon className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
           </div>
-          <div className="stat-title">Active Tutors</div>
-          <div className="stat-value text-primary">45</div>
-          <div className="stat-desc">12% increase this month</div>
         </div>
 
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-figure text-secondary">
-            <UserIcon className="w-8 h-8" />
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active Tutors</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {tutorsData?.tutorStats.activeTutors || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-full">
+                <UserIcon className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
           </div>
-          <div className="stat-title">Pending Applications</div>
-          <div className="stat-value text-secondary">8</div>
-          <div className="stat-desc">Requires review</div>
         </div>
 
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-figure text-accent">
-            <AcademicCapIcon className="w-8 h-8" />
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">New This Month</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {tutorsData?.tutorStats.newThisMonth || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-full">
+                <ArrowTrendingUpIcon className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
           </div>
-          <div className="stat-title">Average Rating</div>
-          <div className="stat-value text-accent">4.8</div>
-          <div className="stat-desc">Out of 5.0</div>
         </div>
-      </div>
 
-      {/* Tutors Management Placeholder */}
-      <div className="card bg-base-100 shadow-lg">
-        <div className="card-body">
-          <div className="h-96 bg-gradient-to-r from-[#90AC19]/10 to-[#A25F97]/10 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <AcademicCapIcon className="w-20 h-20 text-[#90AC19] mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Tutor Management System
-              </h2>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Complete tutor management with profiles, qualifications
-                verification, scheduling, performance tracking, and payment
-                management.
-              </p>
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Verified Tutors</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {Math.floor((tutorsData?.tutorStats.activeTutors || 0) * 0.8)}
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-full">
+                <UserIcon className="w-6 h-6 text-yellow-600" />
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TutorCharts
+          registrationData={registrationData}
+          subjectData={subjectData}
+        />
+      </div>
+
+      {/* Tutors Table */}
+      <TutorTable tutors={tutorsData?.tutors || []} />
     </div>
   );
 }

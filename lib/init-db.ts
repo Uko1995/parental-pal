@@ -1,341 +1,231 @@
-// Load environment variables first
-import { config } from "dotenv";
-config({ path: ".env.local" });
-
+import { faker } from "@faker-js/faker";
 import { ObjectId } from "mongodb";
-import { getCollection } from "./mongodb";
-import { UserRepository } from "./UserRepository";
-import { BookingRepository } from "./BookingRepository";
-import { PostRepository } from "./PostRepository";
 import { UserInterface } from "../models/User";
 import { BookingInterface } from "../models/Booking";
 import { ServiceInterface } from "../models/Service";
-import { PostInterface, PostCategory, ServiceType } from "../models/Post";
+import { PostInterface, PostCategory } from "../models/Post";
+import clientPromise from "./mongodb";
 
-// Nigerian names and data for realistic sample generation
-const NIGERIAN_NAMES = {
-  first: [
-    "Adebayo",
-    "Chioma",
-    "Emeka",
-    "Funmi",
-    "Godwin",
-    "Halima",
-    "Ibrahim",
-    "Joke",
-    "Kemi",
-    "Lanre",
-    "Musa",
-    "Ngozi",
-    "Ola",
-    "Patience",
-    "Rasheed",
-    "Sarah",
-    "Tunde",
-    "Uche",
-    "Victor",
-    "Wale",
-    "Yemi",
-    "Zainab",
-    "Abigail",
-    "Daniel",
-    "Grace",
-    "Joseph",
-    "Mary",
-    "Paul",
-    "Ruth",
-    "Samuel",
-    "Esther",
-    "Michael",
-    "Joy",
-    "David",
-    "Faith",
-    "John",
-    "Hope",
-    "Peter",
-    "Love",
-    "James",
-  ],
-  last: [
-    "Adebayo",
-    "Okafor",
-    "Williams",
-    "Johnson",
-    "Okonkwo",
-    "Adesanya",
-    "Bello",
-    "Ogbonna",
-    "Fashola",
-    "Okoro",
-    "Adeyemi",
-    "Nwosu",
-    "Babatunde",
-    "Chukwu",
-    "Olumide",
-    "Danjuma",
-    "Ezeobi",
-    "Fagbemi",
-    "Gbolahan",
-    "Ikechukwu",
-    "Jegede",
-    "Kalu",
-    "Lawal",
-    "Madu",
-    "Nkem",
-    "Oduya",
-    "Philips",
-    "Quadri",
-  ],
+const usersCollectionName = "users";
+const bookingsCollectionName = "bookings";
+const servicesCollectionName = "services";
+const postsCollectionName = "posts";
+
+// Set faker to generate consistent data
+faker.seed(123);
+
+// Helper function to generate dates spanning from January 2025 to current date
+const generateDateInRange = (startMonth: number = 0, endMonth: number = 9) => {
+  const start = new Date(2025, startMonth, 1);
+  const end = new Date(2025, endMonth, 28);
+  return faker.date.between({ from: start, to: end });
 };
 
-const SCHOOLS = [
-  "Lagos International School",
-  "British International School",
-  "Corona Schools",
-  "Greensprings School",
-  "Dowen College",
-  "Caleb International School",
-  "Nigerian Turkish International College",
-  "Atlantic Hall",
-  "The Ambassadors College",
-  "Meadow Hall Education",
-  "Chrisland Schools",
-  "Lead City International School",
-];
-
-const SUBJECTS = [
-  "Mathematics",
-  "English Language",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Economics",
-  "Government",
-  "Literature",
-  "History",
-  "Geography",
-  "Computer Science",
-  "Further Mathematics",
-  "Agricultural Science",
-  "French",
-];
-
-const LOCATIONS = [
-  "Victoria Island, Lagos",
-  "Lekki, Lagos",
-  "Ikeja, Lagos",
-  "Surulere, Lagos",
-  "Ikoyi, Lagos",
-  "Yaba, Lagos",
-  "Gbagada, Lagos",
-  "Ajah, Lagos",
-  "Magodo, Lagos",
-  "Festac, Lagos",
-  "Isolo, Lagos",
-  "Alimosho, Lagos",
-];
-
-// Utility functions
-function getRandomElement<T>(array: T[]): T {
-  return array[Math.floor(Math.random() * array.length)];
-}
-
-function getRandomElements<T>(array: T[], count: number): T[] {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-}
-
-function getRandomDate(start: Date, end: Date): Date {
-  return new Date(
-    start.getTime() + Math.random() * (end.getTime() - start.getTime())
-  );
-}
-
-function generateNigerianPhoneNumber(): string {
-  // Format: ####-###-#### as expected by validation schema
-  const area = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
-  const exchange = Math.floor(Math.random() * 900) + 100; // 100-999
-  const number = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
-  return `${area}-${exchange}-${number}`;
-}
-
-function generateEmail(firstName: string, lastName: string): string {
-  const domains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
-  return `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${getRandomElement(
-    domains
-  )}`;
-}
-
-// Initialize database with all repositories
-async function initializeDatabase() {
-  console.log("🔄 Initializing database collections...");
-
-  try {
-    await UserRepository.initialize();
-    await BookingRepository.initialize();
-    await PostRepository.initialize();
-
-    // Initialize Services collection manually (no repository yet)
-    const servicesCollection = await getCollection<ServiceInterface>(
-      "services"
-    );
-    try {
-      await servicesCollection.drop();
-    } catch {
-      // Collection doesn't exist
-    }
-
-    console.log("✅ Database collections initialized successfully!");
-  } catch (error) {
-    console.error("❌ Database initialization failed:", error);
-    throw error;
-  }
-}
-
-// Generate sample users (100 total: 1 admin, 69 parents, 30 tutors)
-async function createSampleUsers() {
-  console.log("🔄 Creating 100 sample users...");
-
-  const userRepository = new UserRepository();
+const generateUsers = (): UserInterface[] => {
   const users: UserInterface[] = [];
-  const now = new Date();
-  const oneYearAgo = new Date(
-    now.getFullYear() - 1,
-    now.getMonth(),
-    now.getDate()
-  );
 
-  // Create 1 admin user
-  for (let i = 0; i < 1; i++) {
-    const firstName = getRandomElement(NIGERIAN_NAMES.first);
-    const lastName = getRandomElement(NIGERIAN_NAMES.last);
-    const email = generateEmail(firstName, lastName);
-
-    const admin: UserInterface = {
+  // Generate Admin Users (5)
+  for (let i = 0; i < 5; i++) {
+    users.push({
+      _id: new ObjectId(),
       userData: {
-        expiresAt: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000
-        ).toISOString(), // 30 days
+        expiresAt: faker.date.future().toISOString(),
         user: {
-          name: `${firstName} ${lastName}`,
-          email,
-          image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firstName}${lastName}`,
+          name: `Admin ${faker.person.firstName()} ${faker.person.lastName()}`,
+          email: `admin${i + 1}@parentalpal.com`,
+          image: faker.image.avatar(),
         },
       },
-      phone: generateNigerianPhoneNumber(),
-      address: getRandomElement(LOCATIONS),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
       role: "admin",
-      isActive: true,
-      lastLoginAt: getRandomDate(oneYearAgo, now),
-      membershipType: "premium",
-      createdAt: getRandomDate(oneYearAgo, now),
-      updatedAt: new Date(),
-    };
-
-    const createdAdmin = await UserRepository.createUser(admin);
-    users.push(createdAdmin);
+      isActive: faker.datatype.boolean(0.95),
+      lastLoginAt: generateDateInRange(8, 9),
+      membershipType: "none",
+      createdAt: generateDateInRange(0, 2),
+      updatedAt: generateDateInRange(8, 9),
+    });
   }
 
-  // Create 69 parent users with children
-  for (let i = 0; i < 69; i++) {
-    const firstName = getRandomElement(NIGERIAN_NAMES.first);
-    const lastName = getRandomElement(NIGERIAN_NAMES.last);
-    const email = generateEmail(firstName, lastName);
+  // Generate Parent Users (70)
+  for (let i = 0; i < 70; i++) {
+    const createdDate = generateDateInRange(0, 8);
+    const hasEmergencyContact = faker.datatype.boolean(0.7);
 
-    // Generate 1-4 children per parent
-    const childrenCount = Math.floor(Math.random() * 4) + 1;
-    const children = [];
-
-    for (let j = 0; j < childrenCount; j++) {
-      const childFirstName = getRandomElement(NIGERIAN_NAMES.first);
-      const childAge = Math.floor(Math.random() * 10) + 1; // Ages 1-10
-
-      children.push({
-        name: `${childFirstName} ${lastName}`,
-        age: childAge,
-        class:
-          childAge >= 6 ? `JSS${Math.floor(Math.random() * 3) + 1}` : "Nursery",
-        schoolName: getRandomElement(SCHOOLS),
-        subjects: getRandomElements(
-          SUBJECTS,
-          Math.floor(Math.random() * 5) + 2
-        ),
-      });
-    }
-
-    const parent: UserInterface = {
+    users.push({
+      _id: new ObjectId(),
       userData: {
-        expiresAt: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000
-        ).toISOString(),
+        expiresAt: faker.date.future().toISOString(),
         user: {
-          name: `${firstName} ${lastName}`,
-          email,
-          image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firstName}${lastName}`,
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+          image: faker.image.avatar(),
         },
       },
-      phone: generateNigerianPhoneNumber(),
-      address: getRandomElement(LOCATIONS),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
+      googleId: faker.datatype.boolean(0.3) ? faker.string.uuid() : undefined,
       role: "parent",
-      isActive: Math.random() > 0.1, // 90% active
-      lastLoginAt: getRandomDate(oneYearAgo, now),
-      membershipType: getRandomElement(["basic", "premium", "none"]),
-      children,
-      createdAt: getRandomDate(oneYearAgo, now),
-      updatedAt: new Date(),
-    };
-
-    const createdParent = await UserRepository.createUser(parent);
-    users.push(createdParent);
+      isActive: faker.datatype.boolean(0.9),
+      lastLoginAt: generateDateInRange(7, 9),
+      membershipType: faker.helpers.arrayElement(["basic", "premium", "none"]),
+      children: Array.from(
+        { length: faker.number.int({ min: 1, max: 4 }) },
+        () => {
+          const age = faker.number.int({ min: 1, max: 18 });
+          return {
+            name: faker.person.firstName(),
+            age,
+            class:
+              age >= 5
+                ? `${faker.helpers.arrayElement([
+                    "K",
+                    "1st",
+                    "2nd",
+                    "3rd",
+                    "4th",
+                    "5th",
+                    "6th",
+                    "7th",
+                    "8th",
+                    "9th",
+                    "10th",
+                    "11th",
+                    "12th",
+                  ])} Grade`
+                : undefined,
+            schoolName:
+              age >= 3
+                ? `${faker.location.city()} ${faker.helpers.arrayElement([
+                    "Elementary",
+                    "Primary",
+                    "High School",
+                    "Academy",
+                  ])}`
+                : undefined,
+            subjects:
+              age >= 6
+                ? faker.helpers.arrayElements([
+                    "Mathematics",
+                    "English",
+                    "Science",
+                    "Social Studies",
+                    "Art",
+                  ])
+                : undefined,
+          };
+        }
+      ),
+      preferences: {
+        notifications: {
+          email: faker.datatype.boolean(0.8),
+          sms: faker.datatype.boolean(0.6),
+          push: faker.datatype.boolean(0.7),
+        },
+        preferredServices: faker.helpers.arrayElements(
+          [
+            "childcare",
+            "tutoring",
+            "homeschooling",
+            "holiday-camps",
+            "space-rental",
+            "kiddies-enrichment",
+          ],
+          { min: 1, max: 4 }
+        ),
+        emergencyContact: hasEmergencyContact
+          ? {
+              name: faker.person.fullName(),
+              phone: faker.phone.number(),
+              relationship: faker.helpers.arrayElement([
+                "Spouse",
+                "Parent",
+                "Sibling",
+                "Friend",
+                "Relative",
+              ]),
+            }
+          : undefined,
+      },
+      createdAt: createdDate,
+      updatedAt: faker.date.between({ from: createdDate, to: new Date() }),
+    });
   }
 
-  // Create 30 tutor users
-  for (let i = 0; i < 30; i++) {
-    const firstName = getRandomElement(NIGERIAN_NAMES.first);
-    const lastName = getRandomElement(NIGERIAN_NAMES.last);
-    const email = generateEmail(firstName, lastName);
+  // Generate Tutor Users (35)
+  for (let i = 0; i < 35; i++) {
+    const createdDate = generateDateInRange(0, 7);
+    const experience = faker.number.int({ min: 1, max: 15 });
+    const totalReviews = faker.number.int({ min: 0, max: 100 });
 
-    const tutorSubjects = getRandomElements(
-      SUBJECTS,
-      Math.floor(Math.random() * 4) + 2
-    );
-    const experience = Math.floor(Math.random() * 10) + 1; // 1-10 years
-
-    const tutor: UserInterface = {
+    users.push({
+      _id: new ObjectId(),
       userData: {
-        expiresAt: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000
-        ).toISOString(),
+        expiresAt: faker.date.future().toISOString(),
         user: {
-          name: `${firstName} ${lastName}`,
-          email,
-          image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firstName}${lastName}`,
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+          image: faker.image.avatar(),
         },
       },
-      phone: generateNigerianPhoneNumber(),
-      address: getRandomElement(LOCATIONS),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
+      googleId: faker.datatype.boolean(0.2) ? faker.string.uuid() : undefined,
       role: "tutor",
-      isActive: Math.random() > 0.05, // 95% active
-      lastLoginAt: getRandomDate(oneYearAgo, now),
-      membershipType: getRandomElement(["basic", "premium"]),
+      isActive: faker.datatype.boolean(0.85),
+      lastLoginAt: generateDateInRange(7, 9),
+      membershipType: "none",
       tutorProfile: {
-        specialty: getRandomElement(tutorSubjects),
+        specialty: faker.helpers.arrayElement([
+          "Mathematics",
+          "Science",
+          "English Language",
+          "History",
+          "Computer Science",
+          "Physics",
+          "Chemistry",
+          "Biology",
+          "Literature",
+          "Foreign Languages",
+        ]),
         experience,
-        qualifications: [
-          `${getRandomElement([
-            "B.Sc",
-            "B.A",
-            "M.Sc",
-            "M.A",
-            "Ph.D",
-          ])} in ${getRandomElement(tutorSubjects)}`,
-          `${experience > 5 ? "Senior" : "Junior"} Teaching Certificate`,
-        ],
-        subjects: tutorSubjects,
-        rating: Math.random() * 2 + 3, // 3.0 - 5.0 rating
-        totalReviews: Math.floor(Math.random() * 50) + 5,
+        qualifications: Array.from(
+          { length: faker.number.int({ min: 1, max: 4 }) },
+          () =>
+            faker.helpers.arrayElement([
+              "B.Sc. in Mathematics",
+              "M.Ed. in Education",
+              "Certified Teaching License",
+              "PhD in Science",
+              "TESOL Certificate",
+              "Montessori Training",
+              "Special Education Certificate",
+            ])
+        ),
+        subjects: faker.helpers.arrayElements(
+          [
+            "Algebra",
+            "Geometry",
+            "Calculus",
+            "Statistics",
+            "Biology",
+            "Chemistry",
+            "Physics",
+            "English Literature",
+            "Creative Writing",
+            "Grammar",
+            "World History",
+            "Government",
+            "Economics",
+            "Computer Programming",
+            "Web Design",
+          ],
+          { min: 2, max: 6 }
+        ),
+        rating: faker.number.float({ min: 3.5, max: 5 }),
+        totalReviews,
         availability: {
-          days: getRandomElements(
+          days: faker.helpers.arrayElements(
             [
               "Monday",
               "Tuesday",
@@ -343,767 +233,740 @@ async function createSampleUsers() {
               "Thursday",
               "Friday",
               "Saturday",
+              "Sunday",
             ],
-            Math.floor(Math.random() * 4) + 3
+            { min: 3, max: 6 }
           ),
           hours: {
-            start: "08:00",
-            end: "18:00",
+            start: faker.helpers.arrayElement([
+              "08:00",
+              "09:00",
+              "10:00",
+              "14:00",
+              "15:00",
+            ]),
+            end: faker.helpers.arrayElement([
+              "16:00",
+              "17:00",
+              "18:00",
+              "19:00",
+              "20:00",
+            ]),
           },
         },
-        hourlyRate: Math.floor(Math.random() * 5000) + 10000, // ₦10,000 - ₦15,000 per hour,
-        bio: `Experienced ${getRandomElement(
-          tutorSubjects
-        )} tutor with ${experience} years of teaching experience. Specializing in helping students achieve academic excellence.`,
-        isVerified: Math.random() > 0.2, // 80% verified
+        hourlyRate: faker.number.int({ min: 8000, max: 25000 }),
+        bio: faker.lorem.paragraphs(faker.number.int({ min: 2, max: 4 })),
+        isVerified: faker.datatype.boolean(0.7),
       },
-      createdAt: getRandomDate(oneYearAgo, now),
-      updatedAt: new Date(),
-    };
-
-    const createdTutor = await UserRepository.createUser(tutor);
-    users.push(createdTutor);
+      createdAt: createdDate,
+      updatedAt: faker.date.between({ from: createdDate, to: new Date() }),
+    });
   }
 
-  console.log(
-    `✅ Created ${users.length} users (1 admin, 69 parents, 30 tutors)`
-  );
   return users;
-}
+};
 
-// Generate sample services
-async function createSampleServices() {
-  console.log("🔄 Creating sample services...");
-
-  const servicesCollection = await getCollection<ServiceInterface>("services");
-
+const generateServices = (): ServiceInterface[] => {
   const services: ServiceInterface[] = [
     {
-      name: "Private Home Tutoring",
+      name: "Academic Tutoring",
       type: "tutoring",
       description:
-        "One-on-one personalized tutoring sessions at your home. Our certified tutors provide customized learning experiences tailored to your child's needs.",
-      shortDescription: "Personalized home tutoring sessions",
+        "Expert one-on-one tutoring for all academic levels. Our certified tutors provide personalized learning experiences tailored to each student's needs, helping them excel in their studies and build confidence.",
+      shortDescription: "Personalized academic support from certified tutors.",
       pricing: {
         baseRate: 15000,
         currency: "NGN",
         billingType: "hourly",
         packages: [
           {
-            name: "Weekly Package",
-            description: "4 sessions per week",
-            duration: "1 week",
-            discountPercentage: 5,
-            minimumSessions: 4,
-          },
-          {
             name: "Monthly Package",
-            description: "16 sessions per month",
+            description: "10% off for 20+ hours monthly",
             duration: "1 month",
             discountPercentage: 10,
-            minimumSessions: 16,
+            minimumSessions: 20,
+          },
+          {
+            name: "Semester Package",
+            description: "15% off for 100+ hours",
+            duration: "6 months",
+            discountPercentage: 15,
+            minimumSessions: 100,
           },
         ],
       },
       requirements: {
-        minimumAge: 3,
+        minimumAge: 5,
         maximumAge: 18,
-        ageGroups: ["toddler", "preschool", "primary", "secondary"],
         minimumParticipants: 1,
-        maximumParticipants: 3,
+        maximumParticipants: 1,
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
       status: "active",
+      metrics: {
+        totalBookings: 150,
+        totalRevenue: 2250000,
+        averageRating: 4.7,
+        totalReviews: 85,
+        conversionRate: 0.8,
+        repeatCustomerRate: 0.65,
+        monthlyStats: [
+          {
+            month: "January",
+            year: 2025,
+            bookings: 12,
+            revenue: 180000,
+            avgRating: 4.5,
+          },
+          {
+            month: "February",
+            year: 2025,
+            bookings: 18,
+            revenue: 270000,
+            avgRating: 4.6,
+          },
+          {
+            month: "March",
+            year: 2025,
+            bookings: 25,
+            revenue: 375000,
+            avgRating: 4.8,
+          },
+        ],
+      },
+      integrations: {
+        calendarSync: true,
+        autoAssignment: false,
+        paymentGateway: ["stripe", "paystack"],
+      },
+      createdAt: generateDateInRange(0, 1),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(8, 9),
     },
-
     {
-      name: "Daily Childcare Services",
+      name: "Daily Childcare",
       type: "childcare",
       description:
-        "Professional childcare services providing safe, nurturing environment for your children while you work or attend to other commitments.",
-      shortDescription: "Professional daily childcare",
+        "Safe, nurturing, and engaging daily childcare services for children aged 1-10. Our experienced caregivers provide structured activities, meals, and supervision in a secure environment.",
+      shortDescription: "Safe and engaging daily childcare services.",
       pricing: {
         baseRate: 5000,
         currency: "NGN",
         billingType: "daily",
         packages: [
           {
-            name: "Monthly Care Package",
-            description: "Full month childcare service",
+            name: "Monthly Discount",
+            description: "15% off for monthly bookings",
             duration: "1 month",
             discountPercentage: 15,
-            minimumSessions: 22,
           },
-        ],
-      },
-      requirements: {
-        minimumAge: 2,
-        maximumAge: 12,
-        ageGroups: ["toddler", "preschool", "primary"],
-        minimumParticipants: 1,
-        maximumParticipants: 8,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: "active",
-    },
-
-    {
-      name: "Homeschooling Support Program",
-      type: "homeschooling",
-      description:
-        "Comprehensive homeschooling support providing structured curriculum, teaching materials, and regular assessments for families choosing home education.",
-      shortDescription: "Complete homeschooling curriculum and support",
-      pricing: {
-        baseRate: 50000,
-        currency: "NGN",
-        billingType: "monthly",
-        packages: [
           {
-            name: "Annual Package",
-            description: "Full academic year support",
-            duration: "12 months",
-            discountPercentage: 20,
-            minimumSessions: 12,
-          },
-        ],
-      },
-      requirements: {
-        minimumAge: 3,
-        maximumAge: 18,
-        ageGroups: ["toddler", "preschool", "primary", "secondary"],
-        minimumParticipants: 1,
-        maximumParticipants: 5,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: "active",
-    },
-
-    {
-      name: "Holiday Adventure Camps",
-      type: "holiday-camps",
-      description:
-        "Fun-filled educational holiday camps combining learning with adventure activities. Perfect for keeping children engaged during school breaks.",
-      shortDescription: "Educational holiday camps with adventure activities",
-      pricing: {
-        baseRate: 30000,
-        currency: "NGN",
-        billingType: "weekly",
-      },
-      requirements: {
-        minimumAge: 5,
-        maximumAge: 16,
-        ageGroups: ["preschool", "primary", "secondary"],
-        minimumParticipants: 10,
-        maximumParticipants: 50,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: "active",
-    },
-
-    {
-      name: "Event Space Rental & Planning",
-      type: "space-rental",
-      description:
-        "Premium venue rental for children's parties and events, including indoor and outdoor spaces with full event planning services and entertainment options.",
-      shortDescription: "Event venue rental with planning services",
-      pricing: {
-        baseRate: 250000,
-        currency: "NGN",
-        billingType: "per-event",
-        packages: [
-          {
-            name: "Premium Package",
-            description: "Both indoor & outdoor access",
-            duration: "1 day",
-            discountPercentage: 0,
-            minimumSessions: 1,
+            name: "Weekly Package",
+            description: "8% off for weekly bookings",
+            duration: "1 week",
+            discountPercentage: 8,
           },
         ],
       },
       requirements: {
         minimumAge: 1,
-        maximumAge: 18,
-        ageGroups: ["toddler", "preschool", "primary", "secondary"],
-        minimumParticipants: 20,
-        maximumParticipants: 200,
+        maximumAge: 10,
+        minimumParticipants: 1,
+        maximumParticipants: 15,
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
       status: "active",
-    },
-
-    {
-      name: "Kids Enrichment Programs",
-      type: "kiddies-enrichment",
-      description:
-        "Specialized enrichment programs including music, arts, sports, and STEM activities designed to develop children's talents and interests beyond regular academics.",
-      shortDescription: "Music, arts, sports & STEM enrichment activities",
-      pricing: {
-        baseRate: 20000,
-        currency: "NGN",
-        billingType: "monthly",
-        packages: [
+      metrics: {
+        totalBookings: 320,
+        totalRevenue: 1360000,
+        averageRating: 4.8,
+        totalReviews: 245,
+        conversionRate: 0.9,
+        repeatCustomerRate: 0.75,
+        monthlyStats: [
           {
-            name: "Multi-Activity Package",
-            description: "Access to 3+ activities",
-            duration: "1 month",
-            discountPercentage: 15,
-            minimumSessions: 8,
+            month: "January",
+            year: 2025,
+            bookings: 28,
+            revenue: 119000,
+            avgRating: 4.7,
           },
           {
-            name: "Term Package",
-            description: "Full academic term",
-            duration: "3 months",
-            discountPercentage: 25,
-            minimumSessions: 24,
+            month: "February",
+            year: 2025,
+            bookings: 35,
+            revenue: 148750,
+            avgRating: 4.8,
+          },
+          {
+            month: "March",
+            year: 2025,
+            bookings: 42,
+            revenue: 178500,
+            avgRating: 4.9,
+          },
+        ],
+      },
+      integrations: {
+        calendarSync: true,
+        autoAssignment: true,
+        paymentGateway: ["stripe", "paystack", "bank_transfer"],
+      },
+      createdAt: generateDateInRange(0, 1),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(8, 9),
+    },
+    {
+      name: "Holiday Camps",
+      type: "holiday-camps",
+      description:
+        "Fun-filled holiday camps with educational activities, sports, arts and crafts, and outdoor adventures. Perfect for keeping children engaged during school breaks while learning new skills.",
+      shortDescription: "Educational and fun holiday camps for kids.",
+      pricing: {
+        baseRate: 30000,
+        currency: "NGN",
+        billingType: "weekly",
+        packages: [
+          {
+            name: "Multi-week Discount",
+            description: "12% off for 3+ weeks",
+            duration: "3 weeks",
+            discountPercentage: 12,
           },
         ],
       },
       requirements: {
-        minimumAge: 3,
+        minimumAge: 4,
         maximumAge: 16,
-        ageGroups: ["toddler", "preschool", "primary", "secondary"],
-        minimumParticipants: 1,
-        maximumParticipants: 15,
+        minimumParticipants: 8,
+        maximumParticipants: 30,
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
       status: "active",
+      metrics: {
+        totalBookings: 85,
+        totalRevenue: 2250000,
+        averageRating: 4.6,
+        totalReviews: 68,
+        conversionRate: 0.7,
+        repeatCustomerRate: 0.45,
+      },
+      integrations: {
+        calendarSync: true,
+        autoAssignment: false,
+        paymentGateway: ["stripe", "paystack"],
+      },
+      createdAt: generateDateInRange(0, 1),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(6, 8),
+    },
+    {
+      name: "Event Space Rental",
+      type: "space-rental",
+      description:
+        "Rent our versatile indoor and outdoor spaces for children's parties, celebrations, and special events. Includes basic decorations, tables, chairs, and sound system.",
+      shortDescription: "Flexible event spaces for children's celebrations.",
+      pricing: {
+        baseRate: 250000,
+        currency: "NGN",
+        billingType: "per-event",
+      },
+      requirements: {
+        minimumParticipants: 10,
+        maximumParticipants: 100,
+        venueTypes: ["indoor", "outdoor", "both"],
+      },
+      status: "active",
+      metrics: {
+        totalBookings: 45,
+        totalRevenue: 13500000,
+        averageRating: 4.9,
+        totalReviews: 38,
+        conversionRate: 0.6,
+        repeatCustomerRate: 0.35,
+      },
+      integrations: {
+        calendarSync: true,
+        autoAssignment: false,
+        paymentGateway: ["stripe", "bank_transfer"],
+      },
+      createdAt: generateDateInRange(0, 1),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(7, 9),
+    },
+    {
+      name: "Homeschooling Support",
+      type: "homeschooling",
+      description:
+        "Comprehensive homeschooling curriculum support and guidance for parents. Includes lesson plans, educational materials, progress tracking, and expert consultation.",
+      shortDescription: "Complete homeschooling curriculum and support.",
+      pricing: {
+        baseRate: 45000,
+        currency: "NGN",
+        billingType: "monthly",
+      },
+      requirements: {
+        minimumAge: 5,
+        maximumAge: 16,
+        minimumParticipants: 1,
+        maximumParticipants: 5,
+      },
+      status: "active",
+      metrics: {
+        totalBookings: 28,
+        totalRevenue: 1260000,
+        averageRating: 4.5,
+        totalReviews: 22,
+        conversionRate: 0.65,
+        repeatCustomerRate: 0.8,
+      },
+      integrations: {
+        calendarSync: false,
+        autoAssignment: true,
+        paymentGateway: ["stripe", "paystack"],
+      },
+      createdAt: generateDateInRange(1, 2),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(8, 9),
+    },
+    {
+      name: "Kids Enrichment Programs",
+      type: "kiddies-enrichment",
+      description:
+        "Specialized enrichment programs including music lessons, art classes, coding workshops, and STEM activities designed to develop children's talents and interests.",
+      shortDescription: "Specialized programs for talent development.",
+      pricing: {
+        baseRate: 20000,
+        currency: "NGN",
+        billingType: "weekly",
+      },
+      requirements: {
+        minimumAge: 3,
+        maximumAge: 14,
+        minimumParticipants: 3,
+        maximumParticipants: 12,
+      },
+      status: "active",
+      metrics: {
+        totalBookings: 95,
+        totalRevenue: 1900000,
+        averageRating: 4.7,
+        totalReviews: 76,
+        conversionRate: 0.75,
+        repeatCustomerRate: 0.6,
+      },
+      integrations: {
+        calendarSync: true,
+        autoAssignment: true,
+        paymentGateway: ["stripe", "paystack"],
+      },
+      createdAt: generateDateInRange(1, 2),
+      updatedAt: generateDateInRange(8, 9),
+      lastBookedAt: generateDateInRange(8, 9),
     },
   ];
-
-  for (const service of services) {
-    await servicesCollection.insertOne(service);
-  }
-
-  console.log(
-    `✅ Created ${services.length} sample services (all 6 service types)`
-  );
   return services;
-}
+};
 
-// Generate synchronized bookings spanning 12 months
-async function createSampleBookings(
+const generateBookings = (
   users: UserInterface[],
   services: ServiceInterface[]
-) {
-  console.log("🔄 Creating synchronized bookings for 12 months...");
-
-  const bookingRepository = new BookingRepository();
-  const parents = users.filter((user) => user.role === "parent");
-  const tutors = users.filter((user) => user.role === "tutor");
-
+): BookingInterface[] => {
   const bookings: BookingInterface[] = [];
-  const now = new Date();
-  const oneYearAgo = new Date(
-    now.getFullYear() - 1,
-    now.getMonth(),
-    now.getDate()
-  );
-  const sixMonthsFromNow = new Date(
-    now.getFullYear(),
-    now.getMonth() + 6,
-    now.getDate()
-  );
+  const parents = users.filter((u) => u.role === "parent");
 
-  // Create bookings for each month over 12 months (past 12 months only, no future)
-  for (let monthOffset = -11; monthOffset <= 0; monthOffset++) {
-    const monthDate = new Date(
-      now.getFullYear(),
-      now.getMonth() + monthOffset,
-      1
-    );
-    const bookingsThisMonth = Math.floor(Math.random() * 15) + 10; // 10-24 bookings per month
+  parents.forEach((parent, parentIndex) => {
+    if (!parent._id || !parent.children) return;
 
-    for (let i = 0; i < bookingsThisMonth; i++) {
-      const parent = getRandomElement(parents);
-      const service = getRandomElement(services);
-      const serviceType = service.type;
+    // Generate 2-8 bookings per parent
+    const numBookings = faker.number.int({ min: 2, max: 8 });
 
-      if (!parent.children || parent.children.length === 0) continue;
+    for (let i = 0; i < numBookings; i++) {
+      const service = faker.helpers.arrayElement(services);
+      const child = faker.helpers.arrayElement(parent.children);
+      const createdDate = generateDateInRange(1, 8);
+      const isRepeatedCustomer = parentIndex < 40; // First 40 parents are repeat customers
 
-      // Random booking date within the month
-      const bookingDate = new Date(
-        monthDate.getFullYear(),
-        monthDate.getMonth(),
-        Math.floor(Math.random() * 28) + 1
-      );
+      interface ServiceDataType {
+        subjects?: string[];
+        academicLevel?: string;
+        learningGoals?: string;
+        hourlyRate?: number;
+        careType?: "daily" | "monthly";
+        dropoffTime?: string;
+        pickupTime?: string;
+        specialNeeds?: string;
+        dailyRate?: number;
+        campWeeks?: Array<{
+          startDate: string;
+          endDate: string;
+          weekNumber: number;
+        }>;
+        weeklyRate?: number;
+        eventType?: string;
+        eventDate?: string;
+        eventTime?: string;
+        venueType?: "indoor" | "outdoor" | "both";
+        expectedGuests?: number;
+        extraServices?: Array<{
+          service: "dj" | "mc" | "event-planning" | "extra-carers";
+          quantity?: number;
+          rate?: number;
+        }>;
+        cautionFee?: number;
+        baseRate?: number;
+      }
 
-      const selectedChildren = parent.children.slice(
-        0,
-        Math.floor(Math.random() * parent.children.length) + 1
-      );
+      interface ScheduleType {
+        startDate: string;
+        isRecurring: boolean;
+        frequency?: "daily" | "weekly" | "monthly";
+        weekdays?: Array<{
+          day:
+            | "monday"
+            | "tuesday"
+            | "wednesday"
+            | "thursday"
+            | "friday"
+            | "saturday"
+            | "sunday";
+          hours: number;
+          startTime?: string;
+          endTime?: string;
+        }>;
+      }
 
-      // Create a minimal valid booking for testing
-      const booking: BookingInterface = {
-        userId: new ObjectId(parent._id),
-        serviceType: serviceType,
-        parentName: parent.userData.user.name || "Unknown Parent",
-        parentEmail: parent.userData.user.email || "unknown@example.com",
-        parentPhone: parent.phone || generateNigerianPhoneNumber(),
-        childrenCount: selectedChildren.length,
-        children: selectedChildren.map((child) => ({
-          name: child.name,
-          age: child.age,
-          class: child.class,
-          schoolName: child.schoolName,
-        })),
-        serviceData: {},
-        schedule: {
-          startDate: bookingDate.toISOString().split("T")[0],
-          isRecurring: false,
-        },
-        pricing: {
-          baseAmount: getRandomElement([0, 5000, 15000, 30000, 45000]),
-          totalAmount: getRandomElement([0, 5000, 15000, 30000, 45000]),
-          currency: "NGN",
-        },
-        status: getRandomElement([
-          "pending",
-          "confirmed",
-          "completed",
-          "cancelled",
-        ]),
-        payment: {
-          status: getRandomElement(["pending", "paid", "refunded"]),
-          paidAmount: getRandomElement([0, 5000, 15000, 30000, 45000]),
-          method: getRandomElement([
-            "card",
-            "bank_transfer",
-            "cash",
-            "installments",
-          ]),
-        },
-        createdAt: bookingDate,
-        updatedAt: bookingDate,
-        source: getRandomElement([
-          "social media",
-          "online search",
-          "signage",
-          "referral",
-          "walk in",
-          "other",
-        ]),
-        followUpRequired: Math.random() > 0.8, // 20% chance
-        isRepeatedCustomer: Math.random() > 0.2, // 80% chance
+      let serviceData: ServiceDataType = {};
+      const schedule: ScheduleType = {
+        startDate: faker.date
+          .between({ from: createdDate, to: new Date() })
+          .toISOString(),
+        isRecurring: faker.datatype.boolean(0.6),
       };
 
-      // Service-specific data generation
-      switch (serviceType) {
+      // Service-specific data based on type
+      switch (service.type) {
         case "tutoring":
-          const tutor = getRandomElement(tutors);
-          const subjects = getRandomElements(
-            SUBJECTS,
-            Math.floor(Math.random() * 3) + 1
-          );
-          const hourlyRate = tutor.tutorProfile?.hourlyRate || 15000;
-          const hours = Math.floor(Math.random() * 3) + 1; // 1-3 hours
-
-          booking.serviceData = {
-            subjects,
-            academicLevel: getRandomElement(["Primary", "JSS", "SSS"]),
-            learningGoals: "Improve academic performance and understanding",
-            hourlyRate,
+          serviceData = {
+            subjects: faker.helpers.arrayElements(
+              ["Mathematics", "English", "Science", "History"],
+              { min: 1, max: 3 }
+            ),
+            academicLevel: faker.helpers.arrayElement([
+              "Elementary",
+              "Middle School",
+              "High School",
+            ]),
+            learningGoals: faker.lorem.sentence(),
+            hourlyRate: service.pricing.baseRate,
           };
-
-          booking.schedule.weekdays = [
+          schedule.frequency = "weekly";
+          schedule.weekdays = [
             {
-              day: getRandomElement([
+              day: faker.helpers.arrayElement([
                 "monday",
                 "tuesday",
                 "wednesday",
                 "thursday",
                 "friday",
               ]),
-              hours,
+              hours: faker.number.int({ min: 1, max: 3 }),
               startTime: "15:00",
-              endTime: `${15 + hours}:00`,
+              endTime: "18:00",
             },
           ];
-          booking.schedule.isRecurring = true;
-          booking.schedule.frequency = "weekly";
-
-          booking.pricing.baseAmount = hourlyRate * hours;
-          booking.pricing.totalAmount = booking.pricing.baseAmount;
           break;
 
         case "childcare":
-          const careType = getRandomElement(["daily", "monthly"]);
-          const dailyRate = 5000;
-          const days =
-            careType === "monthly" ? 22 : Math.floor(Math.random() * 5) + 1;
-
-          const specialNeeds =
-            Math.random() > 0.8 ? "Allergic to nuts" : undefined;
-          const monthlyRate =
-            careType === "monthly" ? dailyRate * 22 * 0.85 : undefined;
-
-          booking.serviceData = {
-            careType: careType as "daily" | "monthly",
-            dropoffTime: "07:30",
-            pickupTime: "17:30",
-            dailyRate,
-            ...(specialNeeds && { specialNeeds }),
-            ...(monthlyRate && { monthlyRate }),
+          serviceData = {
+            careType: faker.helpers.arrayElement(["daily", "monthly"]),
+            dropoffTime: "08:00",
+            pickupTime: "17:00",
+            specialNeeds: faker.datatype.boolean(0.2)
+              ? faker.lorem.sentence()
+              : undefined,
+            dailyRate: service.pricing.baseRate,
           };
-
-          booking.schedule.endDate = new Date(
-            bookingDate.getTime() +
-              (careType === "monthly" ? 30 : days) * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0];
-          booking.schedule.isRecurring = true;
-          booking.schedule.frequency =
-            careType === "monthly" ? "monthly" : "daily";
-
-          booking.pricing.baseAmount =
-            careType === "monthly" ? dailyRate * 22 * 0.85 : dailyRate * days;
-          booking.pricing.totalAmount = booking.pricing.baseAmount;
-          if (careType === "monthly") {
-            booking.pricing.discount = {
-              type: "percentage",
-              value: 15,
-              reason: "Monthly package discount",
-            };
+          if (schedule.isRecurring) {
+            schedule.frequency = "daily";
           }
           break;
 
         case "holiday-camps":
-          const weeklyRate = 30000;
-          const weeks = Math.floor(Math.random() * 3) + 1; // 1-3 weeks
-
-          const campWeeks = [];
-          for (let w = 0; w < weeks; w++) {
-            const weekStart = new Date(
-              bookingDate.getTime() + w * 7 * 24 * 60 * 60 * 1000
-            );
-            const weekEnd = new Date(
-              weekStart.getTime() + 6 * 24 * 60 * 60 * 1000
-            );
-
-            campWeeks.push({
-              startDate: weekStart.toISOString().split("T")[0],
-              endDate: weekEnd.toISOString().split("T")[0],
-              weekNumber: w + 1,
-            });
-          }
-
-          booking.serviceData = {
-            campWeeks,
-            weeklyRate,
+          const weekStart = faker.date.between({
+            from: createdDate,
+            to: new Date(),
+          });
+          serviceData = {
+            campWeeks: [
+              {
+                startDate: weekStart.toISOString(),
+                endDate: new Date(
+                  weekStart.getTime() + 7 * 24 * 60 * 60 * 1000
+                ).toISOString(),
+                weekNumber: 1,
+              },
+            ],
+            weeklyRate: service.pricing.baseRate,
           };
-
-          booking.schedule.endDate = campWeeks[campWeeks.length - 1].endDate;
-
-          booking.pricing.baseAmount = weeklyRate * weeks;
-          booking.pricing.totalAmount = booking.pricing.baseAmount;
           break;
 
         case "space-rental":
-          const venueType = getRandomElement(["indoor", "outdoor", "both"]);
-          const baseRate = venueType === "both" ? 470000 : 250000;
-          const cautionFee = 50000;
-          const extraServices = [];
-
-          // Randomly add extra services
-          if (Math.random() > 0.5) {
-            extraServices.push({
-              service: "dj" as const,
-              quantity: 1,
-              rate: 150000,
-            });
-          }
-          if (Math.random() > 0.7) {
-            extraServices.push({
-              service: "mc" as const,
-              quantity: 1,
-              rate: 60000,
-            });
-          }
-
-          booking.serviceData = {
-            eventType: getRandomElement([
+          serviceData = {
+            eventType: faker.helpers.arrayElement([
               "birthday",
               "ceremony",
               "meeting",
               "other",
             ]),
-            eventDate: bookingDate.toISOString().split("T")[0],
-            eventTime: "10:00",
-            venueType: getRandomElement(["indoor", "outdoor", "both"]),
-            expectedGuests: Math.floor(Math.random() * 100) + 20,
-            extraServices,
-            cautionFee,
-            baseRate,
-          };
-
-          const extraServicesAmount = extraServices.reduce(
-            (sum, service) => sum + service.rate,
-            0
-          );
-          booking.pricing.baseAmount = baseRate;
-          booking.pricing.extraServicesAmount = extraServicesAmount;
-          booking.pricing.cautionFee = cautionFee;
-          booking.pricing.totalAmount =
-            baseRate + extraServicesAmount + cautionFee;
-          break;
-
-        case "homeschooling":
-          const homeschoolingMonthlyRate = 50000;
-          const monthsOfSupport = Math.floor(Math.random() * 6) + 1; // 1-6 months
-
-          booking.serviceData = {
-            subjects: getRandomElements(
-              SUBJECTS,
-              Math.floor(Math.random() * 6) + 3
-            ),
-            monthlyRate: homeschoolingMonthlyRate,
-          };
-
-          booking.schedule.isRecurring = true;
-          booking.schedule.frequency = "monthly";
-          booking.schedule.endDate = new Date(
-            bookingDate.getTime() + monthsOfSupport * 30 * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0];
-
-          const totalAmount = homeschoolingMonthlyRate * monthsOfSupport;
-          const discount = monthsOfSupport >= 6 ? totalAmount * 0.2 : 0; // 20% discount for 6+ months
-
-          booking.pricing.baseAmount = totalAmount;
-          booking.pricing.totalAmount = totalAmount - discount;
-          if (discount > 0) {
-            booking.pricing.discount = {
-              type: "percentage",
-              value: 20,
-              reason: "Annual package discount",
-            };
-          }
-          break;
-
-        case "kiddies-enrichment":
-          const activities = getRandomElements(
-            [
-              "Music Lessons",
-              "Art & Craft",
-              "Sports Training",
-              "STEM Projects",
-              "Drama & Theatre",
-              "Dance Classes",
-              "Coding for Kids",
-              "Public Speaking",
-            ],
-            Math.floor(Math.random() * 4) + 1
-          );
-
-          const enrichmentRate = 20000;
-          const sessionsPerMonth = 8;
-          const enrichmentMonths = Math.floor(Math.random() * 3) + 1; // 1-3 months
-
-          booking.serviceData = {
-            monthlyRate: enrichmentRate,
-          };
-
-          booking.schedule.isRecurring = true;
-          booking.schedule.frequency = "monthly";
-          booking.schedule.weekdays = Array.from({ length: 2 }, () => ({
-            day: getRandomElement([
-              "monday",
-              "tuesday",
-              "wednesday",
-              "thursday",
-              "friday",
-              "saturday",
+            eventDate: faker.date.future().toISOString(),
+            eventTime: "14:00",
+            venueType: faker.helpers.arrayElement([
+              "indoor",
+              "outdoor",
+              "both",
             ]),
-            hours: 2,
-            startTime: "15:00",
-            endTime: "17:00",
-          }));
-          booking.schedule.endDate = new Date(
-            bookingDate.getTime() + enrichmentMonths * 30 * 24 * 60 * 60 * 1000
-          )
-            .toISOString()
-            .split("T")[0];
-
-          const enrichmentTotal = enrichmentRate * enrichmentMonths;
-          const multiActivityDiscount =
-            activities.length >= 3 ? enrichmentTotal * 0.15 : 0; // 15% for 3+ activities
-
-          booking.pricing.baseAmount = enrichmentTotal;
-          booking.pricing.totalAmount = enrichmentTotal - multiActivityDiscount;
-          if (multiActivityDiscount > 0) {
-            booking.pricing.discount = {
-              type: "percentage",
-              value: 15,
-              reason: "Multi-activity discount",
-            };
-          }
+            expectedGuests: faker.number.int({ min: 15, max: 80 }),
+            extraServices: faker.helpers.arrayElements(
+              [
+                { service: "dj", quantity: 1, rate: 150000 },
+                { service: "mc", quantity: 1, rate: 60000 },
+                { service: "event-planning", quantity: 1, rate: 150000 },
+                {
+                  service: "extra-carers",
+                  quantity: faker.number.int({ min: 1, max: 4 }),
+                  rate: 8000,
+                },
+              ],
+              { min: 0, max: 3 }
+            ),
+            cautionFee: 50000,
+            baseRate: service.pricing.baseRate,
+          };
           break;
       }
 
-      try {
-        const createdBooking = await BookingRepository.createBooking(booking);
-        bookings.push(createdBooking);
-      } catch (error: unknown) {
-        console.error("❌ Booking validation failed for:", {
-          serviceType: booking.serviceType,
-          parentName: booking.parentName,
-          parentEmail: booking.parentEmail,
-          parentPhone: booking.parentPhone,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        console.error("Full booking object:", JSON.stringify(booking, null, 2));
-        throw error;
-      }
+      const baseAmount = service.pricing.baseRate;
+      const extraAmount = serviceData.extraServices
+        ? serviceData.extraServices.reduce(
+            (sum: number, extra) =>
+              sum + (extra.rate || 0) * (extra.quantity || 1),
+            0
+          )
+        : 0;
+      const totalAmount =
+        baseAmount + extraAmount + (serviceData.cautionFee || 0);
+
+      const paymentStatus = faker.helpers.weightedArrayElement([
+        { weight: 70, value: "paid" },
+        { weight: 20, value: "pending" },
+        { weight: 10, value: "refunded" },
+      ]);
+
+      const bookingStatus = faker.helpers.weightedArrayElement([
+        { weight: 40, value: "completed" },
+        { weight: 25, value: "confirmed" },
+        { weight: 15, value: "in-progress" },
+        { weight: 10, value: "pending" },
+        { weight: 8, value: "cancelled" },
+        { weight: 2, value: "on-hold" },
+      ]);
+
+      bookings.push({
+        _id: new ObjectId(),
+        userId: parent._id,
+        serviceType: service.type,
+        parentName: parent.userData.user.name,
+        parentEmail: parent.userData.user.email,
+        parentPhone: parent.phone || faker.phone.number(),
+        childrenCount: 1,
+        children: [child],
+        source: faker.helpers.arrayElement([
+          "social media",
+          "online search",
+          "referral",
+          "walk in",
+          "signage",
+          "other",
+        ]),
+        isRepeatedCustomer,
+        followUpRequired: faker.datatype.boolean(0.3),
+        serviceData,
+        schedule,
+        pricing: {
+          baseAmount,
+          extraServicesAmount: extraAmount,
+          cautionFee: serviceData.cautionFee,
+          totalAmount,
+          currency: "NGN",
+        },
+        payment: {
+          status: paymentStatus,
+          method: faker.helpers.arrayElement(["card", "bank_transfer", "cash"]),
+          paidAmount:
+            paymentStatus === "paid"
+              ? totalAmount
+              : faker.number.int({ min: 0, max: totalAmount }),
+          paymentDate:
+            paymentStatus === "paid"
+              ? faker.date
+                  .between({ from: createdDate, to: new Date() })
+                  .toISOString()
+              : undefined,
+          transactionId:
+            paymentStatus === "paid" ? faker.string.uuid() : undefined,
+        },
+        status: bookingStatus,
+        priority: faker.helpers.arrayElement([
+          "low",
+          "normal",
+          "high",
+          "urgent",
+        ]),
+        assignedAt:
+          bookingStatus !== "pending"
+            ? faker.date.between({ from: createdDate, to: new Date() })
+            : undefined,
+        startedAt: ["in-progress", "completed"].includes(bookingStatus)
+          ? faker.date.between({ from: createdDate, to: new Date() })
+          : undefined,
+        completedAt:
+          bookingStatus === "completed"
+            ? faker.date.between({ from: createdDate, to: new Date() })
+            : undefined,
+        createdAt: createdDate,
+        updatedAt: faker.date.between({ from: createdDate, to: new Date() }),
+        cancelledAt:
+          bookingStatus === "cancelled"
+            ? faker.date.between({ from: createdDate, to: new Date() })
+            : undefined,
+        cancellationReason:
+          bookingStatus === "cancelled" ? faker.lorem.sentence() : undefined,
+        referralSource: isRepeatedCustomer
+          ? faker.person.fullName()
+          : undefined,
+        followUpDate: faker.datatype.boolean(0.2)
+          ? faker.date.future()
+          : undefined,
+      });
     }
-  }
+  });
 
-  console.log(
-    `✅ Created ${bookings.length} synchronized bookings spanning 12 months`
-  );
   return bookings;
-}
+};
 
-// Generate sample blog posts
-async function createSamplePosts(users: UserInterface[]) {
-  console.log("🔄 Creating sample blog posts...");
-
-  const postRepository = new PostRepository();
-  const admins = users.filter((user) => user.role === "admin");
-  const tutors = users.filter((user) => user.role === "tutor");
-  const authors = [...admins, ...tutors.slice(0, 5)]; // Mix of admins and some tutors
-
-  const categories: PostCategory[] = [
-    "Education Tips",
-    "Success Stories",
-    "Parenting Tips",
-    "Child Development",
-    "Technology",
-    "Early Learning",
-    "STEM Education",
-    "General",
-  ];
-
-  const samplePosts = [
-    {
-      title: "10 Effective Study Techniques for Nigerian Students",
-      excerpt:
-        "Discover proven study methods that work specifically for the Nigerian education system and cultural context.",
-      content:
-        "In Nigeria's competitive academic environment, students need effective study strategies to excel. This comprehensive guide explores ten research-backed techniques that have proven successful for Nigerian students across different educational levels...",
-      category: "Education Tips" as PostCategory,
-      tags: [
-        "study tips",
-        "education",
-        "students",
-        "Nigeria",
-        "academic success",
-      ],
-    },
-    {
-      title: "How PARENTALPAL Helped Kemi Achieve Excellence in Mathematics",
-      excerpt:
-        "A success story of how personalized tutoring transformed a struggling student into a mathematics champion.",
-      content:
-        "Meet Kemi, a 14-year-old JSS3 student who was struggling with mathematics. Through PARENTALPAL's personalized tutoring program, she not only improved her grades but also developed a genuine love for numbers...",
-      category: "Success Stories" as PostCategory,
-      tags: ["success story", "mathematics", "tutoring", "student achievement"],
-    },
-    {
-      title: "Balancing Work and Parenting in Modern Lagos",
-      excerpt:
-        "Practical strategies for Lagos parents juggling demanding careers and quality family time.",
-      content:
-        "Lagos is one of the busiest cities in Africa, and for working parents, finding the right balance between career advancement and quality parenting can be challenging. Here are proven strategies...",
-      category: "Parenting Tips" as PostCategory,
-      tags: ["parenting", "work-life balance", "Lagos", "career", "family"],
-    },
-    {
-      title: "Understanding Your Child's Learning Style",
-      excerpt:
-        "How to identify and nurture your child's unique learning preferences for better academic outcomes.",
-      content:
-        "Every child learns differently. Some are visual learners who need to see information, others are auditory learners who learn through listening, and kinesthetic learners who need hands-on activities...",
-      category: "Child Development" as PostCategory,
-      tags: ["learning styles", "child development", "education", "parenting"],
-    },
-    {
-      title: "Digital Learning Tools Every Nigerian Student Should Know",
-      excerpt:
-        "Essential educational apps and platforms that can enhance learning for students across Nigeria.",
-      content:
-        "Technology has revolutionized education globally, and Nigerian students can benefit greatly from digital learning tools. This article explores the most effective educational technologies...",
-      category: "Technology" as PostCategory,
-      tags: ["technology", "digital learning", "education apps", "students"],
-    },
-  ];
-
+const generatePosts = (users: UserInterface[]): PostInterface[] => {
   const posts: PostInterface[] = [];
-  const now = new Date();
-  const oneYearAgo = new Date(
-    now.getFullYear() - 1,
-    now.getMonth(),
-    now.getDate()
-  );
+  const tutors = users.filter((u) => u.role === "tutor");
+  const admins = users.filter((u) => u.role === "admin");
+  const authors = [...tutors, ...admins];
 
-  for (let i = 0; i < 25; i++) {
-    // Create 25 blog posts
-    const basePost = getRandomElement(samplePosts);
-    const author = getRandomElement(authors);
-    const publishDate = getRandomDate(oneYearAgo, now);
+  // Generate 25-35 posts
+  const numPosts = faker.number.int({ min: 25, max: 35 });
 
-    const post: Omit<PostInterface, "_id" | "createdAt" | "updatedAt"> = {
-      title: `${basePost.title} ${
-        i > 4 ? `- Part ${Math.floor(i / 5) + 1}` : ""
-      }`,
-      slug: "", // Will be generated by PostUtils
-      excerpt: basePost.excerpt,
-      content:
-        basePost.content +
-        `\n\nThis is an extended article providing more detailed insights and practical examples for Nigerian families and students.`,
+  for (let i = 0; i < numPosts; i++) {
+    const author = faker.helpers.arrayElement(authors);
+    if (!author._id) continue;
 
+    const createdDate = generateDateInRange(1, 8);
+    const isPublished = faker.datatype.boolean(0.85);
+    const title = faker.lorem.sentence({ min: 4, max: 8 });
+    const slug = title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const content = faker.lorem.paragraphs(
+      faker.number.int({ min: 8, max: 15 })
+    );
+
+    posts.push({
+      _id: new ObjectId(),
+      title,
+      slug,
+      excerpt: faker.lorem.paragraph({ min: 2, max: 4 }),
+      content,
       authorId: author._id,
-      authorName: author.userData.user.name!,
+      authorName: author.userData.user.name || "Anonymous",
       authorImage: author.userData.user.image || undefined,
       authorBio:
-        author.role === "tutor"
-          ? author.tutorProfile?.bio
-          : "Educational content creator and child development expert",
-
-      status: getRandomElement([
-        "draft",
-        "published",
-        "published",
-        "published",
-      ]), // More published than drafts
-      publishedAt: Math.random() > 0.2 ? publishDate : undefined, // 80% published
-
-      category: getRandomElement(categories),
-      tags: [
-        ...basePost.tags,
-        getRandomElement(["Nigeria", "Lagos", "education", "children"]),
-      ],
-      keywords: basePost.tags,
-
-      featuredImage: `https://picsum.photos/800/400?random=${i}`,
-
-      views: Math.floor(Math.random() * 1000) + 50,
-      likes: Math.floor(Math.random() * 100) + 5,
-      shares: Math.floor(Math.random() * 50) + 1,
-      comments: [],
-
-      readTime: Math.floor(Math.random() * 8) + 3, // 3-10 minutes
-      displayOrder: i,
-      isFeatured: Math.random() > 0.8, // 20% featured
-      isPopular: Math.random() > 0.7, // 30% popular
-
-      relatedServices: getRandomElements(
+        author.role === "tutor" && author.tutorProfile
+          ? author.tutorProfile.bio
+          : faker.lorem.paragraph(),
+      status: isPublished
+        ? "published"
+        : faker.helpers.arrayElement(["draft", "archived"]),
+      publishedAt: isPublished
+        ? faker.date.between({ from: createdDate, to: new Date() })
+        : undefined,
+      scheduledFor:
+        !isPublished && faker.datatype.boolean(0.3)
+          ? faker.date.future()
+          : undefined,
+      category: faker.helpers.arrayElement([
+        "Education Tips",
+        "Success Stories",
+        "Parenting Tips",
+        "Child Development",
+        "Technology",
+        "Early Learning",
+        "STEM Education",
+        "General",
+      ] as PostCategory[]),
+      tags: faker.helpers.arrayElements(
+        [
+          "education",
+          "parenting",
+          "children",
+          "learning",
+          "development",
+          "tutoring",
+          "childcare",
+          "activities",
+          "tips",
+          "success",
+          "STEM",
+          "creativity",
+          "behavior",
+          "nutrition",
+          "safety",
+        ],
+        { min: 2, max: 6 }
+      ),
+      keywords: faker.helpers.arrayElements(
+        [
+          "child education",
+          "parenting tips",
+          "learning strategies",
+          "child development",
+          "academic success",
+          "behavioral guidance",
+        ],
+        { min: 1, max: 4 }
+      ),
+      metaTitle: title.slice(0, 60),
+      metaDescription: faker.lorem.sentence({ min: 8, max: 12 }).slice(0, 160),
+      featuredImage: faker.image.url({ width: 800, height: 400 }),
+      images: Array.from({ length: faker.number.int({ min: 0, max: 3 }) }, () =>
+        faker.image.url()
+      ),
+      videos: faker.datatype.boolean(0.2) ? [faker.internet.url()] : undefined,
+      views: faker.number.int({ min: 50, max: 2000 }),
+      likes: faker.number.int({ min: 5, max: 150 }),
+      shares: faker.number.int({ min: 0, max: 50 }),
+      comments: Array.from(
+        { length: faker.number.int({ min: 0, max: 8 }) },
+        () => ({
+          _id: new ObjectId(),
+          authorName: faker.person.fullName(),
+          authorEmail: faker.internet.email(),
+          content: faker.lorem.paragraph(),
+          isApproved: faker.datatype.boolean(0.8),
+          createdAt: faker.date.between({ from: createdDate, to: new Date() }),
+        })
+      ),
+      readTime: Math.max(1, Math.ceil(content.split(/\s+/).length / 200)),
+      displayOrder: faker.number.int({ min: 0, max: 100 }),
+      isFeatured: faker.datatype.boolean(0.15),
+      isPopular: faker.datatype.boolean(0.1),
+      relatedServices: faker.helpers.arrayElements(
         [
           "childcare",
           "tutoring",
@@ -1112,73 +975,110 @@ async function createSamplePosts(users: UserInterface[]) {
           "space-rental",
           "kiddies-enrichment",
         ],
-        Math.floor(Math.random() * 3) + 1
+        { min: 0, max: 3 }
       ),
-      targetAgeGroup: {
-        min: Math.floor(Math.random() * 8) + 3, // 3-10
-        max: Math.floor(Math.random() * 8) + 11, // 11-18
-      },
-    };
-
-    const createdPost = await postRepository.create(post);
-    posts.push(createdPost);
+      targetAgeGroup: faker.datatype.boolean(0.6)
+        ? {
+            min: faker.number.int({ min: 1, max: 8 }),
+            max: faker.number.int({ min: 10, max: 18 }),
+          }
+        : undefined,
+      createdAt: createdDate,
+      updatedAt: faker.date.between({ from: createdDate, to: new Date() }),
+    });
   }
 
-  console.log(`✅ Created ${posts.length} sample blog posts`);
   return posts;
-}
+};
 
-// Main initialization function
-async function main() {
+const main = async () => {
   try {
-    console.log(
-      "🚀 Starting PARENTALPAL comprehensive database initialization...\n"
-    );
+    const client = await clientPromise;
+    const db = client.db();
 
-    await initializeDatabase();
+    console.log("🚀 Connected to database.");
 
-    const users = await createSampleUsers();
-    const services = await createSampleServices();
-    const bookings = await createSampleBookings(users, services);
-    const posts = await createSamplePosts(users);
+    // Clear existing collections
+    console.log("🧹 Clearing existing data...");
+    await Promise.all([
+      db.collection(usersCollectionName).deleteMany({}),
+      db.collection(bookingsCollectionName).deleteMany({}),
+      db.collection(servicesCollectionName).deleteMany({}),
+      db.collection(postsCollectionName).deleteMany({}),
+    ]);
+    console.log("✅ Collections cleared.");
 
-    console.log("\n🎉 Database initialization completed successfully!");
-    console.log("✅ Collections created with validation and indexes");
-    console.log("✅ Comprehensive sample data inserted:");
-    console.log(`   - ${users.length} Users (1 admin, 69 parents, 30 tutors)`);
+    // Generate sample data
+    console.log("📊 Generating sample data...");
+    const users = generateUsers();
+    const services = generateServices();
+    const bookings = generateBookings(users, services);
+    const posts = generatePosts(users);
+
+    console.log(`Generated:
+    - ${users.length} users (${
+      users.filter((u) => u.role === "parent").length
+    } parents, ${users.filter((u) => u.role === "tutor").length} tutors, ${
+      users.filter((u) => u.role === "admin").length
+    } admins)
+    - ${services.length} services
+    - ${bookings.length} bookings  
+    - ${posts.length} posts`);
+
+    // Insert data into collections
+    console.log("💾 Inserting data into database...");
+
+    if (users.length > 0) {
+      await db.collection<UserInterface>(usersCollectionName).insertMany(users);
+      console.log(`✅ ${users.length} users inserted.`);
+    }
+
+    if (services.length > 0) {
+      await db
+        .collection<ServiceInterface>(servicesCollectionName)
+        .insertMany(services);
+      console.log(`✅ ${services.length} services inserted.`);
+    }
+
+    if (bookings.length > 0) {
+      await db
+        .collection<BookingInterface>(bookingsCollectionName)
+        .insertMany(bookings);
+      console.log(`✅ ${bookings.length} bookings inserted.`);
+    }
+
+    if (posts.length > 0) {
+      await db.collection<PostInterface>(postsCollectionName).insertMany(posts);
+      console.log(`✅ ${posts.length} posts inserted.`);
+    }
+
+    console.log("🎉 Database seeding completed successfully!");
+
+    // Display summary statistics
+    console.log("\n📈 Summary Statistics:");
+    console.log(`- Total Users: ${users.length}`);
+    console.log(`- Total Bookings: ${bookings.length}`);
     console.log(
-      `   - ${services.length} Services (all 6 service types: tutoring, childcare, homeschooling, holiday-camps, space-rental, kiddies-enrichment)`
+      `- Total Revenue: ₦${bookings
+        .reduce((sum, booking) => sum + booking.pricing.totalAmount, 0)
+        .toLocaleString()}`
     );
     console.log(
-      `   - ${bookings.length} Bookings (spanning 12 months with realistic data)`
+      `- Published Posts: ${
+        posts.filter((p) => p.status === "published").length
+      }`
     );
     console.log(
-      `   - ${posts.length} Blog Posts (various categories and statuses)`
+      `- Active Services: ${
+        services.filter((s) => s.status === "active").length
+      }`
     );
-    console.log(
-      "\n📊 Data spans 12 months (past 12 months only, no future data)"
-    );
-    console.log(
-      "🔗 All data is synchronized: parents have children, bookings reference real users and services"
-    );
-    console.log("\n🎊 Your PARENTALPAL development database is ready!");
   } catch (error) {
-    console.error("\n❌ Initialization failed:", error);
+    console.error("❌ An error occurred during database seeding:", error);
     process.exit(1);
   } finally {
     process.exit(0);
   }
-}
-
-// Run if called directly
-if (require.main === module) {
-  main().catch(console.error);
-}
-
-export {
-  initializeDatabase,
-  createSampleUsers,
-  createSampleServices,
-  createSampleBookings,
-  createSamplePosts,
 };
+
+main();

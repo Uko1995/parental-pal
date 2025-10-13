@@ -145,9 +145,9 @@ export interface BookingInterface {
   referralSource?: string;
 
   // Follow-up and relationship management
-  followUpRequired: boolean;
+  followUpRequired?: boolean;
   followUpDate?: Date;
-  isRepeatedCustomer: boolean;
+  isRepeatedCustomer?: boolean;
   previousBookingIds?: ObjectId[];
 }
 

@@ -40,7 +40,7 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     activeUsers,
     monthlyBookings,
     monthlyUsers,
-    recentBookingsData
+    recentBookingsData,
   ] = await Promise.all([
     usersCollection.countDocuments({}),
     bookingsCollection.countDocuments({}),
@@ -48,23 +48,32 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     usersCollection.countDocuments({ isActive: { $ne: false } }),
     bookingsCollection.find({ createdAt: { $gte: startOfMonth } }).toArray(),
     usersCollection.countDocuments({ createdAt: { $gte: startOfMonth } }),
-    bookingsCollection.find({}).sort({ createdAt: -1 }).limit(5).toArray()
+    bookingsCollection.find({}).sort({ createdAt: -1 }).limit(5).toArray(),
   ]);
 
-  // Calculate total revenue
+  // Calculate total revenue using our actual schema
   interface BookingDoc {
-    totalCost?: number;
+    pricing?: {
+      totalAmount?: number;
+    };
     serviceType?: string;
-    clientName?: string;
+    parentName?: string;
     createdAt?: Date;
+    status?: string;
     _id: string | object;
   }
 
   const typedBookings = allBookings as BookingDoc[];
-  const totalRevenue = typedBookings.reduce((sum, booking) => sum + (booking.totalCost || 0), 0);
-  
+  const totalRevenue = typedBookings.reduce(
+    (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
+    0
+  );
+
   // Calculate monthly revenue
-  const monthlyRevenue = (monthlyBookings as BookingDoc[]).reduce((sum, booking) => sum + (booking.totalCost || 0), 0);
+  const monthlyRevenue = (monthlyBookings as BookingDoc[]).reduce(
+    (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
+    0
+  );
 
   // Service breakdown
   const serviceBreakdown: Record<string, number> = {};
@@ -74,13 +83,15 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
   });
 
   // Recent bookings
-  const recentBookings = (recentBookingsData as BookingDoc[]).map((booking) => ({
-    id: booking._id.toString(),
-    clientName: booking.clientName || "Unknown",
-    service: booking.serviceType || "Unknown",
-    amount: booking.totalCost || 0,
-    date: booking.createdAt || new Date(),
-  }));
+  const recentBookings = (recentBookingsData as BookingDoc[]).map(
+    (booking) => ({
+      id: booking._id.toString(),
+      clientName: booking.parentName || "Unknown",
+      service: booking.serviceType || "Unknown",
+      amount: booking.pricing?.totalAmount || 0,
+      date: booking.createdAt || new Date(),
+    })
+  );
 
   return {
     totalUsers,
@@ -115,10 +126,10 @@ export const getAnalyticsData = unstable_cache(
 export const getRevenueTrends = unstable_cache(
   async (period: "week" | "month" | "year" = "month") => {
     const collection = await getCollection("bookings");
-    
+
     let dateFilter: Date;
     const now = new Date();
-    
+
     switch (period) {
       case "week":
         dateFilter = new Date(now.setDate(now.getDate() - 7));
@@ -129,18 +140,23 @@ export const getRevenueTrends = unstable_cache(
       default:
         dateFilter = new Date(now.setMonth(now.getMonth() - 1));
     }
-    
-    const bookings = await collection.find({
-      createdAt: { $gte: dateFilter }
-    }).toArray();
-    
+
+    const bookings = await collection
+      .find({
+        createdAt: { $gte: dateFilter },
+      })
+      .toArray();
+
     interface TrendBooking {
-      totalCost?: number;
+      pricing?: {
+        totalAmount?: number;
+      };
       createdAt?: Date;
     }
-    
-    return (bookings as TrendBooking[]).reduce((sum, booking) => 
-      sum + (booking.totalCost || 0), 0
+
+    return (bookings as TrendBooking[]).reduce(
+      (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
+      0
     );
   },
   ["revenue-trends"],
@@ -159,7 +175,8 @@ export const getUserEngagementMetrics = unstable_cache(
     return {
       totalUsers: data.totalUsers,
       activeUsers: data.activeUsers,
-      engagementRate: data.totalUsers > 0 ? (data.activeUsers / data.totalUsers) * 100 : 0,
+      engagementRate:
+        data.totalUsers > 0 ? (data.activeUsers / data.totalUsers) * 100 : 0,
       newUsersThisMonth: data.monthlyStats.newUsers,
     };
   },
@@ -167,5 +184,131 @@ export const getUserEngagementMetrics = unstable_cache(
   {
     revalidate: CACHE_TIMES.USER_DATA,
     tags: [CACHE_TAGS.USERS, CACHE_TAGS.ANALYTICS],
+  }
+);
+
+/**
+ * Get monthly revenue data for charts
+ */
+export const getMonthlyRevenueData = unstable_cache(
+  async () => {
+    const bookingsCollection = await getCollection("bookings");
+    const currentYear = new Date().getFullYear();
+
+    interface MonthlyData {
+      _id: { month: number };
+      revenue: number;
+      bookings: number;
+    }
+
+    const monthlyData = (await bookingsCollection
+      .aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31, 23, 59, 59),
+            },
+            status: { $in: ["confirmed", "completed", "in-progress"] },
+          },
+        },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" } },
+            revenue: { $sum: "$pricing.totalAmount" },
+            bookings: { $sum: 1 },
+          },
+        },
+        { $sort: { "_id.month": 1 } },
+      ])
+      .toArray()) as MonthlyData[];
+
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    return monthNames.map((name, index) => {
+      const monthData = monthlyData.find(
+        (item) => item._id.month === index + 1
+      );
+      return {
+        month: name,
+        revenue: monthData?.revenue || 0,
+        bookings: monthData?.bookings || 0,
+      };
+    });
+  },
+  ["monthly-revenue-data"],
+  {
+    revalidate: CACHE_TIMES.DASHBOARD_STATS,
+    tags: [CACHE_TAGS.ANALYTICS, CACHE_TAGS.BOOKINGS],
+  }
+);
+
+/**
+ * Get service performance data
+ */
+export const getServicePerformanceData = unstable_cache(
+  async () => {
+    const bookingsCollection = await getCollection("bookings");
+
+    interface ServiceData {
+      _id: string;
+      revenue: number;
+      bookings: number;
+      averageValue: number;
+    }
+
+    const serviceData = (await bookingsCollection
+      .aggregate([
+        {
+          $match: {
+            status: { $in: ["confirmed", "completed", "in-progress"] },
+          },
+        },
+        {
+          $group: {
+            _id: "$serviceType",
+            revenue: { $sum: "$pricing.totalAmount" },
+            bookings: { $sum: 1 },
+            averageValue: { $avg: "$pricing.totalAmount" },
+          },
+        },
+        { $sort: { revenue: -1 } },
+      ])
+      .toArray()) as ServiceData[];
+
+    const serviceNames: { [key: string]: string } = {
+      tutoring: "Academic Tutoring",
+      childcare: "Daily Childcare",
+      homeschooling: "Homeschooling Support",
+      "holiday-camps": "Holiday Camp",
+      "space-rental": "Event Space Rental",
+      "kiddies-enrichment": "Kids Enrichment",
+    };
+
+    return serviceData.map((item) => ({
+      service: serviceNames[item._id] || item._id,
+      serviceType: item._id,
+      revenue: item.revenue || 0,
+      bookings: item.bookings || 0,
+      averageValue: item.averageValue || 0,
+    }));
+  },
+  ["service-performance-data"],
+  {
+    revalidate: CACHE_TIMES.DASHBOARD_STATS,
+    tags: [CACHE_TAGS.ANALYTICS, CACHE_TAGS.BOOKINGS],
   }
 );

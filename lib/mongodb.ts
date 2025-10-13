@@ -1,4 +1,10 @@
-import { MongoClient, ServerApiVersion, Db, Collection, Document } from "mongodb";
+import {
+  MongoClient,
+  ServerApiVersion,
+  Db,
+  Collection,
+  Document,
+} from "mongodb";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
@@ -39,7 +45,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Database name extracted from URI or default
-const dbName = 'parental-pal';
+const dbName = "parental-pal";
 
 // Helper function to get database
 export async function getDb(): Promise<Db> {
@@ -48,7 +54,9 @@ export async function getDb(): Promise<Db> {
 }
 
 // Helper function to get collection
-export async function getCollection<T extends Document = Document>(collectionName: string): Promise<Collection<T>> {
+export async function getCollection<T extends Document = Document>(
+  collectionName: string
+): Promise<Collection<T>> {
   const db = await getDb();
   return db.collection<T>(collectionName);
 }

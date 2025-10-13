@@ -17,6 +17,8 @@ import {
   AcademicCapIcon,
   BuildingOfficeIcon,
 } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 interface NavigationItem {
   name: string;
@@ -50,6 +52,12 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const Name =
+    session?.user?.name
+      ?.split(" ")
+      ?.map((name) => name.charAt(0).toUpperCase() + name.slice(1))
+      .join(" ") || "User Name";
 
   const isActivePath = (href: string) => {
     if (href === "/dashboard") {
@@ -208,23 +216,40 @@ export default function DashboardLayout({
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
-              <h1 className="ml-3 text-2xl font-semibold text-gray-900 lg:ml-0">
-                Dashboard
+              <h1 className="ml-3 text-xl font-semibold text-gray-900 lg:ml-0">
+                Welcome {Name.split(" ")[0]}!
               </h1>
             </div>
 
             {/* Quick Actions */}
             <div className="flex items-center space-x-4">
-              <button className="btn btn-sm btn-outline btn-primary hidden sm:inline-flex">
-                Quick Action
-              </button>
               <div className="dropdown dropdown-end">
                 <div
                   tabIndex={0}
                   role="button"
-                  className="w-8 h-8 bg-gradient-to-r from-[#A25F97] to-[#E8931A] rounded-full flex items-center justify-center cursor-pointer"
+                  className="flex items-center justify-center gap-3 cursor-pointer"
                 >
-                  <span className="text-white font-medium text-sm">AD</span>
+                  {session?.user ? (
+                    <Image
+                      src={session?.user?.image || ""}
+                      alt={session?.user?.name || "User Avatar"}
+                      width={30}
+                      height={30}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-brand-primary rounded-full">
+                      U
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">
+                      {Name}
+                    </h4>
+                    <p className="text-xs font-medium text-gray-500">
+                      {session?.user?.email || "user@example.com"}
+                    </p>
+                  </div>
                 </div>
                 <ul
                   tabIndex={0}

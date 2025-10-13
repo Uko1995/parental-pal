@@ -44,6 +44,13 @@ export class UserRepository {
         }
       }
 
+      // Drop old indexes if they exist
+      try {
+        await collection.dropIndex("idx_email_unique");
+      } catch {
+        // Index doesn't exist
+      }
+
       // Create compound indexes
       try {
         await collection.createIndex(
@@ -51,7 +58,7 @@ export class UserRepository {
           { name: "idx_role_active" }
         );
         await collection.createIndex(
-          { email: 1 },
+          { "userData.user.email": 1 },
           { unique: true, name: "idx_email_unique" }
         );
       } catch {
@@ -78,7 +85,7 @@ export class UserRepository {
 
     // Check if email already exists
     const existingUser = await collection.findOne({
-      email: userData?.userData?.user?.email,
+      "userData.user.email": userData?.userData?.user?.email,
     });
     if (existingUser) {
       throw new Error("Email already exists");
@@ -107,7 +114,9 @@ export class UserRepository {
   // Find user by email
   static async findByEmail(email: string): Promise<UserInterface | null> {
     const collection = await getCollection(this.collectionName);
-    return (await collection.findOne({ email })) as UserInterface | null;
+    return (await collection.findOne({
+      "userData.user.email": email,
+    })) as UserInterface | null;
   }
 
   // Find user by Google ID
