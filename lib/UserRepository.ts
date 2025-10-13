@@ -72,12 +72,14 @@ export class UserRepository {
     const collection = await getCollection(this.collectionName);
 
     // Validate required fields
-    if (!userData.name || !userData.email) {
+    if (!userData?.userData?.user?.name || !userData?.userData?.user?.email) {
       throw new Error("Name and email are required");
     }
 
     // Check if email already exists
-    const existingUser = await collection.findOne({ email: userData.email });
+    const existingUser = await collection.findOne({
+      email: userData?.userData?.user?.email,
+    });
     if (existingUser) {
       throw new Error("Email already exists");
     }
@@ -325,8 +327,8 @@ export class UserRepository {
       schoolName?: string;
       subjects?: string[];
       parentId: ObjectId;
-      parentName: string;
-      parentEmail: string;
+      parentName: string | null;
+      parentEmail: string | null;
       services: Array<{
         serviceType: string;
         status: string;
@@ -380,8 +382,8 @@ export class UserRepository {
       schoolName?: string;
       subjects?: string[];
       parentId: ObjectId;
-      parentName: string;
-      parentEmail: string;
+      parentName: string | null;
+      parentEmail: string | null;
       services: Array<{
         serviceType: string;
         status: string;
@@ -405,7 +407,7 @@ export class UserRepository {
           const parentBookings = bookings.filter(
             (booking: BookingData) =>
               booking.userId?.toString() === parent._id?.toString() ||
-              booking.parentEmail === parent.email
+              booking.parentEmail === parent?.userData?.user?.email
           );
 
           // Get services for this child
@@ -448,8 +450,8 @@ export class UserRepository {
             schoolName: child.schoolName,
             subjects: child.subjects,
             parentId: parent._id!,
-            parentName: parent.name,
-            parentEmail: parent.email,
+            parentName: parent?.userData?.user?.name,
+            parentEmail: parent?.userData?.user?.email,
             services: childServices,
           });
         });
@@ -486,8 +488,8 @@ export class UserRepository {
       schoolName?: string;
       subjects?: string[];
       parentId: ObjectId;
-      parentName: string;
-      parentEmail: string;
+      parentName: string | null;
+      parentEmail: string | null;
       services: Array<{
         serviceType: string;
         status: string;

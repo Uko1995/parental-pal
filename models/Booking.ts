@@ -13,8 +13,8 @@ export interface BookingInterface {
     | "kiddies-enrichment";
 
   // Common booking fields
-  parentName: string;
-  parentEmail: string;
+  parentName: string | null;
+  parentEmail: string | null;
   parentPhone: string;
   childrenCount: number;
   children: Array<{
@@ -49,7 +49,7 @@ export interface BookingInterface {
     weeklyRate?: number;
 
     // Event/Space rental specific
-    eventType?: "birthday" | "ceremony" | "meeting" | "other";
+    eventType?: string;
     eventDate?: string;
     eventTime?: string;
     venueType?: "indoor" | "outdoor" | "both";
@@ -101,7 +101,7 @@ export interface BookingInterface {
   // Payment information
   payment: {
     method?: "card" | "bank_transfer" | "cash" | "installments";
-    status: "pending" | "paid" | "overdue" | "refunded";
+    status: "pending" | "paid" | "refunded";
     installments?: Array<{
       amount: number;
       dueDate: string;
@@ -218,7 +218,7 @@ export const BookingSchema = {
             required: ["name", "age"],
             properties: {
               name: { bsonType: "string", minLength: 2, maxLength: 50 },
-              age: { bsonType: "number", minimum: 1, maximum: 18 },
+              age: { bsonType: "number", minimum: 1, maximum: 10 },
               class: { bsonType: "string", maxLength: 20 },
               schoolName: { bsonType: "string", maxLength: 100 },
             },
@@ -386,7 +386,7 @@ export const BookingSchema = {
             },
             status: {
               bsonType: "string",
-              enum: ["pending", "partial", "paid", "overdue", "refunded"],
+              enum: ["pending", "paid", "refunded"],
             },
             installments: {
               bsonType: "array",

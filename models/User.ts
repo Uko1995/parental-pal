@@ -3,13 +3,18 @@ import { ObjectId } from "mongodb";
 // TypeScript interface for User document
 export interface UserInterface {
   _id?: ObjectId;
-  name: string;
-  email: string;
+  userData: {
+    expiresAt: string;
+    user: {
+      name: string | null;
+      email: string | null;
+      image: string | null;
+    };
+  };
   phone?: string;
   address?: string;
   image?: string;
   googleId?: string; // For Google OAuth
-  emailVerified?: Date;
   role: "admin" | "parent" | "tutor";
   isActive: boolean;
   lastLoginAt?: Date;
@@ -84,8 +89,7 @@ export const UserSchema = {
     $jsonSchema: {
       bsonType: "object",
       required: [
-        "name",
-        "email",
+        "userData",
         "role",
         "isActive",
         "membershipType",
@@ -93,16 +97,37 @@ export const UserSchema = {
         "updatedAt",
       ],
       properties: {
-        name: {
-          bsonType: "string",
-          minLength: 1,
-          maxLength: 100,
-          description: "User's full name",
-        },
-        email: {
-          bsonType: "string",
-          pattern: "^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$",
-          description: "User's email address",
+        userData: {
+          bsonType: "object",
+          required: ["expiresAt", "user"],
+          properties: {
+            expiresAt: {
+              bsonType: "string",
+              description: "Expiration date of user session",
+            },
+            user: {
+              bsonType: "object",
+              required: ["name", "email", "image"],
+              properties: {
+                name: {
+                  bsonType: "string",
+                  minLength: 1,
+                  maxLength: 100,
+                  description: "User's full name",
+                },
+                email: {
+                  bsonType: "string",
+                  pattern: "^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$",
+                  description: "User's email address",
+                },
+                image: {
+                  bsonType: "string",
+                  pattern: "^https?://.*",
+                  description: "Profile image URL",
+                },
+              },
+            },
+          },
         },
         phone: {
           bsonType: ["string", "null"],
@@ -124,10 +149,7 @@ export const UserSchema = {
           bsonType: ["string", "null"],
           description: "Google OAuth ID",
         },
-        emailVerified: {
-          bsonType: ["date", "null"],
-          description: "Email verification timestamp",
-        },
+
         role: {
           bsonType: "string",
           enum: ["admin", "parent", "tutor"],

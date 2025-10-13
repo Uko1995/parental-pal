@@ -98,8 +98,19 @@ export class BookingRepository {
       updatedAt: now,
     };
 
-    const result = await collection.insertOne(booking);
-    return { ...booking, _id: result.insertedId };
+    try {
+      const result = await collection.insertOne(booking);
+      return { ...booking, _id: result.insertedId };
+    } catch (error: unknown) {
+      if (error instanceof Error && "errInfo" in (error as object)) {
+        const mongoError = error as Error & { errInfo: unknown };
+        console.error(
+          "❌ Detailed validation error:",
+          JSON.stringify(mongoError.errInfo, null, 2)
+        );
+      }
+      throw error;
+    }
   }
 
   // Find booking by ID
