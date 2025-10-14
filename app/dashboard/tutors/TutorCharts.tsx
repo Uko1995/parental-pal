@@ -7,6 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -47,9 +48,7 @@ export default function TutorCharts({
       <div className="col-span-1 lg:col-span-2">
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <h2 className="card-title mb-4">
-              Tutor Registration Trends (2024)
-            </h2>
+            <h2 className="card-title mb-4">Tutor Registration Trends</h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={registrationData}>
@@ -57,10 +56,12 @@ export default function TutorCharts({
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip />
+                  <Legend />
                   <Bar
                     dataKey="registrations"
                     fill="#90AC19"
                     radius={[4, 4, 0, 0]}
+                    name="Tutor Registrations"
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -97,6 +98,7 @@ export default function TutorCharts({
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>

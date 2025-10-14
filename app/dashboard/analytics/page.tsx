@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   ChartBarIcon,
-  CurrencyDollarIcon,
   UsersIcon,
   CalendarDaysIcon,
   ArrowTrendingUpIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import {
   BarChart,
@@ -15,6 +15,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -119,15 +120,71 @@ export default function AnalyticsPage() {
     "#90AC19",
     "#E8931A",
     "#A25F97",
-    "#FFEACF",
+    "#e83884",
     "#8B5CF6",
     "#06B6D4",
   ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading loading-spinner loading-lg text-[#90AC19]"></div>
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="skeleton h-8 w-32"></div>
+            <div className="skeleton h-4 w-64 mt-1"></div>
+          </div>
+          <div className="skeleton h-10 w-32"></div>
+        </div>
+
+        {/* Overview Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="skeleton h-4 w-24"></div>
+                    <div className="skeleton h-8 w-16"></div>
+                    <div className="skeleton h-3 w-20"></div>
+                  </div>
+                  <div className="skeleton w-12 h-12 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-48 mb-4"></div>
+                <div className="skeleton h-80 w-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tables Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 2 }).map((_, tableIndex) => (
+            <div key={tableIndex} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-40 mb-4"></div>
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="skeleton h-4 w-32"></div>
+                      <div className="skeleton h-4 w-16"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -154,15 +211,15 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatCurrency(analyticsData?.totalRevenue || 0)}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <CurrencyDollarIcon className="w-6 h-6 text-green-600" />
+              <div className="p-3  rounded-full">
+                <BanknotesIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </div>
@@ -177,7 +234,7 @@ export default function AnalyticsPage() {
                   {analyticsData?.totalBookings || 0}
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <CalendarDaysIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
@@ -193,7 +250,7 @@ export default function AnalyticsPage() {
                   {userEngagement?.totalUsers || 0}
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <UsersIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
@@ -209,7 +266,7 @@ export default function AnalyticsPage() {
                   {userEngagement?.engagementRate.toFixed(1)}%
                 </p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <ArrowTrendingUpIcon className="w-6 h-6 text-orange-600" />
               </div>
             </div>
@@ -239,7 +296,13 @@ export default function AnalyticsPage() {
                     ]}
                     labelStyle={{ color: "#000" }}
                   />
-                  <Bar dataKey="revenue" fill="#90AC19" radius={[4, 4, 0, 0]} />
+                  <Legend />
+                  <Bar
+                    dataKey="revenue"
+                    fill="#90AC19"
+                    radius={[4, 4, 0, 0]}
+                    name="Monthly Revenue"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -278,6 +341,7 @@ export default function AnalyticsPage() {
                       name as string,
                     ]}
                   />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>

@@ -16,6 +16,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -244,6 +245,7 @@ const RevenueChart = memo(
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
+                <Legend />
                 <Bar
                   dataKey="revenue"
                   fill="#90AC19"
@@ -382,8 +384,56 @@ export default function DashboardContent() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="loading loading-spinner loading-lg text-[#90AC19]"></div>
+        {/* Header Skeleton */}
+        <div className="skeleton h-8 w-64"></div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="skeleton h-4 w-20"></div>
+                    <div className="skeleton h-8 w-16"></div>
+                    <div className="skeleton h-3 w-24"></div>
+                  </div>
+                  <div className="skeleton w-12 h-12 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts and Recent Activity Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-32 mb-4"></div>
+                <div className="skeleton h-80 w-full"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-40 mb-4"></div>
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="skeleton w-10 h-10 rounded-full"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="skeleton h-4 w-full"></div>
+                        <div className="skeleton h-3 w-3/4"></div>
+                      </div>
+                      <div className="skeleton h-6 w-16"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -407,10 +457,15 @@ export default function DashboardContent() {
       <div>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-lg">Here&apos;s what&apos;s happening today.</p>
+            <p className="text-base">
+              Here&apos;s what&apos;s happening today.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Memoized Stats Cards */}
+      <StatsCards stats={dashboardData.stats} />
 
       {/* Memoized Revenue Chart */}
       <RevenueChart
@@ -418,9 +473,6 @@ export default function DashboardContent() {
         selectedInterval={selectedInterval}
         onIntervalChange={handleIntervalChange}
       />
-
-      {/* Memoized Stats Cards */}
-      <StatsCards stats={dashboardData.stats} />
 
       {/* Memoized Recent Activity */}
       <RecentBookingsTable bookings={dashboardData.recentBookings} />

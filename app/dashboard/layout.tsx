@@ -80,9 +80,15 @@ export default function DashboardLayout({
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50">
         <div className="flex flex-col flex-grow bg-white shadow-xl border-r border-base-200">
           {/* Logo */}
-          <div className="flex items-center justify-center px-6 py-8 bg-gradient-to-r from-[#90AC19] to-[#E8931A]">
-            <Link href="/" className="text-white font-bold text-xl">
-              PARENTALPAL
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center justify-center h-16">
+              <Image
+                src="/parentalpalLOGO.png"
+                alt="Logo"
+                width={200}
+                height={40}
+                className="h-16 mt-5 w-auto object-contain"
+              />
             </Link>
           </div>
 

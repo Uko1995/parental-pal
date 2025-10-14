@@ -47,7 +47,7 @@ export default async function TutorsPage() {
                   {tutorsData?.tutorStats.totalTutors || 0}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
+              <div className="p-3 rounded-full">
                 <AcademicCapIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
@@ -63,7 +63,7 @@ export default async function TutorsPage() {
                   {tutorsData?.tutorStats.activeTutors || 0}
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <UserIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
@@ -79,7 +79,7 @@ export default async function TutorsPage() {
                   {tutorsData?.tutorStats.newThisMonth || 0}
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <ArrowTrendingUpIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
@@ -95,7 +95,7 @@ export default async function TutorsPage() {
                   {Math.floor((tutorsData?.tutorStats.activeTutors || 0) * 0.8)}
                 </p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-full">
+              <div className="p-3  rounded-full">
                 <UserIcon className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
