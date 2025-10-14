@@ -2,335 +2,476 @@
 
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import PaymentSchedule from "./PaymentSchedule";
+import OptionalChild from "./OptionalChild";
 
 export interface EventBookingFormRef {
   resetForm: () => void;
 }
 
-const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [carersQuantity, setCarersQuantity] = useState(1);
-  const [eventMode, setEventMode] = useState<string>("");
+interface ExtraService {
+  service: "dj" | "mc" | "event-planning" | "extra-carers";
+  quantity?: number;
+  rate?: number;
+}
 
-  const handleServiceChange = (service: string, isChecked: boolean) => {
+const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
+  const [eventType, setEventType] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
+  const [venueType, setVenueType] = useState<
+    "indoor" | "outdoor" | "both" | ""
+  >("");
+  const [expectedGuests, setExpectedGuests] = useState("");
+  const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
+  const [carersQuantity, setCarersQuantity] = useState(0);
+
+  const eventTypes = [
+    "Birthday Party",
+    "Wedding Reception",
+    "Corporate Event",
+    "Baby Shower",
+    "Graduation Party",
+    "Anniversary",
+    "Holiday Party",
+    "Community Event",
+    "Other",
+  ];
+
+  const baseRates = {
+    indoor: 250000,
+    outdoor: 250000,
+    both: 470000,
+  };
+
+  const serviceRates = {
+    dj: 150000,
+    mc: 60000,
+    "event-planning": 150000,
+    "extra-carers": 8000,
+  };
+
+  const handleServiceChange = (
+    serviceName: "dj" | "mc" | "event-planning" | "extra-carers",
+    isChecked: boolean
+  ) => {
     if (isChecked) {
-      setSelectedServices((prev) => [...prev, service]);
+      setExtraServices((prev) => [
+        ...prev,
+        {
+          service: serviceName,
+          quantity: serviceName === "extra-carers" ? 1 : 1,
+          rate: serviceRates[serviceName],
+        },
+      ]);
     } else {
-      setSelectedServices((prev) => prev.filter((s) => s !== service));
-      if (service === "carers") {
-        setCarersQuantity(1); // Reset carers quantity when unchecked
+      setExtraServices((prev) => prev.filter((s) => s.service !== serviceName));
+      if (serviceName === "extra-carers") {
+        setCarersQuantity(0);
       }
     }
   };
 
-  // Create the final services array including carers with quantity
-  const getServicesWithQuantity = () => {
-    const services = [...selectedServices];
-
-    // If carers is selected, replace it with carers object including quantity
-    if (selectedServices.includes("carers")) {
-      const servicesWithoutCarers = services.filter((s) => s !== "carers");
-      return [
-        ...servicesWithoutCarers,
-        {
-          service: "carers",
-          quantity: carersQuantity,
-        },
-      ];
-    }
-
-    return services;
-  };
-
   const updateCarersQuantity = (newQuantity: number) => {
     setCarersQuantity(newQuantity);
-  };
-
-  const handleEventModeChange = (mode: string) => {
-    setEventMode(mode);
+    setExtraServices((prev) =>
+      prev.map((service) =>
+        service.service === "extra-carers"
+          ? { ...service, quantity: newQuantity }
+          : service
+      )
+    );
   };
 
   const resetForm = () => {
-    setSelectedServices([]);
-    setCarersQuantity(1);
-    setEventMode("");
+    setEventType("");
+    setEventDate("");
+    setEventTime("");
+    setVenueType("");
+    setExpectedGuests("");
+    setExtraServices([]);
+    setCarersQuantity(0);
   };
 
   useImperativeHandle(ref, () => ({
     resetForm,
   }));
   return (
-    <div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-        <svg
-          className="w-5 h-5 mr-2 text-[#90AC19]"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-            clipRule="evenodd"
-          />
-        </svg>
-        General Information
-      </h3>
+    <div className="space-y-8">
+      {/* General Information Section */}
+      <div className="card bg-base-100 shadow-lg border border-primary/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl text-primary mb-6">
+            General Information
+          </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Full Name *
-          </label>
-          <input
-            type="text"
-            name="name"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Enter your full name"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address *
-          </label>
-          <input
-            type="email"
-            name="email"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Enter your email"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Enter your phone number"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Date of your Event *
-          </label>
-          <input
-            type="date"
-            name="eventDate"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Choose your event's date"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Event Mode *
-        </label>
-        <div className="flex items-center gap-6 border border-gray-300 rounded-lg p-4 bg-gray-50">
-          <label
-            htmlFor="indoor"
-            className="flex items-center cursor-pointer text-base font-medium text-gray-700 hover:text-[#90AC19] transition-colors duration-300"
-          >
-            <input
-              type="radio"
-              id="indoor"
-              name="eventMode"
-              value="indoor"
-              checked={eventMode === "indoor"}
-              onChange={(e) => handleEventModeChange(e.target.value)}
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="select-none">Indoor</span>
-          </label>
-          <label
-            htmlFor="outdoor"
-            className="flex items-center cursor-pointer text-base font-medium text-gray-700 hover:text-[#90AC19] transition-colors duration-300"
-          >
-            <input
-              type="radio"
-              id="outdoor"
-              name="eventMode"
-              value="outdoor"
-              checked={eventMode === "outdoor"}
-              onChange={(e) => handleEventModeChange(e.target.value)}
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="select-none">Outdoor</span>
-          </label>
-          <label
-            htmlFor="indoorAndOutdoor"
-            className="flex items-center cursor-pointer text-base font-medium text-gray-700 hover:text-[#90AC19] transition-colors duration-300"
-          >
-            <input
-              type="radio"
-              id="indoorAndOutdoor"
-              name="eventMode"
-              value="indoorAndOutdoor"
-              checked={eventMode === "indoorAndOutdoor"}
-              onChange={(e) => handleEventModeChange(e.target.value)}
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="select-none">Indoor & Outdoor</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Type of Event *
-          </label>
-          <input
-            type="text"
-            name="eventType"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Enter the type of event (e.g., Birthday, Meeting)"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Number of Guests *
-          </label>
-          <input
-            type="number"
-            name="numberOfGuests"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="Enter the expected number of guests"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Extra Services *
-        </label>
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-          {/* DJ Service */}
-          <label className="flex justify-center items-center p-3 cursor-pointer">
-            <input
-              type="checkbox"
-              value="dj"
-              checked={selectedServices.includes("dj")}
-              onChange={(e) => handleServiceChange("dj", e.target.checked)}
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              DJ Service
-            </span>
-          </label>
-
-          {/* Carers Service */}
-          <div className="p-3 flex justify-center items-center cursor-pointer">
-            <div className="flex justify-center items-center mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Full Name *
+                </span>
+              </label>
               <input
-                type="checkbox"
-                value="carers"
-                id="carersService"
-                checked={selectedServices.includes("carers")}
-                onChange={(e) =>
-                  handleServiceChange("carers", e.target.checked)
-                }
-                className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
+                type="text"
+                name="parentName"
+                className="input input-bordered input-primary focus:input-primary"
+                placeholder="Enter your full name"
+                required
               />
-              <label
-                htmlFor="carersService"
-                className="text-sm font-medium text-gray-700 cursor-pointer"
-              >
-                Carers
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Email Address *
+                </span>
+              </label>
+              <input
+                type="email"
+                name="parentEmail"
+                className="input input-bordered input-primary focus:input-primary"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Phone Number *
+                </span>
+              </label>
+              <input
+                type="tel"
+                name="parentPhone"
+                className="input input-bordered input-primary focus:input-primary"
+                placeholder="Enter your phone number"
+                required
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Event Date *
+                </span>
+              </label>
+              <input
+                type="date"
+                name="eventDate"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="input input-bordered input-primary focus:input-primary"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Event Details Section */}
+      <div className="card bg-base-100 shadow-lg border border-secondary/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center text-secondary mb-6">
+            Event Details
+          </h3>
+
+          {/* Event Type */}
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text font-medium flex items-center gap-2">
+                Event Type *
+              </span>
+            </label>
+            <select
+              name="eventType"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              className="select select-bordered select-primary focus:select-primary"
+              required
+            >
+              <option value="">Select event type</option>
+              {eventTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Event Time */}
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text font-medium flex items-center gap-2">
+                Event Time *
+              </span>
+            </label>
+            <input
+              type="time"
+              name="eventTime"
+              value={eventTime}
+              onChange={(e) => setEventTime(e.target.value)}
+              className="input input-bordered input-primary focus:input-primary"
+              required
+            />
+          </div>
+
+          {/* Expected Guests */}
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text font-medium flex items-center gap-2">
+                Expected Number of Guests *
+              </span>
+              <span className="label-text-alt text-xs">Approximate number</span>
+            </label>
+            <input
+              type="number"
+              name="expectedGuests"
+              value={expectedGuests}
+              onChange={(e) => setExpectedGuests(e.target.value)}
+              className="input input-bordered input-primary focus:input-primary"
+              placeholder="e.g., 50"
+              min="1"
+              required
+            />
+          </div>
+
+          {/* Venue Type */}
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text font-medium flex items-center gap-2">
+                Venue Type *
+              </span>
+              <span className="label-text-alt text-xs">
+                Choose your preferred venue setup
+              </span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200 transition-colors">
+                <input
+                  type="radio"
+                  name="venueType"
+                  value="indoor"
+                  checked={venueType === "indoor"}
+                  onChange={(e) => setVenueType(e.target.value as "indoor")}
+                  className="radio radio-primary"
+                />
+                <div>
+                  <div className="font-medium">Indoor Only</div>
+                  <div className="text-sm text-base-content/70">
+                    ₦{baseRates.indoor.toLocaleString()}
+                  </div>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200 transition-colors">
+                <input
+                  type="radio"
+                  name="venueType"
+                  value="outdoor"
+                  checked={venueType === "outdoor"}
+                  onChange={(e) => setVenueType(e.target.value as "outdoor")}
+                  className="radio radio-primary"
+                />
+                <div>
+                  <div className="font-medium">Outdoor Only</div>
+                  <div className="text-sm text-base-content/70">
+                    ₦{baseRates.outdoor.toLocaleString()}
+                  </div>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200 transition-colors">
+                <input
+                  type="radio"
+                  name="venueType"
+                  value="both"
+                  checked={venueType === "both"}
+                  onChange={(e) => setVenueType(e.target.value as "both")}
+                  className="radio radio-primary"
+                />
+                <div>
+                  <div className="font-medium">Both Indoor & Outdoor</div>
+                  <div className="text-sm text-base-content/70">
+                    ₦{baseRates.both.toLocaleString()}
+                  </div>
+                </div>
               </label>
             </div>
-            <div className="flex justify-center items-center border border-gray-300 rounded-lg p-2 ms-2 space-x-2">
-              <button
-                type="button"
-                onClick={() =>
-                  updateCarersQuantity(Math.max(1, carersQuantity - 1))
-                }
-                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 font-bold transition-colors duration-300 text-sm"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                name="carersQuantity"
-                min="1"
-                max="10"
-                value={carersQuantity}
-                onChange={(e) =>
-                  updateCarersQuantity(parseInt(e.target.value) || 1)
-                }
-                className="w-10 px-1 py-1 text-center text-xs border border-gray-300 rounded focus:ring-1 focus:ring-[#90AC19] focus:border-[#90AC19]"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  updateCarersQuantity(Math.min(10, carersQuantity + 1))
-                }
-                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 font-bold transition-colors duration-300 text-sm"
-              >
-                +
-              </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Extra Services Section */}
+      <div className="card bg-base-100 shadow-lg border border-accent/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center text-accent mb-6">
+            Additional Services
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* DJ Service */}
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary"
+                  checked={extraServices.some((s) => s.service === "dj")}
+                  onChange={(e) => handleServiceChange("dj", e.target.checked)}
+                />
+                <div className="flex-1">
+                  <div className="font-medium">DJ Services</div>
+                  <div className="text-sm text-base-content/70">
+                    Professional DJ with sound system
+                  </div>
+                  <div className="text-sm font-semibold text-primary">
+                    ₦{serviceRates.dj.toLocaleString()}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* MC Service */}
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary"
+                  checked={extraServices.some((s) => s.service === "mc")}
+                  onChange={(e) => handleServiceChange("mc", e.target.checked)}
+                />
+                <div className="flex-1">
+                  <div className="font-medium">MC (Master of Ceremonies)</div>
+                  <div className="text-sm text-base-content/70">
+                    Professional event host
+                  </div>
+                  <div className="text-sm font-semibold text-primary">
+                    ₦{serviceRates.mc.toLocaleString()}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Event Planning */}
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary"
+                  checked={extraServices.some(
+                    (s) => s.service === "event-planning"
+                  )}
+                  onChange={(e) =>
+                    handleServiceChange("event-planning", e.target.checked)
+                  }
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Event Planning</div>
+                  <div className="text-sm text-base-content/70">
+                    Full event planning and coordination
+                  </div>
+                  <div className="text-sm font-semibold text-primary">
+                    ₦{serviceRates["event-planning"].toLocaleString()}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Extra Carers */}
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary"
+                  checked={extraServices.some(
+                    (s) => s.service === "extra-carers"
+                  )}
+                  onChange={(e) =>
+                    handleServiceChange("extra-carers", e.target.checked)
+                  }
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Extra Carers</div>
+                  <div className="text-sm text-base-content/70">
+                    Additional childcare staff
+                  </div>
+                  <div className="text-sm font-semibold text-primary">
+                    ₦{serviceRates["extra-carers"].toLocaleString()} each
+                  </div>
+                </div>
+              </label>
             </div>
           </div>
 
-          {/* MC Service */}
-          <label className="flex justify-center items-center p-3 rounded-lg cursor-pointer">
-            <input
-              type="checkbox"
-              value="mc"
-              checked={selectedServices.includes("mc")}
-              onChange={(e) => handleServiceChange("mc", e.target.checked)}
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              MC (Master of Ceremonies)
-            </span>
-          </label>
+          {/* Carers Quantity Selector */}
+          {extraServices.some((s) => s.service === "extra-carers") && (
+            <div className="form-control mt-6">
+              <label className="label">
+                <span className="label-text font-medium">
+                  Number of Extra Carers
+                </span>
+              </label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  className="btn btn-circle btn-outline btn-primary btn-sm"
+                  onClick={() =>
+                    carersQuantity > 0 &&
+                    updateCarersQuantity(carersQuantity - 1)
+                  }
+                  disabled={carersQuantity <= 0}
+                >
+                  -
+                </button>
+                <span className="text-lg font-semibold min-w-[2rem] text-center">
+                  {carersQuantity}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-circle btn-outline btn-primary btn-sm"
+                  onClick={() => updateCarersQuantity(carersQuantity + 1)}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Event Planning Service */}
-          <label className="flex justify-center items-center p-3 cursor-pointer">
-            <input
-              type="checkbox"
-              value="eventPlanning"
-              checked={selectedServices.includes("eventPlanning")}
-              onChange={(e) =>
-                handleServiceChange("eventPlanning", e.target.checked)
-              }
-              className="w-4 h-4 text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2 mr-3 accent-[#90AC19]"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              Event Planning
-            </span>
-          </label>
+          <input
+            type="hidden"
+            name="extraServices"
+            value={JSON.stringify(extraServices)}
+          />
         </div>
-
-        {/* Payment Schedule */}
-        <PaymentSchedule
-          event={true}
-          eventMode={eventMode}
-          selectedServices={getServicesWithQuantity()}
-          serviceCost={0}
-        />
-
-        {/* Hidden inputs for form submission */}
-        <input
-          type="hidden"
-          name="extraServices"
-          value={JSON.stringify(getServicesWithQuantity())}
-        />
       </div>
+
+      {/* Child Information Section */}
+      <div className="card bg-base-100 shadow-lg border border-accent/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center text-accent mb-6">
+            Child Information
+          </h3>
+          <OptionalChild />
+        </div>
+      </div>
+
+      {/* Payment Summary */}
+      {venueType && (
+        <div className="card bg-gradient-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+          <div className="card-body">
+            <h3 className="card-title text-lg flex items-center text-primary mb-4">
+              Payment Summary
+            </h3>
+            <PaymentSchedule
+              event={true}
+              eventMode={venueType}
+              selectedServices={extraServices.map((service) => ({
+                service: service.service,
+                quantity: service.quantity || 1,
+              }))}
+              serviceCost={venueType ? baseRates[venueType] : 0}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 });

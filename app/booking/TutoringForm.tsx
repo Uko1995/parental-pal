@@ -9,191 +9,240 @@ export interface TutoringFormRef {
 
 const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
   const [totalHours, setTotalHours] = useState(0);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [academicLevel, setAcademicLevel] = useState("");
+  const [learningGoals, setLearningGoals] = useState("");
   const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+
+  const subjects = [
+    "Mathematics",
+    "English Language",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Literature",
+    "History",
+    "Civic Education",
+    "Computer Science",
+    "French",
+  ];
+
+  const academicLevels = ["Primary 1-3", "Primary 4-6"];
 
   const handleHoursChange = (totalHours: number) => {
     setTotalHours(totalHours);
   };
 
+  const handleSubjectChange = (subject: string) => {
+    setSelectedSubjects((prev) => {
+      if (prev.includes(subject)) {
+        return prev.filter((s) => s !== subject);
+      } else {
+        return [...prev, subject];
+      }
+    });
+  };
+
   const resetForm = () => {
     setTotalHours(0);
+    setSelectedSubjects([]);
+    setAcademicLevel("");
+    setLearningGoals("");
     weekdaysScheduleRef.current?.resetSchedule();
   };
 
   useImperativeHandle(ref, () => ({
     resetForm,
   }));
+
   return (
-    <div>
+    <div className="space-y-8">
       {/* Parent Information Section */}
-      <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <svg
-            className="w-5 h-5 mr-2 text-[#90AC19]"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Parent/Guardian Information
-        </h3>
+      <div className="card bg-base-100 shadow-lg ">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center  mb-6">
+            Parent/Guardian Information
+          </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              name="name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="form-control flex flex-col gap-2">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Full Name *
+                </span>
+              </label>
+              <input
+                type="text"
+                name="parentName"
+                className="input input-bordered "
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              name="email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-        </div>
+            <div className="form-control flex flex-col gap-2">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Email Address *
+                </span>
+              </label>
+              <input
+                type="email"
+                name="parentEmail"
+                className="input input-bordered "
+                placeholder="Enter your email"
+                required
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your phone number"
-              required
-            />
-          </div>
+            <div className="form-control flex flex-col gap-2">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Phone Number *
+                </span>
+              </label>
+              <input
+                type="tel"
+                name="parentPhone"
+                className="input input-bordered "
+                placeholder="Enter your phone number"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Address *
-            </label>
-            <input
-              type="text"
-              name="address"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your address"
-              required
-            />
+            <div className="form-control flex flex-col gap-2">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Address *
+                </span>
+              </label>
+              <input
+                type="text"
+                name="address"
+                className="input input-bordered"
+                placeholder="Enter your address"
+                required
+              />
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Divider */}
-      <div className="border-t border-gray-200 my-8"></div>
 
       {/* Child Information Section */}
-      <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <svg
-            className="w-5 h-5 mr-2 text-[#E8931A]"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-          </svg>
-          Child Information
-        </h3>
+      <div className="card bg-base-100 shadow-lg ">
+        <div className="card-body">
+          <h3 className="card-title text-xl mb-6">
+            Child Information
+          </h3>
+          <OptionalChild />
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Child&apos;s Name *
+      {/* Tutoring Specific Information */}
+      <div className="card bg-base-100 shadow-lg ">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center mb-6">
+            Tutoring Details
+          </h3>
+
+          {/* Academic Level Selection */}
+          <div className="form-control flex flex-col gap-2 mb-6">
+            <label className="label">
+              <span className="label-text font-medium flex items-center gap-2">
+                Academic Level *
+              </span>
             </label>
-            <input
-              type="text"
-              name="childName"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your child's name"
+            <select
+              name="academicLevel"
+              value={academicLevel}
+              onChange={(e) => setAcademicLevel(e.target.value)}
+              className="select select-bordered"
               required
+            >
+              <option value="">Select academic level</option>
+              {academicLevels.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Subjects Selection */}
+          <div className="form-control mb-6">
+            <label className="label mb-2">
+              <span className="label-text font-medium flex items-center gap-2">
+                Subjects Needed *
+              </span>
+              <span className="label-text-alt text-xs">
+                Select all that apply
+              </span>
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {subjects.map((subject) => (
+                <div key={subject} className="form-control">
+                  <label className="label cursor-pointer justify-start gap-2 p-3 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={selectedSubjects.includes(subject)}
+                      onChange={() => handleSubjectChange(subject)}
+                    />
+                    <span className="label-text text-sm">{subject}</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <input
+              type="hidden"
+              name="subjects"
+              value={JSON.stringify(selectedSubjects)}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Child&apos;s Age *
+          {/* Learning Goals */}
+          <div className="form-control flex flex-col gap-2 mb-6">
+            <label className="label">
+              <span className="label-text font-medium">
+                Learning Goals & Objectives *
+              </span>
+              <span className="label-text-alt text-xs">
+                Describe what you want to achieve
+              </span>
             </label>
-            <input
-              type="number"
-              name="childAge"
-              min="1"
-              max="18"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter age"
+            <textarea
+              name="learningGoals"
+              value={learningGoals}
+              onChange={(e) => setLearningGoals(e.target.value)}
+              className="textarea w-full textarea-bordered  h-24"
+              placeholder="e.g., Improve math grades, prepare for WAEC exams, strengthen reading comprehension..."
               required
             />
           </div>
         </div>
-        <OptionalChild />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              School *
-            </label>
-            <input
-              type="text"
-              name="schoolName"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your child's school name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Class *
-            </label>
-            <input
-              type="text"
-              name="class"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your child's class"
-              required
-            />
-          </div>
-        </div>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            What is your initial goal *
-          </label>
-          <input
-            type="text"
-            name="initialGoal"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-            placeholder="What are the goals you want your child to achieve"
-            required
+      {/* Schedule Selection */}
+      <div className="card bg-base-100 shadow-lg">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center mb-6">
+            Schedule & Availability
+          </h3>
+          <WeekdaysSchedule
+            ref={weekdaysScheduleRef}
+            onHoursChange={handleHoursChange}
           />
         </div>
-
-        {/* Weekdays and Schedule Selection */}
-        <div className="mt-4">
-          <WeekdaysSchedule ref={weekdaysScheduleRef} onHoursChange={handleHoursChange} />
-        </div>
-
-        {/* Summary of Total Hours and Cost */}
-        <PaymentSchedule totalHours={totalHours} serviceCost={15000} />
       </div>
+
+      {/* Payment Summary */}
+      {selectedSubjects.length > 0 && totalHours > 0 && (
+        <div className="card bg-gradient-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+          <div className="card-body">
+            <PaymentSchedule totalHours={totalHours} serviceCost={15000} />
+          </div>
+        </div>
+      )}
     </div>
   );
 });

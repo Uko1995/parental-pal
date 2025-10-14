@@ -18,23 +18,16 @@ export default function OptionalChild() {
     <div>
       {/* Always show the "Add another child" checkbox */}
       <div className="flex items-center gap-2 mt-3">
-        <input
-          type="checkbox"
+        <button
+          type="button"
           id="addAnotherChild"
-          onChange={(e) => {
-            if (e.target.checked) {
-              addChild();
-              e.target.checked = false; // Reset checkbox after adding
-            }
+          onClick={() => {
+            addChild();
           }}
-          className="w-4 h-4 cursor-pointer text-[#90AC19] bg-gray-100 border-gray-300 rounded focus:ring-[#90AC19] focus:ring-2"
-        />
-        <label
-          htmlFor="addAnotherChild"
-          className="text-sm font-medium text-gray-700 cursor-pointer"
+          className="btn btn-outline btn-sm rounded-lg"
         >
-          Add another child
-        </label>
+          Add child
+        </button>
       </div>
 
       {/* Render all additional children */}
