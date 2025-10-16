@@ -94,18 +94,16 @@ export default function AboutPage() {
                 We are your trusted partner in finding the best childcare
                 solutions. Dedicated to connecting parents with top-notch
                 tutors, holiday camps, playgroups, homeschooling resources, and
-                events that nurture your child's growth.
+                events that nurture your child&apos;s growth.
               </p>
               <div className="flex space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#90AC19]">
-                    2,500+
-                  </div>
+                  <div className="text-3xl font-bold text-[#90AC19]">300+</div>
                   <div className="text-gray-600">Families Served</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#E8931A]">15+</div>
-                  <div className="text-gray-600">Qualified Tutors</div>
+                  <div className="text-3xl font-bold text-[#E8931A]">2500+</div>
+                  <div className="text-gray-600">Hours of tutoring</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-[#A25F97]">6+</div>
@@ -143,7 +141,7 @@ export default function AboutPage() {
               </h2>
               <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                 To empower parents by providing access to exceptional childcare
-                and educational services that foster children's academic,
+                and educational services that foster children&apos;s academic,
                 social, and emotional development. We bridge the gap between
                 busy family schedules and quality child development through
                 trusted, professional, and nurturing support systems.
@@ -295,8 +293,8 @@ export default function AboutPage() {
               Our <span className="text-[#A25F97]">Journey</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From a small startup to a trusted community partner - here's how
-              we've grown
+              From a small startup to a trusted community partner - here&apos;s
+              how we&apos;ve grown
             </p>
           </div>
           <div className="space-y-8">
@@ -337,9 +335,9 @@ export default function AboutPage() {
             Ready to Join Our Community?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Discover how PARENTALPAL can support your family's educational
-            journey. From tutoring to holiday camps, we're here to help your
-            child thrive.
+            Discover how PARENTALPAL can support your family&apos;s educational
+            journey. From tutoring to holiday camps, we&apos;re here to help
+            your child thrive.
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button className="bg-white text-[#90AC19] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300">

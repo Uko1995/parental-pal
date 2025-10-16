@@ -38,7 +38,7 @@ export default function OptionalChild() {
         >
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-md font-medium text-gray-800">
-              Additional Child #{index + 1}
+              Child #{index + 1}
             </h4>
             <button
               type="button"
@@ -70,9 +70,33 @@ export default function OptionalChild() {
                 type="number"
                 name={`childAge${childId}`}
                 min="1"
-                max="18"
+                max="10"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
                 placeholder="Enter age"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Child&apos;s School *
+              </label>
+              <input
+                type="text"
+                name={`childSchool${childId}`}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
+                placeholder="Enter child's school"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Child&apos;s Class *
+              </label>
+              <input
+                type="text"
+                name={`childClass${childId}`}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
+                placeholder="Enter class"
                 required
               />
             </div>

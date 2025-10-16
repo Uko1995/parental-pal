@@ -6,6 +6,7 @@ import OptionalChild from "./OptionalChild";
 
 export interface EventBookingFormRef {
   resetForm: () => void;
+  validate: () => { isValid: boolean; errors: string[] };
 }
 
 interface ExtraService {
@@ -92,8 +93,38 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
     setCarersQuantity(0);
   };
 
+  const validate = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    if (!eventType) {
+      errors.push("Please select an event type");
+    }
+
+    if (!eventDate) {
+      errors.push("Please select an event date");
+    }
+
+    if (!eventTime) {
+      errors.push("Please specify event time");
+    }
+
+    if (!venueType) {
+      errors.push("Please select a venue type");
+    }
+
+    if (!expectedGuests || parseInt(expectedGuests) <= 0) {
+      errors.push("Please specify the number of expected guests");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
   useImperativeHandle(ref, () => ({
     resetForm,
+    validate,
   }));
   return (
     <div className="space-y-8">

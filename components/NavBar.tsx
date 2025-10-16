@@ -101,7 +101,7 @@ export default function NavBar() {
                   className="rounded-full mr-2 object-cover"
                 />
                 <Link
-                  href={`/user/${session.user.id}`}
+                  href={`/profile`}
                   className={`${
                     isTransparent ? "text-white" : "text-gray-800"
                   } mr-4 font-medium`}
@@ -109,7 +109,10 @@ export default function NavBar() {
                   {session.user.name}
                 </Link>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => signOut({ 
+                    callbackUrl: "/?signout=success",
+                    redirect: true 
+                  })}
                   className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300"
                 >
                   Sign Out

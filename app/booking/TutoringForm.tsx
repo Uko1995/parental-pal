@@ -5,6 +5,7 @@ import { useState, useImperativeHandle, forwardRef, useRef } from "react";
 
 export interface TutoringFormRef {
   resetForm: () => void;
+  validate: () => { isValid: boolean; errors: string[] };
 }
 
 const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
@@ -51,8 +52,30 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
     weekdaysScheduleRef.current?.resetSchedule();
   };
 
+  const validate = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    if (selectedSubjects.length === 0) {
+      errors.push("Please select at least one subject");
+    }
+
+    if (!academicLevel) {
+      errors.push("Please select an academic level");
+    }
+
+    if (totalHours === 0) {
+      errors.push("Please select at least one day and specify hours");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
   useImperativeHandle(ref, () => ({
     resetForm,
+    validate,
   }));
 
   return (
@@ -131,9 +154,7 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
       {/* Child Information Section */}
       <div className="card bg-base-100 shadow-lg ">
         <div className="card-body">
-          <h3 className="card-title text-xl mb-6">
-            Child Information
-          </h3>
+          <h3 className="card-title text-xl mb-6">Child Information</h3>
           <OptionalChild />
         </div>
       </div>

@@ -16,6 +16,7 @@ export interface BookingInterface {
   parentName: string | null;
   parentEmail: string | null;
   parentPhone: string;
+  parentAddress?: string;
   childrenCount: number;
   children: Array<{
     name: string;

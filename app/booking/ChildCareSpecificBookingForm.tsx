@@ -5,6 +5,7 @@ import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
+  validate: () => { isValid: boolean; errors: string[] };
 }
 
 const ChildCareSpecificBookingForm =
@@ -27,8 +28,34 @@ const ChildCareSpecificBookingForm =
       weekdaysScheduleRef.current?.resetSchedule();
     };
 
+    const validate = (): { isValid: boolean; errors: string[] } => {
+      const errors: string[] = [];
+
+      if (!careType) {
+        errors.push("Please select a care type (daily or monthly)");
+      }
+
+      if (!dropoffTime) {
+        errors.push("Please specify drop-off time");
+      }
+
+      if (!pickupTime) {
+        errors.push("Please specify pickup time");
+      }
+
+      if (totalDays === 0) {
+        errors.push("Please select at least one day");
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+      };
+    };
+
     useImperativeHandle(ref, () => ({
       resetForm,
+      validate,
     }));
 
     const monthlyChildcareDiscount = 0.15;

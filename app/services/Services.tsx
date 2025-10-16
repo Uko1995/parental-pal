@@ -228,7 +228,9 @@ export default function Services() {
                     href={`/booking?service=${service.id}`}
                     className="flex-1 bg-[#90AC19] hover:bg-[#7A9216] text-white text-center py-3 px-6 rounded-lg font-semibold transition-colors duration-300 shadow-md hover:shadow-lg"
                   >
-                    Register your child
+                    {service.id === "space-rental"
+                      ? "Book our Space"
+                      : "Enroll your Child"}
                   </Link>
                 </div>
               </div>

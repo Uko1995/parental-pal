@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
 import ChildBookingForm from "./ChildBookingForm";
 import ChildCareSpecificBookingForm, {
@@ -10,6 +11,14 @@ import ChildCareSpecificBookingForm, {
 } from "./ChildCareSpecificBookingForm";
 import TutoringForm, { TutoringFormRef } from "./TutoringForm";
 import HolidayCampForm, { HolidayCampFormRef } from "./HolidayCampForm";
+import {
+  saveFormData,
+  getFormData,
+  clearFormData,
+  extractFormDataForPersistence,
+  hasPersistedFormData,
+  getPersistedValueWithFallback,
+} from "@/lib/form-persistence";
 
 interface AboutUs {
   label: string;
@@ -32,25 +41,121 @@ interface BookingFormProps {
 export default function BookingForm({ submitAction }: BookingFormProps) {
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
-  const [selectedService, setSelectedService] = useState(urlService || "");
-  const [selectedHearAboutUs, setSelectedHearAboutUs] = useState<string>("");
-  const [otherHearAboutUsText, setOtherHearAboutUsText] = useState<string>("");
+  const actionParam = searchParams.get("action");
+
+  // State management
+  const [selectedService, setSelectedService] = useState("");
+  const [selectedHearAboutUs, setSelectedHearAboutUs] = useState("");
+  const [otherHearAboutUsText, setOtherHearAboutUsText] = useState("");
   const [priority, setPriority] = useState<
     "low" | "normal" | "high" | "urgent"
   >("normal");
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [isRepeatedCustomer, setIsRepeatedCustomer] = useState(false);
 
+  // Load persisted data on client side and scroll to top on initial load
+  useEffect(() => {
+    // Scroll to top when page loads (unless returning from auth)
+    if (actionParam !== "submit") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    setSelectedService(getPersistedValueWithFallback("selectedService", ""));
+    setSelectedHearAboutUs(
+      getPersistedValueWithFallback("selectedHearAboutUs", "")
+    );
+    setOtherHearAboutUsText(
+      getPersistedValueWithFallback("otherHearAboutUsText", "")
+    );
+    setPriority(getPersistedValueWithFallback("priority", "normal"));
+    setFollowUpRequired(
+      getPersistedValueWithFallback("followUpRequired", false)
+    );
+    setIsRepeatedCustomer(
+      getPersistedValueWithFallback("isRepeatedCustomer", false)
+    );
+  }, [actionParam]);
+
   // Refs for form components
   const eventFormRef = useRef<EventBookingFormRef>(null);
   const childCareFormRef = useRef<ChildCareSpecificBookingFormRef>(null);
   const tutoringFormRef = useRef<TutoringFormRef>(null);
   const holidayCampFormRef = useRef<HolidayCampFormRef>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Save form data to localStorage whenever form state changes
+  const saveCurrentFormData = () => {
+    saveFormData({
+      selectedService,
+      selectedHearAboutUs,
+      otherHearAboutUsText,
+      priority,
+      followUpRequired,
+      isRepeatedCustomer,
+    });
+  };
 
   // Wrapper function to handle form reset after submission
   const handleFormSubmit = async (formData: FormData) => {
-    try {
+    // Client-side validation
+    if (!selectedService) {
+      toast.error("Please select a service before submitting");
+      return;
+    }
+
+    if (!selectedHearAboutUs) {
+      toast.error("Please let us know how you heard about us");
+      return;
+    }
+
+    if (selectedHearAboutUs === "other" && !otherHearAboutUsText.trim()) {
+      toast.error("Please specify how you heard about us");
+      return;
+    }
+
+    // Service-specific validation
+    if (selectedService === "tutoring") {
+      const validation = tutoringFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]); // Show first error
+        return;
+      }
+    } else if (selectedService === "childcare") {
+      const validation = childCareFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]); // Show first error
+        return;
+      }
+    } else if (selectedService === "space-rental") {
+      const validation = eventFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]); // Show first error
+        return;
+      }
+    } else if (selectedService === "holiday-camps") {
+      const validation = holidayCampFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]); // Show first error
+        return;
+      }
+    }
+
+    const submitPromise = async () => {
+      // Save form data before submission in case of auth redirect
+      const persistenceData = extractFormDataForPersistence(formData, {
+        selectedService,
+        selectedHearAboutUs,
+        otherHearAboutUsText,
+        priority,
+        followUpRequired,
+        isRepeatedCustomer,
+      });
+      saveFormData(persistenceData);
+
       await submitAction(formData);
+
+      // Clear persisted data after successful submission
+      clearFormData();
 
       // Reset forms after successful submission
       if (selectedService === "space-rental") {
@@ -66,21 +171,65 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       // Reset main form states
       setSelectedHearAboutUs("");
       setOtherHearAboutUsText("");
-    } catch (error) {
-      // Handle error - don't reset forms if submission failed
-      console.error("Form submission failed:", error);
-    }
+      setPriority("normal");
+      setFollowUpRequired(false);
+      setIsRepeatedCustomer(false);
+
+      // Scroll to top after successful submission
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    // Use toast.promise for loading, success, and error states
+    toast.promise(submitPromise(), {
+      loading: "Submitting your booking request...",
+      success: "Booking submitted successfully! We'll get back to you soon.",
+      error: "Failed to submit booking. Please try again.",
+    });
   };
 
-  // Update selected service when URL changes
+  // Handle form data restoration and focus management after auth redirect
   useEffect(() => {
-    if (urlService) {
+    // Check if we're returning from auth with action=submit
+    if (actionParam === "submit" && hasPersistedFormData()) {
+      // Restore form data from persistence
+      const persistedData = getFormData();
+      if (persistedData) {
+        // Restore form fields that aren't already set by URL
+        if (!urlService && persistedData.selectedService) {
+          setSelectedService(persistedData.selectedService);
+        }
+        if (persistedData.selectedHearAboutUs) {
+          setSelectedHearAboutUs(persistedData.selectedHearAboutUs);
+        }
+        if (persistedData.otherHearAboutUsText) {
+          setOtherHearAboutUsText(persistedData.otherHearAboutUsText);
+        }
+        if (persistedData.priority) {
+          setPriority(persistedData.priority);
+        }
+        setFollowUpRequired(persistedData.followUpRequired || false);
+        setIsRepeatedCustomer(persistedData.isRepeatedCustomer || false);
+
+        // First scroll to top, then scroll to submit button after delay
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        setTimeout(() => {
+          submitButtonRef.current?.focus();
+          submitButtonRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 800); // Increased delay to allow top scroll to complete first
+      }
+    } else if (urlService) {
+      // Normal URL service parameter update
       setSelectedService(urlService);
     }
-  }, [urlService]);
+  }, [urlService, actionParam]);
 
   const handleServiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedService(e.target.value);
+    saveCurrentFormData();
   };
 
   const handleHearAboutUsChange = (value: string) => {
@@ -89,10 +238,12 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     if (value !== "other") {
       setOtherHearAboutUsText("");
     }
+    saveCurrentFormData();
   };
 
   const handleOtherTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setOtherHearAboutUsText(e.target.value);
+    saveCurrentFormData();
   };
 
   const isHearAboutUsSelected = (value: string) => {
@@ -241,11 +392,12 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                     <select
                       name="priority"
                       value={priority}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setPriority(
                           e.target.value as "low" | "normal" | "high" | "urgent"
-                        )
-                      }
+                        );
+                        saveCurrentFormData();
+                      }}
                       className="select select-bordered "
                     >
                       <option value="low">Low - Flexible timing</option>
@@ -262,9 +414,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                         type="checkbox"
                         name="isRepeatedCustomer"
                         checked={isRepeatedCustomer}
-                        onChange={(e) =>
-                          setIsRepeatedCustomer(e.target.checked)
-                        }
+                        onChange={(e) => {
+                          setIsRepeatedCustomer(e.target.checked);
+                          saveCurrentFormData();
+                        }}
                         className="checkbox"
                       />
                       <div>
@@ -285,7 +438,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                         type="checkbox"
                         name="followUpRequired"
                         checked={followUpRequired}
-                        onChange={(e) => setFollowUpRequired(e.target.checked)}
+                        onChange={(e) => {
+                          setFollowUpRequired(e.target.checked);
+                          saveCurrentFormData();
+                        }}
                         className="checkbox"
                       />
                       <div>
@@ -364,6 +520,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           <div className="card bg-gradient-to-r from-primary to-secondary text-primary-content shadow-lg">
             <div className="card-body text-center">
               <button
+                ref={submitButtonRef}
                 type="submit"
                 className="btn btn-lg btn-ghost text-white border-white/30 hover:bg-white/20 hover:border-white/50 w-full transition-all duration-300"
               >

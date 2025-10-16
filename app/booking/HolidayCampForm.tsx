@@ -4,6 +4,7 @@ import PaymentSchedule from "./PaymentSchedule";
 
 export interface HolidayCampFormRef {
   resetForm: () => void;
+  validate: () => { isValid: boolean; errors: string[] };
 }
 
 interface CampWeek {
@@ -21,8 +22,22 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
     setCurrentStartDate("");
   };
 
+  const validate = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    if (campWeeks.length === 0) {
+      errors.push("Please select at least one camp week");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
   useImperativeHandle(ref, () => ({
     resetForm,
+    validate,
   }));
 
   // Function to calculate the week dates based on start date
@@ -88,7 +103,6 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
   };
 
   const totalWeeks = campWeeks.length;
-  const totalCost = totalWeeks * 30000;
 
   return (
     <div className="space-y-8">
@@ -218,7 +232,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
                 </span>
               </label>
               <div className="space-y-3">
-                {campWeeks.map((week, index) => (
+                {campWeeks.map((week) => (
                   <div
                     key={week.startDate}
                     className="flex items-center justify-between p-4 bg-base-200 rounded-lg border border-primary/20"

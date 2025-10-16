@@ -14,6 +14,7 @@ import {
 import { UserInterface } from "@/models/User";
 import TutorDetailsModal from "./TutorDetailsModal";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 interface TutorTableProps {
   tutors: UserInterface[];
@@ -291,7 +292,17 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
                       <div className="avatar placeholder">
                         <div className="bg-neutral text-neutral-content rounded-full w-10 h-10">
                           <span className="text-sm">
-                            {tutor.userData?.user?.name?.charAt(0) || "?"}
+                            {tutor?.userData?.user?.image ? (
+                              <Image
+                                src={tutor?.userData?.user?.image}
+                                alt={tutor?.userData?.user?.name || "Tutor"}
+                                width={40}
+                                height={40}
+                                className="rounded-full"
+                              />
+                            ) : (
+                              tutor.userData?.user?.name?.charAt(0) || "?"
+                            )}
                           </span>
                         </div>
                       </div>
@@ -366,7 +377,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
 
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-start w-1/2 gap-2">
             <span className="text-sm w-full text-gray-600">
               {startIndex + 1} to{" "}
               {Math.min(

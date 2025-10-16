@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { UserRepository } from "./lib/UserRepository";
 import { UserInterface } from "./models/User";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 
 declare module "next-auth" {
   interface User {
@@ -26,13 +28,14 @@ declare module "next-auth" {
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_ID!,
+      clientSecret: process.env.GOOGLE_SECRET!,
     }),
   ],
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
+    signOut: "/", // Redirect to home page after sign out
   },
   callbacks: {
     async signIn({ user, account }) {
@@ -63,6 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               lastLoginAt: new Date(),
               membershipType: "basic",
             };
+            console.log("New User Data:", newUser);
 
             existingUser = await UserRepository.createUser(newUser);
           } else {

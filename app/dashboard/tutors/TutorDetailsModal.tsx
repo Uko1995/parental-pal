@@ -2,6 +2,7 @@
 
 import { UserInterface } from "@/models/User";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 import { useEffect } from "react";
 
 interface TutorDetailsModalProps {
@@ -94,7 +95,16 @@ export default function TutorDetailsModal({
                 <div className="avatar placeholder">
                   <div className="bg-neutral text-neutral-content rounded-full w-20 h-20">
                     <span className="text-2xl">
-                      {tutor.userData?.user?.name?.charAt(0) || "?"}
+                      {tutor?.userData?.user?.image ? (
+                        <Image
+                          src={tutor?.userData?.user?.image}
+                          alt={tutor.userData.user.name || "Tutor"}
+                          width={40}
+                          height={40}
+                        />
+                      ) : (
+                        tutor.userData?.user?.name?.charAt(0) || "?"
+                      )}
                     </span>
                   </div>
                 </div>

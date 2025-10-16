@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import ParentDetailsModal from "./ParentDetailsModal";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 interface SerializedParentWithStats {
   _id: string | undefined;
@@ -326,14 +327,26 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar placeholder">
-                          <div className="bg-neutral text-neutral-content rounded-lg w-10 h-10 flex items-center justify-center">
+                          <div className="bg-neutral text-neutral-content rounded-full w-10 h-10 flex items-center justify-center">
                             <span className="text-xs font-medium">
-                              {parent.userData?.user?.name
-                                ?.split(" ")[0]
-                                .charAt(0) +
-                                (parent.userData?.user?.name
-                                  ?.split(" ")[1]
-                                  ?.charAt(0) || "") || "U"}
+                              {parent.userData?.user?.image ? (
+                                <Image
+                                  src={parent.userData?.user?.image}
+                                  alt={
+                                    parent.userData?.user?.name || "User Image"
+                                  }
+                                  width={40}
+                                  height={40}
+                                  className="rounded-full"
+                                />
+                              ) : (
+                                parent.userData?.user?.name
+                                  ?.split(" ")[0]
+                                  .charAt(0) +
+                                  (parent.userData?.user?.name
+                                    ?.split(" ")[1]
+                                    ?.charAt(0) || "") || "U"
+                              )}
                             </span>
                           </div>
                         </div>
