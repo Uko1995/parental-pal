@@ -1,6 +1,7 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 import { useEffect } from "react";
 
 interface SerializedParentWithStats {
@@ -137,7 +138,25 @@ export default function ParentDetailsModal({
                 <div className="avatar placeholder">
                   <div className="bg-neutral text-neutral-content rounded-full w-20 h-20">
                     <span className="text-2xl">
-                      {parent.userData?.user?.name?.charAt(0) || "?"}
+                      {parent?.userData?.user?.image ? (
+                        <Image
+                          src={parent.userData.user.image}
+                          alt="Parent Image"
+                          width={80}
+                          height={80}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        parent.userData?.user?.name
+                          ?.split(" ")[0]
+                          .charAt(0)
+                          .toUpperCase() +
+                        "" +
+                        parent.userData?.user?.name
+                          ?.split(" ")[1]
+                          .charAt(0)
+                          .toUpperCase()
+                      )}
                     </span>
                   </div>
                 </div>

@@ -274,6 +274,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Expert one-on-one tutoring for all academic levels. Our certified tutors provide personalized learning experiences tailored to each student's needs, helping them excel in their studies and build confidence.",
       shortDescription: "Personalized academic support from certified tutors.",
+      image: "/images/services/tutoring.jpg",
       pricing: {
         baseRate: 15000,
         currency: "NGN",
@@ -348,6 +349,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Safe, nurturing, and engaging daily childcare services for children aged 1-10. Our experienced caregivers provide structured activities, meals, and supervision in a secure environment.",
       shortDescription: "Safe and engaging daily childcare services.",
+      image: "/images/services/childcare.jpg",
       pricing: {
         baseRate: 5000,
         currency: "NGN",
@@ -420,6 +422,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Fun-filled holiday camps with educational activities, sports, arts and crafts, and outdoor adventures. Perfect for keeping children engaged during school breaks while learning new skills.",
       shortDescription: "Educational and fun holiday camps for kids.",
+      image: "/images/services/holiday-camps.jpg",
       pricing: {
         baseRate: 30000,
         currency: "NGN",
@@ -463,6 +466,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Rent our versatile indoor and outdoor spaces for children's parties, celebrations, and special events. Includes basic decorations, tables, chairs, and sound system.",
       shortDescription: "Flexible event spaces for children's celebrations.",
+      image: "/images/services/space-rental.jpg",
       pricing: {
         baseRate: 250000,
         currency: "NGN",
@@ -497,6 +501,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Comprehensive homeschooling curriculum support and guidance for parents. Includes lesson plans, educational materials, progress tracking, and expert consultation.",
       shortDescription: "Complete homeschooling curriculum and support.",
+      image: "/images/services/homeschooling.jpg",
       pricing: {
         baseRate: 45000,
         currency: "NGN",
@@ -532,6 +537,7 @@ const generateServices = (): ServiceInterface[] => {
       description:
         "Specialized enrichment programs including music lessons, art classes, coding workshops, and STEM activities designed to develop children's talents and interests.",
       shortDescription: "Specialized programs for talent development.",
+      image: "/images/services/enrichment.jpg",
       pricing: {
         baseRate: 20000,
         currency: "NGN",

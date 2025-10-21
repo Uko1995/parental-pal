@@ -53,6 +53,7 @@ export interface UserInterface {
       };
     };
     hourlyRate?: number;
+    hourlyRateAccepted?: boolean;
     bio?: string;
     isVerified: boolean;
   };
@@ -301,6 +302,10 @@ export const UserSchema = {
               minimum: 0,
               maximum: 100000,
               description: "Hourly tutoring rate",
+            },
+            hourlyRateAccepted: {
+              bsonType: ["bool", "null"],
+              description: "Whether tutor accepts the hourly rate offer",
             },
             bio: {
               bsonType: ["string", "null"],

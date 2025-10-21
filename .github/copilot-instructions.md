@@ -102,6 +102,156 @@ app/api/
 - **Error Handling**: Try-catch blocks with proper error responses
 - **Data Cleaning**: Filter Next.js internal form data before database operations
 
+## Table Styling Standards
+
+All dashboard tables should follow the styling patterns established in `app/dashboard/children/ChildrenTable.tsx`:
+
+### Table Structure
+
+- **Container**: `<div className="card bg-base-100 shadow-lg scroll-smooth">`
+- **Card Body**: `<div className="card-body">`
+- **Table Wrapper**: `<div className="overflow-x-auto">`
+- **Table**: `<table className="table w-full">`
+
+### Table Features Required
+
+- **Filtering**: filters for necessary columns
+- **Client-side Pagination**: 10 items per page with smooth scroll to table top on page change
+- **Search**: Real-time filtering without page reload
+- **Responsive**: Horizontal scroll on mobile devices
+- **Actions**: Edit, view, delete buttons in consistent dropdown menu
+
+### Filter Section Layout
+
+```tsx
+{
+  /* Filters Section */
+}
+{
+  showFilters && (
+    <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Name Filter */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">Search by Name</span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Enter name..."
+              className="input input-bordered w-full pr-10"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+            />
+            <MagnifyingGlassIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          </div>
+        </div>
+        {/* Age/Date Range Filter */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">Age Range</span>
+          </label>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              placeholder="Min"
+              className="input input-bordered w-full"
+              value={ageFilter.min}
+              onChange={(e) =>
+                setAgeFilter((prev) => ({ ...prev, min: e.target.value }))
+              }
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              className="input input-bordered w-full"
+              value={ageFilter.max}
+              onChange={(e) =>
+                setAgeFilter((prev) => ({ ...prev, max: e.target.value }))
+              }
+            />
+          </div>
+        </div>
+        {/* Service/Category Filter */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">Service Type</span>
+          </label>
+          <select
+            className="select select-bordered w-full"
+            value={serviceFilter}
+            onChange={(e) => setServiceFilter(e.target.value)}
+          >
+            <option value="">All Services</option>
+            {uniqueServices.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Pagination Implementation
+
+```tsx
+const handlePageChange = (page: number) => {
+  setCurrentPage(page);
+  scrollToTable(); // Scroll to top of table
+};
+
+// Add ref to table container
+const tableRef = useRef<HTMLDivElement>(null);
+
+const scrollToTable = () => {
+  if (tableRef.current) {
+    tableRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+};
+```
+
+### Required Table Components
+
+- **Toggle Filters Button**: `<button className="btn btn-ghost btn-sm" onClick={() => setShowFilters(!showFilters)}>`
+- **Clear Filters**: `<button className="btn btn-outline btn-sm" onClick={clearFilters}>`
+- **Pagination**: Client-side with Previous/Next buttons and page numbers
+- **Results Summary**: Show "X of Y items" with filter status
+- **No Data State**: Consistent empty state with appropriate icon and message
+
+### Table Styling Classes
+
+- **Header**: `<th className="text-left">Column Name</th>`
+- **Row**: `<tr className="hover:bg-base-200">`
+- **Cell**: `<td>Content</td>`
+- **Badge**: `<div className="badge badge-primary badge-sm">Status</div>`
+- **Actions**: Use `ChildActions` component pattern with dropdown menu
+
+### Data Requirements
+
+- All ObjectId fields must be converted to strings before passing to client components
+- Use client-side filtering and pagination for better UX
+- Implement smooth scrolling with `scroll-smooth` class and `scrollIntoView()`
+
+### Standard Table Files to Update
+
+- **Parents Table**: `app/dashboard/parents/ParentsTable.tsx`
+- **Tutors Table**: `app/dashboard/tutors/TutorTable.tsx`
+- **Bookings Table**: `app/dashboard/bookings/BookingsTable.tsx`
+
+Use `app/dashboard/children/ChildrenTable.tsx` as the reference implementation for all table styling and functionality.
+
+- **Schema Validation**: Mongodb native schemas with TypeScript interfaces
+- **Error Handling**: Try-catch blocks with proper error responses
+- **Data Cleaning**: Filter Next.js internal form data before database operations
+
 ## Styling Guidelines
 
 - **Form Styling**: Consistent form inputs with brand colors and focus states

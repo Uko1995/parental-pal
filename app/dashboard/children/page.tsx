@@ -6,23 +6,14 @@ import {
   HomeIcon,
   CalendarIcon,
   SparklesIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   BuildingOfficeIcon,
 } from "@heroicons/react/24/outline";
-import { getChildrenPaginated } from "./action";
-import Link from "next/link";
-import ChildActions from "./ChildActions";
+import { getChildren } from "./action";
+import ChildrenTable from "./ChildrenTable";
+import ChildrenCharts from "./ChildrenCharts";
 
-interface PageProps {
-  searchParams: Promise<{ page?: string }>;
-}
-
-export default async function ChildrenPage({ searchParams }: PageProps) {
-  const resolvedSearchParams = await searchParams;
-  const currentPage = Number(resolvedSearchParams.page) || 1;
-  const { children, serviceStats, childrenStats, pagination } =
-    await getChildrenPaginated(currentPage, 10);
+export default async function ChildrenPage() {
+  const { children, serviceStats, childrenStats } = await getChildren();
   return (
     <div className="space-y-6 scroll-smooth">
       {/* Page Header */}
@@ -136,42 +127,12 @@ export default async function ChildrenPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Age Distribution Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h2 className="card-title">Age Distribution</h2>
-            <div className="h-64 bg-gradient-to-r from-[#90AC19]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <UserGroupIcon className="w-16 h-16 text-[#90AC19] mx-auto mb-4" />
-                <p className="font-medium">Age Distribution Chart</p>
-                <p className="text-sm text-gray-500">
-                  Chart.js pie chart showing age groups
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h2 className="card-title">Service Enrollment Distribution</h2>
-            <div className="h-64 bg-gradient-to-r from-[#A25F97]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <AcademicCapIcon className="w-16 h-16 text-[#A25F97] mx-auto mb-4" />
-                <p className="font-medium">Service Breakdown Chart</p>
-                <p className="text-sm text-gray-500">
-                  All service types enrollment distribution
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Tutoring • Childcare • Homeschooling • Camps • Enrichment •
-                  Space Rental
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Interactive Charts */}
+      <ChildrenCharts
+        childrenData={children}
+        serviceStats={serviceStats}
+        childrenStats={childrenStats}
+      />
 
       {/* Service Enrollment Breakdown */}
       <div className="card bg-base-100 shadow-lg">
@@ -310,259 +271,8 @@ export default async function ChildrenPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Children Profiles */}
-      <div
-        id="children-list"
-        className="card bg-base-100 shadow-lg scroll-mt-10"
-      >
-        <div className="card-body">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="card-title">Children Profiles</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Showing{" "}
-                {pagination.totalChildren === 0 ? (
-                  "0 - 0"
-                ) : (
-                  <>
-                    {(pagination.currentPage - 1) * pagination.childrenPerPage +
-                      1}{" "}
-                    -{" "}
-                    {Math.min(
-                      pagination.currentPage * pagination.childrenPerPage,
-                      pagination.totalChildren
-                    )}
-                  </>
-                )}{" "}
-                of {pagination.totalChildren} children
-                {pagination.totalPages > 1 && (
-                  <span>
-                    {" "}
-                    • Page {pagination.currentPage} of {pagination.totalPages}
-                  </span>
-                )}
-              </p>
-            </div>
-            <button className="btn btn-sm btn-outline btn-primary">
-              <PlusIcon className="w-4 h-4 mr-1" />
-              Add Child
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th>Child Name</th>
-                  <th>Age</th>
-                  <th>Parent</th>
-                  <th>Services</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {children.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8">
-                      <UserGroupIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">
-                        No children found
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {pagination.currentPage > 1
-                          ? "Try going to a different page or check the first page"
-                          : "Add some children profiles to get started"}
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  children.map((child) => (
-                    <tr key={child.childId}>
-                      <td>
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <div className="font-bold">{child.name}</div>
-                            <div className="text-sm opacity-50">
-                              {child.class}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{child.age}</td>
-                      <td>{child.parentName}</td>
-                      <td>
-                        <div className="flex space-x-1 flex-wrap gap-1">
-                          {child.services && child.services.length > 0 ? (
-                            child.services.map((service, index) => (
-                              <div
-                                key={index}
-                                className="badge badge-primary badge-sm"
-                              >
-                                {service.serviceType}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="badge badge-ghost badge-sm">
-                              No Services yet
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge badge-success">Active</span>
-                      </td>
-                      <td>
-                        <ChildActions child={child} />
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          {pagination.totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 pt-4 border-t border-gray-200 space-y-4 sm:space-y-0">
-              <div className="text-sm text-gray-600">
-                Showing{" "}
-                {(pagination.currentPage - 1) * pagination.childrenPerPage + 1}{" "}
-                to{" "}
-                {Math.min(
-                  pagination.currentPage * pagination.childrenPerPage,
-                  pagination.totalChildren
-                )}{" "}
-                of {pagination.totalChildren} children
-              </div>
-
-              <div className="flex items-center space-x-2">
-                {/* Previous Button */}
-                {pagination.hasPrevPage ? (
-                  <Link
-                    href={`/dashboard/children?page=${
-                      pagination.currentPage - 1
-                    }#children-list`}
-                    className="btn btn-sm btn-outline"
-                  >
-                    <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                    Previous
-                  </Link>
-                ) : (
-                  <button
-                    className="btn btn-sm btn-outline btn-disabled"
-                    disabled
-                  >
-                    <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                    Previous
-                  </button>
-                )}
-
-                {/* Page Numbers */}
-                <div className="flex items-center space-x-1">
-                  {(() => {
-                    const pages = [];
-                    const maxVisiblePages = 5;
-                    let startPage = Math.max(
-                      1,
-                      pagination.currentPage - Math.floor(maxVisiblePages / 2)
-                    );
-                    const endPage = Math.min(
-                      pagination.totalPages,
-                      startPage + maxVisiblePages - 1
-                    );
-
-                    // Adjust start if we're near the end
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                    }
-
-                    // Add first page and ellipsis if needed
-                    if (startPage > 1) {
-                      pages.push(
-                        <Link
-                          key={1}
-                          href={`/dashboard/children?page=1#children-list`}
-                          className="btn btn-sm btn-outline"
-                        >
-                          1
-                        </Link>
-                      );
-                      if (startPage > 2) {
-                        pages.push(
-                          <span key="ellipsis1" className="px-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                    }
-
-                    // Add visible page numbers
-                    for (let i = startPage; i <= endPage; i++) {
-                      pages.push(
-                        <Link
-                          key={i}
-                          href={`/dashboard/children?page=${i}#children-list`}
-                          className={`btn btn-sm ${
-                            i === pagination.currentPage
-                              ? "btn-primary"
-                              : "btn-outline"
-                          }`}
-                        >
-                          {i}
-                        </Link>
-                      );
-                    }
-
-                    // Add last page and ellipsis if needed
-                    if (endPage < pagination.totalPages) {
-                      if (endPage < pagination.totalPages - 1) {
-                        pages.push(
-                          <span key="ellipsis2" className="px-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                      pages.push(
-                        <Link
-                          key={pagination.totalPages}
-                          href={`/dashboard/children?page=${pagination.totalPages}#children-list`}
-                          className="btn btn-sm btn-outline"
-                        >
-                          {pagination.totalPages}
-                        </Link>
-                      );
-                    }
-
-                    return pages;
-                  })()}
-                </div>
-
-                {/* Next Button */}
-                {pagination.hasNextPage ? (
-                  <Link
-                    href={`/dashboard/children?page=${
-                      pagination.currentPage + 1
-                    }#children-list`}
-                    className="btn btn-sm btn-outline"
-                  >
-                    Next
-                    <ChevronRightIcon className="w-4 h-4 ml-1" />
-                  </Link>
-                ) : (
-                  <button
-                    className="btn btn-sm btn-outline btn-disabled"
-                    disabled
-                  >
-                    Next
-                    <ChevronRightIcon className="w-4 h-4 ml-1" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Children Profiles with Filters */}
+      <ChildrenTable childrenData={children} />
     </div>
   );
 }

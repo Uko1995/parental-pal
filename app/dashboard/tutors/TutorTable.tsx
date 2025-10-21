@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   MagnifyingGlassIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { UserInterface } from "@/models/User";
 import TutorDetailsModal from "./TutorDetailsModal";
 import toast from "react-hot-toast";
-import Image from "next/image";
+import SimpleCloudinaryImage from "@/components/SimpleCloudinaryImage";
+import CloudinaryImage from "@/components/CloudinaryImage";
 
 interface TutorTableProps {
   tutors: UserInterface[];
@@ -23,12 +23,14 @@ interface TutorTableProps {
 export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
   // State for filtering and pagination
   const [tutors, setTutors] = useState<UserInterface[]>(initialTutors);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sortField, setSortField] = useState("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [nameFilter, setNameFilter] = useState("");
+  const [phoneFilter, setPhoneFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const itemsPerPage = 10;
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedTutor, setSelectedTutor] = useState<UserInterface | null>(
     null
@@ -39,104 +41,115 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     null
   );
   const [loading, setLoading] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  // Filter and sort tutors
-  const filteredAndSortedTutors = useMemo(() => {
-    const filtered = tutors.filter((tutor) => {
-      const matchesSearch =
-        tutor.userData?.user?.name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        tutor.userData?.user?.email
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        tutor.phone?.includes(searchTerm);
+  // Function to scroll to top of table
+  const scrollToTable = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && tutor.isActive) ||
-        (statusFilter === "inactive" && !tutor.isActive);
+  // Filter tutors based on the search criteria
+  const filteredTutors = useMemo(() => {
+    return tutors.filter((tutor) => {
+      const nameMatch = nameFilter
+        ? tutor.userData?.user?.name
+            ?.toLowerCase()
+            .includes(nameFilter.toLowerCase())
+        : true;
 
-      return matchesSearch && matchesStatus;
-    });
+      const phoneMatch = phoneFilter
+        ? tutor.phone?.toLowerCase().includes(phoneFilter.toLowerCase())
+        : true;
 
-    // Sort the filtered tutors
-    filtered.sort((a, b) => {
-      let aValue: string | number | Date, bValue: string | number | Date;
+      const statusMatch = statusFilter
+        ? statusFilter === "all"
+          ? true
+          : statusFilter === "active"
+          ? tutor.isActive
+          : !tutor.isActive
+        : true;
 
-      switch (sortField) {
-        case "name":
-          aValue = a.userData?.user?.name || "";
-          bValue = b.userData?.user?.name || "";
-          break;
-        case "email":
-          aValue = a.userData?.user?.email || "";
-          bValue = b.userData?.user?.email || "";
-          break;
-        case "phone":
-          aValue = a.phone || "";
-          bValue = b.phone || "";
-          break;
+      // Date filtering
+      let dateMatch = true;
+      if (dateFromFilter || dateToFilter) {
+        const tutorDate = new Date(tutor.createdAt || "");
 
-        case "joinDate":
-          aValue = new Date(a.createdAt || 0);
-          bValue = new Date(b.createdAt || 0);
-          break;
-        default:
-          aValue = a.userData?.user?.name || "";
-          bValue = b.userData?.user?.name || "";
+        if (dateFromFilter) {
+          const fromDate = new Date(dateFromFilter);
+          dateMatch = dateMatch && tutorDate >= fromDate;
+        }
+
+        if (dateToFilter) {
+          const toDate = new Date(dateToFilter);
+          // Set to end of day to include the entire selected day
+          toDate.setHours(23, 59, 59, 999);
+          dateMatch = dateMatch && tutorDate <= toDate;
+        }
       }
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+      return nameMatch && phoneMatch && statusMatch && dateMatch;
     });
+  }, [
+    tutors,
+    nameFilter,
+    phoneFilter,
+    statusFilter,
+    dateFromFilter,
+    dateToFilter,
+  ]); // Client-side pagination
+  const clientPagination = useMemo(() => {
+    const totalItems = filteredTutors.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
-    return filtered;
-  }, [tutors, searchTerm, statusFilter, sortField, sortDirection]);
+    return {
+      totalItems,
+      totalPages,
+      startIndex,
+      endIndex,
+      currentPage,
+      itemsPerPage,
+    };
+  }, [filteredTutors.length, currentPage, itemsPerPage]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedTutors.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedTutors = filteredAndSortedTutors.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  // Get paginated data
+  const paginatedTutors = useMemo(() => {
+    return filteredTutors.slice(
+      clientPagination.startIndex,
+      clientPagination.endIndex
+    );
+  }, [filteredTutors, clientPagination.startIndex, clientPagination.endIndex]);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
+  // Handle page changes with scroll to top
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    scrollToTable();
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setNameFilter("");
+    setPhoneFilter("");
+    setStatusFilter("");
+    setDateFromFilter("");
+    setDateToFilter("");
+    setCurrentPage(1);
   };
 
   const handleDropdownToggle = (tutorId: string) => {
     setOpenDropdown(openDropdown === tutorId ? null : tutorId);
   };
 
-  const handleViewDetails = async (tutor: UserInterface) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/tutors/${tutor._id?.toString()}`);
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        setSelectedTutor(data.data);
-        setShowDetailsModal(true);
-      } else {
-        toast.error(
-          "Failed to load tutor details: " + (data.error || "Unknown error")
-        );
-      }
-    } catch (error) {
-      console.error("Error loading tutor details:", error);
-      toast.error("Error loading tutor details");
-    } finally {
-      setLoading(false);
-      setOpenDropdown(null);
-    }
+  const handleViewDetails = (tutor: UserInterface) => {
+    setSelectedTutor(tutor);
+    setShowDetailsModal(true);
+    setOpenDropdown(null);
   };
 
   const handleEditTutor = (tutor: UserInterface) => {
@@ -199,49 +212,134 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     });
   };
 
-  const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return null;
-    return sortDirection === "asc" ? (
-      <ChevronUpIcon className="w-4 h-4" />
-    ) : (
-      <ChevronDownIcon className="w-4 h-4" />
-    );
-  };
-
   return (
-    <div className="card bg-base-100 shadow-lg">
+    <div className="card bg-base-100 shadow-lg scroll-smooth">
       <div className="card-body">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <h2 className="card-title">
-            All Tutors ({filteredAndSortedTutors.length})
-          </h2>
+          <h2 className="card-title">All Tutors ({filteredTutors.length})</h2>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search tutors..."
-                className="input input-bordered pl-10 w-full sm:w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          {/* Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <MagnifyingGlassIcon className="w-4 h-4" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </button>
+            {(nameFilter || phoneFilter || statusFilter) && (
+              <button className="btn btn-outline btn-sm" onClick={clearFilters}>
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        {showFilters && (
+          <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Name Filter */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Search by Name</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter name..."
+                    className="input input-bordered w-full pr-10"
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                  />
+                  <MagnifyingGlassIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Phone Filter */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    Search by Phone
+                  </span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter phone number..."
+                    className="input input-bordered w-full pr-10"
+                    value={phoneFilter}
+                    onChange={(e) => setPhoneFilter(e.target.value)}
+                  />
+                  <MagnifyingGlassIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Status</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
 
-            {/* Status Filter */}
-            <select
-              className="select select-bordered"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            {/* Date Range Filter Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Date From Filter */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    Registration Date From
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered w-full"
+                  value={dateFromFilter}
+                  onChange={(e) => setDateFromFilter(e.target.value)}
+                />
+              </div>
+
+              {/* Date To Filter */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    Registration Date To
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered w-full"
+                  value={dateToFilter}
+                  onChange={(e) => setDateToFilter(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* Results Summary */}
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-gray-600">
+            Showing {clientPagination.startIndex + 1}-
+            {clientPagination.endIndex} of {filteredTutors.length} tutors
+            {(nameFilter ||
+              phoneFilter ||
+              statusFilter ||
+              dateFromFilter ||
+              dateToFilter) &&
+              " (filtered)"}
+          </p>
         </div>
 
         {/* Table */}
@@ -251,206 +349,194 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
               <span className="loading loading-spinner loading-md"></span>
             </div>
           )}
-          <table className="table table-zebra">
+          <table className="table w-full">
             <thead>
               <tr>
-                <th
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleSort("name")}
-                >
-                  <div className="flex items-center gap-2">
-                    Name <SortIcon field="name" />
-                  </div>
-                </th>
-
-                <th
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleSort("phone")}
-                >
-                  <div className="flex items-center gap-2">
-                    Phone <SortIcon field="phone" />
-                  </div>
-                </th>
-
-                <th>Status</th>
-                <th
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleSort("joinDate")}
-                >
-                  <div className="flex items-center gap-2">
-                    Join Date <SortIcon field="joinDate" />
-                  </div>
-                </th>
-                <th>Actions</th>
+                <th className="text-left">Name</th>
+                <th className="text-left">Phone</th>
+                <th className="text-left">Status</th>
+                <th className="text-left">Join Date</th>
+                <th className="text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedTutors.map((tutor) => (
-                <tr key={tutor._id?.toString()}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="avatar placeholder">
-                        <div className="bg-neutral text-neutral-content rounded-full w-10 h-10">
-                          <span className="text-sm">
+              {paginatedTutors.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-8">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="text-gray-400 text-4xl">👥</div>
+                      <p className="text-gray-500 font-medium">
+                        No tutors found
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {filteredTutors.length === 0 &&
+                        !nameFilter &&
+                        !phoneFilter &&
+                        !statusFilter
+                          ? "No tutors have been added yet."
+                          : "Try adjusting your filters to see more results."}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedTutors.map((tutor) => (
+                  <tr key={tutor._id?.toString()} className="hover:bg-base-200">
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="avatar placeholder">
+                          <div className="bg-gradient-to-br from-primary to-secondary text-primary-content rounded-full w-10 h-10 flex items-center justify-center overflow-hidden">
                             {tutor?.userData?.user?.image ? (
-                              <Image
+                              <CloudinaryImage
                                 src={tutor?.userData?.user?.image}
                                 alt={tutor?.userData?.user?.name || "Tutor"}
                                 width={40}
                                 height={40}
-                                className="rounded-full"
+                                className="rounded-full w-10 h-10 object-cover"
                               />
                             ) : (
-                              tutor.userData?.user?.name?.charAt(0) || "?"
+                              <span className="text-sm font-semibold">
+                                {tutor.userData?.user?.name
+                                  ?.charAt(0)
+                                  ?.toUpperCase() || "?"}
+                              </span>
                             )}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          {tutor.userData?.user?.name || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {tutor.userData?.user?.email || "No email"}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{tutor.phone || "N/A"}</td>
-                  <td>
-                    <div
-                      className={`badge ${
-                        tutor.isActive ? "badge-success" : "badge-error"
-                      }`}
-                    >
-                      {tutor.isActive ? "Active" : "Inactive"}
-                    </div>
-                  </td>
-                  <td>
-                    {tutor.createdAt ? formatDate(tutor.createdAt) : "N/A"}
-                  </td>
-                  <td>
-                    <div className="relative">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() =>
-                          handleDropdownToggle(tutor._id?.toString() || "")
-                        }
-                      >
-                        <ChevronDownIcon className="w-4 h-4" />
-                      </button>
-
-                      {openDropdown === tutor._id?.toString() && (
-                        <div className="absolute right-0 top-full mt-1 z-10 bg-white border border-gray-200 rounded-lg shadow-lg w-48">
-                          <div className="py-1">
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left"
-                              onClick={() => handleViewDetails(tutor)}
-                            >
-                              <EyeIcon className="w-4 h-4" />
-                              View Full Details
-                            </button>
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left"
-                              onClick={() => handleEditTutor(tutor)}
-                            >
-                              <PencilIcon className="w-4 h-4" />
-                              Edit Tutor
-                            </button>
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left text-red-600"
-                              onClick={() => handleDeleteTutor(tutor)}
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                              Delete Tutor
-                            </button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <div>
+                          <div className="font-medium">
+                            {tutor.userData?.user?.name || "N/A"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {tutor.userData?.user?.email || "No email"}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{tutor.phone || "N/A"}</td>
+                    <td>
+                      <div
+                        className={`badge ${
+                          tutor.isActive ? "badge-success" : "badge-error"
+                        }`}
+                      >
+                        {tutor.isActive ? "Active" : "Inactive"}
+                      </div>
+                    </td>
+                    <td>
+                      {tutor.createdAt ? formatDate(tutor.createdAt) : "N/A"}
+                    </td>
+                    <td>
+                      <div className="relative">
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() =>
+                            handleDropdownToggle(tutor._id?.toString() || "")
+                          }
+                        >
+                          <ChevronDownIcon className="w-4 h-4" />
+                        </button>
+
+                        {openDropdown === tutor._id?.toString() && (
+                          <div className="absolute right-0 top-full mt-1 z-10 bg-white border border-gray-200 rounded-lg shadow-lg w-48">
+                            <div className="py-1">
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                                onClick={() => handleViewDetails(tutor)}
+                              >
+                                <EyeIcon className="w-4 h-4" />
+                                View Full Details
+                              </button>
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                                onClick={() => handleEditTutor(tutor)}
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                                Edit Tutor
+                              </button>
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 w-full text-left text-red-600"
+                                onClick={() => handleDeleteTutor(tutor)}
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                                Delete Tutor
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-          <div className="flex items-center justify-start w-1/2 gap-2">
-            <span className="text-sm w-full text-gray-600">
-              {startIndex + 1} to{" "}
-              {Math.min(
-                startIndex + itemsPerPage,
-                filteredAndSortedTutors.length
-              )}{" "}
-              of {filteredAndSortedTutors.length}
-            </span>
-            <select
-              className="select w-full select-bordered select-sm"
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option value={5}>5 per page</option>
-              <option value={10}>10 per page</option>
-              <option value={20}>20 per page</option>
-              <option value={50}>50 per page</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              <ChevronLeftIcon className="w-4 h-4" />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    className={`btn btn-sm ${
-                      currentPage === page ? "btn-primary" : "btn-outline"
-                    }`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              {totalPages > 5 && (
-                <>
-                  <span className="px-2">...</span>
-                  <button
-                    className={`btn btn-sm ${
-                      currentPage === totalPages ? "btn-primary" : "btn-outline"
-                    }`}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
+        {clientPagination.totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {clientPagination.totalPages}
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+                Previous
+              </button>
 
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              Next
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
+              <div className="flex items-center gap-1">
+                {Array.from(
+                  { length: Math.min(5, clientPagination.totalPages) },
+                  (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <button
+                        key={page}
+                        className={`btn btn-sm ${
+                          currentPage === page ? "btn-primary" : "btn-outline"
+                        }`}
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </button>
+                    );
+                  }
+                )}
+                {clientPagination.totalPages > 5 && (
+                  <>
+                    <span className="px-2">...</span>
+                    <button
+                      className={`btn btn-sm ${
+                        currentPage === clientPagination.totalPages
+                          ? "btn-primary"
+                          : "btn-outline"
+                      }`}
+                      onClick={() =>
+                        handlePageChange(clientPagination.totalPages)
+                      }
+                    >
+                      {clientPagination.totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={currentPage === clientPagination.totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+              >
+                Next
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Tutor Details Modal */}

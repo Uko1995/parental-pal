@@ -13,8 +13,8 @@ interface Child {
   class?: string;
   schoolName?: string;
   subjects?: string[];
-  parentName: string;
-  parentEmail: string;
+  parentName: string | null;
+  parentEmail: string | null;
   services: Array<{
     serviceType: string;
     status: string;
@@ -129,13 +129,13 @@ export default function ChildActions({ child }: ChildActionsProps) {
                       Parent Name:
                     </span>
                     <p className="text-gray-900 font-semibold">
-                      {child.parentName}
+                      {child.parentName || "N/A"}
                     </p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-600">Email:</span>
                     <p className="text-gray-900 font-semibold">
-                      {child.parentEmail}
+                      {child.parentEmail || "N/A"}
                     </p>
                   </div>
                 </div>

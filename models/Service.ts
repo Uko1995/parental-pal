@@ -15,6 +15,7 @@ export interface ServiceInterface {
   // Service description and details
   description: string;
   shortDescription?: string;
+  image?: string;
 
   // Pricing structure
   pricing: {
@@ -58,6 +59,9 @@ export interface ServiceInterface {
 
   // Business logic
   status: "active" | "inactive" | "draft" | "seasonal" | "discontinued";
+
+  // Rate acceptance for tutoring services
+  hourlyRateAccepted?: boolean;
 
   // Performance metrics
   metrics?: {
@@ -249,6 +253,7 @@ export const ServiceSchema = {
         createdAt: { bsonType: "date" },
         updatedAt: { bsonType: "date" },
         lastBookedAt: { bsonType: "date" },
+        image: { bsonType: "string" },
 
         // Integration settings
         integrations: {
