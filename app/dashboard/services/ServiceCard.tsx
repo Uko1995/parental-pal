@@ -1,14 +1,10 @@
 "use client";
 
 import {
+  ChevronDownIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
-  StarIcon,
-  CalendarDaysIcon,
-  CurrencyDollarIcon,
-  UsersIcon,
-  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
@@ -20,24 +16,6 @@ interface ServiceCardProps {
   onDelete: (service: ClientServiceInterface) => void;
   onViewDetails: (service: ClientServiceInterface) => void;
 }
-
-const ServiceTypeIcons = {
-  tutoring: "🎓",
-  childcare: "❤️",
-  "holiday-camps": "🏕️",
-  homeschooling: "📚",
-  "space-rental": "🏢",
-  "kiddies-enrichment": "🌟",
-};
-
-const ServiceTypeColors = {
-  tutoring: "from-[#90AC19]/10 to-[#90AC19]/5 border-[#90AC19]/20",
-  childcare: "from-[#E8931A]/10 to-[#E8931A]/5 border-[#E8931A]/20",
-  "holiday-camps": "from-[#A25F97]/10 to-[#A25F97]/5 border-[#A25F97]/20",
-  homeschooling: "from-blue-500/10 to-blue-500/5 border-blue-500/20",
-  "space-rental": "from-purple-500/10 to-purple-500/5 border-purple-500/20",
-  "kiddies-enrichment": "from-pink-500/10 to-pink-500/5 border-pink-500/20",
-};
 
 const ServiceTypeBadgeColors = {
   tutoring: "badge-success",
@@ -87,36 +65,42 @@ export default function ServiceCard({
 
   return (
     <div
-      className={`card bg-gradient-to-br ${
-        ServiceTypeColors[service.type as keyof typeof ServiceTypeColors] ||
-        "from-gray-100/10 to-gray-100/5 border-gray-200"
-      } shadow-lg border hover:shadow-xl transition-all duration-300 group`}
+      className="card bg-gradient-to-br 
+        from-gray-100/10 to-gray-100/5 border-gray-200
+      shadow-lg border hover:shadow-xl transition-all duration-300 group"
     >
-      <div className="card-body p-6">
+      {/* Service Image */}
+      {service.image && (
+        <div className=" mb-1 overflow-hidden rounded-lg bg-gray-100">
+          <Image
+            src={service.image}
+            alt={service.name}
+            width={400}
+            height={400}
+            className="w-full h-80 object-cover"
+            onError={(e) => {
+              console.error(`Failed to load image: ${service.image}`);
+              (e.target as HTMLElement).style.display = "none";
+            }}
+          />
+        </div>
+      )}
+      <div className="card-body">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="text-3xl">
-              {ServiceTypeIcons[
-                service.type as keyof typeof ServiceTypeIcons
-              ] || "⚡"}
-            </div>
-            <div>
-              <h3 className="card-title text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
-                {service.name}
-              </h3>
-              <span
-                className={`badge ${
-                  ServiceTypeBadgeColors[
-                    service.type as keyof typeof ServiceTypeBadgeColors
-                  ] || "badge-neutral"
-                } badge-sm`}
-              >
-                {formatServiceType(service.type)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
+        <div className="flex items-start justify-between mb-1">
+          <h3 className="card-title text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
+            {service.name}
+          </h3>
+          <div className="flex gap-2">
+            <span
+              className={`badge ${
+                ServiceTypeBadgeColors[
+                  service.type as keyof typeof ServiceTypeBadgeColors
+                ] || "badge-neutral"
+              } badge-sm`}
+            >
+              {formatServiceType(service.type)}
+            </span>
             <span
               className={`badge ${getStatusBadge(service.status)} badge-sm`}
             >
@@ -125,48 +109,29 @@ export default function ServiceCard({
           </div>
         </div>
 
-        {/* Service Image */}
-        {service.image && (
-          <div className="mb-4 overflow-hidden rounded-lg">
-            <Image
-              src={service.image}
-              alt={service.name}
-              width={400}
-              height={200}
-              className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                // Hide image on error
-                (e.target as HTMLElement).style.display = "none";
-              }}
-            />
-          </div>
-        )}
-
         {/* Description */}
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-          {service.shortDescription || service.description}
+        <p className="text-gray-600 text-sm mb-1 line-clamp-2">
+          {service.description}
         </p>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white/50 rounded-lg p-3 border border-gray-100">
+        <div className="grid grid-cols-2 gap-2 mb-1">
+          <div className="bg-white/50 rounded-lg p-2 ">
             <div className="flex items-center space-x-2">
-              <CurrencyDollarIcon className="w-4 h-4 text-green-600" />
               <div>
                 <p className="text-xs text-gray-500">Rate</p>
                 <p className="font-semibold text-sm">
-                  {formatCurrency(service.pricing.baseRate)}/
+                  {formatCurrency(Number(service.pricing.baseRate))}/
                   {service.pricing.billingType}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-white/50 rounded-lg p-2 ">
             <div className="flex items-center space-x-2">
-              <CalendarDaysIcon className="w-4 h-4 text-blue-600" />
               <div>
-                <p className="text-xs text-gray-500">Bookings</p>
+                <p className="text-xs text-gray-500">Number of bookings</p>
                 <p className="font-semibold text-sm">
                   {service.metrics?.totalBookings || 0}
                 </p>
@@ -174,11 +139,10 @@ export default function ServiceCard({
             </div>
           </div>
 
-          <div className="bg-white/50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-white/50 rounded-lg p-2 ">
             <div className="flex items-center space-x-2">
-              <StarIcon className="w-4 h-4 text-yellow-500" />
               <div>
-                <p className="text-xs text-gray-500">Rating</p>
+                <p className="text-xs text-gray-500">Average Rating</p>
                 <p className="font-semibold text-sm">
                   {service.metrics?.averageRating?.toFixed(1) || "N/A"}
                 </p>
@@ -186,9 +150,8 @@ export default function ServiceCard({
             </div>
           </div>
 
-          <div className="bg-white/50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-white/50 rounded-lg p-2 ">
             <div className="flex items-center space-x-2">
-              <UsersIcon className="w-4 h-4 text-purple-600" />
               <div>
                 <p className="text-xs text-gray-500">Capacity</p>
                 <p className="font-semibold text-sm">
@@ -200,21 +163,18 @@ export default function ServiceCard({
           </div>
         </div>
 
-        {/* Revenue Badge */}
-        {service.metrics?.totalRevenue && (
-          <div className="flex justify-center mb-4">
+        <div className="flex items-center justify-between space-x-1">
+          {/* Revenue Badge */}
+          {service.metrics?.totalRevenue && (
             <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-200 rounded-full px-3 py-1">
               <span className="text-green-700 font-medium text-sm">
                 {formatCurrency(service.metrics.totalRevenue)} total revenue
               </span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Last Booking */}
-        {service.lastBookedAt && (
-          <div className="flex items-center justify-center space-x-1 mb-4">
-            <ClockIcon className="w-4 h-4 text-gray-400" />
+          {/* Last Booking */}
+          {service.lastBookedAt && (
             <span className="text-xs text-gray-500">
               Last booked:{" "}
               {new Date(service.lastBookedAt).toLocaleDateString("en-US", {
@@ -222,8 +182,8 @@ export default function ServiceCard({
                 day: "numeric",
               })}
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Action Buttons */}
         <div className="card-actions justify-end space-x-2">
@@ -231,24 +191,16 @@ export default function ServiceCard({
             <div
               tabIndex={0}
               role="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-outline btn-sm"
               title="More actions"
             >
-              •••
+              <ChevronDownIcon className="w-4 h-4" />
+              More Actions
             </div>
             <ul
               tabIndex={0}
               className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-48"
             >
-              <li>
-                <button
-                  className="flex items-center space-x-2"
-                  onClick={() => onViewDetails(service)}
-                >
-                  <EyeIcon className="w-4 h-4" />
-                  <span>View Details</span>
-                </button>
-              </li>
               <li>
                 <button
                   className="flex items-center space-x-2"

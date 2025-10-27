@@ -21,6 +21,7 @@ interface ServicesData {
 
 const fetchServices = async (): Promise<ServicesData> => {
   const collection = await getCollection("services");
+
   let services = (await collection
     .find({})
     .sort({ createdAt: -1 })
@@ -28,42 +29,24 @@ const fetchServices = async (): Promise<ServicesData> => {
 
   // If no services exist, create some sample data
   if (services.length === 0) {
-    const sampleServices: Partial<ServiceInterface>[] = [
+    const sampleServices: Omit<ServiceInterface, "_id">[] = [
       {
         name: "Academic Tutoring",
         type: "tutoring",
         description:
           "One-on-one personalized tutoring sessions for students of all ages. Our experienced tutors provide comprehensive support in mathematics, science, English, and other subjects to help students excel academically.",
         shortDescription: "Personalized one-on-one tutoring sessions",
-        image: "/images/services/tutoring.jpg",
+        image: "/tutoring.jpg",
         pricing: {
-          baseRate: 15000,
+          baseRate: "15000",
           currency: "NGN",
           billingType: "hourly",
-          packages: [
-            {
-              name: "Weekly Package",
-              description: "4 sessions per week",
-              duration: "1 month",
-              discountPercentage: 10,
-              minimumSessions: 16,
-            },
-            {
-              name: "Monthly Package",
-              description: "16 sessions per month",
-              duration: "1 month",
-              discountPercentage: 15,
-              minimumSessions: 16,
-            },
-          ],
         },
         requirements: {
-          minimumAge: 5,
-          maximumAge: 18,
           minimumParticipants: 1,
           maximumParticipants: 1,
-          idealGroupSize: 1,
-          ageGroups: ["primary", "secondary"],
+          minimumAge: 5,
+          maximumAge: 18,
         },
         status: "active",
         metrics: {
@@ -84,33 +67,17 @@ const fetchServices = async (): Promise<ServicesData> => {
         description:
           "Professional daily childcare services providing a safe, nurturing environment for children. Our trained caregivers ensure your child receives the attention and care they deserve while you're away.",
         shortDescription: "Professional daily childcare services",
-        image: "/images/services/childcare.jpg",
+        image: "/childcare.jpg",
         pricing: {
-          baseRate: 5000,
+          baseRate: "5000",
           currency: "NGN",
           billingType: "daily",
-          packages: [
-            {
-              name: "Monthly Care",
-              description: "Full month of daily care",
-              duration: "1 month",
-              discountPercentage: 15,
-            },
-          ],
         },
         requirements: {
-          minimumAge: 1,
-          maximumAge: 12,
           minimumParticipants: 1,
           maximumParticipants: 8,
-          idealGroupSize: 4,
-          ageGroups: ["toddler", "preschool", "primary"],
-          venueTypes: ["indoor"],
-          equipmentProvided: [
-            "toys",
-            "educational materials",
-            "safety equipment",
-          ],
+          minimumAge: 1,
+          maximumAge: 12,
         },
         status: "active",
         metrics: {
@@ -131,25 +98,17 @@ const fetchServices = async (): Promise<ServicesData> => {
         description:
           "Fun and educational holiday programs designed to keep children engaged during school breaks. Activities include arts and crafts, sports, games, and educational workshops.",
         shortDescription: "Fun and educational holiday programs",
-        image: "/images/services/holiday-camps.jpg",
+        image: "/camp.jpg",
         pricing: {
-          baseRate: 30000,
+          baseRate: "30000",
           currency: "NGN",
           billingType: "weekly",
         },
         requirements: {
-          minimumAge: 6,
-          maximumAge: 16,
           minimumParticipants: 5,
           maximumParticipants: 20,
-          idealGroupSize: 12,
-          ageGroups: ["primary", "secondary"],
-          venueTypes: ["indoor", "outdoor"],
-          equipmentProvided: [
-            "sports equipment",
-            "art supplies",
-            "educational materials",
-          ],
+          minimumAge: 6,
+          maximumAge: 16,
         },
         status: "active",
         metrics: {
@@ -163,117 +122,6 @@ const fetchServices = async (): Promise<ServicesData> => {
         createdAt: new Date("2024-03-01"),
         updatedAt: new Date(),
         lastBookedAt: new Date("2024-09-15"),
-      },
-      {
-        name: "Homeschooling Support",
-        type: "homeschooling",
-        description:
-          "Comprehensive homeschooling support services including curriculum planning, progress tracking, and educational resources for parents who choose to educate their children at home.",
-        shortDescription: "Comprehensive homeschooling support services",
-        image: "/images/services/homeschooling.jpg",
-        pricing: {
-          baseRate: 25000,
-          currency: "NGN",
-          billingType: "monthly",
-        },
-        requirements: {
-          minimumAge: 5,
-          maximumAge: 18,
-          minimumParticipants: 1,
-          maximumParticipants: 3,
-          idealGroupSize: 1,
-          ageGroups: ["primary", "secondary"],
-        },
-        status: "active",
-        metrics: {
-          totalBookings: 23,
-          totalRevenue: 575000,
-          averageRating: 4.6,
-          totalReviews: 18,
-          conversionRate: 68.9,
-          repeatCustomerRate: 91.3,
-        },
-        createdAt: new Date("2024-04-01"),
-        updatedAt: new Date(),
-        lastBookedAt: new Date("2024-10-10"),
-      },
-      {
-        name: "Event Space Rental",
-        type: "space-rental",
-        description:
-          "Premium event spaces available for children's parties, educational workshops, and family gatherings. Our spaces are equipped with modern amenities and safety features.",
-        shortDescription: "Premium event spaces for special occasions",
-        image: "/images/services/space-rental.jpg",
-        pricing: {
-          baseRate: 50000,
-          currency: "NGN",
-          billingType: "per-event",
-        },
-        requirements: {
-          minimumParticipants: 10,
-          maximumParticipants: 100,
-          idealGroupSize: 25,
-          venueTypes: ["indoor", "outdoor"],
-          equipmentProvided: [
-            "tables",
-            "chairs",
-            "sound system",
-            "decorations",
-          ],
-        },
-        status: "active",
-        metrics: {
-          totalBookings: 12,
-          totalRevenue: 600000,
-          averageRating: 4.4,
-          totalReviews: 9,
-          conversionRate: 58.7,
-          repeatCustomerRate: 33.3,
-        },
-        createdAt: new Date("2024-05-01"),
-        updatedAt: new Date(),
-        lastBookedAt: new Date("2024-10-05"),
-      },
-      {
-        name: "Kids Enrichment Programs",
-        type: "kiddies-enrichment",
-        description:
-          "Specialized enrichment programs focusing on creativity, critical thinking, and skill development. Programs include coding for kids, music lessons, art classes, and STEM activities.",
-        shortDescription:
-          "Specialized enrichment programs for skill development",
-        image: "/images/services/enrichment.jpg",
-        pricing: {
-          baseRate: 20000,
-          currency: "NGN",
-          billingType: "weekly",
-        },
-        requirements: {
-          minimumAge: 4,
-          maximumAge: 14,
-          minimumParticipants: 3,
-          maximumParticipants: 12,
-          idealGroupSize: 8,
-          ageGroups: ["preschool", "primary"],
-          venueTypes: ["indoor"],
-          equipmentProvided: [
-            "computers",
-            "musical instruments",
-            "art supplies",
-            "STEM kits",
-          ],
-        },
-        status: "active",
-        metrics: {
-          totalBookings: 67,
-          totalRevenue: 1340000,
-          averageRating: 4.9,
-          totalReviews: 45,
-          conversionRate: 79.3,
-          repeatCustomerRate: 82.1,
-        },
-        createdAt: new Date("2024-06-01"),
-        updatedAt: new Date(),
-        lastBookedAt: new Date("2024-10-17"),
       },
     ];
 
@@ -363,3 +211,120 @@ export const getServiceStatistics = unstable_cache(
     tags: [CACHE_TAGS.SERVICES, CACHE_TAGS.ANALYTICS],
   }
 );
+
+/**
+ * Create a new service
+ */
+export async function createService(
+  serviceData: Omit<ServiceInterface, "_id" | "createdAt" | "updatedAt">
+) {
+  try {
+    const collection = await getCollection("services");
+
+    const newService = {
+      ...serviceData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await collection.insertOne(newService);
+
+    if (result.acknowledged) {
+      // Revalidate cache
+      const { revalidateTag } = await import("next/cache");
+      revalidateTag(CACHE_TAGS.SERVICES);
+
+      return {
+        success: true,
+        data: {
+          ...newService,
+          _id: result.insertedId.toString(),
+        },
+      };
+    }
+
+    return {
+      success: false,
+      error: "Failed to create service",
+    };
+  } catch (error) {
+    console.error("Error creating service:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+/**
+ * Update an existing service
+ */
+export async function updateService(
+  serviceId: string,
+  serviceData: Partial<Omit<ServiceInterface, "_id" | "createdAt">>
+) {
+  try {
+    const collection = await getCollection("services");
+    const { ObjectId } = await import("mongodb");
+
+    const updateData = {
+      ...serviceData,
+      updatedAt: new Date(),
+    };
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(serviceId) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount > 0) {
+      // Revalidate cache
+      const { revalidateTag } = await import("next/cache");
+      revalidateTag(CACHE_TAGS.SERVICES);
+
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: "Service not found",
+    };
+  } catch (error) {
+    console.error("Error updating service:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+/**
+ * Delete a service
+ */
+export async function deleteService(serviceId: string) {
+  try {
+    const collection = await getCollection("services");
+    const { ObjectId } = await import("mongodb");
+
+    const result = await collection.deleteOne({ _id: new ObjectId(serviceId) });
+
+    if (result.deletedCount > 0) {
+      // Revalidate cache
+      const { revalidateTag } = await import("next/cache");
+      revalidateTag(CACHE_TAGS.SERVICES);
+
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: "Service not found",
+    };
+  } catch (error) {
+    console.error("Error deleting service:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}

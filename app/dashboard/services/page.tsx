@@ -1,6 +1,5 @@
 import {
   BuildingOfficeIcon,
-  PlusIcon,
   EyeIcon,
   CurrencyDollarIcon,
   StarIcon,
@@ -8,6 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { getServices } from "./action";
 import ServicesContent from "./ServicesContent";
+import AddServiceButton from "./AddServiceButton";
 
 export default async function ServicesPage() {
   // Fetch services data
@@ -60,10 +60,7 @@ export default async function ServicesPage() {
             <EyeIcon className="w-5 h-5 mr-2" />
             Preview Catalog
           </button>
-          <button className="btn btn-primary">
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Add New Service
-          </button>
+          <AddServiceButton />
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import ServiceFilters, {
   ServiceFilters as FilterState,
 } from "./ServiceFilters";
 import ServiceDetailsModal from "./ServiceDetailsModal";
+import AddServiceModal from "./AddServiceModal";
 import toast from "react-hot-toast";
 
 interface ServicesContentProps {
@@ -29,6 +30,7 @@ export default function ServicesContent({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [serviceToDelete, setServiceToDelete] =
     useState<ClientServiceInterface | null>(null);
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -60,8 +62,8 @@ export default function ServicesContent({
         : true;
 
       const matchesPriceRange =
-        service.pricing.baseRate >= filters.priceRange.min &&
-        service.pricing.baseRate <= filters.priceRange.max;
+        Number(service.pricing.baseRate) >= filters.priceRange.min &&
+        Number(service.pricing.baseRate) <= filters.priceRange.max;
 
       return (
         matchesSearch && matchesCategory && matchesStatus && matchesPriceRange
@@ -159,6 +161,15 @@ export default function ServicesContent({
     setServiceToDelete(null);
   };
 
+  const handleAddService = () => {
+    setShowAddServiceModal(true);
+  };
+
+  const handleServiceAdded = () => {
+    // Trigger page refresh to show the new service
+    window.location.reload();
+  };
+
   return (
     <>
       {/* Filters */}
@@ -181,7 +192,7 @@ export default function ServicesContent({
               ? "Try adjusting your filters to see more services."
               : "Get started by creating your first service."}
           </p>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={handleAddService}>
             <span className="text-lg mr-2">+</span>
             Create New Service
           </button>
@@ -242,6 +253,13 @@ export default function ServicesContent({
           <div className="modal-backdrop" onClick={cancelDeleteService}></div>
         </div>
       )}
+
+      {/* Add Service Modal */}
+      <AddServiceModal
+        isOpen={showAddServiceModal}
+        onClose={() => setShowAddServiceModal(false)}
+        onServiceAdded={handleServiceAdded}
+      />
     </>
   );
 }

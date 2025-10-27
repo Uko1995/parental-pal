@@ -14,12 +14,12 @@ export interface ServiceInterface {
 
   // Service description and details
   description: string;
-  shortDescription?: string;
-  image?: string;
+  shortDescription: string;
+  image: string;
 
   // Pricing structure
   pricing: {
-    baseRate: number;
+    baseRate: string;
     currency: string;
     billingType:
       | "hourly"
@@ -52,16 +52,12 @@ export interface ServiceInterface {
     idealGroupSize?: number;
 
     // Location requirements
-    venueTypes?: Array<"indoor" | "outdoor" | "both">;
     equipmentProvided?: string[];
     spaceRequirements?: string;
   };
 
   // Business logic
   status: "active" | "inactive" | "draft" | "seasonal" | "discontinued";
-
-  // Rate acceptance for tutoring services
-  hourlyRateAccepted?: boolean;
 
   // Performance metrics
   metrics?: {

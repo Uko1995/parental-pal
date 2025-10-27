@@ -105,7 +105,7 @@ export default function ServiceDetailsModal({
             </div>
             <div className="stat-title text-green-800">Base Rate</div>
             <div className="stat-value text-green-900 text-xl">
-              {formatCurrency(service.pricing.baseRate)}
+              {formatCurrency(Number(service.pricing.baseRate))}
             </div>
             <div className="stat-desc text-green-700">
               per {service.pricing.billingType}
@@ -163,7 +163,7 @@ export default function ServiceDetailsModal({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Base Rate:</span>
                   <span className="font-semibold">
-                    {formatCurrency(service.pricing.baseRate)}
+                    {formatCurrency(Number(service.pricing.baseRate))}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -252,23 +252,6 @@ export default function ServiceDetailsModal({
                       </span>
                     </div>
                   )}
-
-                  {/* Venue Types */}
-                  {service.requirements.venueTypes &&
-                    service.requirements.venueTypes.length > 0 && (
-                      <div>
-                        <span className="text-gray-600 block mb-1">
-                          Venue Types:
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {service.requirements.venueTypes.map((venue, idx) => (
-                            <span key={idx} className="badge badge-outline">
-                              {venue}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                   {/* Equipment */}
                   {service.requirements.equipmentProvided &&
