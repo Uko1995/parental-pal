@@ -18,13 +18,18 @@ interface ServicesContentProps {
     activeServices: number;
     categories: Record<string, number>;
   };
+  onServiceAdded?: (newService: ClientServiceInterface) => void;
+  onServiceUpdated?: (updatedService: ClientServiceInterface) => void;
+  onServiceDeleted?: (serviceId: string) => void;
 }
 
 export default function ServicesContent({
-  services: initialServices,
+  services,
   serviceStats,
+  onServiceAdded,
+  onServiceUpdated,
+  onServiceDeleted,
 }: ServicesContentProps) {
-  const [services, setServices] = useState(initialServices);
   const [selectedService, setSelectedService] =
     useState<ClientServiceInterface | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -66,9 +71,15 @@ export default function ServicesContent({
         ? service.status === filters.status
         : true;
 
+      const baseRate = service.pricing?.baseRate
+        ? Number(service.pricing.baseRate)
+        : 0;
       const matchesPriceRange =
-        Number(service.pricing.baseRate) >= filters.priceRange.min &&
-        Number(service.pricing.baseRate) <= filters.priceRange.max;
+        filters.priceRange.min === 0 && filters.priceRange.max === 100000
+          ? true // No price filtering applied (default values)
+          : !isNaN(baseRate) &&
+            baseRate >= filters.priceRange.min &&
+            baseRate <= filters.priceRange.max;
 
       return (
         matchesSearch && matchesCategory && matchesStatus && matchesPriceRange
@@ -89,8 +100,8 @@ export default function ServicesContent({
           bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         case "pricing.baseRate":
-          aValue = a.pricing.baseRate;
-          bValue = b.pricing.baseRate;
+          aValue = Number(a.pricing?.baseRate) || 0;
+          bValue = Number(b.pricing?.baseRate) || 0;
           break;
         case "metrics.totalBookings":
           aValue = a.metrics?.totalBookings || 0;
@@ -141,10 +152,7 @@ export default function ServicesContent({
       const result = await deleteService(serviceToDelete._id!);
 
       if (result.success) {
-        // Remove service from local state
-        setServices((prev) =>
-          prev.filter((s) => s._id !== serviceToDelete._id)
-        );
+        handleServiceDeletedLocal(serviceToDelete._id!);
         toast.success("Service deleted successfully");
       } else {
         toast.error(result.error || "Failed to delete service");
@@ -168,18 +176,44 @@ export default function ServicesContent({
     setShowAddServiceModal(true);
   };
 
-  const handleServiceAdded = () => {
-    // Trigger page refresh to show the new service
-    window.location.reload();
+  const handleServiceAddedLocal = (newService: ClientServiceInterface) => {
+    if (onServiceAdded) {
+      onServiceAdded(newService);
+    }
   };
 
-  const handleServiceUpdated = () => {
-    // Trigger page refresh to show the updated service
-    window.location.reload();
+  const handleServiceUpdatedLocal = (
+    updatedService: ClientServiceInterface
+  ) => {
+    if (onServiceUpdated) {
+      onServiceUpdated(updatedService);
+    }
+  };
+
+  const handleServiceDeletedLocal = (serviceId: string) => {
+    if (onServiceDeleted) {
+      onServiceDeleted(serviceId);
+    }
   };
 
   return (
     <>
+      {/* Actions Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">
+            All Services ({serviceStats.totalServices})
+          </h2>
+          <p className="text-gray-600 text-sm mt-1">
+            Manage and organize your service offerings
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={handleAddService}>
+          <span className="text-lg mr-2">+</span>
+          Add Service
+        </button>
+      </div>
+
       {/* Filters */}
       <ServiceFilters
         onFilterChange={setFilters}
@@ -282,7 +316,7 @@ export default function ServicesContent({
       <AddServiceModal
         isOpen={showAddServiceModal}
         onClose={() => setShowAddServiceModal(false)}
-        onServiceAdded={handleServiceAdded}
+        onServiceAdded={handleServiceAddedLocal}
       />
 
       {/* Edit Service Modal */}
@@ -292,7 +326,7 @@ export default function ServicesContent({
           setShowEditModal(false);
           setServiceToEdit(null);
         }}
-        onServiceUpdated={handleServiceUpdated}
+        onServiceUpdated={handleServiceUpdatedLocal}
         service={serviceToEdit}
       />
     </>

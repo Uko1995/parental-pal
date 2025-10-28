@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   UserGroupIcon,
   PlusIcon,
@@ -36,6 +36,7 @@ interface ChildrenTableProps {
 }
 
 export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
+  const [children, setChildren] = useState<Child[]>(childrenData || []);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [nameFilter, setNameFilter] = useState("");
@@ -55,20 +56,34 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     }
   };
 
+  // Update local state when props change
+  useEffect(() => {
+    setChildren(childrenData || []);
+  }, [childrenData]);
+
+  const handleChildUpdated = (updatedChild: Child) => {
+    // Update child in local state instead of page reload
+    setChildren((prev) =>
+      prev.map((child) =>
+        child.childId === updatedChild.childId ? updatedChild : child
+      )
+    );
+  };
+
   // Get unique services for filter dropdown
   const uniqueServices = useMemo(() => {
     const services = new Set<string>();
-    childrenData.forEach((child) => {
+    children.forEach((child) => {
       child.services.forEach((service) => {
         services.add(service.serviceType);
       });
     });
     return Array.from(services).sort();
-  }, [childrenData]);
+  }, [children]);
 
   // Filter children based on current filters
   const filteredChildren = useMemo(() => {
-    return childrenData.filter((child) => {
+    return children.filter((child) => {
       // Name filter
       if (
         nameFilter &&
@@ -100,7 +115,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
 
       return true;
     });
-  }, [childrenData, nameFilter, ageFilter, genderFilter, serviceFilter]);
+  }, [children, nameFilter, ageFilter, genderFilter, serviceFilter]);
 
   // Client-side pagination
   const paginatedChildren = useMemo(() => {
@@ -416,7 +431,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                     <td>
                       <ChildActions
                         child={child}
-                        onChildUpdated={() => window.location.reload()}
+                        onChildUpdated={handleChildUpdated}
                       />
                     </td>
                   </tr>
@@ -430,8 +445,8 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
         {hasActiveFilters && (
           <div className="mt-4 p-3 bg-info/10 rounded-lg">
             <p className="text-sm text-info">
-              📊 Showing {filteredChildren.length} of {childrenData.length}{" "}
-              children based on your filters
+              📊 Showing {filteredChildren.length} of {children.length} children
+              based on your filters
             </p>
           </div>
         )}

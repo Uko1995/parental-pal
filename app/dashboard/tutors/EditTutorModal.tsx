@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 interface EditTutorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onTutorUpdated: () => void;
+  onTutorUpdated: (updatedTutor: UserInterface) => void;
   tutor: UserInterface | null;
 }
 
@@ -283,7 +283,8 @@ export default function EditTutorModal({
 
       if (result.success) {
         toast.success("Tutor updated successfully!");
-        onTutorUpdated();
+        // Pass the updated tutor data to the callback
+        onTutorUpdated(result.data);
         onClose();
       } else {
         toast.error(result.error || "Failed to update tutor");

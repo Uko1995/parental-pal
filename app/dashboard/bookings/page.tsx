@@ -11,7 +11,7 @@ import {
 import BookingsTable from "./BookingsTable";
 import BookingCharts from "./BookingCharts";
 import AddBookingModal from "./AddBookingModal";
-import EditBookingModal from "./EditBookingModal";
+
 import ViewBookingModal from "./ViewBookingModal";
 
 interface Child {
@@ -88,7 +88,7 @@ export default function BookingsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
@@ -128,20 +128,19 @@ export default function BookingsPage() {
     }
   };
 
-  const handleEditSuccess = () => {
-    fetchData(); // Refresh the data
-    setIsEditModalOpen(false);
-    setSelectedBooking(null);
-  };
-
-  const handleEdit = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setIsEditModalOpen(true);
-  };
-
   const handleView = (booking: Booking) => {
     setSelectedBooking(booking);
     setIsViewModalOpen(true);
+  };
+
+  const handleBookingDeleted = (bookingId: string) => {
+    setBookings((prev) => prev.filter((booking) => booking._id !== bookingId));
+    // Update analytics
+    setAnalytics((prev) => ({
+      ...prev,
+      totalBookings: prev.totalBookings - 1,
+      // Add more analytics updates as needed
+    }));
   };
 
   const formatCurrency = (amount: number) => {
@@ -257,9 +256,8 @@ export default function BookingsPage() {
       {/* Bookings Table */}
       <BookingsTable
         bookings={bookings}
-        onEdit={handleEdit}
         onView={handleView}
-        onRefresh={fetchData}
+        onBookingDeleted={handleBookingDeleted}
       />
 
       {/* Modals */}
@@ -268,16 +266,6 @@ export default function BookingsPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleAddSuccess}
-      />
-
-      <EditBookingModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedBooking(null);
-        }}
-        booking={selectedBooking}
-        onSuccess={handleEditSuccess}
       />
 
       <ViewBookingModal

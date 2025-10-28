@@ -16,7 +16,7 @@ interface Child {
   class?: string;
   schoolName?: string;
   subjects?: string[];
-  parentId?: string;
+  parentId: string;
   parentName: string | null;
   parentEmail: string | null;
   services: Array<{
@@ -29,7 +29,7 @@ interface Child {
 
 interface ChildActionsProps {
   child: Child;
-  onChildUpdated?: () => void;
+  onChildUpdated?: (updatedChild: Child) => void;
 }
 
 export default function ChildActions({
@@ -49,9 +49,9 @@ export default function ChildActions({
     setShowEditModal(true);
   };
 
-  const handleChildUpdated = () => {
+  const handleChildUpdated = (updatedChild: Child) => {
     if (onChildUpdated) {
-      onChildUpdated();
+      onChildUpdated(updatedChild);
     }
   };
 

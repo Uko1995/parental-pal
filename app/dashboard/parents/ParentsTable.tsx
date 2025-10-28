@@ -58,8 +58,9 @@ interface ParentsTableProps {
 }
 
 export default function ParentsTable({ initialParents }: ParentsTableProps) {
-  const [parents, setParents] =
-    useState<SerializedParentWithStats[]>(initialParents);
+  const [parents, setParents] = useState<SerializedParentWithStats[]>(
+    initialParents || []
+  );
   const [selectedParent, setSelectedParent] =
     useState<SerializedParentWithStats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,11 +99,13 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
   // Get unique membership types for filter dropdown
   const uniqueMembershipTypes = useMemo(() => {
     const types = new Set<string>();
-    parents.forEach((parent) => {
-      if (parent.membershipType) {
-        types.add(parent.membershipType);
-      }
-    });
+    if (Array.isArray(parents)) {
+      parents.forEach((parent) => {
+        if (parent.membershipType) {
+          types.add(parent.membershipType);
+        }
+      });
+    }
     return Array.from(types).sort();
   }, [parents]);
 
@@ -116,6 +119,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
 
   // Filter parents based on current filters
   const filteredParents = useMemo(() => {
+    if (!Array.isArray(parents)) return [];
     return parents.filter((parent) => {
       // Name filter
       if (
@@ -209,7 +213,11 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
       });
 
       if (response.ok) {
-        setParents(parents.filter((p) => p._id !== parentToDelete._id));
+        setParents(
+          Array.isArray(parents)
+            ? parents.filter((p) => p._id !== parentToDelete._id)
+            : []
+        );
         toast.success("Parent deleted successfully");
       } else {
         toast.error("Failed to delete parent");
@@ -229,9 +237,15 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
     setIsEditModalOpen(true);
   };
 
-  const handleParentUpdated = () => {
-    // Trigger page refresh to show the updated parent data
-    window.location.reload();
+  const handleParentUpdated = (updatedParent: SerializedParentWithStats) => {
+    // Update parent in local state instead of page reload
+    setParents((prev) =>
+      Array.isArray(prev)
+        ? prev.map((parent) =>
+            parent._id === updatedParent._id ? updatedParent : parent
+          )
+        : []
+    );
   };
 
   return (

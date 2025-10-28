@@ -318,7 +318,7 @@ export default function EditBookingModal({
                         type="number"
                         className="input input-bordered input-sm"
                         min="1"
-                        max="18"
+                        max="10"
                         value={child.age}
                         onChange={(e) =>
                           handleChildChange(

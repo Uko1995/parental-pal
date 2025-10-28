@@ -65,41 +65,48 @@ export default function PaymentsPage() {
 
       // Transform bookings into payment records
       const transformedPayments: PaymentInterface[] =
-        paymentsData.bookings?.map((booking: Record<string, unknown>) => ({
-          _id: booking._id,
-          bookingId: booking._id,
-          childName: booking.childName || "N/A",
-          parentName: booking.parentName || "N/A",
-          parentEmail: booking.parentEmail || "N/A",
-          service: booking.serviceType || "N/A",
-          amount: booking.totalCost || 0,
-          amountPaid: booking.amountPaid || 0,
-          paymentMethod: booking.paymentMethod || "bank-transfer",
-          paymentStatus: booking.paymentStatus || "pending",
-          paymentDate:
-            booking.paymentDate && typeof booking.paymentDate === "string"
-              ? new Date(booking.paymentDate)
-              : undefined,
-          dueDate:
-            booking.dueDate && typeof booking.dueDate === "string"
-              ? new Date(booking.dueDate)
-              : new Date(),
-          installments: Array.isArray(booking.installments)
-            ? booking.installments
-            : [],
-          notes:
-            typeof booking.paymentNotes === "string"
-              ? booking.paymentNotes
-              : undefined,
-          createdAt:
-            booking.createdAt && typeof booking.createdAt === "string"
-              ? new Date(booking.createdAt)
-              : new Date(),
-          updatedAt:
-            booking.updatedAt && typeof booking.updatedAt === "string"
-              ? new Date(booking.updatedAt)
-              : new Date(),
-        })) || [];
+        paymentsData.bookings?.map((booking: Record<string, unknown>) => {
+          // Extract child names from the children array
+          const children = (booking.children as Array<{ name: string }>) || [];
+          const childNames =
+            children.map((child) => child.name).join(", ") || "N/A";
+
+          return {
+            _id: booking._id,
+            bookingId: booking._id,
+            childName: childNames,
+            parentName: booking.parentName || "N/A",
+            parentEmail: booking.parentEmail || "N/A",
+            service: booking.serviceType || "N/A",
+            amount: booking.totalCost || 0,
+            amountPaid: booking.amountPaid || 0,
+            paymentMethod: booking.paymentMethod || "bank-transfer",
+            paymentStatus: booking.paymentStatus || "pending",
+            paymentDate:
+              booking.paymentDate && typeof booking.paymentDate === "string"
+                ? new Date(booking.paymentDate)
+                : undefined,
+            dueDate:
+              booking.dueDate && typeof booking.dueDate === "string"
+                ? new Date(booking.dueDate)
+                : new Date(),
+            installments: Array.isArray(booking.installments)
+              ? booking.installments
+              : [],
+            notes:
+              typeof booking.paymentNotes === "string"
+                ? booking.paymentNotes
+                : undefined,
+            createdAt:
+              booking.createdAt && typeof booking.createdAt === "string"
+                ? new Date(booking.createdAt)
+                : new Date(),
+            updatedAt:
+              booking.updatedAt && typeof booking.updatedAt === "string"
+                ? new Date(booking.updatedAt)
+                : new Date(),
+          };
+        }) || [];
 
       setPayments(transformedPayments);
 
@@ -312,9 +319,7 @@ export default function PaymentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Payment Management
-          </h1>
+          <h1 className="text-lg font-bold text-gray-900">Payments</h1>
           <p className="text-gray-600 mt-1">
             Track and manage all payment records and analytics
           </p>

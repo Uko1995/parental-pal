@@ -5,7 +5,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   EyeIcon,
-  PencilIcon,
   TrashIcon,
   EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
@@ -60,16 +59,14 @@ interface Booking {
 
 interface BookingsTableProps {
   bookings: Booking[];
-  onEdit: (booking: Booking) => void;
   onView: (booking: Booking) => void;
-  onRefresh: () => void;
+  onBookingDeleted?: (bookingId: string) => void;
 }
 
 export default function BookingsTable({
   bookings,
-  onEdit,
   onView,
-  onRefresh,
+  onBookingDeleted,
 }: BookingsTableProps) {
   const [showFilters, setShowFilters] = useState(true);
   const [nameFilter, setNameFilter] = useState("");
@@ -189,7 +186,9 @@ export default function BookingsTable({
 
       if (response.ok) {
         toast.success("Booking deleted successfully");
-        onRefresh();
+        if (onBookingDeleted) {
+          onBookingDeleted(booking._id);
+        }
       } else {
         toast.error("Failed to delete booking");
       }
@@ -357,22 +356,7 @@ export default function BookingsTable({
                               View
                             </a>
                           </li>
-                          <li>
-                            {booking.status === "pending" ? (
-                              <a onClick={() => onEdit(booking)}>
-                                <PencilIcon className="w-4 h-4" />
-                                Edit
-                              </a>
-                            ) : (
-                              <a
-                                className="text-gray-400 cursor-not-allowed"
-                                title={`Cannot edit ${booking.status} booking`}
-                              >
-                                <PencilIcon className="w-4 h-4" />
-                                Edit
-                              </a>
-                            )}
-                          </li>
+
                           <li>
                             {booking.status === "pending" ? (
                               <a

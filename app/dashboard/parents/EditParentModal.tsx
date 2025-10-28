@@ -44,7 +44,7 @@ interface SerializedParentWithStats {
 interface EditParentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onParentUpdated: () => void;
+  onParentUpdated: (updatedParent: SerializedParentWithStats) => void;
   parent: SerializedParentWithStats | null;
 }
 
@@ -309,7 +309,13 @@ export default function EditParentModal({
 
       if (result.success) {
         toast.success("Parent updated successfully!");
-        onParentUpdated();
+        // Create updated parent object
+        const updatedParent: SerializedParentWithStats = {
+          ...parent!,
+          ...updateData,
+          updatedAt: updateData.updatedAt.toISOString(),
+        };
+        onParentUpdated(updatedParent);
         onClose();
       } else {
         toast.error(result.error || "Failed to update parent");

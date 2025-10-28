@@ -12,7 +12,7 @@ interface Child {
   class?: string;
   schoolName?: string;
   subjects?: string[];
-  parentId?: string;
+  parentId: string;
   parentName: string | null;
   parentEmail: string | null;
   services: Array<{
@@ -26,7 +26,7 @@ interface Child {
 interface EditChildModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onChildUpdated: () => void;
+  onChildUpdated: (updatedChild: Child) => void;
   child: Child | null;
 }
 
@@ -122,7 +122,7 @@ export default function EditChildModal({
       return;
     }
 
-    if (formData.age < 1 || formData.age > 18) {
+    if (formData.age < 1 || formData.age > 10) {
       toast.error("Please enter a valid age between 1 and 18");
       return;
     }
@@ -151,7 +151,17 @@ export default function EditChildModal({
 
       if (result.success) {
         toast.success("Child updated successfully!");
-        onChildUpdated();
+        // Create updated child object
+        const updatedChild: Child = {
+          ...child!,
+          name: formData.name.trim(),
+          age: formData.age,
+          gender: formData.gender as "male" | "female",
+          class: formData.class.trim(),
+          schoolName: formData.schoolName.trim(),
+          subjects: formData.subjects,
+        };
+        onChildUpdated(updatedChild);
         onClose();
       } else {
         toast.error(result.error || "Failed to update child");

@@ -19,7 +19,7 @@ export default function PaymentTable({
   onRefresh,
 }: PaymentTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
@@ -96,7 +96,13 @@ export default function PaymentTable({
     });
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, dueDate?: Date) => {
+    const isOverdue =
+      dueDate &&
+      new Date() > new Date(dueDate) &&
+      status !== "completed" &&
+      status !== "refunded";
+
     const statusClasses = {
       completed: "badge-success",
       pending: "badge-warning",
@@ -108,10 +114,15 @@ export default function PaymentTable({
     return (
       <div
         className={`badge badge-sm ${
-          statusClasses[status as keyof typeof statusClasses] || "badge-ghost"
+          isOverdue
+            ? "badge-error text-red-600"
+            : statusClasses[status as keyof typeof statusClasses] ||
+              "badge-ghost"
         }`}
       >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {isOverdue
+          ? "Overdue"
+          : status.charAt(0).toUpperCase() + status.slice(1)}
       </div>
     );
   };
@@ -293,7 +304,6 @@ export default function PaymentTable({
                 <th className="text-left">Parent / Child</th>
                 <th className="text-left">Service</th>
                 <th className="text-left">Amount</th>
-                <th className="text-left">Paid</th>
                 <th className="text-left">Status</th>
                 <th className="text-left">Due Date</th>
                 <th className="text-left">Actions</th>
@@ -326,7 +336,7 @@ export default function PaymentTable({
                   <tr key={payment._id} className="hover:bg-base-200">
                     <td>
                       <span className="font-mono text-sm">
-                        #{payment.bookingId.slice(-8)}
+                        #{payment.bookingId}
                       </span>
                     </td>
                     <td>
@@ -347,12 +357,10 @@ export default function PaymentTable({
                         {formatCurrency(payment.amount)}
                       </span>
                     </td>
+
                     <td>
-                      <span className="font-semibold text-success">
-                        {formatCurrency(payment.amountPaid)}
-                      </span>
+                      {getStatusBadge(payment.paymentStatus, payment.dueDate)}
                     </td>
-                    <td>{getStatusBadge(payment.paymentStatus)}</td>
                     <td>
                       <span className="text-sm">
                         {formatDate(payment.dueDate)}
@@ -501,7 +509,12 @@ export default function PaymentTable({
                 </div>
                 <div>
                   <label className="label font-medium">Payment Status</label>
-                  <div>{getStatusBadge(viewPayment.paymentStatus)}</div>
+                  <div>
+                    {getStatusBadge(
+                      viewPayment.paymentStatus,
+                      viewPayment.dueDate
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="label font-medium">Parent Name</label>

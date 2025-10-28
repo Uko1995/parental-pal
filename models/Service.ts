@@ -22,12 +22,13 @@ export interface ServiceInterface {
     baseRate: string;
     currency: string;
     billingType:
-      | "hourly"
-      | "daily"
-      | "weekly"
-      | "monthly"
+      | "hour"
+      | "day"
+      | "week"
+      | "month"
       | "term"
-      | "per-event"
+      | "event"
+      | "session"
       | "custom";
 
     // Package deals and discounts
@@ -156,11 +157,12 @@ export const ServiceSchema = {
             billingType: {
               bsonType: "string",
               enum: [
-                "hourly",
-                "daily",
-                "weekly",
-                "monthly",
-                "per-event",
+                "hour",
+                "day",
+                "week",
+                "month",
+                "session",
+                "event",
                 "custom",
               ],
             },

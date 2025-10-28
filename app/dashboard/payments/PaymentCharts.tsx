@@ -16,10 +16,10 @@ import {
   Legend,
 } from "recharts";
 import {
-  CurrencyDollarIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { PaymentAnalytics } from "./page";
 
@@ -114,12 +114,12 @@ export default function PaymentCharts({ analytics }: PaymentChartsProps) {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="stat bg-base-100 shadow-lg rounded-2xl">
+        <div className="stat bg-base-100  shadow-lg rounded-2xl">
           <div className="stat-figure text-primary">
-            <CurrencyDollarIcon className="w-8 h-8" />
+            <BanknotesIcon className="w-8 h-8" />
           </div>
           <div className="stat-title">Total Revenue</div>
-          <div className="stat-value text-success">
+          <div className="stat-value text-2xl text-success">
             {formatCurrency(analytics.totalRevenue)}
           </div>
           <div className="stat-desc">
@@ -132,7 +132,7 @@ export default function PaymentCharts({ analytics }: PaymentChartsProps) {
             <ExclamationTriangleIcon className="w-8 h-8" />
           </div>
           <div className="stat-title">Pending Amount</div>
-          <div className="stat-value text-warning">
+          <div className="stat-value text-2xl text-warning">
             {formatCurrency(analytics.pendingAmount)}
           </div>
           <div className="stat-desc">
@@ -163,7 +163,7 @@ export default function PaymentCharts({ analytics }: PaymentChartsProps) {
             <ClockIcon className="w-8 h-8" />
           </div>
           <div className="stat-title">Overdue Payments</div>
-          <div className="stat-value text-error">
+          <div className="stat-value text-2xl text-error">
             {analytics.overduePayments}
           </div>
           <div className="stat-desc">Requires immediate attention</div>

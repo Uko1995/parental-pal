@@ -122,9 +122,10 @@ export async function createService(
     const result = await collection.insertOne(newService);
 
     if (result.acknowledged) {
-      // Revalidate cache
-      const { revalidateTag } = await import("next/cache");
+      // Revalidate cache and path
+      const { revalidateTag, revalidatePath } = await import("next/cache");
       revalidateTag(CACHE_TAGS.SERVICES);
+      revalidatePath("/dashboard/services");
 
       return {
         success: true,
@@ -170,9 +171,10 @@ export async function updateService(
     );
 
     if (result.matchedCount > 0) {
-      // Revalidate cache
-      const { revalidateTag } = await import("next/cache");
+      // Revalidate cache and path
+      const { revalidateTag, revalidatePath } = await import("next/cache");
       revalidateTag(CACHE_TAGS.SERVICES);
+      revalidatePath("/dashboard/services");
 
       return { success: true };
     }
@@ -201,9 +203,10 @@ export async function deleteService(serviceId: string) {
     const result = await collection.deleteOne({ _id: new ObjectId(serviceId) });
 
     if (result.deletedCount > 0) {
-      // Revalidate cache
-      const { revalidateTag } = await import("next/cache");
+      // Revalidate cache and path
+      const { revalidateTag, revalidatePath } = await import("next/cache");
       revalidateTag(CACHE_TAGS.SERVICES);
+      revalidatePath("/dashboard/services");
 
       return { success: true };
     }

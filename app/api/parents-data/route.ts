@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(analyticsData);
     } else {
       const parentsData = await getParentsData();
-      return NextResponse.json(parentsData);
+      return NextResponse.json({ parents: parentsData });
     }
   } catch (error) {
     console.error("Parents API error:", error);

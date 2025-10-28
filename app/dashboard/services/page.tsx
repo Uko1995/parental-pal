@@ -6,8 +6,7 @@ import {
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { getServices } from "./action";
-import ServicesContent from "./ServicesContent";
-import AddServiceButton from "./AddServiceButton";
+import ServicesWrapper from "./ServicesWrapper";
 
 export default async function ServicesPage() {
   // Fetch services data
@@ -54,13 +53,6 @@ export default async function ServicesPage() {
           <p className="text-gray-600 mt-1">
             Manage all service offerings, pricing, and availability
           </p>
-        </div>
-        <div className="flex space-x-3">
-          <button className="btn btn-outline btn-secondary">
-            <EyeIcon className="w-5 h-5 mr-2" />
-            Preview Catalog
-          </button>
-          <AddServiceButton />
         </div>
       </div>
 
@@ -120,7 +112,7 @@ export default async function ServicesPage() {
       </div>
 
       {/* Services Content */}
-      <ServicesContent
+      <ServicesWrapper
         services={servicesData.services}
         serviceStats={servicesData.serviceStats}
       />

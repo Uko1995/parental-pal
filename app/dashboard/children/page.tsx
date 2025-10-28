@@ -85,10 +85,26 @@ export default function ChildrenPage() {
       }
 
       // Fetch parents for the add modal
-      const parentsResponse = await fetch("/api/parents");
+      const parentsResponse = await fetch("/api/parents-data");
       if (parentsResponse.ok) {
         const parentsData = await parentsResponse.json();
-        setParents(parentsData.parents || []);
+        // Transform complex parent data to simple format for modal
+        const simpleParents = (parentsData.parents || []).map(
+          (parent: {
+            _id: string;
+            userData?: {
+              user?: {
+                name?: string;
+                email?: string;
+              };
+            };
+          }) => ({
+            _id: parent._id,
+            name: parent.userData?.user?.name || "Unknown",
+            email: parent.userData?.user?.email || "Unknown",
+          })
+        );
+        setParents(simpleParents);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -107,8 +123,62 @@ export default function ChildrenPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="skeleton h-8 w-48 mb-2"></div>
+            <div className="skeleton h-4 w-64"></div>
+          </div>
+          <div className="skeleton h-10 w-24"></div>
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="stat bg-base-100 shadow-lg rounded-2xl">
+              <div className="stat-figure">
+                <div className="skeleton w-8 h-8 rounded"></div>
+              </div>
+              <div className="skeleton h-4 w-20 mb-2"></div>
+              <div className="skeleton h-8 w-16 mb-2"></div>
+              <div className="skeleton h-3 w-24"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-32 mb-4"></div>
+                <div className="skeleton h-64 w-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="skeleton h-6 w-32 mb-4"></div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <div className="skeleton h-12 w-12 rounded"></div>
+                    <div>
+                      <div className="skeleton h-4 w-32 mb-2"></div>
+                      <div className="skeleton h-3 w-20"></div>
+                    </div>
+                  </div>
+                  <div className="skeleton h-6 w-16"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

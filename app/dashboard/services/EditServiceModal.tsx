@@ -15,7 +15,7 @@ import toast from "react-hot-toast";
 interface EditServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onServiceUpdated: () => void;
+  onServiceUpdated: (service: ClientServiceInterface) => void;
   service: ClientServiceInterface | null;
 }
 
@@ -342,7 +342,12 @@ export default function EditServiceModal({
 
       if (result.success) {
         toast.success("Service updated successfully!");
-        onServiceUpdated();
+        // Create updated service object
+        const updatedService: ClientServiceInterface = {
+          ...service!,
+          ...serviceData,
+        };
+        onServiceUpdated(updatedService);
         onClose();
       } else {
         toast.error(result.error || "Failed to update service");

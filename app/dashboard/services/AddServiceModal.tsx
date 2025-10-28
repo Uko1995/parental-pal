@@ -8,13 +8,13 @@ import {
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { ServiceInterface } from "@/models/Service";
-import { createService } from "./action";
+import { createService, ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
 
 interface AddServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onServiceAdded: () => void;
+  onServiceAdded: (service: ClientServiceInterface) => void;
 }
 
 const serviceTypes = [
@@ -27,12 +27,13 @@ const serviceTypes = [
 ] as const;
 
 const billingTypes = [
-  { value: "hourly", label: "Per Hour" },
-  { value: "daily", label: "Per Day" },
-  { value: "weekly", label: "Per Week" },
-  { value: "monthly", label: "Per Month" },
+  { value: "hour", label: "Per Hour" },
+  { value: "day", label: "Per Day" },
+  { value: "week", label: "Per Week" },
+  { value: "month", label: "Per Month" },
   { value: "term", label: "Per Term" },
-  { value: "per-event", label: "Per Event" },
+  { value: "session", label: "Per Session" },
+  { value: "event", label: "Per Event" },
   { value: "custom", label: "Custom" },
 ] as const;
 
@@ -42,12 +43,6 @@ const statusOptions = [
   { value: "draft", label: "Draft" },
   { value: "seasonal", label: "Seasonal" },
   { value: "discontinued", label: "Discontinued" },
-] as const;
-
-const venueTypeOptions = [
-  { value: "indoor", label: "Indoor" },
-  { value: "outdoor", label: "Outdoor" },
-  { value: "both", label: "Both" },
 ] as const;
 
 const ageGroupOptions = [
@@ -79,7 +74,7 @@ export default function AddServiceModal({
     image: "",
     baseRate: "",
     currency: "NGN",
-    billingType: "hourly" as ServiceInterface["pricing"]["billingType"],
+    billingType: "hour" as ServiceInterface["pricing"]["billingType"],
     status: "active" as ServiceInterface["status"],
     minimumAge: 1,
     maximumAge: 10,
@@ -260,9 +255,9 @@ export default function AddServiceModal({
 
       const result = await createService(serviceData);
 
-      if (result.success) {
+      if (result.success && result.data) {
         toast.success("Service created successfully!");
-        onServiceAdded();
+        onServiceAdded(result.data);
         onClose();
         // Reset form
         setFormData({
@@ -273,7 +268,7 @@ export default function AddServiceModal({
           image: "",
           baseRate: "",
           currency: "NGN",
-          billingType: "hourly",
+          billingType: "hour",
           status: "active",
           minimumAge: 1,
           maximumAge: 10,

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
   UsersIcon,
-  CurrencyDollarIcon,
   CalendarDaysIcon,
   ChartBarIcon,
   ArrowTrendingUpIcon,
@@ -19,6 +18,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { BanknotesIcon } from "@heroicons/react/24/outline";
 
 interface DashboardStats {
   totalRevenue: number;
@@ -74,7 +74,8 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
         value: formatCurrency(stats.totalRevenue),
         change: formatChange(stats.revenueChange),
         changeType: stats.revenueChange >= 0 ? "positive" : "negative",
-        icon: CurrencyDollarIcon,
+        icon: BanknotesIcon,
+        color: "text-green-600",
       },
       {
         name: "Active Bookings",
@@ -82,6 +83,7 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
         change: formatChange(stats.bookingsChange),
         changeType: stats.bookingsChange >= 0 ? "positive" : "negative",
         icon: CalendarDaysIcon,
+        color: "text-blue-600",
       },
       {
         name: "New Parents",
@@ -89,6 +91,7 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
         change: formatChange(stats.parentsChange),
         changeType: stats.parentsChange >= 0 ? "positive" : "negative",
         icon: UsersIcon,
+        color: "text-purple-600",
       },
       {
         name: "Conversion Rate",
@@ -96,6 +99,7 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
         change: formatChange(stats.conversionChange),
         changeType: stats.conversionChange >= 0 ? "positive" : "negative",
         icon: ChartBarIcon,
+        color: "text-yellow-600",
       },
     ],
     [stats]
@@ -134,8 +138,8 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-gray-100 rounded-full">
-                  <Icon className="w-6 h-6 text-gray-600" />
+                <div className={`p-3 `}>
+                  <Icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
               </div>
             </div>

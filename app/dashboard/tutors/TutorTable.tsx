@@ -14,7 +14,6 @@ import { UserInterface } from "@/models/User";
 import TutorDetailsModal from "./TutorDetailsModal";
 import EditTutorModal from "./EditTutorModal";
 import toast from "react-hot-toast";
-import SimpleCloudinaryImage from "@/components/SimpleCloudinaryImage";
 import CloudinaryImage from "@/components/CloudinaryImage";
 
 interface TutorTableProps {
@@ -206,9 +205,13 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     setTutorToDelete(null);
   };
 
-  const handleTutorUpdated = () => {
-    // Trigger page refresh to show the updated tutor data
-    window.location.reload();
+  const handleTutorUpdated = (updatedTutor: UserInterface) => {
+    // Update tutor in local state instead of page reload
+    setTutors((prev) =>
+      prev.map((tutor) =>
+        tutor._id === updatedTutor._id ? updatedTutor : tutor
+      )
+    );
   };
 
   const formatDate = (date: string | Date) => {
