@@ -86,8 +86,7 @@ export default function ServiceFilters({
         {/* Left side - Search and basic filters */}
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className=" max-w-md">
             <input
               type="text"
               placeholder="Search services..."

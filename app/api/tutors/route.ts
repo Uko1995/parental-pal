@@ -54,87 +54,130 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Create tutor (Admin)
 export async function POST(request: NextRequest) {
   try {
-    const userData = await request.json();
+    const body = await request.json();
+    const {
+      name,
+      email,
+      phone,
+      address,
+      bio,
+      specialties,
+      qualifications,
+      subjects,
+      experience,
+      hourlyRate,
+      availability,
+    } = body;
 
-    // Validate required fields using nested structure
-    const missingFields = [];
-
-    // Check nested user data
-    if (!userData.userData?.user?.name) missingFields.push("name");
-    if (!userData.userData?.user?.email) missingFields.push("email");
-
-    // Check top-level fields
-    if (!userData.phone) missingFields.push("phone");
-    if (!userData.address) missingFields.push("address");
-    if (!userData.specialty) missingFields.push("specialty");
-    if (!userData.experience || userData.experience <= 0)
-      missingFields.push("experience");
-    if (!userData.subjects || userData.subjects.length === 0)
-      missingFields.push("subjects");
-    if (!userData.bio) missingFields.push("bio");
-
-    // Check hourly rate acceptance
-    if (userData.tutorProfile?.hourlyRateAccepted !== true) {
+    if (
+      !name ||
+      !email ||
+      !specialties?.length ||
+      !subjects?.length ||
+      !experience
+    ) {
       return NextResponse.json(
-        { error: "You must accept the hourly rate offer to proceed" },
+        {
+          success: false,
+          error:
+            "Name, email, specialties, subjects, and experience are required",
+        },
         { status: 400 }
       );
     }
 
-    if (missingFields.length > 0) {
+    // Check if email already exists
+    const existingUser = await UserRepository.findByEmail(email);
+    if (existingUser) {
       return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { success: false, error: "A tutor with this email already exists" },
         { status: 400 }
       );
     }
 
-    // Create the user data structure
-    const newTutor = {
-      userData: userData.userData,
-      phone: userData.phone,
-      address: userData.address,
+    // Create tutor data
+    const tutorData = {
+      userData: {
+        user: {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          image: null,
+        },
+        expiresAt: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 30 days from now
+      },
+      phone: phone || "",
+      address: address || "",
       role: "tutor" as const,
-      isActive: false, // Pending approval
-      membershipType: "none" as const,
+      isActive: true, // Admin created, so active by default
+      membershipType: "basic" as const,
       tutorProfile: {
-        ...userData.tutorProfile,
+        specialty: specialties[0] || "General", // Use first specialty as main specialty
+        experience: parseInt(experience.replace(/[^\d]/g, "")) || 0, // Extract number from experience string
+        qualifications: qualifications || [],
+        subjects: subjects,
         rating: 0,
         totalReviews: 0,
-        isVerified: false,
+        availability: {
+          days: availability || [],
+          hours: {
+            start: "09:00",
+            end: "17:00",
+          },
+        },
+        hourlyRate: hourlyRate || 15000,
+        hourlyRateAccepted: true,
+        bio: bio || "",
+        isVerified: true, // Admin created, so verified
       },
-      preferences: userData.preferences,
+      preferences: {
+        notifications: {
+          email: true,
+          sms: false,
+          push: true,
+        },
+        preferredServices: ["tutoring" as const],
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    // Check if email already exists
-    const existingUser = await UserRepository.findByEmail(
-      userData.userData.user.email
-    );
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "A user with this email already exists" },
-        { status: 409 }
-      );
-    }
+    const result = await UserRepository.createUser(tutorData);
 
-    // Create the tutor
-    const result = await UserRepository.createUser(newTutor);
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Tutor application submitted successfully",
-        data: { id: result._id },
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error creating tutor:", error);
     return NextResponse.json(
       { error: "Failed to submit tutor application" },
+      { status: 500 }
+    );
+  }
+}
+
+// Update tutor
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { tutorId, updateData } = body;
+
+    if (!tutorId || !updateData) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const result = await UserRepository.updateUser(tutorId, updateData);
+
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    console.error("Error updating tutor:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update tutor" },
       { status: 500 }
     );
   }

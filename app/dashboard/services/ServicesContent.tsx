@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ClientServiceInterface } from "./action";
+import { ClientServiceInterface, deleteService } from "./action";
 import ServiceCard from "./ServiceCard";
 import ServiceFilters, {
   ServiceFilters as FilterState,
 } from "./ServiceFilters";
 import ServiceDetailsModal from "./ServiceDetailsModal";
 import AddServiceModal from "./AddServiceModal";
+import EditServiceModal from "./EditServiceModal";
 import toast from "react-hot-toast";
 
 interface ServicesContentProps {
@@ -27,10 +28,14 @@ export default function ServicesContent({
   const [selectedService, setSelectedService] =
     useState<ClientServiceInterface | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [serviceToDelete, setServiceToDelete] =
     useState<ClientServiceInterface | null>(null);
+  const [serviceToEdit, setServiceToEdit] =
+    useState<ClientServiceInterface | null>(null);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [deletingService, setDeletingService] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -119,9 +124,8 @@ export default function ServicesContent({
   };
 
   const handleEditService = (service: ClientServiceInterface) => {
-    // TODO: Implement edit functionality
-    toast.success("Edit functionality coming soon!");
-    console.log("Edit service:", service);
+    setServiceToEdit(service);
+    setShowEditModal(true);
   };
 
   const handleDeleteService = (service: ClientServiceInterface) => {
@@ -132,25 +136,24 @@ export default function ServicesContent({
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
 
+    setDeletingService(true);
     try {
-      // TODO: Implement actual delete API call
-      const response = await fetch(`/api/services/${serviceToDelete._id}`, {
-        method: "DELETE",
-      });
+      const result = await deleteService(serviceToDelete._id!);
 
-      if (response.ok) {
+      if (result.success) {
         // Remove service from local state
         setServices((prev) =>
           prev.filter((s) => s._id !== serviceToDelete._id)
         );
         toast.success("Service deleted successfully");
       } else {
-        toast.error("Failed to delete service");
+        toast.error(result.error || "Failed to delete service");
       }
     } catch (error) {
       console.error("Error deleting service:", error);
       toast.error("Error deleting service");
     } finally {
+      setDeletingService(false);
       setShowDeleteModal(false);
       setServiceToDelete(null);
     }
@@ -167,6 +170,11 @@ export default function ServicesContent({
 
   const handleServiceAdded = () => {
     // Trigger page refresh to show the new service
+    window.location.reload();
+  };
+
+  const handleServiceUpdated = () => {
+    // Trigger page refresh to show the updated service
     window.location.reload();
   };
 
@@ -225,6 +233,7 @@ export default function ServicesContent({
           setShowDetailsModal(false);
           setSelectedService(null);
         }}
+        onEdit={handleEditService}
       />
 
       {/* Delete Confirmation Modal */}
@@ -242,11 +251,26 @@ export default function ServicesContent({
               permanently removed.
             </p>
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={cancelDeleteService}>
+              <button
+                className="btn btn-ghost"
+                onClick={cancelDeleteService}
+                disabled={deletingService}
+              >
                 Cancel
               </button>
-              <button className="btn btn-error" onClick={confirmDeleteService}>
-                Delete Service
+              <button
+                className="btn btn-error"
+                onClick={confirmDeleteService}
+                disabled={deletingService}
+              >
+                {deletingService ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Service"
+                )}
               </button>
             </div>
           </div>
@@ -259,6 +283,17 @@ export default function ServicesContent({
         isOpen={showAddServiceModal}
         onClose={() => setShowAddServiceModal(false)}
         onServiceAdded={handleServiceAdded}
+      />
+
+      {/* Edit Service Modal */}
+      <EditServiceModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setServiceToEdit(null);
+        }}
+        onServiceUpdated={handleServiceUpdated}
+        service={serviceToEdit}
       />
     </>
   );

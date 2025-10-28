@@ -16,6 +16,7 @@ interface Child {
   childId?: string;
   name: string;
   age: number;
+  gender: "male" | "female";
   class?: string;
   schoolName?: string;
   subjects?: string[];
@@ -39,6 +40,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
   const [itemsPerPage] = useState(10);
   const [nameFilter, setNameFilter] = useState("");
   const [ageFilter, setAgeFilter] = useState({ min: "", max: "" });
+  const [genderFilter, setGenderFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [showFilters, setShowFilters] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -83,6 +85,11 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
         return false;
       }
 
+      // Gender filter
+      if (genderFilter && child.gender !== genderFilter) {
+        return false;
+      }
+
       // Service filter
       if (
         serviceFilter &&
@@ -93,7 +100,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
 
       return true;
     });
-  }, [childrenData, nameFilter, ageFilter, serviceFilter]);
+  }, [childrenData, nameFilter, ageFilter, genderFilter, serviceFilter]);
 
   // Client-side pagination
   const paginatedChildren = useMemo(() => {
@@ -120,6 +127,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
   const clearFilters = () => {
     setNameFilter("");
     setAgeFilter({ min: "", max: "" });
+    setGenderFilter("");
     setServiceFilter("");
     setCurrentPage(1); // Reset to first page when clearing filters
   };
@@ -134,7 +142,11 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
   };
 
   const hasActiveFilters =
-    nameFilter || ageFilter.min || ageFilter.max || serviceFilter;
+    nameFilter ||
+    ageFilter.min ||
+    ageFilter.max ||
+    genderFilter ||
+    serviceFilter;
 
   return (
     <div ref={tableRef} className="card bg-base-100 shadow-lg scroll-smooth">
@@ -227,6 +239,22 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                 />
               </div>
 
+              {/* Gender Filter */}
+              <div>
+                <label className="label">
+                  <span className="label-text text-sm">Gender</span>
+                </label>
+                <select
+                  className="select select-sm select-bordered w-full"
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value)}
+                >
+                  <option value="">All Genders</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
               {/* Service Filter */}
               <div>
                 <label className="label">
@@ -284,6 +312,16 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                     </button>
                   </div>
                 )}
+                {genderFilter && (
+                  <div className="badge badge-primary badge-sm gap-1">
+                    Gender:{" "}
+                    {genderFilter.charAt(0).toUpperCase() +
+                      genderFilter.slice(1)}
+                    <button onClick={() => setGenderFilter("")}>
+                      <XMarkIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
                 {serviceFilter && (
                   <div className="badge badge-primary badge-sm gap-1">
                     Service: {serviceFilter}
@@ -303,6 +341,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
               <tr>
                 <th>Child Name</th>
                 <th>Age</th>
+                <th>Gender</th>
                 <th>Parent</th>
                 <th>Services</th>
                 <th>Status</th>
@@ -312,7 +351,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
             <tbody>
               {filteredChildren.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8">
+                  <td colSpan={7} className="text-center py-8">
                     <UserGroupIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 font-medium">
                       {hasActiveFilters
@@ -340,6 +379,18 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                       </div>
                     </td>
                     <td>{child.age}</td>
+                    <td>
+                      <div
+                        className={`badge badge-sm ${
+                          child.gender === "male"
+                            ? "badge-info"
+                            : "badge-secondary"
+                        }`}
+                      >
+                        {child.gender?.charAt(0).toUpperCase() +
+                          child.gender?.slice(1) || "N/A"}
+                      </div>
+                    </td>
                     <td>{child.parentName || "N/A"}</td>
                     <td>
                       <div className="flex space-x-1 flex-wrap gap-1">
@@ -363,7 +414,10 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                       <span className="badge badge-success">Active</span>
                     </td>
                     <td>
-                      <ChildActions child={child} />
+                      <ChildActions
+                        child={child}
+                        onChildUpdated={() => window.location.reload()}
+                      />
                     </td>
                   </tr>
                 ))

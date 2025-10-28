@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { UserInterface } from "@/models/User";
 import TutorDetailsModal from "./TutorDetailsModal";
+import EditTutorModal from "./EditTutorModal";
 import toast from "react-hot-toast";
 import SimpleCloudinaryImage from "@/components/SimpleCloudinaryImage";
 import CloudinaryImage from "@/components/CloudinaryImage";
@@ -36,10 +37,12 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     null
   );
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [tutorToDelete, setTutorToDelete] = useState<UserInterface | null>(
     null
   );
+  const [tutorToEdit, setTutorToEdit] = useState<UserInterface | null>(null);
   const [loading, setLoading] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -153,10 +156,9 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
   };
 
   const handleEditTutor = (tutor: UserInterface) => {
-    // TODO: Implement edit tutor functionality
-    console.log("Edit tutor:", tutor);
+    setTutorToEdit(tutor);
+    setShowEditModal(true);
     setOpenDropdown(null);
-    toast.success("Edit functionality coming soon!");
   };
 
   const handleDeleteTutor = (tutor: UserInterface) => {
@@ -202,6 +204,11 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
   const cancelDeleteTutor = () => {
     setShowDeleteModal(false);
     setTutorToDelete(null);
+  };
+
+  const handleTutorUpdated = () => {
+    // Trigger page refresh to show the updated tutor data
+    window.location.reload();
   };
 
   const formatDate = (date: string | Date) => {
@@ -547,6 +554,17 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
           setShowDetailsModal(false);
           setSelectedTutor(null);
         }}
+      />
+
+      {/* Edit Tutor Modal */}
+      <EditTutorModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setTutorToEdit(null);
+        }}
+        onTutorUpdated={handleTutorUpdated}
+        tutor={tutorToEdit}
       />
 
       {/* Delete Confirmation Modal */}

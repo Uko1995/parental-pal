@@ -52,3 +52,45 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { serviceId, serviceData } = body;
+
+    if (!serviceId || !serviceData) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const collection = await getCollection("services");
+    const { ObjectId } = await import("mongodb");
+
+    const updateData = {
+      ...serviceData,
+      updatedAt: new Date(),
+    };
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(serviceId) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount > 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json(
+      { success: false, error: "Service not found" },
+      { status: 404 }
+    );
+  } catch (error) {
+    console.error("Error updating service:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update service" },
+      { status: 500 }
+    );
+  }
+}

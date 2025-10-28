@@ -1,7 +1,7 @@
 import {
   BuildingOfficeIcon,
   EyeIcon,
-  CurrencyDollarIcon,
+  BanknotesIcon,
   StarIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
@@ -50,7 +50,7 @@ export default async function ServicesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+          <h1 className="text-lg font-bold text-gray-900">Services</h1>
           <p className="text-gray-600 mt-1">
             Manage all service offerings, pricing, and availability
           </p>
@@ -107,7 +107,7 @@ export default async function ServicesPage() {
 
         <div className="stat bg-base-100 shadow-lg rounded-2xl border border-gray-100">
           <div className="stat-figure text-success">
-            <CurrencyDollarIcon className="w-8 h-8" />
+            <BanknotesIcon className="w-8 h-8" />
           </div>
           <div className="stat-title text-gray-600">Total Revenue</div>
           <div className="stat-value text-success text-lg">

@@ -10,7 +10,7 @@ export async function GET(
   try {
     // Await params before using
     const { id } = await params;
-    
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
@@ -23,9 +23,16 @@ export async function GET(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Verify user owns this booking
+    // Verify user has permission (is admin)
     const user = await UserRepository.findByEmail(session.user.email);
-    if (!user || booking.userId.toString() !== user._id!.toString()) {
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Allow access if user is admin or owns the booking
+    const isAdmin = user.role === "admin";
+
+    if (!isAdmin) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -46,7 +53,7 @@ export async function PATCH(
   try {
     // Await params before using
     const { id } = await params;
-    
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
@@ -59,9 +66,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Verify user owns this booking
+    // Verify user has permission (is admin)
     const user = await UserRepository.findByEmail(session.user.email);
-    if (!user || booking.userId.toString() !== user._id!.toString()) {
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Allow access if user is admin
+    const isAdmin = user.role === "admin";
+
+    if (!isAdmin) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -101,7 +115,7 @@ export async function DELETE(
   try {
     // Await params before using
     const { id } = await params;
-    
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
@@ -114,9 +128,23 @@ export async function DELETE(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Verify user owns this booking
+    // Verify user has permission (is admin)
     const user = await UserRepository.findByEmail(session.user.email);
-    if (!user || booking.userId.toString() !== user._id!.toString()) {
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Allow access if user is admin or owns the booking
+    const isAdmin = user.role === "admin";
+
+    console.log("DELETE Authorization Check:", {
+      userId: user._id!.toString(),
+      userRole: user.role,
+      bookingUserId: booking.userId.toString(),
+      isAdmin,
+    });
+
+    if (!isAdmin) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

@@ -7,6 +7,7 @@ interface Child {
   _id?: string;
   name: string;
   age: number;
+  gender: "male" | "female";
   class?: string;
   schoolName?: string;
   allergies?: string;
@@ -233,6 +234,7 @@ function ChildModal({ child, onSave, onClose }: ChildModalProps) {
   const [formData, setFormData] = useState<Child>({
     name: child?.name || "",
     age: child?.age || 1,
+    gender: child?.gender || "male",
     class: child?.class || "",
     schoolName: child?.schoolName || "",
     allergies: child?.allergies || "",

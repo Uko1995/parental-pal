@@ -1,121 +1,338 @@
-import {
-  CreditCardIcon,
-  PlusIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+"use client";
+
+import { useState, useEffect } from "react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
+import PaymentCharts from "./PaymentCharts";
+import PaymentTable from "./PaymentTable";
+
+export interface PaymentInterface {
+  _id: string;
+  bookingId: string;
+  childName: string;
+  parentName: string;
+  parentEmail: string;
+  service: string;
+  amount: number;
+  amountPaid: number;
+  paymentMethod: "bank-transfer" | "cash" | "card" | "mobile-money";
+  paymentStatus: "pending" | "partial" | "completed" | "failed" | "refunded";
+  paymentDate?: Date;
+  dueDate: Date;
+  installments?: {
+    amount: number;
+    dueDate: Date;
+    status: "pending" | "paid" | "overdue";
+    paidDate?: Date;
+  }[];
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PaymentAnalytics {
+  totalPayments: number;
+  totalRevenue: number;
+  pendingAmount: number;
+  completedPayments: number;
+  overduePayments: number;
+  averagePayment: number;
+  monthlyRevenue: { month: string; revenue: number; payments: number }[];
+  paymentsByService: { service: string; amount: number; count: number }[];
+  paymentsByStatus: { status: string; count: number; amount: number }[];
+  paymentMethodStats: { method: string; count: number; amount: number }[];
+}
 
 export default function PaymentsPage() {
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-600 mt-1">
-            Track payments, process refunds, and manage financial records
-          </p>
+  const [payments, setPayments] = useState<PaymentInterface[]>([]);
+  const [analytics, setAnalytics] = useState<PaymentAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch payments and analytics
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch payments from bookings API (payments are derived from bookings)
+      const paymentsResponse = await fetch("/api/bookings");
+      if (!paymentsResponse.ok) {
+        throw new Error("Failed to fetch payments data");
+      }
+
+      const paymentsData = await paymentsResponse.json();
+
+      // Transform bookings into payment records
+      const transformedPayments: PaymentInterface[] =
+        paymentsData.bookings?.map((booking: Record<string, unknown>) => ({
+          _id: booking._id,
+          bookingId: booking._id,
+          childName: booking.childName || "N/A",
+          parentName: booking.parentName || "N/A",
+          parentEmail: booking.parentEmail || "N/A",
+          service: booking.serviceType || "N/A",
+          amount: booking.totalCost || 0,
+          amountPaid: booking.amountPaid || 0,
+          paymentMethod: booking.paymentMethod || "bank-transfer",
+          paymentStatus: booking.paymentStatus || "pending",
+          paymentDate:
+            booking.paymentDate && typeof booking.paymentDate === "string"
+              ? new Date(booking.paymentDate)
+              : undefined,
+          dueDate:
+            booking.dueDate && typeof booking.dueDate === "string"
+              ? new Date(booking.dueDate)
+              : new Date(),
+          installments: Array.isArray(booking.installments)
+            ? booking.installments
+            : [],
+          notes:
+            typeof booking.paymentNotes === "string"
+              ? booking.paymentNotes
+              : undefined,
+          createdAt:
+            booking.createdAt && typeof booking.createdAt === "string"
+              ? new Date(booking.createdAt)
+              : new Date(),
+          updatedAt:
+            booking.updatedAt && typeof booking.updatedAt === "string"
+              ? new Date(booking.updatedAt)
+              : new Date(),
+        })) || [];
+
+      setPayments(transformedPayments);
+
+      // Calculate analytics
+      const totalPayments = transformedPayments.length;
+      const totalRevenue = transformedPayments.reduce(
+        (sum, p) => sum + (p.amountPaid || 0),
+        0
+      );
+      const pendingAmount = transformedPayments
+        .filter(
+          (p) => p.paymentStatus === "pending" || p.paymentStatus === "partial"
+        )
+        .reduce((sum, p) => sum + (p.amount - (p.amountPaid || 0)), 0);
+      const completedPayments = transformedPayments.filter(
+        (p) => p.paymentStatus === "completed"
+      ).length;
+      const overduePayments = transformedPayments.filter(
+        (p) => p.paymentStatus === "pending" && new Date() > new Date(p.dueDate)
+      ).length;
+      const averagePayment =
+        totalPayments > 0 ? totalRevenue / totalPayments : 0;
+
+      // Monthly revenue (last 6 months)
+      const monthlyRevenue = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthStr = date.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+
+        const monthPayments = transformedPayments.filter((p) => {
+          if (!p.paymentDate) return false;
+          const paymentMonth = p.paymentDate.getMonth();
+          const paymentYear = p.paymentDate.getFullYear();
+          return (
+            paymentMonth === date.getMonth() &&
+            paymentYear === date.getFullYear()
+          );
+        });
+
+        monthlyRevenue.push({
+          month: monthStr,
+          revenue: monthPayments.reduce(
+            (sum, p) => sum + (p.amountPaid || 0),
+            0
+          ),
+          payments: monthPayments.length,
+        });
+      }
+
+      // Payment by service
+      const serviceStats = new Map<string, { amount: number; count: number }>();
+      transformedPayments.forEach((p) => {
+        const existing = serviceStats.get(p.service) || { amount: 0, count: 0 };
+        serviceStats.set(p.service, {
+          amount: existing.amount + (p.amountPaid || 0),
+          count: existing.count + 1,
+        });
+      });
+      const paymentsByService = Array.from(serviceStats.entries()).map(
+        ([service, stats]) => ({
+          service,
+          ...stats,
+        })
+      );
+
+      // Payments by status
+      const statusStats = new Map<string, { count: number; amount: number }>();
+      transformedPayments.forEach((p) => {
+        const existing = statusStats.get(p.paymentStatus) || {
+          count: 0,
+          amount: 0,
+        };
+        statusStats.set(p.paymentStatus, {
+          count: existing.count + 1,
+          amount: existing.amount + (p.amountPaid || 0),
+        });
+      });
+      const paymentsByStatus = Array.from(statusStats.entries()).map(
+        ([status, stats]) => ({
+          status,
+          ...stats,
+        })
+      );
+
+      // Payment method stats
+      const methodStats = new Map<string, { count: number; amount: number }>();
+      transformedPayments.forEach((p) => {
+        const existing = methodStats.get(p.paymentMethod) || {
+          count: 0,
+          amount: 0,
+        };
+        methodStats.set(p.paymentMethod, {
+          count: existing.count + 1,
+          amount: existing.amount + (p.amountPaid || 0),
+        });
+      });
+      const paymentMethodStats = Array.from(methodStats.entries()).map(
+        ([method, stats]) => ({
+          method,
+          ...stats,
+        })
+      );
+
+      setAnalytics({
+        totalPayments,
+        totalRevenue,
+        pendingAmount,
+        completedPayments,
+        overduePayments,
+        averagePayment,
+        monthlyRevenue,
+        paymentsByService,
+        paymentsByStatus,
+        paymentMethodStats,
+      });
+    } catch (err: unknown) {
+      console.error("Error fetching data:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      setError(errorMessage);
+      toast.error("Failed to load payments data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div className="skeleton h-8 w-48 mb-2"></div>
+            <div className="skeleton h-4 w-64"></div>
+          </div>
+          <div className="skeleton h-10 w-24"></div>
         </div>
-        <button className="btn btn-primary">
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Process Payment
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="stat bg-base-100 shadow-lg rounded-2xl">
+              <div className="stat-figure">
+                <div className="skeleton w-8 h-8 rounded"></div>
+              </div>
+              <div className="skeleton h-4 w-20 mb-2"></div>
+              <div className="skeleton h-8 w-16 mb-2"></div>
+              <div className="skeleton h-3 w-24"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="skeleton h-6 w-32 mb-4"></div>
+                <div className="skeleton h-64 w-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="card bg-base-100 shadow-lg">
+          <div className="card-body">
+            <div className="skeleton h-6 w-32 mb-4"></div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <div className="skeleton h-12 w-12 rounded"></div>
+                    <div>
+                      <div className="skeleton h-4 w-32 mb-2"></div>
+                      <div className="skeleton h-3 w-20"></div>
+                    </div>
+                  </div>
+                  <div className="skeleton h-6 w-16"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="alert alert-error">
+        <span>Error loading payments: {error}</span>
+        <button className="btn btn-sm btn-outline" onClick={fetchData}>
+          Retry
         </button>
       </div>
+    );
+  }
 
-      {/* Payment Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-title">Total Revenue</div>
-          <div className="stat-value text-success">₦2.34M</div>
-          <div className="stat-desc">↗️ 12.5% this month</div>
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Payment Management
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Track and manage all payment records and analytics
+          </p>
         </div>
 
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-title">Pending Payments</div>
-          <div className="stat-value text-warning">₦145K</div>
-          <div className="stat-desc">23 transactions</div>
-        </div>
-
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-title">Overdue</div>
-          <div className="stat-value text-error">₦45K</div>
-          <div className="stat-desc">⚠️ Requires attention</div>
-        </div>
-
-        <div className="stat bg-base-100 shadow rounded-2xl">
-          <div className="stat-title">Processed Today</div>
-          <div className="stat-value text-info">₦67K</div>
-          <div className="stat-desc">12 transactions</div>
+        <div className="flex gap-2">
+          <button className="btn btn-outline btn-sm" onClick={fetchData}>
+            <ArrowPathIcon className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
         </div>
       </div>
 
-      {/* Alerts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h2 className="card-title text-error">
-              <ExclamationTriangleIcon className="w-6 h-6" />
-              Payment Alerts
-            </h2>
-            <div className="space-y-3">
-              <div className="alert alert-warning">
-                <span>3 payments overdue - total ₦45,000</span>
-              </div>
-              <div className="alert alert-info">
-                <span>5 payments due today - total ₦125,000</span>
-              </div>
-              <div className="alert alert-error">
-                <span>1 failed payment requires manual review</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Analytics Charts */}
+      {analytics && <PaymentCharts analytics={analytics} />}
 
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h2 className="card-title">Recent Transactions</h2>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-3 bg-base-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Academic Tutoring</p>
-                  <p className="text-sm text-gray-500">Sarah Johnson</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-success">₦45,000</p>
-                  <p className="text-xs text-gray-500">Completed</p>
-                </div>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-base-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Daily Childcare</p>
-                  <p className="text-sm text-gray-500">Michael Chen</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-warning">₦150,000</p>
-                  <p className="text-xs text-gray-500">Pending</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Payments Management Placeholder */}
-      <div className="card bg-base-100 shadow-lg">
-        <div className="card-body">
-          <div className="h-64 bg-gradient-to-r from-[#90AC19]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <CreditCardIcon className="w-20 h-20 text-[#90AC19] mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Payment Management System
-              </h2>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Complete payment processing with transaction history, automated
-                billing, refunds, and financial reporting features.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Payments Table */}
+      <PaymentTable payments={payments} onRefresh={fetchData} />
     </div>
   );
 }

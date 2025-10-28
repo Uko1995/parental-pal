@@ -46,9 +46,7 @@ interface SerializedParentWithStats {
 export const getParentsData = unstable_cache(
   async () => {
     try {
-      console.log("Fetching parents data...");
       const parents = await UserRepository.findByRole("parent");
-      console.log("Parents found:", parents.length);
 
       // Add statistics to each parent and serialize data
       const parentsWithStats = await Promise.all(
@@ -302,3 +300,33 @@ export const getTopParents = unstable_cache(
   [CACHE_TAGS.USERS],
   { revalidate: CACHE_TIMES.USER_DATA, tags: [CACHE_TAGS.USERS] }
 );
+
+// Update parent function
+export async function updateParent(
+  parentId: string,
+  updateData: Partial<UserInterface>
+) {
+  try {
+    const result = await UserRepository.updateUser(parentId, updateData);
+
+    // Revalidate cache
+    // Note: In a real app, you'd use revalidateTag here
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error updating parent:", error);
+    return { success: false, error: "Failed to update parent" };
+  }
+}
+
+// Delete parent function
+export async function deleteParent(parentId: string) {
+  try {
+    const result = await UserRepository.deleteUser(parentId);
+
+    // Revalidate cache
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error deleting parent:", error);
+    return { success: false, error: "Failed to delete parent" };
+  }
+}

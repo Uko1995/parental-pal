@@ -12,6 +12,7 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import ParentDetailsModal from "./ParentDetailsModal";
+import EditParentModal from "./EditParentModal";
 import toast from "react-hot-toast";
 import Image from "next/image";
 
@@ -62,8 +63,11 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
   const [selectedParent, setSelectedParent] =
     useState<SerializedParentWithStats | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [parentToDelete, setParentToDelete] =
+    useState<SerializedParentWithStats | null>(null);
+  const [parentToEdit, setParentToEdit] =
     useState<SerializedParentWithStats | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -219,9 +223,15 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
     }
   };
 
-  // Handle edit parent (placeholder)
-  const handleEditParent = () => {
-    toast("Edit functionality coming soon!", { icon: "🚧" });
+  // Handle edit parent
+  const handleEditParent = (parent: SerializedParentWithStats) => {
+    setParentToEdit(parent);
+    setIsEditModalOpen(true);
+  };
+
+  const handleParentUpdated = () => {
+    // Trigger page refresh to show the updated parent data
+    window.location.reload();
   };
 
   return (
@@ -428,7 +438,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                           </li>
                           <li>
                             <button
-                              onClick={handleEditParent}
+                              onClick={() => handleEditParent(parent)}
                               className="flex items-center gap-2"
                             >
                               <PencilIcon className="w-4 h-4" />
@@ -583,6 +593,17 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
           setIsModalOpen(false);
           setSelectedParent(null);
         }}
+      />
+
+      {/* Edit Parent Modal */}
+      <EditParentModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setParentToEdit(null);
+        }}
+        onParentUpdated={handleParentUpdated}
+        parent={parentToEdit}
       />
 
       {/* Delete Confirmation Modal */}

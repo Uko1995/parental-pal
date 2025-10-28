@@ -3,7 +3,7 @@
 import { ClientServiceInterface } from "./action";
 import {
   XMarkIcon,
-  CurrencyDollarIcon,
+  BanknotesIcon,
   CalendarDaysIcon,
   StarIcon,
   UsersIcon,
@@ -16,6 +16,7 @@ interface ServiceDetailsModalProps {
   service: ClientServiceInterface | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit: (service: ClientServiceInterface) => void;
 }
 
 const formatCurrency = (amount: number, currency = "NGN") => {
@@ -36,47 +37,24 @@ const formatServiceType = (type: string) => {
 export default function ServiceDetailsModal({
   service,
   isOpen,
+  onEdit,
   onClose,
 }: ServiceDetailsModalProps) {
   if (!isOpen || !service) return null;
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {service.name}
-              </h2>
-              <div className="flex items-center space-x-2 mt-1">
-                <span className="badge badge-primary">
-                  {formatServiceType(service.type)}
-                </span>
-                <span
-                  className={`badge ${
-                    service.status === "active"
-                      ? "badge-success"
-                      : service.status === "inactive"
-                      ? "badge-error"
-                      : "badge-warning"
-                  }`}
-                >
-                  {service.status.charAt(0).toUpperCase() +
-                    service.status.slice(1)}
-                </span>
-              </div>
-            </div>
-          </div>
-          <button className="btn btn-ghost btn-sm btn-circle" onClick={onClose}>
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="relative modal-box max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <button
+          className="absolute top-3 right-2 btn btn-ghost btn-sm btn-circle"
+          onClick={onClose}
+        >
+          <XMarkIcon className="w-5 h-5 flex items-center justify-center" />
+        </button>
 
         {/* Service Image */}
         {service.image && (
-          <div className="mb-6">
+          <div className="mt-6 mb-6 relative">
             <Image
               src={service.image}
               alt={service.name}
@@ -88,6 +66,31 @@ export default function ServiceDetailsModal({
                 (e.target as HTMLElement).style.display = "none";
               }}
             />
+            {/* Header */}
+            <div className="absolute bottom-3 right-3 left-3">
+              <div className="flex items-center justify-between ">
+                <h2 className="text-2xl font-bold text-gray-50">
+                  {service.name}
+                </h2>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="badge badge-primary">
+                    {formatServiceType(service.type)}
+                  </span>
+                  <span
+                    className={`badge ${
+                      service.status === "active"
+                        ? "badge-success"
+                        : service.status === "inactive"
+                        ? "badge-error"
+                        : "badge-warning"
+                    }`}
+                  >
+                    {service.status.charAt(0).toUpperCase() +
+                      service.status.slice(1)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -97,11 +100,53 @@ export default function ServiceDetailsModal({
           <p className="text-gray-600 leading-relaxed">{service.description}</p>
         </div>
 
+        {/* Key Features */}
+        {service.keyFeatures && service.keyFeatures.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Key Features</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {service.keyFeatures.map((feature, index) => (
+                <div key={index} className="flex items-center">
+                  <svg
+                    className="w-4 h-4 text-green-600 mr-2 flex-shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-sm text-gray-600">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Availability */}
+        {service.availability && service.availability.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Availability</h3>
+            <div className="flex flex-wrap gap-2">
+              {service.availability.map((period, index) => (
+                <span key={index} className="badge badge-outline badge-primary">
+                  {period
+                    .split("-")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="stat bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg">
             <div className="stat-figure text-green-600">
-              <CurrencyDollarIcon className="w-6 h-6" />
+              <BanknotesIcon className="w-6 h-6" />
             </div>
             <div className="stat-title text-green-800">Base Rate</div>
             <div className="stat-value text-green-900 text-xl">
@@ -156,7 +201,7 @@ export default function ServiceDetailsModal({
           <div className="card bg-base-50 border border-gray-200">
             <div className="card-body">
               <h3 className="card-title text-lg">
-                <CurrencyDollarIcon className="w-5 h-5" />
+                <BanknotesIcon className="w-5 h-5" />
                 Pricing Structure
               </h3>
               <div className="space-y-3">
@@ -190,19 +235,19 @@ export default function ServiceDetailsModal({
                             key={index}
                             className="bg-white p-3 rounded-lg border"
                           >
-                            <div className="flex justify-between items-start">
-                              <div>
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
                                 <p className="font-medium">{pkg.name}</p>
-                                <p className="text-sm text-gray-600">
-                                  {pkg.description}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Duration: {pkg.duration}
-                                </p>
+                                <span className="badge badge-sm badge-success">
+                                  {pkg.discountPercentage}% off
+                                </span>
                               </div>
-                              <span className="badge badge-success">
-                                {pkg.discountPercentage}% off
-                              </span>
+                              <p className="text-sm text-gray-600">
+                                {pkg.description}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Duration: {pkg.duration}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -230,25 +275,6 @@ export default function ServiceDetailsModal({
                       <span className="font-semibold">
                         {service.requirements.minimumAge || "0"} -{" "}
                         {service.requirements.maximumAge || "∞"} years
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Group Size */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Group Size:</span>
-                    <span className="font-semibold">
-                      {service.requirements.minimumParticipants} -{" "}
-                      {service.requirements.maximumParticipants} people
-                    </span>
-                  </div>
-
-                  {/* Ideal Group Size */}
-                  {service.requirements.idealGroupSize && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Ideal Size:</span>
-                      <span className="font-semibold">
-                        {service.requirements.idealGroupSize} people
                       </span>
                     </div>
                   )}
@@ -344,10 +370,12 @@ export default function ServiceDetailsModal({
 
         {/* Modal Actions */}
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+          <button className="btn btn-outline" onClick={onClose}>
             Close
           </button>
-          <button className="btn btn-primary">Edit Service</button>
+          <button onClick={() => onEdit(service)} className="btn btn-primary">
+            Edit Service
+          </button>
         </div>
       </div>
       <div className="modal-backdrop" onClick={onClose}></div>

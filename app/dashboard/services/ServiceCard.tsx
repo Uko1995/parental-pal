@@ -71,44 +71,44 @@ export default function ServiceCard({
     >
       {/* Service Image */}
       {service.image && (
-        <div className=" mb-1 overflow-hidden rounded-lg bg-gray-100">
+        <div className="relative mb-1 overflow-hidden rounded-t-lg bg-gray-100">
           <Image
             src={service.image}
             alt={service.name}
             width={400}
-            height={400}
-            className="w-full h-80 object-cover"
+            height={200}
+            className="w-full h-70 object-cover"
             onError={(e) => {
               console.error(`Failed to load image: ${service.image}`);
               (e.target as HTMLElement).style.display = "none";
             }}
           />
+          {/* Header */}
+          <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between mb-1">
+            <h3 className="card-title text-lg font-bold text-gray-50 ">
+              {service.name}
+            </h3>
+            <div className="flex font-semibold gap-2">
+              <span
+                className={`badge ${
+                  ServiceTypeBadgeColors[
+                    service.type as keyof typeof ServiceTypeBadgeColors
+                  ] || "badge-neutral"
+                } badge-sm`}
+              >
+                {formatServiceType(service.type)}
+              </span>
+              <span
+                className={`badge ${getStatusBadge(service.status)} badge-sm`}
+              >
+                {service.status.charAt(0).toUpperCase() +
+                  service.status.slice(1)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
       <div className="card-body">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-1">
-          <h3 className="card-title text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
-            {service.name}
-          </h3>
-          <div className="flex gap-2">
-            <span
-              className={`badge ${
-                ServiceTypeBadgeColors[
-                  service.type as keyof typeof ServiceTypeBadgeColors
-                ] || "badge-neutral"
-              } badge-sm`}
-            >
-              {formatServiceType(service.type)}
-            </span>
-            <span
-              className={`badge ${getStatusBadge(service.status)} badge-sm`}
-            >
-              {service.status.charAt(0).toUpperCase() + service.status.slice(1)}
-            </span>
-          </div>
-        </div>
-
         {/* Description */}
         <p className="text-gray-600 text-sm mb-1 line-clamp-2">
           {service.description}
@@ -149,32 +149,24 @@ export default function ServiceCard({
               </div>
             </div>
           </div>
-
-          <div className="bg-white/50 rounded-lg p-2 ">
-            <div className="flex items-center space-x-2">
-              <div>
-                <p className="text-xs text-gray-500">Capacity</p>
-                <p className="font-semibold text-sm">
-                  {service.requirements?.minimumParticipants || 1}-
-                  {service.requirements?.maximumParticipants || "∞"}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center justify-between space-x-1">
           {/* Revenue Badge */}
-          {service.metrics?.totalRevenue && (
+          {service.metrics?.totalRevenue ? (
             <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-200 rounded-full px-3 py-1">
               <span className="text-green-700 font-medium text-sm">
                 {formatCurrency(service.metrics.totalRevenue)} total revenue
               </span>
             </div>
+          ) : (
+            <span className="text-xs text-gray-600">
+              No revenue generated yet
+            </span>
           )}
 
           {/* Last Booking */}
-          {service.lastBookedAt && (
+          {service.lastBookedAt ? (
             <span className="text-xs text-gray-500">
               Last booked:{" "}
               {new Date(service.lastBookedAt).toLocaleDateString("en-US", {
@@ -182,6 +174,8 @@ export default function ServiceCard({
                 day: "numeric",
               })}
             </span>
+          ) : (
+            <span className="text-xs text-gray-600">Not yet booked</span>
           )}
         </div>
 
@@ -224,6 +218,7 @@ export default function ServiceCard({
                 <button
                   className="flex items-center space-x-2 text-error hover:bg-error/10"
                   onClick={() => onDelete(service)}
+                  disabled={onDelete === undefined}
                 >
                   <TrashIcon className="w-4 h-4" />
                   <span>Delete Service</span>

@@ -5,14 +5,18 @@ import {
   PencilIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import EditChildModal from "./EditChildModal";
 
 interface Child {
   childId?: string;
   name: string;
   age: number;
+  gender: "male" | "female";
   class?: string;
   schoolName?: string;
   subjects?: string[];
+  parentId?: string;
   parentName: string | null;
   parentEmail: string | null;
   services: Array<{
@@ -25,14 +29,30 @@ interface Child {
 
 interface ChildActionsProps {
   child: Child;
+  onChildUpdated?: () => void;
 }
 
-export default function ChildActions({ child }: ChildActionsProps) {
+export default function ChildActions({
+  child,
+  onChildUpdated,
+}: ChildActionsProps) {
+  const [showEditModal, setShowEditModal] = useState(false);
+
   const handleViewDetails = () => {
     const modal = document.getElementById(
       `child_modal_${child.childId}`
     ) as HTMLDialogElement;
     modal?.showModal();
+  };
+
+  const handleEdit = () => {
+    setShowEditModal(true);
+  };
+
+  const handleChildUpdated = () => {
+    if (onChildUpdated) {
+      onChildUpdated();
+    }
   };
 
   return (
@@ -46,7 +66,7 @@ export default function ChildActions({ child }: ChildActionsProps) {
           className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border"
         >
           <li>
-            <button className="text-sm">
+            <button className="text-sm" onClick={handleEdit}>
               <PencilIcon className="w-4 h-4" />
               Edit Profile
             </button>
@@ -217,6 +237,14 @@ export default function ChildActions({ child }: ChildActionsProps) {
           </div>
         </div>
       </dialog>
+
+      {/* Edit Child Modal */}
+      <EditChildModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onChildUpdated={handleChildUpdated}
+        child={child}
+      />
     </>
   );
 }

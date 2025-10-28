@@ -26,6 +26,7 @@ export interface ServiceInterface {
       | "daily"
       | "weekly"
       | "monthly"
+      | "term"
       | "per-event"
       | "custom";
 
@@ -38,6 +39,9 @@ export interface ServiceInterface {
       minimumSessions?: number;
     }>;
   };
+
+  // Key features
+  keyFeatures?: string[];
 
   // Service-specific requirements and constraints
   requirements?: {
@@ -52,9 +56,11 @@ export interface ServiceInterface {
     idealGroupSize?: number;
 
     // Location requirements
+    venueTypes?: Array<"indoor" | "outdoor" | "both">;
     equipmentProvided?: string[];
     spaceRequirements?: string;
   };
+  availability: string[];
 
   // Business logic
   status: "active" | "inactive" | "draft" | "seasonal" | "discontinued";
@@ -106,6 +112,7 @@ export const ServiceSchema = {
         "status",
         "createdAt",
         "updatedAt",
+        "image",
       ],
       properties: {
         _id: { bsonType: "objectId" },
@@ -196,6 +203,12 @@ export const ServiceSchema = {
             },
           },
         },
+        keyFeatures: {
+          bsonType: "array",
+          items: {
+            bsonType: "string",
+          },
+        },
 
         // Status and business logic
         status: {
@@ -243,6 +256,12 @@ export const ServiceSchema = {
               },
             },
           },
+        },
+        availability: {
+          bsonType: "array",
+          items: "string",
+          description:
+            "available periods eg. weekdays, weekends, school breaks etc",
         },
 
         // Administrative fields

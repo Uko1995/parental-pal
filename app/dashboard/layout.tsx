@@ -37,7 +37,6 @@ const navigation: NavigationItem[] = [
     name: "Bookings",
     href: "/dashboard/bookings",
     icon: CalendarDaysIcon,
-    badge: "12",
   },
   { name: "Payments", href: "/dashboard/payments", icon: CreditCardIcon },
   { name: "Services", href: "/dashboard/services", icon: BuildingOfficeIcon },

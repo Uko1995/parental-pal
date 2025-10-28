@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   UserGroupIcon,
   PlusIcon,
@@ -8,23 +11,122 @@ import {
   SparklesIcon,
   BuildingOfficeIcon,
 } from "@heroicons/react/24/outline";
-import { getChildren } from "./action";
+
 import ChildrenTable from "./ChildrenTable";
 import ChildrenCharts from "./ChildrenCharts";
+import AddChildModal from "./AddChildModal";
 
-export default async function ChildrenPage() {
-  const { children, serviceStats, childrenStats } = await getChildren();
+interface Child {
+  childId?: string;
+  name: string;
+  age: number;
+  gender: "male" | "female";
+  class?: string;
+  schoolName?: string;
+  subjects?: string[];
+  parentId: string;
+  parentName: string | null;
+  parentEmail: string | null;
+  services: Array<{
+    serviceType: string;
+    status: string;
+    bookingId: string;
+    createdAt: Date;
+  }>;
+}
+
+interface Parent {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface ServiceStat {
+  serviceType: string;
+  childrenCount: number;
+  totalBookings: number;
+}
+
+interface ChildrenStats {
+  totalChildren: number;
+  averageAge: number;
+  ageRange: {
+    youngest: number;
+    oldest: number;
+  };
+  ageGroups: Record<string, number>;
+  schoolDistribution: Record<string, number>;
+  serviceStats: ServiceStat[];
+}
+
+export default function ChildrenPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [parents, setParents] = useState<Parent[]>([]);
+  const [serviceStats, setServiceStats] = useState<ServiceStat[]>([]);
+  const [childrenStats, setChildrenStats] = useState<ChildrenStats>({
+    totalChildren: 0,
+    averageAge: 0,
+    ageRange: { youngest: 0, oldest: 0 },
+    ageGroups: {},
+    schoolDistribution: {},
+    serviceStats: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const childrenResponse = await fetch("/api/children-data");
+      if (childrenResponse.ok) {
+        const data = await childrenResponse.json();
+        setChildren(data.children);
+        setServiceStats(data.serviceStats);
+        setChildrenStats(data.childrenStats);
+      }
+
+      // Fetch parents for the add modal
+      const parentsResponse = await fetch("/api/parents");
+      if (parentsResponse.ok) {
+        const parentsData = await parentsResponse.json();
+        setParents(parentsData.parents || []);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleChildAdded = () => {
+    fetchData(); // Refresh the data
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 scroll-smooth">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Children</h1>
+          <h1 className="text-lg font-bold text-gray-900">Children</h1>
           <p className="text-gray-600 mt-1">
             Manage children profiles, learning progress, and care preferences
           </p>
         </div>
-        <button className="btn btn-primary">
+        <button
+          className="btn btn-primary"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <PlusIcon className="w-5 h-5 mr-2" />
           Add Child Profile
         </button>
@@ -130,8 +232,27 @@ export default async function ChildrenPage() {
       {/* Interactive Charts */}
       <ChildrenCharts
         childrenData={children}
-        serviceStats={serviceStats}
-        childrenStats={childrenStats}
+        serviceStats={
+          serviceStats as unknown as Array<{
+            serviceType: string;
+            childrenCount: number;
+            totalBookings: number;
+          }>
+        }
+        childrenStats={
+          childrenStats as unknown as {
+            totalChildren: number;
+            averageAge: number;
+            ageRange: { youngest: number; oldest: number };
+            ageGroups: Record<string, number>;
+            schoolDistribution: Record<string, number>;
+            serviceStats: Array<{
+              serviceType: string;
+              childrenCount: number;
+              totalBookings: number;
+            }>;
+          }
+        }
       />
 
       {/* Service Enrollment Breakdown */}
@@ -273,6 +394,14 @@ export default async function ChildrenPage() {
 
       {/* Children Profiles with Filters */}
       <ChildrenTable childrenData={children} />
+
+      {/* Add Child Modal */}
+      <AddChildModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onChildAdded={handleChildAdded}
+        parents={parents}
+      />
     </div>
   );
 }

@@ -1,21 +1,104 @@
-import { Suspense } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   UsersIcon,
-  CurrencyDollarIcon,
+  BanknotesIcon,
   UserGroupIcon,
   IdentificationIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { getParentsData, getParentAnalytics } from "./action";
+
 import ParentCharts from "./ParentCharts";
 import ParentsTable from "./ParentsTable";
+import AddParentModal from "./AddParentModal";
 
-export default async function ParentsPage() {
-  // Fetch data in parallel
-  const [parentsData, analytics] = await Promise.all([
-    getParentsData(),
-    getParentAnalytics(),
-  ]);
+interface SerializedParentWithStats {
+  _id: string | undefined;
+  userData: {
+    expiresAt: string;
+    user: {
+      name: string | null;
+      email: string | null;
+      image: string | null;
+    };
+  };
+  phone?: string;
+  address?: string;
+  role: "admin" | "parent" | "tutor";
+  isActive: boolean;
+  membershipType: "basic" | "premium" | "none";
+  children?: Array<{
+    name: string;
+    age: number;
+    class?: string;
+    schoolName?: string;
+    subjects?: string[];
+  }>;
+  stats: {
+    totalBookings: number;
+    activeBookings: number;
+    totalSpent: number;
+    childrenCount: number;
+    lastBookingDate: number | null;
+  };
+}
+
+interface ParentAnalytics {
+  totalParents: number;
+  activeParents: number;
+  totalChildren: number;
+  averageChildrenPerParent: string | number;
+  totalRevenue: number;
+  membershipDistribution: Array<{
+    type: string;
+    count: number;
+  }>;
+}
+
+export default function ParentsPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [parentsData, setParentsData] = useState<SerializedParentWithStats[]>(
+    []
+  );
+  const [analytics, setAnalytics] = useState<ParentAnalytics>({
+    totalParents: 0,
+    activeParents: 0,
+    totalChildren: 0,
+    averageChildrenPerParent: 0,
+    totalRevenue: 0,
+    membershipDistribution: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const [parentsResponse, analyticsResponse] = await Promise.all([
+        fetch("/api/parents-data"),
+        fetch("/api/parents-data?type=analytics"),
+      ]);
+
+      if (parentsResponse.ok && analyticsResponse.ok) {
+        const parentsData = await parentsResponse.json();
+        const analyticsData = await analyticsResponse.json();
+
+        setParentsData(parentsData);
+        setAnalytics(analyticsData);
+      }
+    } catch (error) {
+      console.error("Error fetching parents data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleParentAdded = () => {
+    fetchData(); // Refresh the data
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
@@ -25,19 +108,28 @@ export default async function ParentsPage() {
     }).format(amount);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Parents Management
-          </h1>
+          <h1 className="text-lg font-bold text-gray-900">Parents</h1>
           <p className="text-gray-600 mt-1">
             Manage parent accounts, children, and service preferences
           </p>
         </div>
-        <button className="btn btn-primary">
+        <button
+          className="btn btn-primary"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <PlusIcon className="w-5 h-5 mr-2" />
           Add Parent Account
         </button>
@@ -59,7 +151,7 @@ export default async function ParentsPage() {
                   {analytics.activeParents} active
                 </p>
               </div>
-              <div className="p-3 bg-[#90AC19]/10 rounded-full">
+              <div className="p-3 ">
                 <UsersIcon className="w-8 h-8 text-[#90AC19]" />
               </div>
             </div>
@@ -80,7 +172,7 @@ export default async function ParentsPage() {
                   Avg: {analytics.averageChildrenPerParent} per parent
                 </p>
               </div>
-              <div className="p-3 bg-[#E8931A]/10 rounded-full">
+              <div className="p-3">
                 <UserGroupIcon className="w-8 h-8 text-[#E8931A]" />
               </div>
             </div>
@@ -101,8 +193,8 @@ export default async function ParentsPage() {
                   From all parent bookings
                 </p>
               </div>
-              <div className="p-3 bg-[#A25F97]/10 rounded-full">
-                <CurrencyDollarIcon className="w-8 h-8 text-[#A25F97]" />
+              <div className="p-3 ">
+                <BanknotesIcon className="w-8 h-8 text-[#A25F97]" />
               </div>
             </div>
           </div>
@@ -124,7 +216,7 @@ export default async function ParentsPage() {
                   Premium subscriptions
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
+              <div className="p-3 ">
                 <IdentificationIcon className="w-8 h-8 text-blue-600" />
               </div>
             </div>
@@ -133,22 +225,14 @@ export default async function ParentsPage() {
       </div>
 
       {/* Charts Section */}
-      <Suspense
-        fallback={
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="card bg-base-100 shadow-lg">
-                <div className="card-body">
-                  <div className="skeleton h-6 w-48 mb-4"></div>
-                  <div className="skeleton h-80 w-full"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <ParentCharts
+        analytics={
+          analytics as unknown as {
+            registrationTrends: Array<{ month: string; registrations: number }>;
+            monthlyRevenue: Array<{ month: string; revenue: number }>;
+          }
         }
-      >
-        <ParentCharts analytics={analytics} />
-      </Suspense>
+      />
 
       {/* Parents Table */}
       <div>
@@ -159,68 +243,15 @@ export default async function ParentsPage() {
           </div>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="card bg-base-100 shadow-lg">
-              <div className="card-body">
-                {/* Search and filters skeleton */}
-                <div className="flex flex-col lg:flex-row gap-4 mb-6">
-                  <div className="skeleton h-12 flex-1"></div>
-                  <div className="flex gap-4">
-                    <div className="skeleton h-12 w-40"></div>
-                    <div className="skeleton h-12 w-32"></div>
-                  </div>
-                </div>
-
-                {/* Results info skeleton */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="skeleton h-4 w-40"></div>
-                  <div className="skeleton h-4 w-32"></div>
-                </div>
-
-                {/* Table skeleton */}
-                <div className="space-y-4">
-                  {/* Table header */}
-                  <div className="grid grid-cols-6 gap-4 p-4 bg-base-200 rounded">
-                    <div className="skeleton h-4 w-20"></div>
-                    <div className="skeleton h-4 w-16"></div>
-                    <div className="skeleton h-4 w-16"></div>
-                    <div className="skeleton h-4 w-20"></div>
-                    <div className="skeleton h-4 w-16"></div>
-                    <div className="skeleton h-4 w-16"></div>
-                  </div>
-
-                  {/* Table rows */}
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-6 gap-4 p-4 border-b"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="skeleton w-8 h-8 rounded-full"></div>
-                        <div className="space-y-1">
-                          <div className="skeleton h-4 w-24"></div>
-                          <div className="skeleton h-3 w-16"></div>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="skeleton h-3 w-32"></div>
-                        <div className="skeleton h-3 w-24"></div>
-                      </div>
-                      <div className="skeleton h-4 w-20"></div>
-                      <div className="skeleton h-4 w-16"></div>
-                      <div className="skeleton h-6 w-16 rounded-full"></div>
-                      <div className="skeleton h-6 w-8"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          }
-        >
-          <ParentsTable initialParents={parentsData} />
-        </Suspense>
+        <ParentsTable initialParents={parentsData} />
       </div>
+
+      {/* Add Parent Modal */}
+      <AddParentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onParentAdded={handleParentAdded}
+      />
     </div>
   );
 }

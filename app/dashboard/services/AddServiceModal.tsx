@@ -31,6 +31,7 @@ const billingTypes = [
   { value: "daily", label: "Per Day" },
   { value: "weekly", label: "Per Week" },
   { value: "monthly", label: "Per Month" },
+  { value: "term", label: "Per Term" },
   { value: "per-event", label: "Per Event" },
   { value: "custom", label: "Custom" },
 ] as const;
@@ -56,6 +57,13 @@ const ageGroupOptions = [
   { value: "secondary", label: "Secondary (13-18)" },
 ] as const;
 
+const availabilityOptions = [
+  { value: "weekdays", label: "Weekdays" },
+  { value: "weekends", label: "Weekends" },
+  { value: "school-breaks", label: "School Breaks" },
+  { value: "midterm-breaks", label: "Midterm Breaks" },
+] as const;
+
 export default function AddServiceModal({
   isOpen,
   onClose,
@@ -75,6 +83,8 @@ export default function AddServiceModal({
     status: "active" as ServiceInterface["status"],
     minimumAge: 1,
     maximumAge: 10,
+    keyFeatures: [] as string[],
+    availability: [] as string[],
     ageGroups: [] as string[],
     packages: [] as Array<{
       name: string;
@@ -97,15 +107,6 @@ export default function AddServiceModal({
         name === "baseRate" || name === "minimumAge" || name === "maximumAge"
           ? parseInt(value) || 0
           : value,
-    }));
-  };
-
-  const handleCheckboxChange = (category: "ageGroups", value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [category]: prev[category].includes(value)
-        ? prev[category].filter((item) => item !== value)
-        : [...prev[category], value],
     }));
   };
 
@@ -178,6 +179,41 @@ export default function AddServiceModal({
     }));
   };
 
+  const handleCheckboxChange = (
+    category: "availability" | "ageGroups",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [category]: prev[category].includes(value)
+        ? prev[category].filter((item) => item !== value)
+        : [...prev[category], value],
+    }));
+  };
+
+  const addKeyFeature = () => {
+    setFormData((prev) => ({
+      ...prev,
+      keyFeatures: [...prev.keyFeatures, ""],
+    }));
+  };
+
+  const removeKeyFeature = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      keyFeatures: prev.keyFeatures.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateKeyFeature = (index: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      keyFeatures: prev.keyFeatures.map((feature, i) =>
+        i === index ? value : feature
+      ),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -192,6 +228,9 @@ export default function AddServiceModal({
         description: formData.description,
         shortDescription: formData.shortDescription,
         image: formData.image,
+        keyFeatures: formData.keyFeatures.filter(
+          (feature) => feature.trim() !== ""
+        ),
         pricing: {
           baseRate: formData.baseRate,
           currency: formData.currency,
@@ -199,13 +238,14 @@ export default function AddServiceModal({
           packages:
             formData.packages.length > 0 ? formData.packages : undefined,
         },
+        availability: formData.availability,
         requirements: {
-          minimumParticipants: 1,
-          maximumParticipants: 50,
           minimumAge: formData.minimumAge,
           maximumAge: formData.maximumAge,
           ageGroups:
             formData.ageGroups.length > 0 ? formData.ageGroups : undefined,
+          minimumParticipants: 1,
+          maximumParticipants: 50,
         },
         status: formData.status,
         metrics: {
@@ -237,8 +277,10 @@ export default function AddServiceModal({
           status: "active",
           minimumAge: 1,
           maximumAge: 10,
-          ageGroups: [],
+          keyFeatures: [],
           packages: [],
+          availability: [],
+          ageGroups: [],
         });
       } else {
         toast.error(result.error || "Failed to create service");
@@ -255,7 +297,7 @@ export default function AddServiceModal({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="modal-box max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -388,6 +430,48 @@ export default function AddServiceModal({
             </div>
           </div>
 
+          {/* Key Features */}
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Key Features
+              </h3>
+              <button
+                type="button"
+                onClick={addKeyFeature}
+                className="btn btn-outline btn-sm"
+              >
+                + Add Feature
+              </button>
+            </div>
+
+            {formData.keyFeatures.map((feature, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={feature}
+                  onChange={(e) => updateKeyFeature(index, e.target.value)}
+                  className="input input-bordered flex-1"
+                  placeholder="Enter a key feature"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeKeyFeature(index)}
+                  className="btn btn-ghost btn-sm btn-circle text-error"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            {formData.keyFeatures.length === 0 && (
+              <p className="text-gray-500 text-sm italic">
+                No key features added. Click &ldquo;Add Feature&rdquo; to start
+                adding features.
+              </p>
+            )}
+          </div>
+
           {/* Pricing */}
           <div className="space-y-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-800">Pricing</h3>
@@ -496,12 +580,36 @@ export default function AddServiceModal({
                     <input
                       type="checkbox"
                       className="checkbox checkbox-primary"
-                      checked={formData.ageGroups.includes(group.value)}
+                      checked={
+                        formData.ageGroups?.includes(group.value) || false
+                      }
                       onChange={() =>
                         handleCheckboxChange("ageGroups", group.value)
                       }
                     />
                     <span className="label-text ml-2">{group.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Availability</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {availabilityOptions.map((option) => (
+                  <label key={option.value} className="cursor-pointer label">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-primary"
+                      checked={formData.availability.includes(option.value)}
+                      onChange={() =>
+                        handleCheckboxChange("availability", option.value)
+                      }
+                    />
+                    <span className="label-text ml-2">{option.label}</span>
                   </label>
                 ))}
               </div>
@@ -556,8 +664,8 @@ export default function AddServiceModal({
                     />
                   </div>
 
-                  <div className="form-control">
-                    <label htmlFor=""></label>
+                  <div className="form-control flex flex-col">
+                    <label htmlFor={pkg.name}>Duration</label>
                     <input
                       type="text"
                       placeholder="Duration (e.g., 1 month)"
@@ -570,10 +678,11 @@ export default function AddServiceModal({
                   </div>
 
                   <div className="form-control">
+                    <label htmlFor={pkg.name}>Percentage</label>
                     <input
-                      type="number"
+                      type="string"
                       placeholder="Discount %"
-                      value={pkg.discountPercentage}
+                      value={Number(pkg.discountPercentage) || ""}
                       onChange={(e) =>
                         updatePackage(
                           index,
@@ -588,15 +697,16 @@ export default function AddServiceModal({
                   </div>
 
                   <div className="form-control">
+                    <label htmlFor={pkg.name}>Minimum Sessions</label>
                     <input
-                      type="number"
+                      type="text"
                       placeholder="Min sessions"
-                      value={pkg.minimumSessions || ""}
+                      value={Number(pkg.minimumSessions) || ""}
                       onChange={(e) =>
                         updatePackage(
                           index,
                           "minimumSessions",
-                          parseInt(e.target.value) || 1
+                          parseInt(e.target.value) || 0
                         )
                       }
                       className="input input-bordered input-sm"
@@ -604,14 +714,15 @@ export default function AddServiceModal({
                     />
                   </div>
 
-                  <div className="form-control md:col-span-2">
+                  <div className="form-control">
+                    <label htmlFor={pkg.name}>Description</label>
                     <textarea
                       placeholder="Package description"
                       value={pkg.description}
                       onChange={(e) =>
                         updatePackage(index, "description", e.target.value)
                       }
-                      className="textarea textarea-bordered textarea-sm"
+                      className="textarea w-full textarea-bordered textarea-sm"
                       rows={2}
                     />
                   </div>

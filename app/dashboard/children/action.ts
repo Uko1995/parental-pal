@@ -181,3 +181,88 @@ export const getChildrenByAgeGroup = unstable_cache(
     tags: [CACHE_TAGS.CHILDREN],
   }
 );
+
+// Update child within parent document
+export async function updateChild(
+  parentId: string,
+  childData: {
+    originalName: string; // To find the child
+    name: string;
+    age: number;
+    class?: string;
+    schoolName?: string;
+    subjects?: string[];
+  }
+) {
+  try {
+    // Get the parent user
+    const parent = await UserRepository.findById(parentId);
+    if (!parent) {
+      return { success: false, error: "Parent not found" };
+    }
+
+    // Find the child index by matching the original name
+    const children = parent.children || [];
+    const childIndex = children.findIndex(
+      (child) => child.name === childData.originalName
+    );
+
+    if (childIndex === -1) {
+      return { success: false, error: "Child not found" };
+    }
+
+    // Update the specific child
+    children[childIndex] = {
+      ...children[childIndex],
+      name: childData.name,
+      age: childData.age,
+      class: childData.class,
+      schoolName: childData.schoolName,
+      subjects: childData.subjects,
+    };
+
+    // Update the parent document
+    const result = await UserRepository.updateUser(parentId, {
+      children,
+      updatedAt: new Date(),
+    });
+
+    // Revalidate cache
+    // Note: In a real app, you'd use revalidateTag here
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error updating child:", error);
+    return { success: false, error: "Failed to update child" };
+  }
+}
+
+// Delete child from parent document
+export async function deleteChild(parentId: string, childIndex: number) {
+  try {
+    // Get the parent user
+    const parent = await UserRepository.findById(parentId);
+    if (!parent) {
+      return { success: false, error: "Parent not found" };
+    }
+
+    // Remove the specific child
+    const children = parent.children || [];
+    if (childIndex >= children.length) {
+      return { success: false, error: "Child not found" };
+    }
+
+    children.splice(childIndex, 1);
+
+    // Update the parent document
+    const result = await UserRepository.updateUser(parentId, {
+      children,
+      updatedAt: new Date(),
+    });
+
+    // Revalidate cache
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error deleting child:", error);
+    return { success: false, error: "Failed to delete child" };
+  }
+}

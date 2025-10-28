@@ -24,6 +24,7 @@ export interface UserInterface {
   children?: {
     name: string;
     age: number;
+    gender: "male" | "female";
     class?: string;
     schoolName?: string;
     subjects?: string[];
@@ -173,7 +174,7 @@ export const UserSchema = {
           bsonType: ["array", "null"],
           items: {
             bsonType: "object",
-            required: ["name", "age"],
+            required: ["name", "age", "gender"],
             properties: {
               name: {
                 bsonType: "string",
@@ -186,6 +187,11 @@ export const UserSchema = {
                 minimum: 0,
                 maximum: 18,
                 description: "Child's age",
+              },
+              gender: {
+                bsonType: "string",
+                enum: ["male", "female"],
+                description: "Child's gender",
               },
               class: {
                 bsonType: ["string", "null"],
