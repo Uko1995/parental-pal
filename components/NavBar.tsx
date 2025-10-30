@@ -12,7 +12,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const { data: session, status } = useSession();
-  console.log("Session data:", session);
+  // console.log("Session data:", session);
 
   interface NavItem {
     name: string;
