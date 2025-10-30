@@ -1,11 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  ExclamationTriangleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
-import Link from "next/link";
 // import Image from "next/image";
 
 interface ErrorProps {

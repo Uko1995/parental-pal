@@ -1,6 +1,5 @@
 import {
   BuildingOfficeIcon,
-  EyeIcon,
   BanknotesIcon,
   StarIcon,
   CalendarDaysIcon,

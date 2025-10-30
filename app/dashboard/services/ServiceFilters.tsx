@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
   Squares2X2Icon,

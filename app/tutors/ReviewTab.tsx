@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  CheckCircleIcon,
   UserIcon,
   AcademicCapIcon,
   CalendarDaysIcon,
@@ -18,8 +17,8 @@ interface ReviewTabProps {
 
 export default function ReviewTab({
   formData,
-  onSubmit,
-  isSubmitting,
+  // onSubmit,
+  // isSubmitting,
   onTermsChange,
 }: ReviewTabProps) {
   // State for terms and conditions checkboxes
@@ -46,13 +45,13 @@ export default function ReviewTab({
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  // const formatCurrency = (amount: number) => {
+  //   return new Intl.NumberFormat("en-NG", {
+  //     style: "currency",
+  //     currency: "NGN",
+  //     minimumFractionDigits: 0,
+  //   }).format(amount);
+  // };
 
   return (
     <div className="space-y-6">

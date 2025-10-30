@@ -51,7 +51,7 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const Name =
     session?.user?.name
       ?.split(" ")
