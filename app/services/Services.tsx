@@ -1,129 +1,67 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getPublicServices, ClientServiceForDisplay } from "./actions";
 
-const services = [
-  {
-    id: "childcare",
-    title: "Professional Childcare Services",
-    shortDescription:
-      "Safe, nurturing environment with qualified caregivers for your peace of mind.",
-    fullDescription:
-      "Our professional childcare services provide a secure, loving environment where children can learn, play, and grow. With qualified caregivers, educational activities, and flexible scheduling options.",
-    image: "/childcare.jpg",
-    features: [
-      "Qualified and vetted caregivers",
-      "Age-appropriate learning activities",
-      "Flexible timing options",
-      "Regular progress updates",
-      "Emergency care protocols",
-    ],
-    ageGroups: "6 months - 10 years",
-    pricing: "₦5,000/day, 15% discount for monthly bookings",
-    availability: "Monday - Friday",
-  },
-  {
-    id: "homeschooling",
-    title: "Comprehensive Homeschooling Program",
-    shortDescription:
-      "Complete educational curriculum and support for families choosing alternative education.",
-    fullDescription:
-      "Our homeschooling program offers a complete educational experience with certified teachers, structured curriculum, and personalized learning plans tailored to each child's unique needs and learning style.",
-    image: "/homeschooling.jpg",
-    features: [
-      "Certified teacher supervision",
-      "Personalized curriculum planning",
-      "Progress tracking and assessment",
-      "Social interaction opportunities",
-      "College preparation support",
-      "Flexible learning schedules",
-    ],
-    ageGroups: "2 - 10 years",
-    pricing: "From ₦250,000/term",
-    availability: "Monday - Sunday",
-  },
-  {
-    id: "tutoring",
-    title: "Academic Tutoring Excellence",
-    shortDescription:
-      "One-on-one and group tutoring sessions with qualified educators across all subjects.",
-    fullDescription:
-      "Boost your child's academic performance with our expert tutoring services. Our qualified educators provide personalized instruction in all subjects, helping students build confidence and achieve their full potential.",
-    image: "/tutoring.jpg",
-    features: [
-      "Subject-specific expertise",
-      "Personalized learning plans",
-      "Exam preparation support",
-      "Homework assistance",
-      "Progress monitoring",
-      "Both online and in-person options",
-    ],
-    ageGroups: "2 - 10 years",
-    pricing: "From ₦15,000/hour",
-    availability: "7 days a week",
-  },
-  {
-    id: "space-rental",
-    title: "Flexible Space Rentals",
-    shortDescription:
-      "Modern, safe spaces for educational activities, parties, and community events.",
-    fullDescription:
-      "Rent our fully equipped, child-friendly spaces for your events. Perfect for birthday parties, educational workshops, community gatherings, and special celebrations.",
-    image: "/space.webp",
-    features: [
-      "Fully equipped facilities",
-      "Child-safe environments",
-      "Audio/visual equipment",
-      "Flexible booking options",
-      "Event planning assistance",
-      "Catering arrangements available",
-    ],
-    ageGroups: "All ages welcome",
-    pricing: "From ₦250,000/day",
-    availability: "Weekends",
-  },
-  {
-    id: "kiddies-enrichment",
-    title: "Kids Enrichment Session",
-    shortDescription:
-      "Engaging educational sessions designed to enhance children's creativity, critical thinking, and social skills.",
-    fullDescription:
-      "Our Kids Enrichment Sessions provide structured activities that stimulate learning beyond traditional academics. Through interactive workshops, creative projects, and character building exercises, we help children develop confidence, creativity, and essential life skills in a fun, supportive environment.",
-    image: "/Party.webp",
-    features: [
-      "Creative arts and crafts workshops",
-      "STEM learning activities",
-      "Social skills development",
-      "Critical thinking exercises",
-      "Team building activities",
-      "Skill-based games and challenges",
-    ],
-    ageGroups: "2 - 10 years",
-    pricing: "₦8,000 per session",
-    availability: "Weekdays & Weekends",
-  },
-  {
-    id: "holiday-camps",
-    title: "Exciting Holiday Camps",
-    shortDescription:
-      "Fun-filled holiday programs with educational activities, sports, and creative workshops.",
-    fullDescription:
-      "Keep your children engaged during school holidays with our exciting camp programs. Featuring educational activities, sports, arts and crafts, and field trips in a safe, supervised environment.",
-    image: "/childcare.jpg",
-    features: [
-      "Diverse activity programs",
-      "Professional supervision",
-      "Educational field trips",
-      "Sports and recreation",
-      "Arts and crafts workshops",
-      "Healthy meals included",
-    ],
-    ageGroups: "2 - 10 years",
-    pricing: "From ₦30,000/week",
-    availability: "School Holidays and Midterm Breaks",
-  },
-];
+// Helper function to format pricing
+const formatPricing = (service: ClientServiceForDisplay) => {
+  const { baseRate, currency, billingType } = service.pricing;
+  const currencySymbol = currency === "NGN" ? "₦" : "$";
 
-export default function Services() {
+  const billingMap = {
+    hour: "/hour",
+    day: "/day",
+    week: "/week",
+    month: "/month",
+    term: "/term",
+    session: "/session",
+    event: "/event",
+    custom: "",
+  };
+
+  return `From ${currencySymbol}${baseRate?.toLocaleString()}${
+    billingMap[billingType]
+  }`;
+};
+
+// Helper function to format age groups
+const formatAgeGroups = (service: ClientServiceForDisplay) => {
+  if (
+    service.requirements?.ageGroups &&
+    service.requirements.ageGroups.length > 0
+  ) {
+    return service.requirements.ageGroups.join(", ");
+  }
+
+  const { minimumAge, maximumAge } = service.requirements || {};
+  if (minimumAge !== undefined && maximumAge !== undefined) {
+    return `${minimumAge} - ${maximumAge} years`;
+  }
+
+  return "All ages welcome";
+};
+
+// Helper function to format availability
+const formatAvailability = (service: ClientServiceForDisplay) => {
+  if (service.availability && service.availability.length > 0) {
+    const availabilityMap = {
+      weekdays: "Weekdays",
+      weekends: "Weekends",
+      "school-breaks": "School Breaks",
+      "midterm-breaks": "Midterm Breaks",
+    };
+
+    return service.availability
+      .map(
+        (slot) => availabilityMap[slot as keyof typeof availabilityMap] || slot
+      )
+      .join(" & ");
+  }
+
+  return "Contact for availability";
+};
+
+export default async function Services() {
+  const services = await getPublicServices();
   return (
     <section className="py-10 px-4 bg-gradient-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50">
       <div className="max-w-7xl mx-auto">
@@ -147,14 +85,14 @@ export default function Services() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
           {services.map((service) => (
             <div
-              key={service.id}
+              key={service._id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden group border border-gray-100"
             >
               {/* Service Header */}
               <div className="relative h-64 overflow-hidden">
                 <Image
-                  src={service.image}
-                  alt={service.title}
+                  src={service.image || "/default-service.jpg"}
+                  alt={service.name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -162,7 +100,7 @@ export default function Services() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
 
                 <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">{service.title}</h3>
+                  <h3 className="text-2xl font-bold mb-2">{service.name}</h3>
                   <p className="text-white/90">{service.shortDescription}</p>
                 </div>
               </div>
@@ -170,7 +108,7 @@ export default function Services() {
               {/* Service Content */}
               <div className="p-8">
                 <p className="text-gray-600 mb-6 leading-relaxed">
-                  {service.fullDescription}
+                  {service.description}
                 </p>
 
                 {/* Quick Info Grid */}
@@ -178,13 +116,13 @@ export default function Services() {
                   <div className="text-center p-3 bg-[#FFEACF]/30 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">Age Groups</div>
                     <div className="font-semibold text-gray-900">
-                      {service.ageGroups}
+                      {formatAgeGroups(service)}
                     </div>
                   </div>
                   <div className="text-center p-3 bg-[#FFEACF]/30 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">Pricing</div>
                     <div className="font-semibold text-[#90AC19]">
-                      {service.pricing}
+                      {formatPricing(service)}
                     </div>
                   </div>
                   <div className="text-center p-3 bg-[#FFEACF]/30 rounded-lg">
@@ -192,43 +130,47 @@ export default function Services() {
                       Availability
                     </div>
                     <div className="font-semibold text-gray-900">
-                      {service.availability}
+                      {formatAvailability(service)}
                     </div>
                   </div>
                 </div>
 
                 {/* Features List */}
-                <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">
-                    Key Features:
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {service.features.map((feature, featureIndex) => (
-                      <div key={featureIndex} className="flex items-center">
-                        <svg
-                          className="w-4 h-4 text-[#90AC19] mr-2 flex-shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="text-sm text-gray-600">{feature}</span>
-                      </div>
-                    ))}
+                {service.keyFeatures && service.keyFeatures.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-3">
+                      Key Features:
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {service.keyFeatures.map((feature, featureIndex) => (
+                        <div key={featureIndex} className="flex items-center">
+                          <svg
+                            className="w-4 h-4 text-[#90AC19] mr-2 flex-shrink-0"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span className="text-sm text-gray-600">
+                            {feature}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
-                    href={`/booking?service=${service.id}`}
+                    href={`/booking?service=${service.type}`}
                     className="flex-1 bg-[#90AC19] hover:bg-[#7A9216] text-white text-center py-3 px-6 rounded-lg font-semibold transition-colors duration-300 shadow-md hover:shadow-lg"
                   >
-                    {service.id === "space-rental"
+                    {service.type === "space-rental"
                       ? "Book our Space"
                       : "Enroll your Child"}
                   </Link>

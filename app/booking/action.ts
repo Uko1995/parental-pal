@@ -49,7 +49,8 @@ export async function registerChild(formData: FormData) {
         },
       },
       phone: (cleanedData.parentPhone as string) || "",
-      address: ((cleanedData.parentAddress || cleanedData.address) as string) || "",
+      address:
+        ((cleanedData.parentAddress || cleanedData.address) as string) || "",
       role: "parent",
       isActive: true,
       membershipType: "basic",
@@ -110,6 +111,40 @@ export async function registerChild(formData: FormData) {
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
   console.log("✅ Booking saved to database:", savedBooking._id);
+
+  // Send booking confirmation email
+  try {
+    const emailResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "booking-confirmation",
+        to: user.userData.user.email,
+        userName: user.userData.user.name || "Parent",
+        data: {
+          _id: savedBooking._id?.toString(),
+          serviceType: savedBooking.serviceType,
+          schedule: savedBooking.schedule,
+          children: savedBooking.children,
+          status: savedBooking.status,
+          pricing: savedBooking.pricing,
+        },
+      }),
+    });
+
+    if (emailResponse.ok) {
+      console.log("✅ Booking confirmation email sent successfully");
+    } else {
+      console.error(
+        "❌ Failed to send booking confirmation email:",
+        await emailResponse.text()
+      );
+    }
+  } catch (emailError) {
+    console.error("❌ Error sending booking confirmation email:", emailError);
+  }
 
   // Optional: Also save to Google Sheets for backup
   // console.log("Google Script URL:", process.env.GOOGLE_SCRIPT_URL);

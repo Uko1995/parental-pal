@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, getProviders } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -18,8 +18,24 @@ type ProvidersType = Record<string, Provider> | null;
 
 export default function SignIn() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [providers, setProviders] = useState<ProvidersType>(null);
   const [loading, setLoading] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [validationErrors, setValidationErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
@@ -49,6 +65,79 @@ export default function SignIn() {
     }
   }, [error, searchParams]);
 
+  // Validation functions
+  const validateEmail = (email: string): string => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) return "Password is required";
+    if (password.length < 8)
+      return "Password must be at least 8 characters long";
+
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    // Calculate password strength for progress bar
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (hasUppercase) strength++;
+    if (hasLowercase) strength++;
+    if (hasNumber) strength++;
+    if (hasSpecialChar) strength++;
+
+    setPasswordStrength(strength);
+
+    if (!hasUppercase)
+      return "Password must contain at least one uppercase letter";
+    if (!hasLowercase)
+      return "Password must contain at least one lowercase letter";
+    if (!hasNumber) return "Password must contain at least one number";
+    if (!hasSpecialChar)
+      return "Password must contain at least one special character";
+
+    return "";
+  };
+
+  const validateName = (name: string): string => {
+    if (!name) return "Name is required";
+    if (name.trim().length < 2)
+      return "Name must be at least 2 characters long";
+    return "";
+  };
+
+  const validateConfirmPassword = (
+    password: string,
+    confirmPassword: string
+  ): string => {
+    if (!confirmPassword) return "Please confirm your password";
+    if (password !== confirmPassword) return "Passwords do not match";
+    return "";
+  };
+
+  const validateForm = (data: typeof formData, isRegister: boolean) => {
+    const errors = {
+      name: isRegister ? validateName(data.name) : "",
+      email: validateEmail(data.email),
+      password: validatePassword(data.password),
+      confirmPassword: isRegister
+        ? validateConfirmPassword(data.password, data.confirmPassword)
+        : "",
+    };
+
+    setValidationErrors(errors);
+
+    const hasErrors = Object.values(errors).some((error) => error !== "");
+    setIsFormValid(!hasErrors);
+
+    return !hasErrors;
+  };
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     toast.promise(
@@ -63,6 +152,134 @@ export default function SignIn() {
       }
     );
     setLoading(false);
+  };
+
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate form
+    if (!validateForm(formData, false)) {
+      toast.error("Please fix the errors below");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("Invalid credentials. Please try again.");
+      } else if (result?.ok) {
+        toast.success("Signed in successfully!");
+        router.push(callbackUrl);
+      }
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast.error("An error occurred during sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate form
+    if (!validateForm(formData, true)) {
+      toast.error("Please fix the errors below");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Account created successfully! Please sign in.");
+        setIsRegisterMode(false);
+        setFormData({
+          name: "",
+          email: formData.email,
+          password: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(data.error || "Registration failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("An error occurred during registration");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newFormData = {
+      ...formData,
+      [name]: value,
+    };
+
+    setFormData(newFormData);
+
+    // Real-time validation for the current field
+    let error = "";
+    switch (name) {
+      case "name":
+        error = validateName(value);
+        break;
+      case "email":
+        error = validateEmail(value);
+        break;
+      case "password":
+        error = validatePassword(value);
+        // Also validate confirm password if it exists
+        if (formData.confirmPassword && isRegisterMode) {
+          const confirmError = validateConfirmPassword(
+            value,
+            formData.confirmPassword
+          );
+          setValidationErrors((prev) => ({
+            ...prev,
+            confirmPassword: confirmError,
+          }));
+        }
+        break;
+      case "confirmPassword":
+        error = validateConfirmPassword(formData.password, value);
+        break;
+    }
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
+
+    // Update form validity
+    const newErrors = {
+      ...validationErrors,
+      [name]: error,
+    };
+    const hasErrors = Object.values(newErrors).some((err) => err !== "");
+    setIsFormValid(!hasErrors);
   };
 
   const getErrorMessage = (error: string) => {
@@ -124,8 +341,201 @@ export default function SignIn() {
             </div>
           )}
 
-          {/* Sign In Options */}
+          {/* Email/Password Form - Primary Option */}
           <div className="space-y-4">
+            <form
+              onSubmit={
+                isRegisterMode ? handleRegister : handleCredentialsSignIn
+              }
+            >
+              {isRegisterMode && (
+                <div className="form-control w-full mb-4">
+                  <label className="label">
+                    <span className="label-text">Full Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={`input input-bordered w-full ${
+                      validationErrors.name ? "input-error" : ""
+                    }`}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                  {validationErrors.name && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {validationErrors.name}
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              <div className="form-control w-full mb-4">
+                <label className="label">
+                  <span className="label-text">Email</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`input input-bordered w-full ${
+                    validationErrors.email ? "input-error" : ""
+                  }`}
+                  placeholder="Enter your email"
+                  required
+                />
+                {validationErrors.email && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">
+                      {validationErrors.email}
+                    </span>
+                  </label>
+                )}
+              </div>
+
+              <div className="form-control w-full mb-4">
+                <label className="label">
+                  <span className="label-text">Password</span>
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`input input-bordered w-full ${
+                    validationErrors.password ? "input-error" : ""
+                  }`}
+                  placeholder="Enter your password"
+                  required
+                />
+                {/* Password strength indicator */}
+                {isRegisterMode && formData.password && (
+                  <div className="mt-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-gray-600">
+                        Password strength:
+                      </span>
+                      <div className="flex gap-1 flex-1 max-w-20">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1 flex-1 rounded-full ${
+                              level <= passwordStrength
+                                ? passwordStrength <= 2
+                                  ? "bg-red-400"
+                                  : passwordStrength <= 3
+                                  ? "bg-yellow-400"
+                                  : passwordStrength <= 4
+                                  ? "bg-blue-400"
+                                  : "bg-green-400"
+                                : "bg-gray-200"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-medium">
+                        {passwordStrength <= 2
+                          ? "Weak"
+                          : passwordStrength <= 3
+                          ? "Fair"
+                          : passwordStrength <= 4
+                          ? "Good"
+                          : "Strong"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {validationErrors.password && (
+                  <label className="label">
+                    <span className="label-text-alt text-error text-xs">
+                      {validationErrors.password}
+                    </span>
+                  </label>
+                )}
+
+                {/* Password requirements hint */}
+                <label className="label">
+                  <span className="label-text-alt text-xs text-gray-500">
+                    Password must be 8+ chars with uppercase, lowercase, number
+                    & special character
+                  </span>
+                </label>
+              </div>
+
+              {isRegisterMode && (
+                <div className="form-control w-full mb-4">
+                  <label className="label">
+                    <span className="label-text">Confirm Password</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className={`input input-bordered w-full ${
+                      validationErrors.confirmPassword ? "input-error" : ""
+                    }`}
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  {validationErrors.confirmPassword && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {validationErrors.confirmPassword}
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  loading ||
+                  (!isFormValid &&
+                    (isRegisterMode || !!formData.email || !!formData.password))
+                }
+                className={`btn btn-primary w-full ${
+                  !isFormValid &&
+                  (isRegisterMode || !!formData.email || !!formData.password)
+                    ? "btn-disabled"
+                    : ""
+                }`}
+              >
+                {loading ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : isRegisterMode ? (
+                  "Create Account"
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+
+            {/* Toggle between signin/register */}
+            <div className="text-center">
+              <button
+                onClick={() => setIsRegisterMode(!isRegisterMode)}
+                className="link link-primary text-sm"
+              >
+                {isRegisterMode
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Create one"}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="divider text-base-content/50 my-6">
+              or continue with
+            </div>
+
+            {/* Google Sign In - Alternative Option */}
             {providers?.google && (
               <button
                 onClick={handleGoogleSignIn}
@@ -157,43 +567,10 @@ export default function SignIn() {
                 Continue with Google
               </button>
             )}
-
-            {/* Divider */}
-            <div className="divider text-base-content/50">or</div>
-
-            {/* Coming Soon Options */}
-            <div className="space-y-2">
-              <button
-                disabled
-                className="btn btn-ghost w-full opacity-50 cursor-not-allowed"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-                Continue with Email (Coming Soon)
-              </button>
-            </div>
           </div>
 
           {/* Footer */}
           <div className="text-center mt-6 space-y-2">
-            <p className="text-sm text-base-content/70">
-              Don&apos;t have an account?{" "}
-              <span className="text-primary font-medium">
-                Sign up automatically on first login
-              </span>
-            </p>
             <Link href="/" className="link link-primary text-sm">
               Back to Home
             </Link>

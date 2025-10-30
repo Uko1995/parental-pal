@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import AddBlogModal from "./AddBlogModal";
 import ViewBlogModal from "./ViewBlogModal";
 import EditBlogModal from "./EditBlogModal";
-import BlogTable from "./BlogTable";
 import BlogCharts from "./BlogCharts";
 
 export interface PostInterface {
@@ -235,12 +234,12 @@ export default function BlogPage() {
       <BlogCharts analytics={analytics} />
 
       {/* Blog Posts Table */}
-      <BlogTable
+      {/* <BlogTable
         posts={posts}
         onEdit={handleEditPost}
         onView={handleViewPost}
         onRefresh={handleRefresh}
-      />
+      /> */}
 
       {/* Modals */}
       <AddBlogModal

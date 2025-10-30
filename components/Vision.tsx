@@ -1,3 +1,4 @@
+import { UserGroupIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -48,7 +49,7 @@ export default function Vision() {
         "Personalized academic support tailored to your child's needs",
       services: [
         {
-          type: "Virtual Tutoring",
+          type: "Virtual",
           description:
             "One-on-one academic support with qualified tutors using interactive digital tools",
           features: [
@@ -62,7 +63,7 @@ export default function Vision() {
           subjects: ["Mathematics", "English", "Science", "Social Studies"],
         },
         {
-          type: "On-Site Tutoring",
+          type: "On-Site ",
           description:
             "Face-to-face academic support with hands-on learning activities",
           features: [
@@ -81,8 +82,19 @@ export default function Vision() {
         },
       ],
       icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="size-8"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+          />
         </svg>
       ),
     },
@@ -92,7 +104,7 @@ export default function Vision() {
         "Comprehensive educational programs for complete learning experience",
       services: [
         {
-          type: "Virtual Homeschooling",
+          type: "InPerson ",
           description:
             "Comprehensive curriculum delivery with structured learning modules",
           features: [
@@ -106,7 +118,7 @@ export default function Vision() {
           subjects: ["Complete K-12 Curriculum", "Specialized Programs"],
         },
         {
-          type: "On-Site Homeschooling",
+          type: "On-Site ",
           description:
             "Traditional classroom experience with personalized curriculum",
           features: [
@@ -121,11 +133,18 @@ export default function Vision() {
         },
       ],
       icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="size-8"
+        >
           <path
-            fillRule="evenodd"
-            d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 5a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"
-            clipRule="evenodd"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"
           />
         </svg>
       ),
@@ -235,13 +254,7 @@ export default function Vision() {
               {/* Childcare Approach */}
               <div>
                 <h4 className="text-base font-semibold text-[#90AC19] mb-4 flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                  </svg>
+                  <UserGroupIcon className="w-5 h-5 mr-2" />
                   Childcare Services
                 </h4>
                 <ul className="space-y-3 text-sm">

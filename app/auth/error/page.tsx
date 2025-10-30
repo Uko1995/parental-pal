@@ -26,9 +26,17 @@ export default function AuthError() {
       case "AccessDenied":
         return {
           title: "Access Denied",
-          message: "You do not have permission to sign in.",
-          suggestion: "Please contact an administrator for access.",
+          message: "You do not have permission to access this resource.",
+          suggestion:
+            "Please contact an administrator for access or sign in with proper credentials.",
           icon: "🚫",
+        };
+      case "AccountDisabled":
+        return {
+          title: "Account Disabled",
+          message: "Your account has been disabled by an administrator.",
+          suggestion: "Please contact support to reactivate your account.",
+          icon: "🔒",
         };
       case "Verification":
         return {

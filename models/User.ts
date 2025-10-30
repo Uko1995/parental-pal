@@ -15,6 +15,7 @@ export interface UserInterface {
   address?: string;
   image?: string;
   googleId?: string; // For Google OAuth
+  password?: string; // For email/password authentication
   role: "admin" | "parent" | "tutor";
   isActive: boolean;
   lastLoginAt?: Date;

@@ -22,9 +22,9 @@ export default function NotFound() {
         </h2>
 
         <p className="text-gray-600 mb-8 leading-relaxed">
-          Oops! It looks like the page you're looking for doesn't exist. Don't
-          worry though - we have plenty of amazing childcare services and
-          resources waiting for you on our homepage!
+          Oops! It looks like the page you&apos;re looking for doesn&apos;t
+          exist. Don&apos;t worry though - we have plenty of amazing childcare
+          services and resources waiting for you on our homepage!
         </p>
 
         {/* Helpful Links */}

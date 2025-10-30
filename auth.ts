@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { UserRepository } from "./lib/UserRepository";
 import { UserInterface } from "./models/User";
 import dotenv from "dotenv";
@@ -31,6 +33,55 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_ID!,
       clientSecret: process.env.GOOGLE_SECRET!,
     }),
+    Credentials({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          const user = await UserRepository.findByEmail(
+            credentials.email as string
+          );
+
+          if (!user || !user.password) {
+            return null;
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            return null;
+          }
+
+          // Update last login
+          await UserRepository.updateUser(user._id!.toString(), {
+            lastLoginAt: new Date(),
+          });
+
+          return {
+            id: user._id!.toString(),
+            email: user.userData.user.email,
+            name: user.userData.user.name,
+            image: user.userData.user.image,
+            role: user.role,
+            membershipType: user.membershipType,
+            isActive: user.isActive,
+          };
+        } catch (error) {
+          console.error("Error during credentials authorization:", error);
+          return null;
+        }
+      },
+    }),
   ],
   pages: {
     signIn: "/auth/signin",
@@ -39,6 +90,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
+      // Handle Google OAuth
       if (account?.provider === "google" && user.email) {
         try {
           // Check if user already exists
@@ -69,6 +121,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             console.log("New User Data:", newUser);
 
             existingUser = await UserRepository.createUser(newUser);
+
+            // Send welcome email for new users
+            try {
+              const emailResponse = await fetch(
+                `${process.env.NEXTAUTH_URL}/api/email`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    type: "welcome",
+                    to: user.email,
+                    userName: user.name || "New Parent",
+                  }),
+                }
+              );
+
+              if (emailResponse.ok) {
+                console.log(
+                  "✅ Welcome email sent successfully to:",
+                  user.email
+                );
+              } else {
+                console.error(
+                  "❌ Failed to send welcome email:",
+                  await emailResponse.text()
+                );
+              }
+            } catch (emailError) {
+              console.error("❌ Error sending welcome email:", emailError);
+            }
           } else {
             // Update last login
             await UserRepository.updateUser(existingUser._id!.toString(), {
@@ -86,10 +170,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           return true;
         } catch (error) {
-          console.error("Error during sign in:", error);
+          console.error("Error during Google sign in:", error);
           return false;
         }
       }
+
+      // Handle credentials login (already processed in authorize)
+      if (account?.provider === "credentials") {
+        return true;
+      }
+
       return true;
     },
     async session({ session }) {

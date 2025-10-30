@@ -35,6 +35,7 @@ export async function PATCH(
     children[childIndex] = {
       name: childData.name,
       age: parseInt(childData.age),
+      gender: childData.gender || "male", // Default to male if not provided
       class: childData.class || undefined,
       schoolName: childData.schoolName || undefined,
       subjects: childData.subjects || [],

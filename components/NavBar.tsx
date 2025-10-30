@@ -1,6 +1,7 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { UserIcon } from "@heroicons/react/24/outline";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -93,13 +94,28 @@ export default function NavBar() {
           <div className="hidden md:block">
             {session?.user ? (
               <div className="ml-4 flex items-center md:ml-6">
-                <Image
-                  src={`${session?.user?.image}`}
-                  alt={`${session?.user?.name}`}
-                  width={30}
-                  height={30}
-                  className="rounded-full mr-2 object-cover"
-                />
+                {session?.user?.image ? (
+                  <Image
+                    src={`${session?.user?.image}`}
+                    alt={`${session?.user?.name}`}
+                    width={30}
+                    height={30}
+                    className="rounded-full mr-2 object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`rounded-full mr-2 p-1  ${
+                      isScrolled ? "bg-black" : "bg-white"
+                    }`}
+                  >
+                    <UserIcon
+                      strokeWidth={2}
+                      className={`w-5 h-5 ${
+                        isScrolled ? "text-white" : "text-black"
+                      }`}
+                    />
+                  </div>
+                )}
                 <Link
                   href={`/profile`}
                   className={`${
@@ -109,10 +125,12 @@ export default function NavBar() {
                   {session.user.name}
                 </Link>
                 <button
-                  onClick={() => signOut({ 
-                    callbackUrl: "/?signout=success",
-                    redirect: true 
-                  })}
+                  onClick={() =>
+                    signOut({
+                      callbackUrl: "/?signout=success",
+                      redirect: true,
+                    })
+                  }
                   className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300"
                 >
                   Sign Out
@@ -120,14 +138,14 @@ export default function NavBar() {
               </div>
             ) : (
               <div className="ml-4 flex items-center md:ml-6">
-                <button
-                  onClick={() => signIn("google")}
+                <Link
+                  href={"/auth/signin"}
                   className={`bg-[#90AC19] hover:bg-[#7A9216] ${
                     status === "loading" ? "cursor-progress" : "cursor-pointer"
                   }  text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300`}
                 >
                   {status === "loading" ? "Loading..." : "LOGIN"}
-                </button>
+                </Link>
               </div>
             )}
           </div>
@@ -196,6 +214,96 @@ export default function NavBar() {
                 </Link>
               );
             })}
+
+            {/* Mobile Authentication Section */}
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              {session?.user ? (
+                <div className="space-y-2">
+                  {/* User Profile Section */}
+                  <div className="flex items-center px-3 py-2">
+                    <div className="w-8 h-8 rounded-full mr-3">
+                      {session.user?.image ? (
+                        <Image
+                          src={session.user.image}
+                          alt={session.user?.name || "User"}
+                          width={32}
+                          height={32}
+                          className="rounded-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className={`rounded-full p-1 ${
+                            isTransparent ? "bg-white" : "bg-gray-200"
+                          }`}
+                        >
+                          <UserIcon
+                            className={`w-6 h-6 ${
+                              isTransparent ? "text-black" : "text-gray-600"
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p
+                        className={`text-sm font-medium ${
+                          isTransparent ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {session.user.name}
+                      </p>
+                      <p
+                        className={`text-xs ${
+                          isTransparent ? "text-white/70" : "text-gray-500"
+                        }`}
+                      >
+                        {session.user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Profile Link */}
+                  <Link
+                    href="/profile"
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      isTransparent
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                    }`}
+                  >
+                    Profile
+                  </Link>
+
+                  {/* Sign Out Button */}
+                  <button
+                    onClick={() =>
+                      signOut({
+                        callbackUrl: "/?signout=success",
+                        redirect: true,
+                      })
+                    }
+                    className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      isTransparent
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-red-600 hover:bg-red-50"
+                    }`}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/signin"
+                  className={`block px-3 py-2 rounded-md text-base font-medium text-center transition-colors duration-300 ${
+                    status === "loading"
+                      ? "cursor-progress bg-gray-300 text-gray-500"
+                      : "bg-[#90AC19] hover:bg-[#7A9216] text-white"
+                  }`}
+                >
+                  {status === "loading" ? "Loading..." : "Sign In"}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}

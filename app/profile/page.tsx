@@ -10,6 +10,7 @@ import ChildrenSection from "./ChildrenSection";
 import BookingsSection from "./BookingsSection";
 import PaymentsSection from "./PaymentsSection";
 import Link from "next/link";
+import { UserIcon } from "@heroicons/react/20/solid";
 
 type TabType = "profile" | "children" | "bookings" | "payments";
 
@@ -48,32 +49,32 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center space-x-4">
-            <div className="avatar">
-              <div className="w-16 h-16 rounded-full">
-                {session.user?.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt={session.user?.name || "User"}
-                    width={64}
-                    height={64}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="bg-primary text-primary-content flex items-center justify-center text-xl font-semibold">
-                    {session.user?.name?.charAt(0) || "U"}
-                  </div>
-                )}
-              </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <div className="w-16 h-16 rounded-full flex-shrink-0">
+              {session.user?.image ? (
+                <Image
+                  src={session.user.image}
+                  alt={session.user?.name || "User"}
+                  width={64}
+                  height={64}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <UserIcon className="w-16 h-16 border-2 border-gray-800 p-2 rounded-full" />
+              )}
             </div>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-base-content">
+              <h1 className="text-xl sm:text-2xl font-bold text-base-content">
                 Welcome, {session.user?.name || "User"}
               </h1>
-              <p className="text-base-content/70">{session.user?.email}</p>
+              <p className="text-sm sm:text-base text-base-content/70 break-all sm:break-normal">
+                {session.user?.email}
+              </p>
               <MembershipStatus />
             </div>
-            <AdminDashboardLink />
+            <div className="self-start sm:self-auto">
+              <AdminDashboardLink />
+            </div>
           </div>
         </div>
       </div>
@@ -81,14 +82,16 @@ export default function ProfilePage() {
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4">
-          <div className="tabs tabs-lifted">
+          <div className="tabs tabs-lifted overflow-x-auto">
             <button
-              className={`tab ${activeTab === "profile" ? "tab-active" : ""}`}
+              className={`tab whitespace-nowrap mx-1 p-1 ${
+                activeTab === "profile" ? "tab-active" : ""
+              }`}
               onClick={() => setActiveTab("profile")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
+                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -100,15 +103,18 @@ export default function ProfilePage() {
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              Profile Details
+              <span className="hidden sm:inline">Profile Details</span>
+              <span className="sm:hidden">Profile</span>
             </button>
             <button
-              className={`tab ${activeTab === "children" ? "tab-active" : ""}`}
+              className={`tab whitespace-nowrap mx-1 p-1 ${
+                activeTab === "children" ? "tab-active" : ""
+              }`}
               onClick={() => setActiveTab("children")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
+                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -120,15 +126,18 @@ export default function ProfilePage() {
                   d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
-              My Children
+              <span className="hidden sm:inline">My Children</span>
+              <span className="sm:hidden">Children</span>
             </button>
             <button
-              className={`tab ${activeTab === "bookings" ? "tab-active" : ""}`}
+              className={`tab whitespace-nowrap mx-1 p-1 ${
+                activeTab === "bookings" ? "tab-active" : ""
+              }`}
               onClick={() => setActiveTab("bookings")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
+                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -140,15 +149,18 @@ export default function ProfilePage() {
                   d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h8m-6 0l-2 13a2 2 0 002 2h8a2 2 0 002-2L18 7M9 7h6m-3 6v4m0 0v-4m-3 2h6"
                 />
               </svg>
-              My Bookings
+              <span className="hidden sm:inline">My Bookings</span>
+              <span className="sm:hidden">Bookings</span>
             </button>
             <button
-              className={`tab ${activeTab === "payments" ? "tab-active" : ""}`}
+              className={`tab whitespace-nowrap mx-1 p-1 ${
+                activeTab === "payments" ? "tab-active" : ""
+              }`}
               onClick={() => setActiveTab("payments")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
+                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -160,7 +172,8 @@ export default function ProfilePage() {
                   d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                 />
               </svg>
-              Payments
+              <span className="hidden sm:inline">Payments</span>
+              <span className="sm:hidden">Pay</span>
             </button>
           </div>
         </div>

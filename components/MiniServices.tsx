@@ -1,45 +1,32 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  getPublicServices,
+  ClientServiceForDisplay,
+} from "@/app/services/actions";
 
 export default function MiniServices() {
-  const services = [
-    {
-      title: "Childcare Services",
-      description:
-        "Professional childcare solutions for busy parents. Safe, nurturing environment with qualified caregivers.",
-      img: "/childcare.jpg",
-    },
-    {
-      title: "Home Schooling Program",
-      description:
-        "Comprehensive homeschooling curriculum and support for families choosing alternative education.",
-      img: "/homeschooling.jpg",
-    },
-    {
-      title: "Academic Tutoring",
-      description:
-        "One-on-one and group tutoring sessions with qualified educators across all subjects and grade levels.",
-      img: "/tutoring.jpg",
-    },
-    {
-      title: "Space Rentals",
-      description:
-        "Flexible space rental options for educational activities, birthday parties, and community events.",
-      img: "/space.webp",
-    },
-    {
-      title: "Kids Enrichment Session",
-      description:
-        "Engaging educational sessions designed to enhance children's creativity, critical thinking, and social skills.",
-      img: "/Party.webp",
-    },
-    {
-      title: "Exciting Holiday Camps",
-      description:
-        "Fun-filled holiday programs with educational activities, sports, and creative workshops.",
-      img: "/camp.jpg",
-    },
-  ];
+  const [services, setServices] = useState<ClientServiceForDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const allServices = await getPublicServices();
+        // Limit to 6 services for the mini display
+        setServices(allServices.slice(0, 6));
+      } catch (error) {
+        console.error("Error fetching services:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   return (
     <section className="py-16 px-4 bg-gray-50">
@@ -57,52 +44,76 @@ export default function MiniServices() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <div
-              key={index}
-              className="bg-white  shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden"
-            >
-              {/* Service Image */}
-              <div className="w-full h-48 relative overflow-hidden">
-                <Image
-                  src={service.img}
-                  alt={service.title}
-                  fill
-                  className="object-cover transition-transform duration-300"
-                />
+          {loading ? (
+            // Loading state
+            Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white shadow-lg overflow-hidden animate-pulse"
+              >
+                <div className="w-full h-48 bg-gray-200"></div>
+                <div className="p-6">
+                  <div className="h-6 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
               </div>
+            ))
+          ) : services.length > 0 ? (
+            services.map((service) => (
+              <div
+                key={service._id}
+                className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden"
+              >
+                {/* Service Image */}
+                <div className="w-full h-48 relative overflow-hidden">
+                  <Image
+                    src={service.image || "/default-service.jpg"}
+                    alt={service.name}
+                    fill
+                    className="object-cover transition-transform duration-300"
+                  />
+                </div>
 
-              {/* Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                  {service.title}
-                </h3>
-                <p className="text-gray-600 mb-4 leading-relaxed">
-                  {service.description}
-                </p>
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    {service.name}
+                  </h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    {service.shortDescription || service.description}
+                  </p>
 
-                {/* CTA Link */}
-                <Link href={"/services"} passHref>
-                  <button className="text-[#90AC19] cursor-pointer font-medium hover:text-[#7A9216] transition-colors duration-300 flex items-center group">
-                    Learn More
-                    <svg
-                      className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                </Link>
+                  {/* CTA Link */}
+                  <Link href="/services" passHref>
+                    <button className="text-[#90AC19] cursor-pointer font-medium hover:text-[#7A9216] transition-colors duration-300 flex items-center group">
+                      Learn More
+                      <svg
+                        className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </Link>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">
+                No services available at the moment.
+              </p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Bottom CTA */}

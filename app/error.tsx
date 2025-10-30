@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import Image from "next/image";
+import {
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
+// import Image from "next/image";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -40,9 +45,9 @@ export default function Error({ error, reset }: ErrorProps) {
         </h1>
 
         <p className="text-gray-600 mb-8 leading-relaxed">
-          We're sorry, but there seems to be a technical issue. Don't worry -
-          our team is working hard to provide the best childcare solutions for
-          your family.
+          We&apos;re sorry, but there seems to be a technical issue. Don&apos;t
+          worry - our team is working hard to provide the best childcare
+          solutions for your family.
         </p>
 
         {/* Error Details (only in development) */}

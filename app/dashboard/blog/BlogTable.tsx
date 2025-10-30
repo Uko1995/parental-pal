@@ -1,48 +1,92 @@
-"use client";
+"use client";"use client";
 
-import { useState, useRef } from "react";
+
+
+import { PostInterface } from "./page";import { useState, useRef } from "react";
+
 import {
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  EllipsisVerticalIcon,
-  XMarkIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+
+interface BlogTableProps {  MagnifyingGlassIcon,
+
+  posts: PostInterface[];  FunnelIcon,
+
+  searchTerm: string;  EyeIcon,
+
+  statusFilter: string;  PencilIcon,
+
+  categoryFilter: string;  TrashIcon,
+
+  onView: (post: PostInterface) => void;  EllipsisVerticalIcon,
+
+  onEdit: (post: PostInterface) => void;  XMarkIcon,
+
+  onDelete: (id: string) => void;  ChevronLeftIcon,
+
+}  ChevronRightIcon,
+
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
-import { PostInterface } from "./page";
 
-interface BlogTableProps {
-  posts: PostInterface[];
-  onEdit: (post: PostInterface) => void;
-  onView: (post: PostInterface) => void;
-  onRefresh: () => void;
-}
+export default function BlogTable({import toast from "react-hot-toast";
 
-export default function BlogTable({
-  posts,
-  onEdit,
-  onView,
-  onRefresh,
-}: BlogTableProps) {
-  const [showFilters, setShowFilters] = useState(true);
-  const [titleFilter, setTitleFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [deleteModal, setDeleteModal] = useState<{
-    isOpen: boolean;
-    post: PostInterface | null;
-  }>({ isOpen: false, post: null });
+  posts,import { PostInterface } from "./page";
 
-  const itemsPerPage = 10;
-  const tableRef = useRef<HTMLDivElement>(null);
+  searchTerm,
 
-  // Get unique categories and statuses for filters
+  statusFilter,interface BlogTableProps {
+
+  categoryFilter,  posts: PostInterface[];
+
+  onView,  onEdit: (post: PostInterface) => void;
+
+  onEdit,  onView: (post: PostInterface) => void;
+
+  onDelete,  onRefresh: () => void;
+
+}: BlogTableProps) {}
+
+  return (
+
+    <div className="card bg-base-100 shadow-lg">export default function BlogTable({
+
+      <div className="card-body">  posts,
+
+        <div className="text-center py-20">  onEdit,
+
+          <div className="bg-gradient-to-br from-[#90AC19]/20 to-[#E8931A]/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">  onView,
+
+            <svg className="w-12 h-12 text-[#90AC19]" fill="none" stroke="currentColor" viewBox="0 0 24 24">  onRefresh,
+
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />}: BlogTableProps) {
+
+            </svg>  const [showFilters, setShowFilters] = useState(true);
+
+          </div>  const [titleFilter, setTitleFilter] = useState("");
+
+            const [statusFilter, setStatusFilter] = useState("");
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">  const [categoryFilter, setCategoryFilter] = useState("");
+
+            Blog Management Coming Soon!  const [currentPage, setCurrentPage] = useState(1);
+
+          </h3>  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
+            const [deleteModal, setDeleteModal] = useState<{
+
+          <p className="text-gray-600 leading-relaxed max-w-md mx-auto">    isOpen: boolean;
+
+            The blog management system is currently being developed. Soon you&apos;ll be able to create, edit, and manage all your blog posts from this dashboard.    post: PostInterface | null;
+
+          </p>  }>({ isOpen: false, post: null });
+
+        </div>
+
+      </div>  const itemsPerPage = 10;
+
+    </div>  const tableRef = useRef<HTMLDivElement>(null);
+
+  );
+
+}  // Get unique categories and statuses for filters
   const uniqueCategories = [...new Set(posts.map((p) => p.category))];
   const uniqueStatuses = [...new Set(posts.map((p) => p.status))];
 

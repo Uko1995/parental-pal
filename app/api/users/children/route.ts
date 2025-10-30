@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const newChild = {
       name: childData.name,
       age: parseInt(childData.age),
+      gender: childData.gender || "male", // Default to male if not provided
       class: childData.class || undefined,
       schoolName: childData.schoolName || undefined,
       subjects: childData.subjects || [],
