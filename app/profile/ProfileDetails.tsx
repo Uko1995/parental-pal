@@ -206,7 +206,7 @@ export default function ProfileDetails({ user }: ProfileDetailsProps) {
                   rows={3}
                 />
               ) : (
-                <div className="p-3 bg-base-100 rounded-lg border min-h-[4rem]">
+                <div className="p-3 bg-base-100 rounded-lg border min-h-16">
                   {profile.address || ""}
                 </div>
               )}

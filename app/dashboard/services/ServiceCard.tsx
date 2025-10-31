@@ -65,7 +65,7 @@ export default function ServiceCard({
 
   return (
     <div
-      className="card bg-gradient-to-br 
+      className="card bg-linear-to-br 
         from-gray-100/10 to-gray-100/5 border-gray-200
       shadow-lg border hover:shadow-xl transition-all duration-300 group"
     >
@@ -154,7 +154,7 @@ export default function ServiceCard({
         <div className="flex items-center justify-between space-x-1">
           {/* Revenue Badge */}
           {service.metrics?.totalRevenue ? (
-            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-200 rounded-full px-3 py-1">
+            <div className="bg-linear-to-r from-green-500/10 to-emerald-500/10 border border-green-200 rounded-full px-3 py-1">
               <span className="text-green-700 font-medium text-sm">
                 {formatCurrency(service.metrics.totalRevenue)} total revenue
               </span>
@@ -193,7 +193,7 @@ export default function ServiceCard({
             </div>
             <ul
               tabIndex={0}
-              className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-48"
+              className="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-48"
             >
               <li>
                 <button

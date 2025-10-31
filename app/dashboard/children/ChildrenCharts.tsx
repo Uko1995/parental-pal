@@ -164,7 +164,7 @@ export default function ChildrenCharts({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-64 bg-gradient-to-r from-[#90AC19]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
+            <div className="h-64 bg-linear-to-r from-[#90AC19]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
               <div className="text-center">
                 <UserGroupIcon className="w-16 h-16 text-[#90AC19] mx-auto mb-4" />
                 <p className="font-medium">No Data Available</p>
@@ -246,7 +246,7 @@ export default function ChildrenCharts({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-64 bg-gradient-to-r from-[#A25F97]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
+            <div className="h-64 bg-linear-to-r from-[#A25F97]/10 to-[#E8931A]/10 rounded-lg flex items-center justify-center">
               <div className="text-center">
                 <AcademicCapIcon className="w-16 h-16 text-[#A25F97] mx-auto mb-4" />
                 <p className="font-medium">No Service Data Available</p>

@@ -306,7 +306,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     <div className="bg-base-100 min-h-screen p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="card bg-gradient-to-r from-primary to-secondary text-primary-content shadow-2xl mb-8">
+        <div className="card bg-linear-to-r from-primary to-secondary text-primary-content shadow-2xl mb-8">
           <div className="card-body text-center">
             <h1 className="card-title text-3xl font-bold justify-center mb-2">
               Book Our Services
@@ -517,7 +517,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           </div>
 
           {/* Submit Button */}
-          <div className="card bg-gradient-to-r from-primary to-secondary text-primary-content shadow-lg">
+          <div className="card bg-linear-to-r from-primary to-secondary text-primary-content shadow-lg">
             <div className="card-body text-center">
               <button
                 ref={submitButtonRef}

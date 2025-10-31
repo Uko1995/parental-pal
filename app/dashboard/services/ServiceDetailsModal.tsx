@@ -108,7 +108,7 @@ export default function ServiceDetailsModal({
               {service.keyFeatures.map((feature, index) => (
                 <div key={index} className="flex items-center">
                   <svg
-                    className="w-4 h-4 text-green-600 mr-2 flex-shrink-0"
+                    className="w-4 h-4 text-green-600 mr-2 shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -137,7 +137,7 @@ export default function ServiceDetailsModal({
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="stat bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+          <div className="stat bg-linear-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg">
             <div className="stat-figure text-green-600">
               <BanknotesIcon className="w-6 h-6" />
             </div>
@@ -150,7 +150,7 @@ export default function ServiceDetailsModal({
             </div>
           </div>
 
-          <div className="stat bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-200 rounded-lg">
+          <div className="stat bg-linear-to-br from-blue-50 to-sky-50 border border-blue-200 rounded-lg">
             <div className="stat-figure text-blue-600">
               <CalendarDaysIcon className="w-6 h-6" />
             </div>
@@ -161,7 +161,7 @@ export default function ServiceDetailsModal({
             <div className="stat-desc text-blue-700">all time</div>
           </div>
 
-          <div className="stat bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
+          <div className="stat bg-linear-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
             <div className="stat-figure text-yellow-600">
               <StarIcon className="w-6 h-6" />
             </div>
@@ -174,7 +174,7 @@ export default function ServiceDetailsModal({
             </div>
           </div>
 
-          <div className="stat bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-lg">
+          <div className="stat bg-linear-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-lg">
             <div className="stat-figure text-purple-600">
               <ChartBarIcon className="w-6 h-6" />
             </div>

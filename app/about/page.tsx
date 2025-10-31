@@ -97,7 +97,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-[#90AC19]/10 to-[#E8931A]/10">
+      <section className="py-16 px-4 bg-linear-to-br from-[#90AC19]/10 to-[#E8931A]/10">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -162,7 +162,7 @@ export default function AboutPage() {
               </p>
               <div className="space-y-4">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                  <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                     <svg
                       className="w-3 h-3 text-white"
                       fill="currentColor"
@@ -181,7 +181,7 @@ export default function AboutPage() {
                   </span>
                 </div>
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                  <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                     <svg
                       className="w-3 h-3 text-white"
                       fill="currentColor"
@@ -200,7 +200,7 @@ export default function AboutPage() {
                   </span>
                 </div>
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                  <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                     <svg
                       className="w-3 h-3 text-white"
                       fill="currentColor"
@@ -331,12 +331,12 @@ export default function AboutPage() {
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       {milestone.title}
                     </h3>
-                    <p className="text-gray-600 text-base sm:text-base max-w-full break-words">
+                    <p className="text-gray-600 text-base sm:text-base max-w-full wrap-break-words">
                       {milestone.description}
                     </p>
                   </div>
                 </div>
-                <div className="flex-shrink-0 w-4 h-4 bg-[#A25F97] rounded-full mb-4 sm:mb-0"></div>
+                <div className="shrink-0 w-4 h-4 bg-[#A25F97] rounded-full mb-4 sm:mb-0"></div>
                 <div className="hidden sm:block sm:flex-1"></div>
               </div>
             ))}
@@ -345,7 +345,7 @@ export default function AboutPage() {
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 px-4 bg-gradient-to-r from-[#90AC19] to-[#7A9216]">
+      <section className="py-16 px-4 bg-linear-to-r from-[#90AC19] to-[#7A9216]">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-6">
             Ready to Join Our Community?

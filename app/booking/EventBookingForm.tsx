@@ -452,7 +452,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
                 >
                   -
                 </button>
-                <span className="text-lg font-semibold min-w-[2rem] text-center">
+                <span className="text-lg font-semibold min-w-8 text-center">
                   {carersQuantity}
                 </span>
                 <button
@@ -486,7 +486,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
 
       {/* Payment Summary */}
       {venueType && (
-        <div className="card bg-gradient-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+        <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
           <div className="card-body">
             <h3 className="card-title text-lg flex items-center text-primary mb-4">
               Payment Summary

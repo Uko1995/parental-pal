@@ -385,7 +385,7 @@ export default function PaymentTable({
                         </label>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                          className="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-52"
                         >
                           <li>
                             <a onClick={() => openViewModal(payment)}>

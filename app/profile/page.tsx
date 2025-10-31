@@ -50,7 +50,7 @@ export default function ProfilePage() {
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <div className="w-16 h-16 rounded-full flex-shrink-0">
+            <div className="w-16 h-16 rounded-full shrink-0">
               {session.user?.image ? (
                 <Image
                   src={session.user.image}

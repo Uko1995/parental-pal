@@ -2,7 +2,7 @@ import TutorRegistrationForm from "./TutorRegistrationForm";
 
 export default function TutorsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-secondary/5">
+    <div className="min-h-screen bg-linear-to-br from-primary/5 via-white to-secondary/5">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="text-center mb-8">

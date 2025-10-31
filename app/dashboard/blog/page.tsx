@@ -87,7 +87,7 @@ export default function BlogPage() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
             <div className="text-center py-20">
-              <div className="bg-gradient-to-br from-[#90AC19]/20 to-[#E8931A]/20 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-8">
+              <div className="bg-linear-to-br from-[#90AC19]/20 to-[#E8931A]/20 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-8">
                 <svg
                   className="w-16 h-16 text-[#90AC19]"
                   fill="none"

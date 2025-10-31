@@ -15,7 +15,7 @@ export default function Error({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30 flex flex-col items-center justify-center px-4">
       <div className="max-w-xl w-full text-center">
         {/* Error Icon */}
         <div className="mb-6">

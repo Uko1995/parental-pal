@@ -281,7 +281,7 @@ export default function AvailabilityTab({
         )}
 
       {/* Hourly Rate Information */}
-      <div className="card bg-gradient-to-r from-green-50 to-green-100 border border-green-200">
+      <div className="card bg-linear-to-r from-green-50 to-green-100 border border-green-200">
         <div className="card-body">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">

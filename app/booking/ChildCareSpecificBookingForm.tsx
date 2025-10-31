@@ -280,7 +280,7 @@ const ChildCareSpecificBookingForm =
 
         {/* Payment Summary */}
         {totalDays > 0 && (
-          <div className="card bg-gradient-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+          <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
             <div className="card-body">
               <PaymentSchedule
                 serviceCost={5000}

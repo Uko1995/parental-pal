@@ -90,7 +90,7 @@ export default function Testimonials() {
   }, [nextSlide]);
 
   return (
-    <section className="py-20 px-4 bg-gradient-to-br from-gray-50 via-white to-[#FFEACF]/20">
+    <section className="py-20 px-4 bg-linear-to-br from-gray-50 via-white to-[#FFEACF]/20">
       <div className="max-w-5xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -156,7 +156,7 @@ export default function Testimonials() {
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial.id}
-                  className="w-full flex-shrink-0 bg-gradient-to-br from-white via-white to-[#FFEACF]/20 relative overflow-hidden"
+                  className="w-full shrink-0 bg-linear-to-br from-white via-white to-[#FFEACF]/20 relative overflow-hidden"
                 >
                   <div className="relative p-12 lg:p-10">
                     <div className="max-w-4xl mx-auto text-center">
@@ -173,7 +173,7 @@ export default function Testimonials() {
 
                       {/* Service Badge */}
                       <div className="mb-4">
-                        <span className="inline-block bg-gradient-to-r from-[#90AC19] to-[#7A9216] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg">
+                        <span className="inline-block bg-linear-to-r from-[#90AC19] to-[#7A9216] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg">
                           {testimonial.service}
                         </span>
                       </div>
@@ -196,7 +196,7 @@ export default function Testimonials() {
                       {/* Author Info */}
                       <div className="flex items-center justify-center">
                         <div className="relative">
-                          <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-[#90AC19]/20 to-[#E8931A]/20 p-1">
+                          <div className="w-20 h-20 rounded-full overflow-hidden bg-linear-to-br from-[#90AC19]/20 to-[#E8931A]/20 p-1">
                             <div className="w-full h-full rounded-full overflow-hidden">
                               <Image
                                 src={testimonial.image}
@@ -256,7 +256,7 @@ export default function Testimonials() {
 
         {/* Bottom CTA */}
         <div className="text-center mt-20">
-          <div className="bg-gradient-to-r from-[#90AC19] to-[#7A9216] rounded-3xl p-12 shadow-2xl">
+          <div className="bg-linear-to-r from-[#90AC19] to-[#7A9216] rounded-3xl p-12 shadow-2xl">
             <h3 className="text-3xl font-bold text-white mb-4">
               Ready to join our community?
             </h3>

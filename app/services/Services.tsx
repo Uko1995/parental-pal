@@ -26,7 +26,7 @@ const formatPricing = (service: ClientServiceForDisplay) => {
 export default async function Services() {
   const services = await getPublicServices();
   return (
-    <section className="py-10 px-4 bg-gradient-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50">
+    <section className="py-10 px-4 bg-linear-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-16">
@@ -60,7 +60,7 @@ export default async function Services() {
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"></div>
 
                 <div className="absolute bottom-6 left-6 text-white">
                   <h3 className="text-2xl font-bold mb-2">{service.name}</h3>
@@ -108,7 +108,7 @@ export default async function Services() {
                       {service.keyFeatures.map((feature, featureIndex) => (
                         <div key={featureIndex} className="flex items-center">
                           <svg
-                            className="w-4 h-4 text-[#90AC19] mr-2 flex-shrink-0"
+                            className="w-4 h-4 text-[#90AC19] mr-2 shrink-0"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -144,7 +144,7 @@ export default async function Services() {
         </div>
 
         {/* Why Choose Us Section */}
-        <div className="bg-gradient-to-r from-[#90AC19] to-[#7A9216] rounded-3xl p-12 text-white text-center">
+        <div className="bg-linear-to-r from-[#90AC19] to-[#7A9216] rounded-3xl p-12 text-white text-center">
           <h2 className="text-4xl font-bold mb-6">Why Choose PARENTALPAL?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">

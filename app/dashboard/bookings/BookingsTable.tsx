@@ -444,7 +444,7 @@ export default function BookingsTable({
         <div className="modal modal-open">
           <div className="modal-box">
             <div className="flex items-center mb-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-error/20 rounded-full flex items-center justify-center mr-4">
+              <div className="shrink-0 w-12 h-12 bg-error/20 rounded-full flex items-center justify-center mr-4">
                 <TrashIcon className="w-6 h-6 text-error" />
               </div>
               <div>

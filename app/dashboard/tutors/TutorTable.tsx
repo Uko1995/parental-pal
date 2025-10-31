@@ -395,7 +395,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar placeholder">
-                          <div className="bg-gradient-to-br from-primary to-secondary text-primary-content rounded-full w-10 h-10 flex items-center justify-center overflow-hidden">
+                          <div className="bg-linear-to-br from-primary to-secondary text-primary-content rounded-full w-10 h-10 flex items-center justify-center overflow-hidden">
                             {tutor?.userData?.user?.image ? (
                               <CloudinaryImage
                                 src={tutor?.userData?.user?.image}

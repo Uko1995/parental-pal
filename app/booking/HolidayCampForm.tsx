@@ -273,7 +273,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
 
       {/* Payment Summary */}
       {totalWeeks > 0 && (
-        <div className="card bg-gradient-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+        <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
           <div className="card-body">
             <h3 className="card-title text-lg flex items-center text-primary mb-4">
               Payment Summary

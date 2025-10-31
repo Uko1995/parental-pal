@@ -63,7 +63,7 @@ export default function ChildActions({
         </div>
         <ul
           tabIndex={0}
-          className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border"
+          className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-lg border"
         >
           <li>
             <button className="text-sm" onClick={handleEdit}>

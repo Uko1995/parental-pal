@@ -439,7 +439,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                         </div>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-gray-200"
+                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-lg border border-gray-200"
                         >
                           <li>
                             <button
