@@ -76,7 +76,7 @@ export default function AvailabilityTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="text-center mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           Availability & Schedule
@@ -282,7 +282,7 @@ export default function AvailabilityTab({
 
       {/* Hourly Rate Information */}
       <div className="card bg-linear-to-r from-green-50 to-green-100 border border-green-200">
-        <div className="card-body">
+        <div className="card-body w-full">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">₦</span>
@@ -308,7 +308,7 @@ export default function AvailabilityTab({
               <li>Performance reviews and ratings</li>
             </ul>
 
-            <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-400">
+            <div className="bg-green-50 p-3 border-l-4 border-green-400">
               <p className="text-sm text-green-700">
                 <strong>Note:</strong> Your specific rate will be determined
                 during the interview process and can increase based on your
@@ -317,32 +317,30 @@ export default function AvailabilityTab({
             </div>
           </div>
 
-          <div className="form-control mt-4">
-            <label className="label cursor-pointer bg-white rounded-lg p-4 border border-green-200 hover:bg-green-50 transition-colors">
-              <div className="flex-1">
-                <span className="label-text font-medium text-gray-800">
-                  I accept the hourly rate range of ₦5,000 - ₦9,000 per hour
-                </span>
-                <div className="text-xs text-gray-600 mt-1">
-                  By checking this box, you acknowledge and accept our hourly
-                  rate structure
+          <div className="form-control max-w-2xl mt-4 w-full">
+            <label className="label cursor-pointer p-2  bg-white rounded-lg  border border-green-200 hover:bg-green-50 transition-colors">
+              <div className="  flex justify-center items-center">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-success me-2"
+                  checked={formData.hourlyRateAccepted || false}
+                  onChange={(e) =>
+                    updateFormData({
+                      hourlyRateAccepted: e.target.checked,
+                    })
+                  }
+                />
+                <div>
+                  <span className="label-text font-medium text-gray-800 text-wrap">
+                    I accept the hourly rate range of ₦5,000 - ₦9,000 per hour
+                  </span>
                 </div>
               </div>
-              <input
-                type="checkbox"
-                className="checkbox checkbox-success"
-                checked={formData.hourlyRateAccepted || false}
-                onChange={(e) =>
-                  updateFormData({
-                    hourlyRateAccepted: e.target.checked,
-                  })
-                }
-              />
             </label>
           </div>
 
           {formData.hourlyRateAccepted === false && (
-            <div className="text-error text-sm mt-2">
+            <div className="text-error text-sm mt-1">
               You must accept the hourly rate range to continue
             </div>
           )}

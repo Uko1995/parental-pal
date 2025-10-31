@@ -26,12 +26,7 @@ export default function ProfessionalInfoTab({
     "Mathematics",
     "English Language",
     "Science",
-    "Physics",
-    "Chemistry",
-    "Biology",
     "Computer Science",
-    "Economics",
-    "Government",
     "Literature",
     "French",
     "History",
@@ -43,31 +38,17 @@ export default function ProfessionalInfoTab({
 
   const subjects = [
     "Primary Mathematics",
-    "Secondary Mathematics",
-    "Further Mathematics",
     "English Language",
     "English Literature",
-    "Physics",
-    "Chemistry",
-    "Biology",
     "Computer Science",
-    "Economics",
-    "Government",
     "Civic Education",
-    "Commerce",
-    "Accounting",
     "French",
-    "Igbo",
-    "Hausa",
-    "Yoruba",
     "History",
     "Geography",
     "Christian Religious Studies",
-    "Islamic Religious Studies",
     "Fine Arts",
     "Music",
     "Physical Education",
-    "Technical Drawing",
     "Agricultural Science",
     "Home Economics",
     "Basic Science",
@@ -134,7 +115,7 @@ export default function ProfessionalInfoTab({
         {/* Specialty */}
         <div className="form-control">
           <label className="label mb-1">
-            <span className="label-text font-medium">
+            <span className="label-text font-semibold text-md text-gray-800">
               <AcademicCapIcon className="w-4 h-4 inline mr-2" />
               Primary Specialty *
             </span>
@@ -163,18 +144,16 @@ export default function ProfessionalInfoTab({
         {/* Years of Experience */}
         <div className="form-control">
           <label className="label mb-1">
-            <span className="label-text font-medium">
+            <span className="label-text font-semibold text-md text-gray-800">
               <BriefcaseIcon className="w-4 h-4 inline mr-2" />
               Years of Experience *
             </span>
           </label>
           <input
-            type="number"
-            min="0"
-            max="50"
-            placeholder="Years of teaching experience"
+            type="text"
+            placeholder="0"
             className="input input-bordered w-full"
-            value={formData.experience}
+            value={Number(formData.experience)}
             onChange={(e) =>
               updateFormData({ experience: parseInt(e.target.value) || 0 })
             }
@@ -192,7 +171,7 @@ export default function ProfessionalInfoTab({
       {/* Qualifications */}
       <div className="form-control">
         <label className="label mb-1">
-          <span className="label-text font-medium">
+          <span className="label-text font-semibold text-md text-gray-800">
             <DocumentTextIcon className="w-4 h-4 inline mr-2" />
             Qualifications & Certifications
           </span>
@@ -240,7 +219,7 @@ export default function ProfessionalInfoTab({
       {/* Subjects */}
       <div className="form-control">
         <label className="label mb-1">
-          <span className="label-text font-medium">
+          <span className="label-text font-semibold text-md text-gray-800">
             Subjects You Can Teach *
           </span>
         </label>
@@ -316,7 +295,9 @@ export default function ProfessionalInfoTab({
       {/* Bio */}
       <div className="form-control">
         <label className="label mb-1">
-          <span className="label-text font-medium">Professional Bio *</span>
+          <span className="label-text font-semibold text-md text-gray-800">
+            Professional Bio *
+          </span>
         </label>
         <textarea
           placeholder="Tell us about your teaching philosophy, approach, and what makes you a great tutor. This will be visible to parents."
@@ -342,41 +323,39 @@ export default function ProfessionalInfoTab({
       {/* Service Preferences */}
       <div className="form-control">
         <label className="label">
-          <span className="label-text font-medium">
+          <span className="label-text font-semibold text-md text-gray-800">
             Preferred Service Types
           </span>
         </label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {["tutoring", "homeschooling", "kiddies-enrichment"].map(
-            (service) => (
-              <label key={service} className="cursor-pointer label">
-                <input
-                  type="checkbox"
-                  className="checkbox "
-                  checked={formData.preferredServices.includes(service)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updateFormData({
-                        preferredServices: [
-                          ...formData.preferredServices,
-                          service,
-                        ],
-                      });
-                    } else {
-                      updateFormData({
-                        preferredServices: formData.preferredServices.filter(
-                          (s) => s !== service
-                        ),
-                      });
-                    }
-                  }}
-                />
-                <span className="label-text text-gray-900 capitalize ml-2">
-                  {service.replace("-", " ")}
-                </span>
-              </label>
-            )
-          )}
+          {["tutoring", "homeschooling"].map((service) => (
+            <label key={service} className="cursor-pointer label">
+              <input
+                type="checkbox"
+                className="checkbox "
+                checked={formData.preferredServices.includes(service)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    updateFormData({
+                      preferredServices: [
+                        ...formData.preferredServices,
+                        service,
+                      ],
+                    });
+                  } else {
+                    updateFormData({
+                      preferredServices: formData.preferredServices.filter(
+                        (s) => s !== service
+                      ),
+                    });
+                  }
+                }}
+              />
+              <span className="label-text text-gray-900 capitalize ml-2">
+                {service.replace("-", " ")}
+              </span>
+            </label>
+          ))}
         </div>
       </div>
     </div>

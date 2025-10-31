@@ -258,7 +258,7 @@ export default function ReviewTab({
                 }
                 required
               />
-              <span className="label-text text-gray-900 ml-3">
+              <span className="label-text text-gray-900 text-wrap ml-3">
                 I confirm that all information provided is accurate and complete
                 to the best of my knowledge.
               </span>
@@ -277,7 +277,7 @@ export default function ReviewTab({
                 }
                 required
               />
-              <span className="label-text text-gray-900 ml-3">
+              <span className="label-text text-gray-900 text-wrap ml-3">
                 I agree to ParentalPal&apos;s Terms of Service and Privacy
                 Policy.
               </span>
@@ -296,7 +296,7 @@ export default function ReviewTab({
                 }
                 required
               />
-              <span className="label-text text-gray-900 ml-3">
+              <span className="label-text text-gray-900 ml-3 text-wrap">
                 I understand that my application will be reviewed and I may be
                 contacted for additional verification.
               </span>
@@ -315,7 +315,7 @@ export default function ReviewTab({
                 }
                 required
               />
-              <span className="label-text text-gray-900 ml-3">
+              <span className="label-text text-gray-900 ml-3 text-wrap">
                 I consent to background checks as part of the verification
                 process.
               </span>
@@ -325,38 +325,37 @@ export default function ReviewTab({
       </div>
 
       {/* Application Status */}
-      <div className="alert alert-[#FFEACF]/200">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          className="stroke-current shrink-0 w-6 h-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <div>
+      <div className="alert alert-[#FFEACF]/200 flex flex-col justify-center items-start gap-2">
+        <div className="flex justify-center items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
           <h3 className="font-bold">What happens next?</h3>
-          <div className="text-xs">
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>
-                Your application will be reviewed by our team within 2-3
-                business days
-              </li>
-              <li>
-                We may contact you for additional information or an interview
-              </li>
-              <li>
-                Upon approval, you&apos;ll receive access to your tutor
-                dashboard
-              </li>
-              <li>You can start receiving booking requests from families</li>
-            </ul>
-          </div>
+        </div>
+        <div className="text-xs">
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>
+              Your application will be reviewed by our team within 2-3 business
+              days
+            </li>
+            <li>
+              We may contact you for additional information or an interview
+            </li>
+            <li>
+              Upon approval, you&apos;ll receive access to your tutor dashboard
+            </li>
+            <li>You can start receiving booking requests from families</li>
+          </ul>
         </div>
       </div>
     </div>

@@ -100,7 +100,7 @@ export default function PersonalInfoTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="text-center mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           Personal Information
@@ -110,12 +110,12 @@ export default function PersonalInfoTab({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
         {/* Full Name */}
         <div className="form-control">
           <label className="label mb-1.5">
-            <span className="label-text font-medium ">
-              <UserIcon className="w-4 h-4 inline mr-2" />
+            <span className="label-text font-semibold text-md text-gray-800">
+              <UserIcon className="w-4 h-4  inline mr-2" />
               Full Name *
             </span>
           </label>
@@ -155,8 +155,8 @@ export default function PersonalInfoTab({
         {/* Email */}
         <div className="form-control">
           <label className="label mb-2">
-            <span className="label-text font-medium">
-              <EnvelopeIcon className="w-4 h-4 inline mr-2" />
+            <span className="label-text font-semibold text-md text-gray-800">
+              <EnvelopeIcon className="w-4 h-4 text-gray-900 inline mr-2" />
               Email Address *
             </span>
           </label>
@@ -196,8 +196,8 @@ export default function PersonalInfoTab({
         {/* Phone Number */}
         <div className="form-control">
           <label className="label mb-2">
-            <span className="label-text font-medium">
-              <PhoneIcon className="w-4 h-4 inline mr-2" />
+            <span className="label-text font-semibold text-md text-gray-800">
+              <PhoneIcon className="w-4 h-4 text-gray-900 inline mr-2" />
               Phone Number *
             </span>
           </label>
@@ -244,8 +244,8 @@ export default function PersonalInfoTab({
             </label>
           )}
           <label className="label mt-1">
-            <span className="label-text-alt text-gray-500">
-              Enter 10 digits (e.g., 8012345678 for +2348012345678)
+            <span className="label-text-alt text-xs text-gray-500">
+              Enter 10 digits phone number
             </span>
           </label>
         </div>
@@ -254,7 +254,7 @@ export default function PersonalInfoTab({
         <div className="form-control col-span-full md:col-span-1">
           <label className="label mb-2">
             <span className="label-text font-medium">
-              <PhotoIcon className="w-4 h-4 inline mr-2" />
+              <PhotoIcon className="w-4 h-4 inline mr-2 text-gray-900" />
               Profile Image (Optional)
             </span>
           </label>
@@ -355,7 +355,7 @@ export default function PersonalInfoTab({
             )}
           </div>
 
-          <label className="label mt-1">
+          <label className="label text-xs mt-1">
             Max size: 5MB. Formats: JPG, PNG, WebP, JPEG
           </label>
         </div>
@@ -364,8 +364,8 @@ export default function PersonalInfoTab({
       {/* Address */}
       <div className="form-control">
         <label className="label mb-2">
-          <span className="label-text font-medium">
-            <MapPinIcon className="w-4 h-4 inline mr-2" />
+          <span className="label-text font-semibold text-md text-gray-800">
+            <MapPinIcon className="w-4 h-4 inline text-gray-900 mr-2" />
             Home Address *
           </span>
         </label>
@@ -385,26 +385,27 @@ export default function PersonalInfoTab({
       </div>
 
       {/* Info Box */}
-      <div className="alert alert-[#FFEACF]/200">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          className="stroke-current shrink-0 w-6 h-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <div>
+      <div className="alert alert-[#FFEACF]/200 flex flex-col items-start justify-center gap-2 ">
+        <div className="flex items-center justify-center gap-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
           <h3 className="font-bold">Privacy & Security</h3>
-          <div className="text-sm">
-            Your personal information is encrypted and secure. We only share
-            necessary details with families you&apos;ll be working with.
-          </div>
+        </div>
+
+        <div className="text-sm">
+          Your personal information is encrypted and secure. We only share
+          necessary details with families you&apos;ll be working with.
         </div>
       </div>
     </div>

@@ -5,28 +5,26 @@ export default function Footer() {
 
   const footerLinks = {
     services: [
-      { name: "Childcare Services", href: "/childcare" },
-      { name: "Home Schooling", href: "/homeschooling" },
-      { name: "Academic Tutoring", href: "/tutoring" },
-      { name: "Space Rentals", href: "/rentals" },
-      { name: "Kiddies Parties", href: "/events" },
+      { name: "Childcare Services", href: "/services" },
+      { name: "Home Schooling", href: "/services" },
+      { name: "Academic Tutoring", href: "/services" },
+      { name: "Space Rentals", href: "/services" },
+      { name: "Kiddies Parties", href: "/services" },
+      { name: "Kiddies Enrichment Sessions", href: "/services" },
     ],
     company: [
       { name: "About Us", href: "/about" },
-      { name: "Our Team", href: "/tutors" },
-      { name: "Careers", href: "/careers" },
+      { name: "Services", href: "/services" },
+      { name: "Tutors", href: "/tutors" },
+
       { name: "Contact", href: "/contact" },
-    ],
-    resources: [
-      { name: "Parent Resources", href: "/resources" },
-      { name: "Safety Guidelines", href: "/safety" },
-      { name: "FAQ", href: "/faq" },
       { name: "Blog", href: "/blog" },
     ],
+    resources: [{ name: "FAQ", href: "/faq" }],
     legal: [
-      { name: "Privacy Policy", href: "/privacy" },
-      { name: "Terms of Service", href: "/terms" },
-      { name: "Cookie Policy", href: "/cookies" },
+      { name: "Privacy Policy", href: "#" },
+      { name: "Terms of Service", href: "#" },
+      { name: "Cookie Policy", href: "#" },
     ],
   };
 
@@ -119,8 +117,8 @@ export default function Footer() {
               Services
             </h3>
             <ul className="space-y-2">
-              {footerLinks.services.map((link) => (
-                <li key={link.name}>
+              {footerLinks.services.map((link, _id) => (
+                <li key={_id}>
                   <Link
                     href={link.href}
                     className="text-gray-300 hover:text-white transition-colors duration-300"
@@ -168,30 +166,6 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-
-        {/* Newsletter Signup */}
-        <div className="mt-12 pt-8 border-t border-gray-700">
-          <div className="md:flex md:items-center md:justify-between">
-            <div className="mb-4 md:mb-0">
-              <h3 className="text-lg font-semibold text-[#90AC19] mb-2">
-                Stay Updated
-              </h3>
-              <p className="text-gray-300">
-                Get the latest news and updates from PARENTALPAL
-              </p>
-            </div>
-            <div className="flex">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="px-4 py-2 bg-gray-800 text-white rounded-l-lg border border-gray-600 focus:outline-none focus:border-[#90AC19] w-64"
-              />
-              <button className="bg-[#90AC19] hover:bg-[#7A9216] text-white px-6 py-2 rounded-r-lg transition-colors duration-300">
-                Subscribe
-              </button>
-            </div>
           </div>
         </div>
       </div>

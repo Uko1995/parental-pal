@@ -312,7 +312,7 @@ export default function SignIn() {
     <div className="min-h-screen  flex items-center justify-center md:gap-20 p-4">
       <div className="hidden md:block h-auto w-1/4">
         <Image
-          src="/parentalpalLOGO.png"
+          src="/parentalpalLOGO.webp"
           alt="Logo"
           width={200}
           height={200}

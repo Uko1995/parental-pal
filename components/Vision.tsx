@@ -159,7 +159,7 @@ export default function Vision() {
           {/* Image */}
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
             <Image
-              src="/woman2.jpg"
+              src="/woman2.webp"
               alt="Our teaching approach with children"
               fill
               className="object-cover"
@@ -194,7 +194,7 @@ export default function Vision() {
                 </h4>
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -212,7 +212,7 @@ export default function Vision() {
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -230,7 +230,7 @@ export default function Vision() {
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#E8931A] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -259,7 +259,7 @@ export default function Vision() {
                 </h4>
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -277,7 +277,7 @@ export default function Vision() {
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -295,7 +295,7 @@ export default function Vision() {
                     </span>
                   </li>
                   <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
+                    <div className="shrink-0 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center mr-4 mt-1">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="currentColor"
@@ -366,9 +366,7 @@ export default function Vision() {
               <div key={categoryIndex} className="space-y-4">
                 {/* Category Header */}
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="text-[#90AC19] flex-shrink-0">
-                    {category.icon}
-                  </div>
+                  <div className="text-[#90AC19] shrink-0">{category.icon}</div>
                   <div>
                     <h4 className="text-xl font-semibold text-gray-900">
                       {category.category}
@@ -431,7 +429,7 @@ export default function Vision() {
             </h3>
 
             {/* Membership Card */}
-            <div className="bg-[url('/orangeBG.jpg')] object-cover rounded-xl p-8 text-white relative">
+            <div className="bg-[url('/orangeBG.webp')] object-cover rounded-xl p-8 text-white relative">
               <div className="absolute inset-0 bg-orange-700/50 rounded-xl"></div>
               <div className="relative z-10 text-white text-center">
                 <h4 className="text-2xl font-semibold mb-4">

@@ -127,7 +127,7 @@ export default function AboutPage() {
             </div>
             <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="/idara.png"
+                src="/idara.webp"
                 alt="Children learning and playing together"
                 fill
                 className=" object-cover"

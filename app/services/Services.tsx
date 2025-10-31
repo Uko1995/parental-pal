@@ -155,7 +155,6 @@ export default async function Services() {
                   viewBox="0 0 24 24"
                 >
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  <circle cx="12" cy="12" r="3" fill="#FFEACF" />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-2">Expert Team</h3>
@@ -167,14 +166,16 @@ export default async function Services() {
             <div className="text-center">
               <div className="flex justify-center mb-4">
                 <svg
-                  className="w-16 h-16 text-[#E8931A]"
-                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
+                  fill="#E8931A"
+                  className="w-16 h-16"
                 >
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                  <path d="M11.484 2.17a.75.75 0 0 1 1.032 0 11.209 11.209 0 0 0 7.877 3.08.75.75 0 0 1 .722.515 12.74 12.74 0 0 1 .635 3.985c0 5.942-4.064 10.933-9.563 12.348a.749.749 0 0 1-.374 0C6.314 20.683 2.25 15.692 2.25 9.75c0-1.39.223-2.73.635-3.985a.75.75 0 0 1 .722-.516l.143.001c2.996 0 5.718-1.17 7.734-3.08Z" />
+                  {/* White exclamation */}
                   <path
-                    d="M10 17l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"
-                    fill="#FFEACF"
+                    fill="white"
+                    d="M12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75ZM12 15a.75.75 0 0 0-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 0 0 .75-.75v-.008a.75.75 0 0 0-.75-.75H12Z"
                   />
                 </svg>
               </div>
@@ -192,7 +193,6 @@ export default async function Services() {
                   viewBox="0 0 24 24"
                 >
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  <circle cx="12" cy="10" r="4" fill="#FFEACF" />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-2">Personalized Care</h3>

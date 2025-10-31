@@ -42,7 +42,7 @@ export default function NavBar() {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isTransparent
-          ? "bg-transparent backdrop-blur-sm"
+          ? "bg-white backdrop-blur-md shadow-md border-b border-gray-200 md:bg-transparent md:backdrop-blur-sm "
           : "bg-white backdrop-blur-md shadow-md border-b border-gray-200"
       }`}
     >
@@ -55,7 +55,7 @@ export default function NavBar() {
               className="flex items-center transition-all duration-300"
             >
               <Image
-                src="/parentalpalLOGO.png"
+                src="/parentalpalLOGO.webp"
                 alt="PARENTALPAL logo"
                 width={200}
                 height={50}
@@ -157,7 +157,7 @@ export default function NavBar() {
               type="button"
               className={`inline-flex items-center justify-center p-2 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-inset ${
                 isTransparent
-                  ? "text-white hover:text-white hover:bg-white/10 focus:ring-white"
+                  ? " text-gray-500 md:text-white md:hover:text-white md:hover:bg-white/10 md:focus:ring-white"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:ring-[#90AC19]"
               }`}
               aria-controls="mobile-menu"

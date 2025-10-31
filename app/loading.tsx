@@ -12,7 +12,7 @@ export default function Loading() {
         {/* Logo container with bounce animation */}
         <div className="relative bg-white rounded-full p-6">
           <Image
-            src="/parentalpalLOGO.png"
+            src="/parentalpalLOGO.webp"
             alt="PARENTALPAL Loading"
             width={120}
             height={120}

@@ -322,7 +322,7 @@ export default function TutorRegistrationForm() {
   return (
     <motion.div
       ref={formRef}
-      className="max-w-5xl mx-auto"
+      className="max-w-6xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -331,7 +331,7 @@ export default function TutorRegistrationForm() {
         className="card shadow-xl transition-all duration-300"
         transition={{ type: "spring", stiffness: 300 }}
       >
-        <div className="card-body p-8 sm:p-10">
+        <div className="card-body p-4 ">
           {/* Progress Indicator */}
           <div className="mb-10">
             <div className="flex items-center justify-between mb-6">
@@ -342,9 +342,7 @@ export default function TutorRegistrationForm() {
                 >
                   Tutor Registration
                 </h2>
-                <p className="text-gray-600">
-                  Complete your application to join our team
-                </p>
+                <p className="text-gray-600">Complete your application</p>
               </div>
               <div
                 className="px-4 py-2 rounded-full border"
@@ -435,7 +433,7 @@ export default function TutorRegistrationForm() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="w-full mb-10">
+          <div className=" hidden md:block w-full mb-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {tabs.map((tab, index) => (
                 <button
@@ -480,7 +478,7 @@ export default function TutorRegistrationForm() {
           </div>
 
           {/* Tab Content */}
-          <div className="min-h-[500px] rounded-2xl p-6 border border-gray-200 overflow-hidden">
+          <div className="min-h-[500px] rounded-2xl p-3 border border-gray-200 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -507,7 +505,7 @@ export default function TutorRegistrationForm() {
           >
             <motion.button
               onClick={handlePrevious}
-              className={`btn btn-outline btn-lg ${
+              className={`btn btn-outline  ${
                 activeTab === 0
                   ? "btn-disabled opacity-50"
                   : "hover:bg-gray-100"
@@ -535,7 +533,7 @@ export default function TutorRegistrationForm() {
             {activeTab < tabs.length - 1 ? (
               <motion.button
                 onClick={handleNext}
-                className={`btn btn-lg text-white ${
+                className={`btn text-white ${
                   !validateTab(activeTab)
                     ? "btn-disabled opacity-50"
                     : "hover:opacity-90"
@@ -571,7 +569,7 @@ export default function TutorRegistrationForm() {
             ) : (
               <motion.button
                 onClick={handleSubmit}
-                className={`btn btn-lg text-white ${
+                className={`btn text-white ${
                   !validateTab(3) || isSubmitting || !termsAccepted
                     ? "btn-disabled opacity-50"
                     : "hover:opacity-90"

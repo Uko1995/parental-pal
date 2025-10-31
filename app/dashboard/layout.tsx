@@ -78,12 +78,12 @@ export default function DashboardLayout({
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50">
-        <div className="flex flex-col flex-grow bg-white shadow-xl border-r border-base-200">
+        <div className="flex flex-col grow bg-white shadow-xl border-r border-base-200">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Link href="/" className="flex items-center justify-center h-16">
               <Image
-                src="/parentalpalLOGO.png"
+                src="/parentalpalLOGO.webp"
                 alt="Logo"
                 width={200}
                 height={40}
@@ -139,7 +139,7 @@ export default function DashboardLayout({
           {/* User Profile Section */}
           <div className="p-4 border-t border-base-200">
             <div className="flex items-center space-x-3 p-3 bg-base-50 rounded-lg">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#A25F97] to-[#E8931A] rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-r from-[#A25F97] to-[#E8931A] rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-sm">AD</span>
               </div>
               <div className="flex-1">
@@ -160,7 +160,7 @@ export default function DashboardLayout({
       >
         <div className="flex flex-col h-full">
           {/* Mobile header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#90AC19] to-[#E8931A]">
+          <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-[#90AC19] to-[#E8931A]">
             <Link href="/" className="text-white font-bold text-lg">
               PARENTALPAL
             </Link>
@@ -259,7 +259,7 @@ export default function DashboardLayout({
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                  className="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-52"
                 >
                   <li>
                     <Link href="/dashboard/profile">Profile</Link>
