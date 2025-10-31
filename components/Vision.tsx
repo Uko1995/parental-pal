@@ -49,7 +49,7 @@ export default function Vision() {
         "Personalized academic support tailored to your child's needs",
       services: [
         {
-          type: "Virtual",
+          type: "In your Home",
           description:
             "One-on-one academic support with qualified tutors using interactive digital tools",
           features: [
@@ -63,7 +63,7 @@ export default function Vision() {
           subjects: ["Mathematics", "English", "Science", "Social Studies"],
         },
         {
-          type: "On-Site ",
+          type: "At out Centre",
           description:
             "Face-to-face academic support with hands-on learning activities",
           features: [
@@ -104,7 +104,7 @@ export default function Vision() {
         "Comprehensive educational programs for complete learning experience",
       services: [
         {
-          type: "InPerson ",
+          type: "In your Home ",
           description:
             "Comprehensive curriculum delivery with structured learning modules",
           features: [
@@ -118,7 +118,7 @@ export default function Vision() {
           subjects: ["Complete K-12 Curriculum", "Specialized Programs"],
         },
         {
-          type: "On-Site ",
+          type: "At our Centre ",
           description:
             "Traditional classroom experience with personalized curriculum",
           features: [
@@ -159,7 +159,7 @@ export default function Vision() {
           {/* Image */}
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
             <Image
-              src="/vision.jpg"
+              src="/woman2.jpg"
               alt="Our teaching approach with children"
               fill
               className="object-cover"
@@ -468,7 +468,7 @@ export default function Vision() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    20% discount on all services
+                    40% discount on all services
                   </div>
                   <div className="flex items-center justify-center md:justify-start">
                     <svg

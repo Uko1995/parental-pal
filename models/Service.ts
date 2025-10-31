@@ -47,9 +47,7 @@ export interface ServiceInterface {
   // Service-specific requirements and constraints
   requirements?: {
     // Age requirements
-    minimumAge?: number;
-    maximumAge?: number;
-    ageGroups?: string[]; // e.g., ["toddler", "preschool", "primary"]
+    ageGroup?: string;
 
     // Group size
     minimumParticipants: number;
@@ -61,7 +59,7 @@ export interface ServiceInterface {
     equipmentProvided?: string[];
     spaceRequirements?: string;
   };
-  availability: string[];
+  availability: string;
 
   // Business logic
   status: "active" | "inactive" | "draft" | "seasonal" | "discontinued";
@@ -161,6 +159,7 @@ export const ServiceSchema = {
                 "day",
                 "week",
                 "month",
+                "term",
                 "session",
                 "event",
                 "custom",
@@ -347,10 +346,6 @@ export const ServiceIndexes = [
   {
     key: { "pricing.billingType": 1 },
     name: "idx_billing_type",
-  },
-  {
-    key: { "availability.days.day": 1, "availability.days.available": 1 },
-    name: "idx_availability",
   },
 
   // Administrative

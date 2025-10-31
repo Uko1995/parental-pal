@@ -12,24 +12,28 @@ function createEmailTransporter() {
       },
     });
   }
-  
+
   // Alternative SMTP configuration
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+  if (
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASSWORD
+  ) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_PORT === "465", // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
     });
   }
-  
+
   // Fallback for development/testing (logs emails instead of sending)
   return nodemailer.createTransport({
     streamTransport: true,
-    newline: 'unix',
+    newline: "unix",
     buffer: true,
   });
 }
@@ -87,7 +91,11 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
     }
 
     const mailOptions = {
-      from: `"ParentalPal" <${process.env.EMAIL_USER || process.env.SMTP_USER || "noreply@parentalpal.com"}>`,
+      from: `"ParentalPal" <${
+        process.env.EMAIL_USER ||
+        process.env.SMTP_USER ||
+        "noreply@parentalpal.com"
+      }>`,
       to,
       subject,
       html,
@@ -153,7 +161,7 @@ export const emailTemplates = {
             <p>Ready to get started? Browse our services and make your first booking!</p>
             
             <center>
-              <a href="${process.env.NEXTAUTH_URL}/services" class="cta-button">Explore Services</a>
+              <a href={'${process.env.NEXTAUTH_URL}/services' || "http://localhost:3000/services"} class="cta-button">Explore Services</a>
             </center>
 
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
@@ -162,13 +170,13 @@ export const emailTemplates = {
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
-            <p>Email: ${process.env.EMAIL_USER} | Website: ${process.env.NEXTAUTH_URL}</p>
+            <p>Email: ${process.env.EMAIL_USER} | Website: {'${process.env.NEXTAUTH_URL}/services' || "http://localhost:3000/services"}</p>
           </div>
         </div>
       </body>
       </html>
     `,
-    text: `Welcome to ParentalPal, ${userName}! Thank you for joining us. Visit ${process.env.NEXTAUTH_URL}/services to get started.`,
+    text: `Welcome to ParentalPal, ${userName}! Thank you for joining us. Visit {'${process.env.NEXTAUTH_URL}/services' || "http://localhost:3000/services"} to get started.`,
   }),
 
   // Booking confirmation email

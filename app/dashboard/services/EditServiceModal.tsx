@@ -51,20 +51,6 @@ const venueTypeOptions = [
   { value: "both", label: "Both" },
 ] as const;
 
-const ageGroupOptions = [
-  { value: "toddler", label: "Toddler (1-3)" },
-  { value: "preschool", label: "Preschool (3-5)" },
-  { value: "primary", label: "Primary (6-12)" },
-  { value: "secondary", label: "Secondary (13-18)" },
-] as const;
-
-const availabilityOptions = [
-  { value: "weekdays", label: "Weekdays" },
-  { value: "weekends", label: "Weekends" },
-  { value: "school-breaks", label: "School Breaks" },
-  { value: "midterm-breaks", label: "Midterm Breaks" },
-] as const;
-
 export default function EditServiceModal({
   isOpen,
   onClose,
@@ -83,11 +69,9 @@ export default function EditServiceModal({
     currency: "NGN",
     billingType: "hourly" as ServiceInterface["pricing"]["billingType"],
     status: "active" as ServiceInterface["status"],
-    minimumAge: 1,
-    maximumAge: 10,
     keyFeatures: [] as string[],
-    availability: [] as string[],
-    ageGroups: [] as string[],
+    availability: "",
+    ageGroup: "",
     venueTypes: [] as string[],
     packages: [] as Array<{
       name: string;
@@ -111,11 +95,9 @@ export default function EditServiceModal({
         currency: service.pricing?.currency || "NGN",
         billingType: service.pricing?.billingType || "hourly",
         status: service.status || "active",
-        minimumAge: service.requirements?.minimumAge || 1,
-        maximumAge: service.requirements?.maximumAge || 10,
         keyFeatures: service.keyFeatures || [],
-        availability: service.availability || [],
-        ageGroups: service.requirements?.ageGroups || [],
+        availability: service.availability || "",
+        ageGroup: service.requirements?.ageGroup || "",
         venueTypes: service.requirements?.venueTypes || [],
         packages: service.pricing?.packages || [],
       });
@@ -200,26 +182,6 @@ export default function EditServiceModal({
     setFormData((prev) => ({
       ...prev,
       keyFeatures: prev.keyFeatures.filter((_, i) => i !== index),
-    }));
-  };
-
-  // Availability Management
-  const handleAvailabilityChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      availability: prev.availability.includes(value)
-        ? prev.availability.filter((item) => item !== value)
-        : [...prev.availability, value],
-    }));
-  };
-
-  // Age Groups Management
-  const handleAgeGroupChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      ageGroups: prev.ageGroups.includes(value)
-        ? prev.ageGroups.filter((item) => item !== value)
-        : [...prev.ageGroups, value],
     }));
   };
 
@@ -316,9 +278,7 @@ export default function EditServiceModal({
           packages: formData.packages.filter((pkg) => pkg.name.trim()),
         },
         requirements: {
-          minimumAge: formData.minimumAge,
-          maximumAge: formData.maximumAge,
-          ageGroups: formData.ageGroups,
+          ageGroup: formData.ageGroup,
           venueTypes: formData.venueTypes as Array<
             "indoor" | "outdoor" | "both"
           >,
@@ -579,39 +539,6 @@ export default function EditServiceModal({
                   ))}
                 </select>
               </div>
-
-              {/* Age Range */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Min Age</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="minimumAge"
-                    className="input input-bordered"
-                    value={formData.minimumAge}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="18"
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Max Age</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="maximumAge"
-                    className="input input-bordered"
-                    value={formData.maximumAge}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="18"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
@@ -670,17 +597,15 @@ export default function EditServiceModal({
               Availability
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {availabilityOptions.map((option) => (
-                <label key={option.value} className="label cursor-pointer">
-                  <span className="label-text">{option.label}</span>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-[#A25F97]"
-                    checked={formData.availability.includes(option.value)}
-                    onChange={() => handleAvailabilityChange(option.value)}
-                  />
-                </label>
-              ))}
+              <input
+                type="text"
+                className="input input-bordered"
+                placeholder="Availability"
+                value={formData.availability}
+                onChange={(e) =>
+                  setFormData({ ...formData, availability: e.target.value })
+                }
+              />
             </div>
           </div>
 
@@ -690,17 +615,15 @@ export default function EditServiceModal({
               Age Groups
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {ageGroupOptions.map((option) => (
-                <label key={option.value} className="label cursor-pointer">
-                  <span className="label-text">{option.label}</span>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-[#A25F97]"
-                    checked={formData.ageGroups.includes(option.value)}
-                    onChange={() => handleAgeGroupChange(option.value)}
-                  />
-                </label>
-              ))}
+              <input
+                type="text"
+                className="input input-bordered"
+                placeholder="Enter age group"
+                value={formData.ageGroup}
+                onChange={(e) =>
+                  setFormData({ ...formData, ageGroup: e.target.value })
+                }
+              />
             </div>
           </div>
 

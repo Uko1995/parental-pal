@@ -1,12 +1,23 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  ArrowPathIcon,
+  BellIcon,
+  Cog6ToothIcon,
+  ExclamationCircleIcon,
+  ExclamationTriangleIcon,
+  LinkIcon,
+  LockClosedIcon,
+  QuestionMarkCircleIcon,
+  UserIcon,
+} from "@heroicons/react/24/outline";
+import { EnvelopeIcon } from "@heroicons/react/24/outline";
 
 export default function AuthError() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,7 +32,7 @@ export default function AuthError() {
           title: "Server Configuration Error",
           message: "There is a problem with the server configuration.",
           suggestion: "Please contact support if this error persists.",
-          icon: "⚙️",
+          icon: Cog6ToothIcon,
         };
       case "AccessDenied":
         return {
@@ -29,63 +40,63 @@ export default function AuthError() {
           message: "You do not have permission to access this resource.",
           suggestion:
             "Please contact an administrator for access or sign in with proper credentials.",
-          icon: "🚫",
+          icon: ExclamationCircleIcon,
         };
       case "AccountDisabled":
         return {
           title: "Account Disabled",
           message: "Your account has been disabled by an administrator.",
           suggestion: "Please contact support to reactivate your account.",
-          icon: "🔒",
+          icon: LockClosedIcon,
         };
       case "Verification":
         return {
           title: "Verification Error",
           message: "The verification token has expired or is invalid.",
           suggestion: "Please try signing in again.",
-          icon: "⏰",
+          icon: BellIcon,
         };
       case "Default":
         return {
           title: "Authentication Error",
           message: "An error occurred during authentication.",
           suggestion: "Please try again or contact support.",
-          icon: "⚠️",
+          icon: ExclamationTriangleIcon,
         };
       case "OAuthSignin":
         return {
           title: "OAuth Sign-in Error",
           message: "Error in constructing an authorization URL.",
           suggestion: "Please try signing in again.",
-          icon: "🔗",
+          icon: LinkIcon,
         };
       case "OAuthCallback":
         return {
           title: "OAuth Callback Error",
           message: "Error in handling the response from the OAuth provider.",
           suggestion: "Please try signing in again.",
-          icon: "🔄",
+          icon: ArrowPathIcon,
         };
       case "OAuthCreateAccount":
         return {
           title: "Account Creation Error",
           message: "Could not create OAuth account in the database.",
           suggestion: "Please contact support for assistance.",
-          icon: "👤",
+          icon: UserIcon,
         };
       case "EmailCreateAccount":
         return {
           title: "Email Account Error",
           message: "Could not create email account in the database.",
           suggestion: "Please contact support for assistance.",
-          icon: "📧",
+          icon: EnvelopeIcon,
         };
       case "Callback":
         return {
           title: "Callback Error",
           message: "Error in the OAuth callback handler route.",
           suggestion: "Please try signing in again.",
-          icon: "🔄",
+          icon: ArrowPathIcon,
         };
       case "OAuthAccountNotLinked":
         return {
@@ -94,28 +105,28 @@ export default function AuthError() {
             "The email on the account is already linked, but not with this OAuth account.",
           suggestion:
             "Please try signing in with a different method or contact support.",
-          icon: "🔗",
+          icon: LinkIcon,
         };
       case "EmailSignin":
         return {
           title: "Email Sign-in Error",
           message: "Sending the email with the verification token failed.",
           suggestion: "Please check your email address and try again.",
-          icon: "📧",
+          icon: EnvelopeIcon,
         };
       case "CredentialsSignin":
         return {
           title: "Credentials Error",
           message: "The provided credentials are invalid.",
           suggestion: "Please check your credentials and try again.",
-          icon: "🔐",
+          icon: LockClosedIcon,
         };
       case "SessionRequired":
         return {
           title: "Session Required",
           message: "You must be signed in to view this content.",
           suggestion: "Please sign in and try again.",
-          icon: "🔒",
+          icon: LockClosedIcon,
         };
       default:
         return {
@@ -123,7 +134,7 @@ export default function AuthError() {
           message: "An unexpected error occurred during authentication.",
           suggestion:
             "Please try again or contact support if the problem persists.",
-          icon: "❓",
+          icon: QuestionMarkCircleIcon,
         };
     }
   };
@@ -131,19 +142,22 @@ export default function AuthError() {
   const errorDetails = getErrorDetails(error);
 
   const handleRetry = () => {
-    router.push("/auth/signin");
-  };
-
-  const handleGoHome = () => {
-    router.push("/");
+    // Force a full page refresh to clear any cached content
+    window.location.href = "/auth/signin";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-error/10 to-warning/10 flex items-center justify-center p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
+    <div className="h-screen flex items-center justify-center p-4">
+      <div className="card w-full max-w-xl bg-base-100 shadow-xl">
         <div className="card-body text-center">
           {/* Error Icon */}
-          <div className="text-6xl mb-4">{errorDetails.icon}</div>
+          <div className="text-6xl mb-4">
+            {typeof errorDetails.icon === "string" ? (
+              errorDetails.icon
+            ) : (
+              <errorDetails.icon className="w-16 h-16 mx-auto text-error" />
+            )}
+          </div>
 
           {/* Error Title */}
           <h1 className="text-2xl font-bold text-error mb-2">
@@ -182,13 +196,22 @@ export default function AuthError() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button onClick={handleRetry} className="btn btn-primary w-full">
+            {/* Primary option: Link with refresh */}
+            <Link href="/auth/signin" className="btn btn-[#90AC19] w-full">
               Try Signing In Again
+            </Link>
+
+            {/* Alternative: Button with forced refresh for stubborn cache */}
+            <button
+              onClick={handleRetry}
+              className="btn btn-[#90AC19] btn-outline w-full"
+            >
+              Force Refresh Sign In
             </button>
 
-            <button onClick={handleGoHome} className="btn btn-ghost w-full">
+            <Link href="/" className="btn btn-outline w-full">
               Go Back to Home
-            </button>
+            </Link>
           </div>
 
           {/* Support Link */}

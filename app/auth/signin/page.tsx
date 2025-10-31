@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 interface Provider {
   id: string;
@@ -308,12 +309,21 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
+    <div className="min-h-screen  flex items-center justify-center md:gap-20 p-4">
+      <div className="hidden md:block h-auto w-1/4">
+        <Image
+          src="/parentalpalLOGO.png"
+          alt="Logo"
+          width={200}
+          height={200}
+          className="size-full"
+        />
+      </div>
+      <div className="card w-full max-w-lg ">
         <div className="card-body">
           {/* Header */}
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-primary mb-2">
+            <h1 className="text-3xl font-bold text-[#90AC19] mb-2">
               Welcome Back
             </h1>
             <p className="text-base-content/70">
@@ -351,7 +361,7 @@ export default function SignIn() {
               {isRegisterMode && (
                 <div className="form-control w-full mb-4">
                   <label className="label">
-                    <span className="label-text">Full Name</span>
+                    <span className="label-text text-gray-800">Full Name</span>
                   </label>
                   <input
                     type="text"
@@ -376,7 +386,7 @@ export default function SignIn() {
 
               <div className="form-control w-full mb-4">
                 <label className="label">
-                  <span className="label-text">Email</span>
+                  <span className="label-text text-gray-800">Email</span>
                 </label>
                 <input
                   type="email"
@@ -400,7 +410,7 @@ export default function SignIn() {
 
               <div className="form-control w-full mb-4">
                 <label className="label">
-                  <span className="label-text">Password</span>
+                  <span className="label-text text-gray-800">Password</span>
                 </label>
                 <input
                   type="password"
@@ -462,8 +472,7 @@ export default function SignIn() {
                 {/* Password requirements hint */}
                 <label className="label">
                   <span className="label-text-alt text-xs text-gray-500">
-                    Password must be 8+ chars with uppercase, lowercase, number
-                    & special character
+                    must have uppercase, lowercase, number & special character
                   </span>
                 </label>
               </div>
@@ -471,7 +480,9 @@ export default function SignIn() {
               {isRegisterMode && (
                 <div className="form-control w-full mb-4">
                   <label className="label">
-                    <span className="label-text">Confirm Password</span>
+                    <span className="label-text text-gray-800">
+                      Confirm Password
+                    </span>
                   </label>
                   <input
                     type="password"
@@ -501,7 +512,7 @@ export default function SignIn() {
                   (!isFormValid &&
                     (isRegisterMode || !!formData.email || !!formData.password))
                 }
-                className={`btn btn-primary w-full ${
+                className={`btn bg-[#90AC19] text-white w-full ${
                   !isFormValid &&
                   (isRegisterMode || !!formData.email || !!formData.password)
                     ? "btn-disabled"
@@ -522,7 +533,7 @@ export default function SignIn() {
             <div className="text-center">
               <button
                 onClick={() => setIsRegisterMode(!isRegisterMode)}
-                className="link link-primary text-sm"
+                className="link text-[#90AC19] text-sm"
               >
                 {isRegisterMode
                   ? "Already have an account? Sign in"
@@ -540,38 +551,49 @@ export default function SignIn() {
               <button
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="btn btn-outline w-full gap-3 hover:bg-red-50 hover:border-red-300"
+                className="btn btn-outline w-full gap-3 hover:btn-neutral "
               >
                 {loading ? (
                   <span className="loading loading-spinner loading-sm"></span>
                 ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    {/* Blue segment */}
                     <path
-                      fill="currentColor"
+                      fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                     />
+
+                    {/* Green segment */}
                     <path
-                      fill="currentColor"
+                      fill="#34A853"
                       d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                     />
+
+                    {/* Yellow segment */}
                     <path
-                      fill="currentColor"
+                      fill="#FBBC05"
                       d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
                     />
+
+                    {/* Red segment */}
                     <path
-                      fill="currentColor"
+                      fill="#EA4335"
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
                 )}
-                Continue with Google
+                Google
               </button>
             )}
           </div>
 
           {/* Footer */}
           <div className="text-center mt-6 space-y-2">
-            <Link href="/" className="link link-primary text-sm">
+            <Link href="/" className="link text-[#90AC19] text-sm">
               Back to Home
             </Link>
           </div>
@@ -580,11 +602,11 @@ export default function SignIn() {
           <div className="text-center mt-4">
             <p className="text-xs text-base-content/50">
               By signing in, you agree to our{" "}
-              <Link href="/terms" className="link link-primary">
+              <Link href="/terms" className="link text-[#90AC19]">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="link link-primary">
+              <Link href="/privacy" className="link text-[#90AC19]">
                 Privacy Policy
               </Link>
             </p>

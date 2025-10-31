@@ -16,6 +16,7 @@ import {
   XMarkIcon,
   AcademicCapIcon,
   BuildingOfficeIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -234,7 +235,7 @@ export default function DashboardLayout({
                   role="button"
                   className="flex items-center justify-center gap-3 cursor-pointer"
                 >
-                  {session?.user ? (
+                  {session?.user?.image ? (
                     <Image
                       src={session?.user?.image || ""}
                       alt={session?.user?.name || "User Avatar"}
@@ -243,8 +244,8 @@ export default function DashboardLayout({
                       className="rounded-full"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-brand-primary rounded-full">
-                      U
+                    <div className="w-8 h-8 rounded-full border flex items-center justify-center p-1">
+                      <UserIcon className="size-6 text-gray-500" />
                     </div>
                   )}
                   <div>

@@ -200,6 +200,7 @@ export default function NavBar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                     isActive
                       ? isTransparent
@@ -265,6 +266,7 @@ export default function NavBar() {
                   {/* Profile Link */}
                   <Link
                     href="/profile"
+                    onClick={() => setIsMenuOpen(false)}
                     className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                       isTransparent
                         ? "text-white/90 hover:text-white hover:bg-white/10"
@@ -294,6 +296,7 @@ export default function NavBar() {
               ) : (
                 <Link
                   href="/auth/signin"
+                  onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-2 rounded-md text-base font-medium text-center transition-colors duration-300 ${
                     status === "loading"
                       ? "cursor-progress bg-gray-300 text-gray-500"

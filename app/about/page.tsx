@@ -7,8 +7,17 @@ export default function AboutPage() {
       description:
         "Every decision we make puts the child's development, safety, and happiness first.",
       icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-8 h-8"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 2a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm0 6a5 5 0 00-5 5v3a1 1 0 001 1h1v-3a3 3 0 016 0v3h1a1 1 0 001-1v-3a5 5 0 00-5-5z"
+            clipRule="evenodd"
+          />
         </svg>
       ),
     },
@@ -45,8 +54,13 @@ export default function AboutPage() {
       description:
         "We work closely with parents as partners in their child's educational journey.",
       icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+        <svg
+          className="w-8 h-8"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M9 7a3 3 0 116 0 3 3 0 01-6 0zM20 9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM4 9a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zM12 13c-3 0-5 2-5 4.5V21h10v-3.5c0-2.5-2-4.5-5-4.5zM3 15.5C3 14 4.5 13 6 13c1.2 0 2.3.6 2.9 1.5C8.3 15 8 15.8 8 16.6V21H3v-5.5zM21 15.5C21 14 19.5 13 18 13c-1.2 0-2.3.6-2.9 1.5.6.5.9 1.3.9 2.1V21h5v-5.5z" />
         </svg>
       ),
     },
@@ -63,7 +77,7 @@ export default function AboutPage() {
       year: "2023",
       title: "Tutoring Network Milestone",
       description:
-        "Connected over 500 families with qualified tutors across various subjects and achieved over 1,000 hours of tutoring worldwide. Our growing network ensured every child received personalized academic support.",
+        "Connected over 300 families with qualified tutors across various subjects and achieved over 1,000 hours of tutoring worldwide. Our growing network ensured every child received personalized academic support.",
     },
     {
       year: "2024",
@@ -113,10 +127,10 @@ export default function AboutPage() {
             </div>
             <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="/vision.jpg"
+                src="/idara.png"
                 alt="Children learning and playing together"
                 fill
-                className="object-cover"
+                className=" object-cover"
               />
             </div>
           </div>
@@ -301,14 +315,14 @@ export default function AboutPage() {
             {milestones.map((milestone, index) => (
               <div
                 key={index}
-                className={`flex items-center ${
-                  index % 2 === 0 ? "flex-row" : "flex-row-reverse"
+                className={`flex flex-col sm:flex-row items-center sm:items-stretch ${
+                  index % 2 === 0 ? "sm:flex-row" : "sm:flex-row-reverse"
                 }`}
               >
-                <div className="flex-1">
+                <div className="w-full sm:flex-1">
                   <div
-                    className={`bg-white rounded-xl p-6 shadow-md ${
-                      index % 2 === 0 ? "mr-8" : "ml-8"
+                    className={`bg-white rounded-xl p-6 shadow-md mb-4 sm:mb-0 ${
+                      index % 2 === 0 ? "sm:mr-8" : "sm:ml-8"
                     }`}
                   >
                     <div className="text-2xl font-bold text-[#A25F97] mb-2">
@@ -317,11 +331,13 @@ export default function AboutPage() {
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       {milestone.title}
                     </h3>
-                    <p className="text-gray-600">{milestone.description}</p>
+                    <p className="text-gray-600 text-base sm:text-base max-w-full break-words">
+                      {milestone.description}
+                    </p>
                   </div>
                 </div>
-                <div className="flex-shrink-0 w-4 h-4 bg-[#A25F97] rounded-full"></div>
-                <div className="flex-1"></div>
+                <div className="flex-shrink-0 w-4 h-4 bg-[#A25F97] rounded-full mb-4 sm:mb-0"></div>
+                <div className="hidden sm:block sm:flex-1"></div>
               </div>
             ))}
           </div>

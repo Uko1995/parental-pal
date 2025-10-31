@@ -23,43 +23,6 @@ const formatPricing = (service: ClientServiceForDisplay) => {
   }`;
 };
 
-// Helper function to format age groups
-const formatAgeGroups = (service: ClientServiceForDisplay) => {
-  if (
-    service.requirements?.ageGroups &&
-    service.requirements.ageGroups.length > 0
-  ) {
-    return service.requirements.ageGroups.join(", ");
-  }
-
-  const { minimumAge, maximumAge } = service.requirements || {};
-  if (minimumAge !== undefined && maximumAge !== undefined) {
-    return `${minimumAge} - ${maximumAge} years`;
-  }
-
-  return "All ages welcome";
-};
-
-// Helper function to format availability
-const formatAvailability = (service: ClientServiceForDisplay) => {
-  if (service.availability && service.availability.length > 0) {
-    const availabilityMap = {
-      weekdays: "Weekdays",
-      weekends: "Weekends",
-      "school-breaks": "School Breaks",
-      "midterm-breaks": "Midterm Breaks",
-    };
-
-    return service.availability
-      .map(
-        (slot) => availabilityMap[slot as keyof typeof availabilityMap] || slot
-      )
-      .join(" & ");
-  }
-
-  return "Contact for availability";
-};
-
 export default async function Services() {
   const services = await getPublicServices();
   return (
@@ -116,7 +79,7 @@ export default async function Services() {
                   <div className="text-center p-3 bg-[#FFEACF]/30 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">Age Groups</div>
                     <div className="font-semibold text-gray-900">
-                      {formatAgeGroups(service)}
+                      {service?.requirements?.ageGroup || "All Ages"}
                     </div>
                   </div>
                   <div className="text-center p-3 bg-[#FFEACF]/30 rounded-lg">
@@ -130,7 +93,7 @@ export default async function Services() {
                       Availability
                     </div>
                     <div className="font-semibold text-gray-900">
-                      {formatAvailability(service)}
+                      {service?.availability}
                     </div>
                   </div>
                 </div>

@@ -90,29 +90,30 @@ export default function Testimonials() {
   }, [nextSlide]);
 
   return (
-    <section className="py-16 px-4 bg-white">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-20 px-4 bg-gradient-to-br from-gray-50 via-white to-[#FFEACF]/20">
+      <div className="max-w-5xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl font-bold text-gray-900 mb-6">
             What Parents Say
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Real families sharing their experiences with our childcare and
-            educational services
+            educational services. Join thousands of satisfied parents who trust
+            us with their children&apos;s future.
           </p>
         </div>
 
         {/* Testimonials Carousel */}
-        <div className="relative max-w-4xl mx-auto">
+        <div className="relative max-w-3xl mx-auto">
           {/* Navigation Arrows */}
           <button
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors duration-300"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 hover:shadow-2xl transition-all duration-300 border border-gray-100"
             aria-label="Previous testimonial"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
+              className="w-6 h-6 text-[#90AC19]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -128,11 +129,11 @@ export default function Testimonials() {
 
           <button
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors duration-300"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 hover:shadow-2xl transition-all duration-300 border border-gray-100"
             aria-label="Next testimonial"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
+              className="w-6 h-6 text-[#90AC19]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -147,55 +148,87 @@ export default function Testimonials() {
           </button>
 
           {/* Carousel Container */}
-          <div className="overflow-hidden rounded-2xl">
+          <div className="overflow-hidden rounded-3xl shadow-2xl">
             <div
-              className="flex transition-transform duration-500 ease-in-out"
+              className="flex transition-transform duration-700 ease-in-out"
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial.id}
-                  className="w-full flex-shrink-0 bg-[#FFEACF]/30 p-8 border border-gray-100"
+                  className="w-full flex-shrink-0 bg-gradient-to-br from-white via-white to-[#FFEACF]/20 relative overflow-hidden"
                 >
-                  <div className="max-w-3xl mx-auto text-center">
-                    {/* Rating */}
-                    <div className="flex items-center justify-center mb-6">
-                      <div className="flex space-x-1">
-                        {renderStars(testimonial.rating)}
+                  <div className="relative p-12 lg:p-10">
+                    <div className="max-w-4xl mx-auto text-center">
+                      {/* Quote Icon */}
+                      <div className="mb-4">
+                        <svg
+                          className="w-16 h-16 text-[#90AC19]/20 mx-auto"
+                          fill="currentColor"
+                          viewBox="0 0 32 32"
+                        >
+                          <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
+                        </svg>
                       </div>
-                      <span className="ml-2 text-sm text-gray-600">
-                        ({testimonial.rating}/5)
-                      </span>
-                    </div>
 
-                    {/* Service Badge */}
-                    <div className="mb-6">
-                      <span className="inline-block bg-[#90AC19]/10 text-[#90AC19] text-sm font-medium px-4 py-2 rounded-full">
-                        {testimonial.service}
-                      </span>
-                    </div>
-
-                    {/* Testimonial Text */}
-                    <blockquote className="text-xl text-gray-700 mb-8 leading-relaxed italic">
-                      &quot;{testimonial.text}&quot;
-                    </blockquote>
-
-                    {/* Author Info */}
-                    <div className="flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mr-4">
-                        <Image
-                          src={testimonial.image}
-                          alt={testimonial.name}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
+                      {/* Service Badge */}
+                      <div className="mb-4">
+                        <span className="inline-block bg-gradient-to-r from-[#90AC19] to-[#7A9216] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg">
+                          {testimonial.service}
+                        </span>
                       </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-gray-900 text-lg">
-                          {testimonial.name}
+
+                      {/* Testimonial Text */}
+                      <blockquote className="text-2xl lg:text-lg text-gray-800 mb-5 leading-relaxed font-medium">
+                        {testimonial.text}
+                      </blockquote>
+
+                      {/* Rating */}
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="flex space-x-1">
+                          {renderStars(testimonial.rating)}
                         </div>
-                        <div className="text-gray-600">{testimonial.role}</div>
+                        <span className="ml-3 text-lg font-semibold text-gray-600">
+                          {testimonial.rating}/5
+                        </span>
+                      </div>
+
+                      {/* Author Info */}
+                      <div className="flex items-center justify-center">
+                        <div className="relative">
+                          <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-[#90AC19]/20 to-[#E8931A]/20 p-1">
+                            <div className="w-full h-full rounded-full overflow-hidden">
+                              <Image
+                                src={testimonial.image}
+                                alt={testimonial.name}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#90AC19] rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="text-left ml-6">
+                          <div className="font-bold text-gray-900 text-xl mb-1">
+                            {testimonial.name}
+                          </div>
+                          <div className="text-[#90AC19] font-medium text-lg">
+                            {testimonial.role}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -205,15 +238,15 @@ export default function Testimonials() {
           </div>
 
           {/* Dots Indicator */}
-          <div className="flex justify-center mt-8 space-x-2">
+          <div className="flex justify-center mt-10 space-x-3">
             {testimonials.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                className={`transition-all duration-300 ${
                   index === currentSlide
-                    ? "bg-[#90AC19]"
-                    : "bg-gray-300 hover:bg-gray-400"
+                    ? "w-8 h-3 bg-[#90AC19] rounded-full shadow-lg"
+                    : "w-3 h-3 bg-gray-300 hover:bg-[#90AC19]/50 rounded-full"
                 }`}
                 aria-label={`Go to testimonial ${index + 1}`}
               />
@@ -222,15 +255,34 @@ export default function Testimonials() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="text-center mt-12">
-          <p className="text-gray-600 mb-6">
-            Ready to join our community of satisfied families?
-          </p>
-          <Link href={"/srvices"} passHref>
-            <button className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300 shadow-lg">
-              Get Started Today
-            </button>
-          </Link>
+        <div className="text-center mt-20">
+          <div className="bg-gradient-to-r from-[#90AC19] to-[#7A9216] rounded-3xl p-12 shadow-2xl">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Ready to join our community?
+            </h3>
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              Join thousands of satisfied families who trust us with their
+              children&apos;s future. Your success story could be next!
+            </p>
+            <Link href="/services" passHref>
+              <button className="bg-white text-[#90AC19] hover:bg-gray-50 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                Get Started Today
+                <svg
+                  className="w-5 h-5 ml-2 inline-block"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     </section>

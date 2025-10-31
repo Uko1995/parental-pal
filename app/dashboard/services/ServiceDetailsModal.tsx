@@ -130,14 +130,7 @@ export default function ServiceDetailsModal({
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Availability</h3>
             <div className="flex flex-wrap gap-2">
-              {service.availability.map((period, index) => (
-                <span key={index} className="badge badge-outline badge-primary">
-                  {period
-                    .split("-")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ")}
-                </span>
-              ))}
+              {service?.availability && <span>{service.availability}</span>}
             </div>
           </div>
         )}
@@ -267,18 +260,6 @@ export default function ServiceDetailsModal({
                   Service Requirements
                 </h3>
                 <div className="space-y-3">
-                  {/* Age Requirements */}
-                  {(service.requirements.minimumAge ||
-                    service.requirements.maximumAge) && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Age Range:</span>
-                      <span className="font-semibold">
-                        {service.requirements.minimumAge || "0"} -{" "}
-                        {service.requirements.maximumAge || "∞"} years
-                      </span>
-                    </div>
-                  )}
-
                   {/* Equipment */}
                   {service.requirements.equipmentProvided &&
                     service.requirements.equipmentProvided.length > 0 && (

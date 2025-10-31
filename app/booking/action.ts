@@ -114,25 +114,29 @@ export async function registerChild(formData: FormData) {
 
   // Send booking confirmation email
   try {
-    const emailResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        type: "booking-confirmation",
-        to: user.userData.user.email,
-        userName: user.userData.user.name || "Parent",
-        data: {
-          _id: savedBooking._id?.toString(),
-          serviceType: savedBooking.serviceType,
-          schedule: savedBooking.schedule,
-          children: savedBooking.children,
-          status: savedBooking.status,
-          pricing: savedBooking.pricing,
+    const emailResponse = await fetch(
+      `${process.env.NEXTAUTH_URL}/api/email` ||
+        "http://localhost:3000/api/email",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          type: "booking-confirmation",
+          to: user.userData.user.email,
+          userName: user.userData.user.name || "Parent",
+          data: {
+            _id: savedBooking._id?.toString(),
+            serviceType: savedBooking.serviceType,
+            schedule: savedBooking.schedule,
+            children: savedBooking.children,
+            status: savedBooking.status,
+            pricing: savedBooking.pricing,
+          },
+        }),
+      }
+    );
 
     if (emailResponse.ok) {
       console.log("✅ Booking confirmation email sent successfully");

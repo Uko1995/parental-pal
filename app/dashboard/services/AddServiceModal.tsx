@@ -45,20 +45,6 @@ const statusOptions = [
   { value: "discontinued", label: "Discontinued" },
 ] as const;
 
-const ageGroupOptions = [
-  { value: "toddler", label: "Toddler (1-3)" },
-  { value: "preschool", label: "Preschool (3-5)" },
-  { value: "primary", label: "Primary (6-12)" },
-  { value: "secondary", label: "Secondary (13-18)" },
-] as const;
-
-const availabilityOptions = [
-  { value: "weekdays", label: "Weekdays" },
-  { value: "weekends", label: "Weekends" },
-  { value: "school-breaks", label: "School Breaks" },
-  { value: "midterm-breaks", label: "Midterm Breaks" },
-] as const;
-
 export default function AddServiceModal({
   isOpen,
   onClose,
@@ -76,11 +62,9 @@ export default function AddServiceModal({
     currency: "NGN",
     billingType: "hour" as ServiceInterface["pricing"]["billingType"],
     status: "active" as ServiceInterface["status"],
-    minimumAge: 1,
-    maximumAge: 10,
     keyFeatures: [] as string[],
-    availability: [] as string[],
-    ageGroups: [] as string[],
+    availability: "",
+    ageGroup: "",
     packages: [] as Array<{
       name: string;
       description: string;
@@ -174,18 +158,6 @@ export default function AddServiceModal({
     }));
   };
 
-  const handleCheckboxChange = (
-    category: "availability" | "ageGroups",
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [category]: prev[category].includes(value)
-        ? prev[category].filter((item) => item !== value)
-        : [...prev[category], value],
-    }));
-  };
-
   const addKeyFeature = () => {
     setFormData((prev) => ({
       ...prev,
@@ -235,10 +207,8 @@ export default function AddServiceModal({
         },
         availability: formData.availability,
         requirements: {
-          minimumAge: formData.minimumAge,
-          maximumAge: formData.maximumAge,
-          ageGroups:
-            formData.ageGroups.length > 0 ? formData.ageGroups : undefined,
+          ageGroup:
+            formData.ageGroup.length > 0 ? formData.ageGroup : undefined,
           minimumParticipants: 1,
           maximumParticipants: 50,
         },
@@ -270,12 +240,10 @@ export default function AddServiceModal({
           currency: "NGN",
           billingType: "hour",
           status: "active",
-          minimumAge: 1,
-          maximumAge: 10,
           keyFeatures: [],
           packages: [],
-          availability: [],
-          ageGroups: [],
+          availability: "",
+          ageGroup: "",
         });
       } else {
         toast.error(result.error || "Failed to create service");
@@ -529,63 +497,18 @@ export default function AddServiceModal({
               Requirements & Details
             </h3>
 
-            {/* Age Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Min Age *</span>
-                </label>
-                <input
-                  type="number"
-                  name="minimumAge"
-                  value={formData.minimumAge}
-                  onChange={handleInputChange}
-                  className="input input-bordered w-full"
-                  min="0"
-                  max="10"
-                  required
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Max Age *</span>
-                </label>
-                <input
-                  type="number"
-                  name="maximumAge"
-                  value={formData.maximumAge}
-                  onChange={handleInputChange}
-                  className="input input-bordered w-full"
-                  min="0"
-                  max="10"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Age Groups */}
+            {/* Age Group */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Age Groups</span>
+                <span className="label-text font-medium">Age Group</span>
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {ageGroupOptions.map((group) => (
-                  <label key={group.value} className="cursor-pointer label">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary"
-                      checked={
-                        formData.ageGroups?.includes(group.value) || false
-                      }
-                      onChange={() =>
-                        handleCheckboxChange("ageGroups", group.value)
-                      }
-                    />
-                    <span className="label-text ml-2">{group.label}</span>
-                  </label>
-                ))}
-              </div>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={formData.ageGroup}
+                onChange={handleInputChange}
+                placeholder="0 - 15"
+              />
             </div>
 
             {/* Availability */}
@@ -593,21 +516,13 @@ export default function AddServiceModal({
               <label className="label">
                 <span className="label-text font-medium">Availability</span>
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {availabilityOptions.map((option) => (
-                  <label key={option.value} className="cursor-pointer label">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary"
-                      checked={formData.availability.includes(option.value)}
-                      onChange={() =>
-                        handleCheckboxChange("availability", option.value)
-                      }
-                    />
-                    <span className="label-text ml-2">{option.label}</span>
-                  </label>
-                ))}
-              </div>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={formData.availability}
+                onChange={handleInputChange}
+                placeholder="Mondays - Saturdays"
+              />
             </div>
           </div>
 
