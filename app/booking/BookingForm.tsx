@@ -135,7 +135,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     } else if (selectedService === "holiday-camps") {
       const validation = holidayCampFormRef.current?.validate();
       if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]); // Show first error
+        toast.error(validation.errors[0]);
         return;
       }
     }
