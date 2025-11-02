@@ -1,4 +1,4 @@
-import { useState, useImperativeHandle, forwardRef } from "react";
+import { useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import OptionalChild from "./OptionalChild";
 import PaymentSchedule from "./PaymentSchedule";
 
@@ -16,6 +16,26 @@ interface CampWeek {
 const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
   const [campWeeks, setCampWeeks] = useState<CampWeek[]>([]);
   const [currentStartDate, setCurrentStartDate] = useState<string>("");
+  const [weeklyRate, setWeeklyRate] = useState(30000); // Default to ₦30,000/week
+
+  // Fetch pricing from database
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await fetch("/api/services/pricing");
+        if (response.ok) {
+          const { data } = await response.json();
+          if (data["holiday-camps"]?.baseRate) {
+            setWeeklyRate(data["holiday-camps"].baseRate);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching pricing:", error);
+        // Keep default rate if fetch fails
+      }
+    };
+    fetchPricing();
+  }, []);
 
   const resetForm = () => {
     setCampWeeks([]);
@@ -107,14 +127,14 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
   return (
     <div className="space-y-8">
       {/* Parent Information Section */}
-      <div className="card bg-base-100 shadow-lg border border-primary/10">
+      <div className="card bg-base-100 shadow-lg border border-[#90AC19]/10">
         <div className="card-body">
-          <h3 className="card-title text-xl flex items-center text-primary mb-6">
+          <h3 className="card-title text-xl flex items-center text-[#90AC19] mb-6">
             Parent/Guardian Information
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Full Name *
@@ -123,13 +143,13 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
               <input
                 type="text"
                 name="parentName"
-                className="input input-bordered input-primary focus:input-primary"
+                className="input input-bordered input-[#90AC19] focus:input-[#90AC19]"
                 placeholder="Enter your full name"
                 required
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Email Address *
@@ -138,13 +158,13 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
               <input
                 type="email"
                 name="parentEmail"
-                className="input input-bordered input-primary focus:input-primary"
+                className="input input-bordered input-[#90AC19] focus:input-[#90AC19]"
                 placeholder="Enter your email"
                 required
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Phone Number *
@@ -153,13 +173,13 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
               <input
                 type="tel"
                 name="parentPhone"
-                className="input input-bordered input-primary focus:input-primary"
+                className="input input-bordered input-[#90AC19] focus:input-[#90AC19]"
                 placeholder="Enter your phone number"
                 required
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Address *
@@ -168,7 +188,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
               <input
                 type="text"
                 name="address"
-                className="input input-bordered input-primary focus:input-primary"
+                className="input input-bordered input-[#90AC19] focus:input-[#90AC19]"
                 placeholder="Enter your address"
                 required
               />
@@ -188,9 +208,9 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
       </div>
 
       {/* Holiday Camp Scheduling */}
-      <div className="card bg-base-100 shadow-lg border border-accent/10">
+      <div className="card bg-base-100 shadow-lg border border-[#90AC19]/10">
         <div className="card-body">
-          <h3 className="card-title text-xl flex items-center text-accent mb-6">
+          <h3 className="card-title text-xl flex items-center text-[#90AC19] mb-6">
             Camp Weeks Selection
           </h3>
 
@@ -209,12 +229,12 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
                 type="date"
                 value={currentStartDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="input input-bordered input-primary focus:input-primary flex-1"
+                className="input input-bordered input-[#90AC19] focus:input-[#90AC19] flex-1"
                 placeholder="Select start date (Monday)"
               />
               <button
                 type="button"
-                className="btn btn-primary btn-outline"
+                className="btn btn-[#90AC19] btn-outline"
                 onClick={() => handleStartDateChange(currentStartDate)}
                 disabled={!currentStartDate}
               >
@@ -235,10 +255,10 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
                 {campWeeks.map((week) => (
                   <div
                     key={week.startDate}
-                    className="flex items-center justify-between p-4 bg-base-200 rounded-lg border border-primary/20"
+                    className="flex items-center justify-between p-4 bg-base-200 rounded-lg border border-[#90AC19]/20"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="badge badge-primary badge-lg">
+                      <div className="badge badge-[#90AC19] badge-lg">
                         Week {week.weekNumber}
                       </div>
                       <div>
@@ -273,18 +293,19 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef>((props, ref) => {
 
       {/* Payment Summary */}
       {totalWeeks > 0 && (
-        <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
+        <div className="card bg-linear-to-r from-[#90AC19]/5 to-secondary/5 shadow-lg border border-[#90AC19]/20">
           <div className="card-body">
-            <h3 className="card-title text-lg flex items-center text-primary mb-4">
+            <h3 className="card-title text-lg flex items-center text-[#90AC19] mb-4">
               Payment Summary
             </h3>
             <PaymentSchedule
-              serviceCost={30000}
+              serviceCost={weeklyRate}
               totalDays={totalWeeks}
               childcare={false}
               holidayCamp={true}
               totalWeeks={campWeeks.length}
             />
+            <input type="hidden" name="weeklyRate" value={weeklyRate} />
           </div>
         </div>
       )}

@@ -1,14 +1,25 @@
 import Link from "next/link";
+import { Righteous } from "next/font/google";
+
+const righteous = Righteous({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export default function Hero() {
   return (
     <section className="relative h-screen -mt-16 mb-10 overflow-hidden bg-[url('/gemini.jpg')] bg-cover bg-center bg-no-repeat flex flex-col md:justify-end">
-      <div className="relative z-10 flex flex-col items-start justify-end md:justify-center h-full min-h-[60vh] px-4 sm:px-6 lg:px-8 text-left ml-4 mb-8 sm:ml-10 pb-10 sm:pb-0">
-        <h1 className="text-xl  sm:text-2xl font-extrabold">Welcome to</h1>
+      <div
+        className={`relative z-10 flex flex-col items-start justify-end md:justify-center h-full min-h-[60vh] px-4 sm:px-6 lg:px-8 text-left ml-4 mb-8 sm:ml-10 pb-10 sm:pb-0 ${righteous.className} antialiased`}
+      >
+        <h1 className="text-xl  sm:text-2xl text-gray-800 font-extrabold">
+          Welcome to
+        </h1>
         <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-wide text-[#b4d32a]">
           ParentalPal
         </h1>
-        <p className="mt-4 text-base font-extrabold sm:text-lg text-[#171717] max-w-md">
+        <p className="mt-4 text-base font-extrabold sm:text-lg text-gray-800 max-w-md">
           Your one-stop solution for all childcare needs.
         </p>
         {/* CTA Buttons */}

@@ -199,6 +199,16 @@ export async function registerChild(formData: FormData) {
 
   revalidatePath("/register");
   console.log("✅ Registration completed successfully");
+
+  // Return booking data for payment integration
+  return {
+    success: true,
+    bookingId: savedBooking._id?.toString(),
+    userId: user._id?.toString(),
+    amount: savedBooking.pricing?.totalAmount || 0,
+    currency: savedBooking.pricing?.currency || "NGN",
+    email: user.userData.user.email || undefined,
+  };
 }
 
 // Type for form data
@@ -316,6 +326,8 @@ async function parseFormDataToBooking(
     "childcare",
     "holiday-camps",
     "space-rental",
+    "homeschooling",
+    "kiddies-enrichment",
   ];
   if (!validServiceTypes.includes(serviceType)) {
     throw new Error(
@@ -333,19 +345,44 @@ async function parseFormDataToBooking(
       : [];
     serviceData.academicLevel = cleanedData.academicLevel;
     serviceData.learningGoals = cleanedData.learningGoals;
-    serviceData.hourlyRate = 15000; // ₦15,000 per hour
+    // Tutoring is now 1-hour flat session - get rate from form or default to 15000
+    serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
+    serviceData.sessionHours = parseInt(cleanedData.sessionHours) || 1;
   } else if (serviceType === "childcare") {
     serviceData.careType = cleanedData.careType;
     serviceData.dropoffTime = cleanedData.dropoffTime;
     serviceData.pickupTime = cleanedData.pickupTime;
     serviceData.specialNeeds = cleanedData.specialNeeds;
-    serviceData.dailyRate = 5000; // ₦5,000 per day
-    serviceData.monthlyRate = Math.floor(5000 * 30 * 0.85); // 15% monthly discount
+    // Get rates from form or use defaults
+    serviceData.dailyRate = parseInt(cleanedData.dailyRate) || 5000;
+    serviceData.monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
   } else if (serviceType === "holiday-camps") {
     serviceData.campWeeks = cleanedData.campWeeks
       ? JSON.parse(cleanedData.campWeeks)
       : [];
-    serviceData.weeklyRate = 30000; // ₦30,000 per week
+    // Get weekly rate from form or default to 30000
+    serviceData.weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
+  } else if (serviceType === "homeschooling") {
+    serviceData.subjects = cleanedData.selectedSubjects
+      ? JSON.parse(cleanedData.selectedSubjects)
+      : [];
+    serviceData.gradeLevel = cleanedData.gradeLevel;
+    serviceData.curriculum = cleanedData.curriculum;
+    serviceData.learningStyle = cleanedData.learningStyle;
+    serviceData.specialNeeds = cleanedData.specialNeeds || "";
+    serviceData.educationalGoals = cleanedData.educationalGoals;
+    serviceData.schoolTerm = cleanedData.schoolTerm;
+    serviceData.termCost = 250000; // ₦250,000 per term
+  } else if (serviceType === "kiddies-enrichment") {
+    serviceData.programs = cleanedData.selectedPrograms
+      ? JSON.parse(cleanedData.selectedPrograms)
+      : [];
+    serviceData.ageGroup = cleanedData.ageGroup;
+    serviceData.interests = cleanedData.interests;
+    serviceData.previousExperience = cleanedData.previousExperience || "";
+    serviceData.parentGoals = cleanedData.parentGoals;
+    // Get hourly rate from form or default to 8000
+    serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 8000;
   } else if (serviceType === "space-rental") {
     serviceData.eventType = cleanedData.eventType;
     serviceData.eventDate = cleanedData.eventDate;
@@ -357,30 +394,42 @@ async function parseFormDataToBooking(
       : [];
 
     // Calculate base rate based on venue type
-    let baseRate = 250000; // Indoor/Outdoor base
-    if (cleanedData.venueType === "both") baseRate = 470000;
+    let baseRate = 350000; // Indoor/Outdoor base
+    if (cleanedData.venueType === "both") baseRate = 650000;
     serviceData.baseRate = baseRate;
     serviceData.cautionFee = 50000;
   }
 
   // Calculate total amount
-  const totalHours = weekdays.reduce((sum, day) => sum + day.hours, 0);
   let totalAmount = 0;
 
   if (serviceType === "tutoring") {
-    totalAmount = totalHours * 15000;
+    // Tutoring is now 1-hour flat session - use sessionHours from form
+    const sessionHours = parseInt(cleanedData.sessionHours) || 1;
+    const hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
+    totalAmount = sessionHours * hourlyRate;
+  } else if (serviceType === "homeschooling") {
+    totalAmount = 250000; // Fixed term-based pricing
+  } else if (serviceType === "kiddies-enrichment") {
+    // Calculate total hours from weekday schedule
+    const totalHours = weekdays.reduce((sum, day) => sum + day.hours, 0);
+    const hourlyRate = parseInt(cleanedData.hourlyRate) || 10000;
+    totalAmount = totalHours * hourlyRate;
   } else if (serviceType === "childcare") {
+    const dailyRate = parseInt(cleanedData.dailyRate) || 5000;
+    const monthlyRate = parseInt(cleanedData.monthlyRate) || 110500;
     totalAmount =
       cleanedData.careType === "monthly"
-        ? (serviceData.monthlyRate as number)
-        : weekdays.length * 5000;
+        ? monthlyRate
+        : weekdays.length * dailyRate;
   } else if (serviceType === "holiday-camps") {
     const campWeeks = serviceData.campWeeks as Array<{
       startDate: string;
       endDate: string;
       weekNumber: number;
     }>;
-    totalAmount = (campWeeks?.length || 1) * 30000;
+    const weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
+    totalAmount = (campWeeks?.length || 1) * weeklyRate;
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);

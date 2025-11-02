@@ -3,6 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { User } from "next-auth";
+import {
+  PencilSquareIcon,
+  CheckIcon,
+  XMarkIcon,
+  UserIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  MapPinIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 
 interface ProfileDetailsProps {
   user: User;
@@ -83,137 +93,175 @@ export default function ProfileDetails({ user }: ProfileDetailsProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-base-content">
-          Profile Details
-        </h2>
+    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-gray-100">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b-2 border-gray-100">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <div className="p-2 bg-linear-to-br from-[#90AC19] to-[#A25F97] rounded-xl">
+              <UserIcon className="h-6 w-6 md:h-7 md:w-7 text-white" />
+            </div>
+            Profile Details
+          </h2>
+          <p className="text-gray-500 mt-2 text-sm md:text-base">
+            Manage your personal information
+          </p>
+        </div>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="btn btn-primary btn-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-[#90AC19] to-[#90AC19]/90 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-            Edit Profile
+            <PencilSquareIcon className="h-5 w-5" />
+            <span>Edit Profile</span>
           </button>
         ) : (
-          <div className="space-x-2">
+          <div className="flex gap-2">
             <button
               onClick={handleSave}
               disabled={loading}
-              className="btn btn-primary btn-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-[#90AC19] to-[#90AC19]/90 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="loading loading-spinner loading-sm"></span>
               ) : (
-                "Save"
+                <>
+                  <CheckIcon className="h-5 w-5" />
+                  <span>Save</span>
+                </>
               )}
             </button>
             <button
               onClick={() => {
                 setIsEditing(false);
-                fetchUserProfile(); // Reset to original data
+                fetchUserProfile();
               }}
-              className="btn btn-ghost btn-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
             >
-              Cancel
+              <XMarkIcon className="h-5 w-5" />
+              <span>Cancel</span>
             </button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Personal Information */}
-        <div>
-          <h3 className="text-lg font-semibold text-base-content mb-4">
-            Personal Information
-          </h3>
-
-          <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Full Name</span>
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Enter your full name"
-                />
-              ) : (
-                <div className="p-3 bg-base-100 rounded-lg border">
-                  {profile.name || "Not provided"}
-                </div>
-              )}
+      {/* Profile Information Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        {/* Full Name */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <div className="p-1.5 bg-[#90AC19]/10 rounded-lg">
+              <UserIcon className="h-4 w-4 text-[#90AC19]" />
             </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Email Address</span>
-              </label>
-              <div className="p-3 bg-base-100 rounded-lg border text-base-content/70">
-                {profile.email}
-                <div className="text-xs text-base-content/50 mt-1">
-                  Email cannot be changed
-                </div>
-              </div>
+            Full Name
+          </label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={profile.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20 transition-all duration-300 outline-none"
+              placeholder="Enter your full name"
+            />
+          ) : (
+            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
+              <p className="text-gray-800 font-medium">
+                {profile.name || "Not provided"}
+              </p>
             </div>
+          )}
+        </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Phone Number</span>
-              </label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={profile.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Enter your phone number"
-                />
-              ) : (
-                <div className="p-3 bg-base-100 rounded-lg border">
-                  {profile.phone || ""}
-                </div>
-              )}
+        {/* Email Address */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <div className="p-1.5 bg-[#E8931A]/10 rounded-lg">
+              <EnvelopeIcon className="h-4 w-4 text-[#E8931A]" />
             </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Address</span>
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={profile.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  className="textarea textarea-bordered w-full"
-                  placeholder="Enter your address"
-                  rows={3}
-                />
-              ) : (
-                <div className="p-3 bg-base-100 rounded-lg border min-h-16">
-                  {profile.address || ""}
-                </div>
-              )}
+            Email Address
+          </label>
+          <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 relative">
+            <p className="text-gray-800 font-medium break-all">
+              {profile.email}
+            </p>
+            <div className="flex items-center gap-1.5 mt-2">
+              <ShieldCheckIcon className="h-4 w-4 text-[#A25F97]" />
+              <span className="text-xs text-gray-500">
+                Email cannot be changed
+              </span>
             </div>
           </div>
         </div>
+
+        {/* Phone Number */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <div className="p-1.5 bg-[#A25F97]/10 rounded-lg">
+              <PhoneIcon className="h-4 w-4 text-[#A25F97]" />
+            </div>
+            Phone Number
+          </label>
+          {isEditing ? (
+            <input
+              type="tel"
+              value={profile.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#A25F97] focus:ring-2 focus:ring-[#A25F97]/20 transition-all duration-300 outline-none"
+              placeholder="Enter your phone number"
+            />
+          ) : (
+            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
+              <p className="text-gray-800 font-medium">
+                {profile.phone || "Not provided"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Address */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <div className="p-1.5 bg-[#E8931A]/10 rounded-lg">
+              <MapPinIcon className="h-4 w-4 text-[#E8931A]" />
+            </div>
+            Address
+          </label>
+          {isEditing ? (
+            <textarea
+              value={profile.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#E8931A] focus:ring-2 focus:ring-[#E8931A]/20 transition-all duration-300 outline-none resize-none"
+              placeholder="Enter your address"
+              rows={4}
+            />
+          ) : (
+            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 min-h-24">
+              <p className="text-gray-800 font-medium">
+                {profile.address || "Not provided"}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Info Banner */}
+      {!isEditing && (
+        <div className="mt-8 p-4 bg-linear-to-r from-[#90AC19]/10 to-[#A25F97]/10 rounded-xl border border-[#90AC19]/20">
+          <div className="flex items-start gap-3">
+            <ShieldCheckIcon className="h-5 w-5 text-[#90AC19] shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-1">
+                Your Information is Secure
+              </p>
+              <p className="text-xs text-gray-600">
+                Your personal data is encrypted and stored securely. We will
+                never share your information with third parties without your
+                consent.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

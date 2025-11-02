@@ -1,18 +1,17 @@
 "use client";
 
+import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 interface Child {
-  _id?: string;
+  _id?: string; // This will be the array index
   name: string;
   age: number;
   gender: "male" | "female";
   class?: string;
   schoolName?: string;
-  allergies?: string;
-  specialNeeds?: string;
-  medicalInfo?: string;
+  subjects?: string[];
 }
 
 export default function ChildrenSection() {
@@ -30,7 +29,14 @@ export default function ChildrenSection() {
       const response = await fetch("/api/users/children");
       if (response.ok) {
         const data = await response.json();
-        setChildren(data.children || []);
+        // Map children with their array index as _id
+        const childrenWithIds = (data.children || []).map(
+          (child: Child, index: number) => ({
+            ...child,
+            _id: index.toString(),
+          })
+        );
+        setChildren(childrenWithIds);
       }
     } catch (error) {
       console.error("Failed to fetch children:", error);
@@ -138,7 +144,9 @@ export default function ChildrenSection() {
 
       {children.length === 0 ? (
         <div className="text-center py-8">
-          <div className="text-6xl text-base-content/20 mb-4">👶</div>
+          <div className="text-6xl text-base-content/20 mb-4">
+            <UserCircleIcon className="w-24 h-24 mx-auto" />
+          </div>
           <h3 className="text-lg font-semibold text-base-content mb-2">
             No children added yet
           </h3>
@@ -175,16 +183,17 @@ export default function ChildrenSection() {
                       {child.schoolName}
                     </p>
                   )}
-                  {child.allergies && (
+                  {child.gender && (
                     <p>
-                      <span className="font-medium">Allergies:</span>{" "}
-                      {child.allergies}
+                      <span className="font-medium">Gender:</span>{" "}
+                      {child.gender.charAt(0).toUpperCase() +
+                        child.gender.slice(1)}
                     </p>
                   )}
-                  {child.specialNeeds && (
+                  {child.subjects && child.subjects.length > 0 && (
                     <p>
-                      <span className="font-medium">Special Needs:</span>{" "}
-                      {child.specialNeeds}
+                      <span className="font-medium">Subjects:</span>{" "}
+                      {child.subjects.join(", ")}
                     </p>
                   )}
                 </div>
@@ -237,9 +246,7 @@ function ChildModal({ child, onSave, onClose }: ChildModalProps) {
     gender: child?.gender || "male",
     class: child?.class || "",
     schoolName: child?.schoolName || "",
-    allergies: child?.allergies || "",
-    specialNeeds: child?.specialNeeds || "",
-    medicalInfo: child?.medicalInfo || "",
+    subjects: child?.subjects || [],
     _id: child?._id,
   });
 
@@ -318,6 +325,26 @@ function ChildModal({ child, onSave, onClose }: ChildModalProps) {
 
             <div className="form-control">
               <label className="label">
+                <span className="label-text">Gender *</span>
+              </label>
+              <select
+                value={formData.gender}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    gender: e.target.value as "male" | "female",
+                  }))
+                }
+                className="select select-bordered"
+                required
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
                 <span className="label-text">School Name</span>
               </label>
               <input
@@ -337,52 +364,22 @@ function ChildModal({ child, onSave, onClose }: ChildModalProps) {
 
           <div className="form-control mt-4">
             <label className="label">
-              <span className="label-text">Allergies</span>
+              <span className="label-text">Subjects (comma-separated)</span>
             </label>
-            <textarea
-              value={formData.allergies}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, allergies: e.target.value }))
-              }
-              className="textarea textarea-bordered"
-              placeholder="List any known allergies"
-              rows={2}
-            />
-          </div>
-
-          <div className="form-control mt-4">
-            <label className="label">
-              <span className="label-text">Special Needs</span>
-            </label>
-            <textarea
-              value={formData.specialNeeds}
+            <input
+              type="text"
+              value={formData.subjects?.join(", ") || ""}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  specialNeeds: e.target.value,
+                  subjects: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
                 }))
               }
-              className="textarea textarea-bordered"
-              placeholder="Any special needs or accommodations"
-              rows={2}
-            />
-          </div>
-
-          <div className="form-control mt-4">
-            <label className="label">
-              <span className="label-text">Medical Information</span>
-            </label>
-            <textarea
-              value={formData.medicalInfo}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  medicalInfo: e.target.value,
-                }))
-              }
-              className="textarea textarea-bordered"
-              placeholder="Any important medical information"
-              rows={2}
+              className="input input-bordered"
+              placeholder="e.g., Mathematics, English, Science"
             />
           </div>
 

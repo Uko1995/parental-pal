@@ -4,13 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { v4 as uuidv4 } from "uuid";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
-import ChildBookingForm from "./ChildBookingForm";
 import ChildCareSpecificBookingForm, {
   ChildCareSpecificBookingFormRef,
 } from "./ChildCareSpecificBookingForm";
 import TutoringForm, { TutoringFormRef } from "./TutoringForm";
 import HolidayCampForm, { HolidayCampFormRef } from "./HolidayCampForm";
+import HomeschoolingForm, { HomeschoolingFormRef } from "./HomeschoolingForm";
+import KiddiesEnrichmentForm, {
+  KiddiesEnrichmentFormRef,
+} from "./KiddiesEnrichmentForm";
 import {
   saveFormData,
   getFormData,
@@ -35,7 +39,14 @@ const HearAboutUs: AboutUs[] = [
 ];
 
 interface BookingFormProps {
-  submitAction: (formData: FormData) => Promise<void>;
+  submitAction: (formData: FormData) => Promise<{
+    success: boolean;
+    bookingId?: string;
+    userId?: string;
+    amount?: number;
+    currency?: string;
+    email?: string;
+  }>;
 }
 
 export default function BookingForm({ submitAction }: BookingFormProps) {
@@ -81,6 +92,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const childCareFormRef = useRef<ChildCareSpecificBookingFormRef>(null);
   const tutoringFormRef = useRef<TutoringFormRef>(null);
   const holidayCampFormRef = useRef<HolidayCampFormRef>(null);
+  const homeschoolingFormRef = useRef<HomeschoolingFormRef>(null);
+  const kiddiesEnrichmentFormRef = useRef<KiddiesEnrichmentFormRef>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   // Save form data to localStorage whenever form state changes
@@ -117,19 +130,19 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     if (selectedService === "tutoring") {
       const validation = tutoringFormRef.current?.validate();
       if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]); // Show first error
+        toast.error(validation.errors[0]);
         return;
       }
     } else if (selectedService === "childcare") {
       const validation = childCareFormRef.current?.validate();
       if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]); // Show first error
+        toast.error(validation.errors[0]);
         return;
       }
     } else if (selectedService === "space-rental") {
       const validation = eventFormRef.current?.validate();
       if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]); // Show first error
+        toast.error(validation.errors[0]);
         return;
       }
     } else if (selectedService === "holiday-camps") {
@@ -138,23 +151,70 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         toast.error(validation.errors[0]);
         return;
       }
+    } else if (selectedService === "homeschooling") {
+      const validation = homeschoolingFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]);
+        return;
+      }
+    } else if (selectedService === "kiddies-enrichment") {
+      const validation = kiddiesEnrichmentFormRef.current?.validate();
+      if (validation && !validation.isValid) {
+        toast.error(validation.errors[0]);
+        return;
+      }
     }
 
-    const submitPromise = async () => {
-      // Save form data before submission in case of auth redirect
-      const persistenceData = extractFormDataForPersistence(formData, {
-        selectedService,
-        selectedHearAboutUs,
-        otherHearAboutUsText,
-        priority,
-        followUpRequired,
-        isRepeatedCustomer,
+    // Save form data before submission in case of auth redirect
+    const persistenceData = extractFormDataForPersistence(formData, {
+      selectedService,
+      selectedHearAboutUs,
+      otherHearAboutUsText,
+      priority,
+      followUpRequired,
+      isRepeatedCustomer,
+    });
+    saveFormData(persistenceData);
+
+    // Show loading state immediately
+    toast.loading("Processing your booking...", { id: "booking-submit" });
+
+    try {
+      // 1. Submit booking and get booking data
+      const bookingResult = await submitAction(formData);
+
+      // Check if this is an auth redirect (the action will throw/redirect before returning)
+      // If we got here, user is authenticated
+      if (!bookingResult.success) {
+        toast.dismiss("booking-submit");
+        toast.error("Booking creation failed");
+        return;
+      }
+
+      // 2. Initialize payment with Paystack
+      const idempotencyKey = uuidv4();
+      const paymentRes = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: bookingResult.bookingId,
+          userId: bookingResult.userId,
+          amount: bookingResult.amount,
+          currency: bookingResult.currency || "NGN",
+          email: bookingResult.email,
+          idempotencyKey,
+        }),
       });
-      saveFormData(persistenceData);
 
-      await submitAction(formData);
+      const paymentData = await paymentRes.json();
 
-      // Clear persisted data after successful submission
+      if (!paymentData.success || !paymentData.data?.authorization_url) {
+        toast.dismiss("booking-submit");
+        toast.error(paymentData.error || "Payment initialization failed");
+        return;
+      }
+
+      // Clear persisted data after successful booking
       clearFormData();
 
       // Reset forms after successful submission
@@ -166,6 +226,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         holidayCampFormRef.current?.resetForm();
       } else if (selectedService === "tutoring") {
         tutoringFormRef.current?.resetForm();
+      } else if (selectedService === "homeschooling") {
+        homeschoolingFormRef.current?.resetForm();
+      } else if (selectedService === "kiddies-enrichment") {
+        kiddiesEnrichmentFormRef.current?.resetForm();
       }
 
       // Reset main form states
@@ -175,16 +239,35 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setFollowUpRequired(false);
       setIsRepeatedCustomer(false);
 
-      // Scroll to top after successful submission
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
+      toast.dismiss("booking-submit");
+      toast.success("Redirecting to payment...");
 
-    // Use toast.promise for loading, success, and error states
-    toast.promise(submitPromise(), {
-      loading: "Submitting your booking request...",
-      success: "Booking submitted successfully! We'll get back to you soon.",
-      error: "Failed to submit booking. Please try again.",
-    });
+      // Redirect to Paystack checkout
+      window.location.href = paymentData.data.authorization_url;
+    } catch (error: unknown) {
+      toast.dismiss("booking-submit");
+
+      // Check if this is a redirect error (NEXT_REDIRECT)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorDigest =
+        typeof error === "object" && error !== null && "digest" in error
+          ? String((error as { digest: unknown }).digest)
+          : "";
+
+      if (
+        errorMessage.includes("NEXT_REDIRECT") ||
+        errorDigest.includes("NEXT_REDIRECT")
+      ) {
+        // This is a redirect to sign in - show appropriate message
+        toast.success("Please sign in to complete your booking");
+        // The redirect will happen automatically, form data is already saved
+        return;
+      }
+
+      console.error("Booking/Payment error:", error);
+      toast.error("Failed to process booking. Please try again.");
+    }
   };
 
   // Handle form data restoration and focus management after auth redirect
@@ -209,6 +292,42 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         }
         setFollowUpRequired(persistedData.followUpRequired || false);
         setIsRepeatedCustomer(persistedData.isRepeatedCustomer || false);
+
+        // Restore service-specific form fields
+        setTimeout(() => {
+          // Use the restoreFormDataToElements utility to restore all form fields
+          if (persistedData.serviceFormData) {
+            Object.entries(persistedData.serviceFormData).forEach(
+              ([key, value]) => {
+                const elements = document.getElementsByName(key) as NodeListOf<
+                  HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+                >;
+
+                elements.forEach((element) => {
+                  if (element.type === "checkbox" || element.type === "radio") {
+                    const inputElement = element as HTMLInputElement;
+                    if (Array.isArray(value)) {
+                      inputElement.checked = value.includes(inputElement.value);
+                    } else {
+                      inputElement.checked =
+                        inputElement.value === String(value);
+                    }
+                  } else if (element.tagName === "SELECT") {
+                    const selectElement = element as HTMLSelectElement;
+                    selectElement.value = String(value);
+                  } else {
+                    element.value = String(value);
+                  }
+                });
+              }
+            );
+          }
+        }, 100); // Small delay to ensure DOM is ready
+
+        // Show success toast to inform user their data was preserved
+        toast.success(
+          "Your form data has been restored. Please review and submit."
+        );
 
         // First scroll to top, then scroll to submit button after delay
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -257,11 +376,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       return <ChildCareSpecificBookingForm ref={childCareFormRef} />;
     } else if (selectedService === "holiday-camps") {
       return <HolidayCampForm ref={holidayCampFormRef} />;
-    } else if (
-      selectedService === "kiddies-enrichment" ||
-      selectedService === "homeschooling"
-    ) {
-      return <ChildBookingForm />;
+    } else if (selectedService === "homeschooling") {
+      return <HomeschoolingForm ref={homeschoolingFormRef} />;
+    } else if (selectedService === "kiddies-enrichment") {
+      return <KiddiesEnrichmentForm ref={kiddiesEnrichmentFormRef} />;
     } else if (selectedService === "tutoring") {
       return <TutoringForm ref={tutoringFormRef} />;
     } else {

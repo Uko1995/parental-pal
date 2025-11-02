@@ -53,11 +53,11 @@ function PaymentSchedule({
   };
 
   // Extra services pricing
-  const servicesPricing = {
+  const servicesPricing: Record<string, number> = {
     dj: 150000,
     mc: 60000,
-    eventPlanning: 150000,
-    carers: 10000,
+    "event-planning": 150000,
+    "extra-carers": 8000,
   };
 
   const calculateExtraServicesCost = () => {
@@ -65,14 +65,14 @@ function PaymentSchedule({
 
     return selectedServices.reduce((total, service) => {
       if (typeof service === "string") {
-        return (
-          total +
-          (servicesPricing[service as keyof typeof servicesPricing] || 0)
-        );
-      } else if (service.service === "carers") {
-        return total + servicesPricing.carers * service.quantity;
+        return total + (servicesPricing[service] || 0);
+      } else {
+        // Handle object format with service and quantity
+        const serviceName = service.service;
+        const serviceRate = servicesPricing[serviceName] || 0;
+        const quantity = service.quantity || 1;
+        return total + serviceRate * quantity;
       }
-      return total;
     }, 0);
   };
 
@@ -165,16 +165,16 @@ function PaymentSchedule({
             {selectedServices &&
               selectedServices.map((service, index) => {
                 if (typeof service === "string") {
-                  const cost =
-                    servicesPricing[service as keyof typeof servicesPricing] ||
-                    0;
+                  const cost = servicesPricing[service] || 0;
                   const serviceName =
                     service === "dj"
                       ? "DJ"
                       : service === "mc"
                       ? "MC (Master of Ceremonies)"
-                      : service === "eventPlanning"
+                      : service === "event-planning"
                       ? "Event Planning"
+                      : service === "extra-carers"
+                      ? "Extra Carers"
                       : service;
                   return (
                     <div
@@ -185,19 +185,30 @@ function PaymentSchedule({
                       <span>₦{cost.toLocaleString()}</span>
                     </div>
                   );
-                } else if (service.service === "carers") {
-                  const cost = servicesPricing.carers * service.quantity;
+                } else {
+                  // Handle object format
+                  const serviceName =
+                    service.service === "dj"
+                      ? "DJ"
+                      : service.service === "mc"
+                      ? "MC (Master of Ceremonies)"
+                      : service.service === "event-planning"
+                      ? "Event Planning"
+                      : service.service === "extra-carers"
+                      ? `Extra Carers (x${service.quantity || 1})`
+                      : service.service;
+                  const serviceRate = servicesPricing[service.service] || 0;
+                  const cost = serviceRate * (service.quantity || 1);
                   return (
                     <div
                       key={index}
                       className="flex justify-between text-sm text-gray-700 mb-1"
                     >
-                      <span>Carers (x{service.quantity})</span>
+                      <span>{serviceName}</span>
                       <span>₦{cost.toLocaleString()}</span>
                     </div>
                   );
                 }
-                return null;
               })}
 
             {/* Refundable Caution Fee */}

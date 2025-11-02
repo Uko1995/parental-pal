@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  BanknotesIcon,
+  BuildingOffice2Icon,
+  CalendarIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
@@ -41,6 +47,9 @@ export default function PaymentsSection() {
   });
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [paymentInProgress, setPaymentInProgress] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchPayments();
@@ -82,6 +91,40 @@ export default function PaymentsSection() {
       toast.error("Failed to load payments");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initiatePayment = async (bookingId: string, amount: number) => {
+    setPaymentInProgress(bookingId);
+    try {
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookingId,
+          amount,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authorizationUrl) {
+          // Redirect to Paystack payment page
+          window.location.href = data.authorizationUrl;
+        } else {
+          toast.error("Payment initialization failed");
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to initialize payment");
+      }
+    } catch (error) {
+      console.error("Failed to initialize payment:", error);
+      toast.error("Failed to initialize payment");
+    } finally {
+      setPaymentInProgress(null);
     }
   };
 
@@ -127,7 +170,7 @@ export default function PaymentsSection() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="select select-bordered select-sm"
+            className="select select-bordered select-sm px-3"
           >
             <option value="all">All Payments</option>
             <option value="paid">Paid</option>
@@ -259,11 +302,29 @@ export default function PaymentsSection() {
                   </td>
                   <td>
                     <div className="flex gap-1">
-                      <button className="btn btn-ghost btn-xs">View</button>
-                      {payment.status === "paid" && (
-                        <button className="btn btn-ghost btn-xs">
-                          Receipt
+                      {payment.status === "pending" ? (
+                        <button
+                          onClick={() =>
+                            initiatePayment(payment.bookingId, payment.amount)
+                          }
+                          disabled={paymentInProgress === payment.bookingId}
+                          className="btn btn-primary btn-xs"
+                        >
+                          {paymentInProgress === payment.bookingId ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                          ) : (
+                            "Pay Now"
+                          )}
                         </button>
+                      ) : (
+                        <>
+                          <button className="btn btn-ghost btn-xs">View</button>
+                          {payment.status === "paid" && (
+                            <button className="btn btn-ghost btn-xs">
+                              Receipt
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
@@ -279,8 +340,8 @@ export default function PaymentsSection() {
         <h3 className="font-semibold text-lg mb-3">Payment Methods</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary text-primary-content rounded flex items-center justify-center">
-              💳
+            <div className="w-8 h-8 bg-primary/10 text-primary rounded flex items-center justify-center">
+              <CreditCardIcon className="w-4 h-4" />
             </div>
             <div>
               <p className="font-medium">Card Payment</p>
@@ -289,8 +350,8 @@ export default function PaymentsSection() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-secondary text-secondary-content rounded flex items-center justify-center">
-              🏦
+            <div className="w-8 h-8 bg-secondary/10 text-secondary rounded flex items-center justify-center">
+              <BuildingOffice2Icon className="w-4 h-4" />
             </div>
             <div>
               <p className="font-medium">Bank Transfer</p>
@@ -299,8 +360,8 @@ export default function PaymentsSection() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent text-accent-content rounded flex items-center justify-center">
-              💵
+            <div className="w-8 h-8 bg-accent/10 text-accent-content rounded flex items-center justify-center">
+              <BanknotesIcon className="w-4 h-4" />
             </div>
             <div>
               <p className="font-medium">Cash Payment</p>
@@ -309,8 +370,8 @@ export default function PaymentsSection() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-info text-info-content rounded flex items-center justify-center">
-              📅
+            <div className="w-8 h-8 bg-info/10 text-info-content rounded flex items-center justify-center">
+              <CalendarIcon className="w-4 h-4" />
             </div>
             <div>
               <p className="font-medium">Installments</p>
@@ -331,7 +392,7 @@ export default function PaymentsSection() {
         </p>
         <div className="flex gap-2">
           <button className="btn btn-sm btn-primary">Contact Support</button>
-          <button className="btn btn-sm btn-ghost">Payment FAQ</button>
+          <button className="btn btn-sm btn-ghost">FAQ</button>
         </div>
       </div>
     </div>

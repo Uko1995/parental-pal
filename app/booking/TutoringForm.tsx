@@ -1,7 +1,5 @@
 import OptionalChild from "./OptionalChild";
-import PaymentSchedule from "./PaymentSchedule";
-import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
-import { useState, useImperativeHandle, forwardRef, useRef } from "react";
+import { useState, useImperativeHandle, forwardRef, useEffect } from "react";
 
 export interface TutoringFormRef {
   resetForm: () => void;
@@ -9,11 +7,26 @@ export interface TutoringFormRef {
 }
 
 const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
-  const [totalHours, setTotalHours] = useState(0);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [academicLevel, setAcademicLevel] = useState("");
   const [learningGoals, setLearningGoals] = useState("");
-  const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+  const [hourlyRate, setHourlyRate] = useState(15000); // Default fallback
+
+  // Fetch pricing from database
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await fetch("/api/services/pricing");
+        const data = await response.json();
+        if (data.success && data.data.tutoring) {
+          setHourlyRate(data.data.tutoring.baseRate);
+        }
+      } catch (error) {
+        console.error("Error fetching tutoring pricing:", error);
+      }
+    };
+    fetchPricing();
+  }, []);
 
   const subjects = [
     "Mathematics",
@@ -30,10 +43,6 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
 
   const academicLevels = ["Primary 1-3", "Primary 4-6"];
 
-  const handleHoursChange = (totalHours: number) => {
-    setTotalHours(totalHours);
-  };
-
   const handleSubjectChange = (subject: string) => {
     setSelectedSubjects((prev) => {
       if (prev.includes(subject)) {
@@ -45,11 +54,9 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
   };
 
   const resetForm = () => {
-    setTotalHours(0);
     setSelectedSubjects([]);
     setAcademicLevel("");
     setLearningGoals("");
-    weekdaysScheduleRef.current?.resetSchedule();
   };
 
   const validate = (): { isValid: boolean; errors: string[] } => {
@@ -61,10 +68,6 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
 
     if (!academicLevel) {
       errors.push("Please select an academic level");
-    }
-
-    if (totalHours === 0) {
-      errors.push("Please select at least one day and specify hours");
     }
 
     return {
@@ -243,24 +246,90 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         </div>
       </div>
 
-      {/* Schedule Selection */}
+      {/* Session Information */}
       <div className="card bg-base-100 shadow-lg">
         <div className="card-body">
           <h3 className="card-title text-xl flex items-center mb-6">
-            Schedule & Availability
+            <svg
+              className="w-6 h-6 mr-2 text-[#90AC19]"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Session Details
           </h3>
-          <WeekdaysSchedule
-            ref={weekdaysScheduleRef}
-            onHoursChange={handleHoursChange}
-          />
+
+          <div className="alert alert-info shadow-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <div>
+              <p className="font-semibold">Standard Session Duration: 1 Hour</p>
+              <p className="text-sm mt-1">
+                Each tutoring session is 1 hour long. Our team will contact you
+                to schedule sessions at convenient times for your child.
+              </p>
+            </div>
+          </div>
+
+          {/* Hidden field for session hours */}
+          <input type="hidden" name="sessionHours" value="1" />
         </div>
       </div>
 
       {/* Payment Summary */}
-      {selectedSubjects.length > 0 && totalHours > 0 && (
+      {selectedSubjects.length > 0 && academicLevel && (
         <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
           <div className="card-body">
-            <PaymentSchedule totalHours={totalHours} serviceCost={15000} />
+            <h3 className="card-title text-lg flex items-center text-primary mb-4">
+              <svg
+                className="w-6 h-6 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Payment Summary
+            </h3>
+            <div className="bg-green-50 p-5 rounded-lg border border-green-200">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-bold text-gray-800">
+                  Academic Tutoring (1 hour per session)
+                </span>
+                <span className="text-lg font-semibold text-[#90AC19]">
+                  ₦{hourlyRate.toLocaleString()}/hour
+                </span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>✓ Professional qualified tutors</p>
+                <p>✓ Personalized learning approach</p>
+                <p>✓ Progress tracking and reporting</p>
+                <p>✓ Subjects: {selectedSubjects.join(", ")}</p>
+                <p>✓ Level: {academicLevel}</p>
+              </div>
+            </div>
+            <input type="hidden" name="hourlyRate" value={hourlyRate} />
+            <input type="hidden" name="totalCost" value={hourlyRate} />
           </div>
         </div>
       )}

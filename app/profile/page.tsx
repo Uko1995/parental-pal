@@ -10,7 +10,20 @@ import ChildrenSection from "./ChildrenSection";
 import BookingsSection from "./BookingsSection";
 import PaymentsSection from "./PaymentsSection";
 import Link from "next/link";
-import { UserIcon } from "@heroicons/react/20/solid";
+import {
+  UserCircleIcon,
+  UserGroupIcon,
+  CalendarDaysIcon,
+  CreditCardIcon,
+  ShieldCheckIcon,
+  ChartBarSquareIcon,
+  PhoneIcon,
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
+import {
+  UserCircleIcon as UserCircleIconSolid,
+  StarIcon,
+} from "@heroicons/react/24/solid";
 
 type TabType = "profile" | "children" | "bookings" | "payments";
 
@@ -31,10 +44,15 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30 flex items-center justify-center">
         <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-          <p className="mt-4 text-base-content/70">Loading your profile...</p>
+          <div className="relative">
+            <div className="absolute inset-0 blur-xl bg-[#90AC19]/20 rounded-full"></div>
+            <span className="loading loading-spinner loading-lg text-[#90AC19] relative z-10"></span>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium">
+            Loading your profile...
+          </p>
         </div>
       </div>
     );
@@ -45,147 +63,155 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-200">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <div className="w-16 h-16 rounded-full shrink-0">
-              {session.user?.image ? (
-                <Image
-                  src={session.user.image}
-                  alt={session.user?.name || "User"}
-                  width={64}
-                  height={64}
-                  className="rounded-full object-cover"
-                />
-              ) : (
-                <UserIcon className="w-16 h-16 border-2 border-gray-800 p-2 rounded-full" />
-              )}
+    <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30">
+      {/* Modern Header with Gradient */}
+      <div className="relative bg-linear-to-r from-[#90AC19] via-[#90AC19] to-[#A25F97] shadow-xl overflow-hidden">
+        {/* Decorative Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3"></div>
+        </div>
+
+        <div className="container mx-auto px-4 py-8 md:py-12 relative z-10">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            {/* Profile Image with Glow Effect */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-linear-to-r from-[#E8931A] to-white rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+              <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-full bg-white p-1 shadow-lg">
+                {session.user?.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user?.name || "User"}
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover w-full h-full"
+                  />
+                ) : (
+                  <UserCircleIconSolid className="w-full h-full text-[#A25F97]" />
+                )}
+              </div>
+              {/* Online Status Indicator */}
+              <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
             </div>
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-base-content">
-                Welcome, {session.user?.name || "User"}
-              </h1>
-              <p className="text-sm sm:text-base text-base-content/70 break-all sm:break-normal">
+
+            {/* User Info */}
+            <div className="flex-1 text-white">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
+                  {session.user?.name || "User"}
+                </h1>
+              </div>
+              <p className="text-white/90 text-sm md:text-base mb-3 break-all md:break-normal">
                 {session.user?.email}
               </p>
               <MembershipStatus />
             </div>
-            <div className="self-start sm:self-auto">
+
+            {/* Admin Dashboard Link */}
+            <div className="self-start md:self-auto">
               <AdminDashboardLink />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="tabs tabs-lifted overflow-x-auto">
+      {/* Modern Tab Navigation */}
+      <div className="bg-white shadow-md sticky top-0 z-40 border-b-2 border-gray-100">
+        <div className="container mx-auto px-2 md:px-4">
+          <div className="flex overflow-x-auto hide-scrollbar">
             <button
-              className={`tab whitespace-nowrap mx-1 p-1 ${
-                activeTab === "profile" ? "tab-active" : ""
+              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                activeTab === "profile"
+                  ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
+                  : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
               }`}
               onClick={() => setActiveTab("profile")}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span className="hidden sm:inline">Profile Details</span>
-              <span className="sm:hidden">Profile</span>
+              <UserCircleIcon className="h-5 w-5 md:h-6 md:w-6" />
+              <span className="text-sm md:text-base font-semibold">
+                <span className="hidden sm:inline">Profile Details</span>
+                <span className="sm:hidden">Profile</span>
+              </span>
             </button>
             <button
-              className={`tab whitespace-nowrap mx-1 p-1 ${
-                activeTab === "children" ? "tab-active" : ""
+              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                activeTab === "children"
+                  ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
+                  : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
               }`}
               onClick={() => setActiveTab("children")}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <span className="hidden sm:inline">My Children</span>
-              <span className="sm:hidden">Children</span>
+              <UserGroupIcon className="h-5 w-5 md:h-6 md:w-6" />
+              <span className="text-sm md:text-base font-semibold">
+                <span className="hidden sm:inline">My Children</span>
+                <span className="sm:hidden">Children</span>
+              </span>
             </button>
             <button
-              className={`tab whitespace-nowrap mx-1 p-1 ${
-                activeTab === "bookings" ? "tab-active" : ""
+              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                activeTab === "bookings"
+                  ? "border-[#A25F97] text-[#A25F97] bg-[#A25F97]/5"
+                  : "border-transparent text-gray-600 hover:text-[#A25F97] hover:bg-gray-50"
               }`}
               onClick={() => setActiveTab("bookings")}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h8m-6 0l-2 13a2 2 0 002 2h8a2 2 0 002-2L18 7M9 7h6m-3 6v4m0 0v-4m-3 2h6"
-                />
-              </svg>
-              <span className="hidden sm:inline">My Bookings</span>
-              <span className="sm:hidden">Bookings</span>
+              <CalendarDaysIcon className="h-5 w-5 md:h-6 md:w-6" />
+              <span className="text-sm md:text-base font-semibold">
+                <span className="hidden sm:inline">My Bookings</span>
+                <span className="sm:hidden">Bookings</span>
+              </span>
             </button>
             <button
-              className={`tab whitespace-nowrap mx-1 p-1 ${
-                activeTab === "payments" ? "tab-active" : ""
+              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                activeTab === "payments"
+                  ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
+                  : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
               }`}
               onClick={() => setActiveTab("payments")}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                />
-              </svg>
-              <span className="hidden sm:inline">Payments</span>
-              <span className="sm:hidden">Pay</span>
+              <CreditCardIcon className="h-5 w-5 md:h-6 md:w-6" />
+              <span className="text-sm md:text-base font-semibold">
+                <span className="hidden sm:inline">Payments</span>
+                <span className="sm:hidden">Pay</span>
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        {activeTab === "profile" && <ProfileDetails user={session.user} />}
-        {activeTab === "children" && <ChildrenSection />}
-        {activeTab === "bookings" && <BookingsSection />}
-        {activeTab === "payments" && <PaymentsSection />}
+      {/* Content Area with Animation */}
+      <div className="container mx-auto px-4 py-6 md:py-10">
+        <div className="animate-fadeIn">
+          {activeTab === "profile" && <ProfileDetails user={session.user} />}
+          {activeTab === "children" && <ChildrenSection />}
+          {activeTab === "bookings" && <BookingsSection />}
+          {activeTab === "payments" && <PaymentsSection />}
+        </div>
       </div>
+
+      {/* Add Custom CSS for hide-scrollbar and fadeIn animation */}
+      <style jsx>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
@@ -234,51 +260,72 @@ function MembershipStatus() {
   const getMembershipBadgeColor = (type: string) => {
     switch (type) {
       case "premium":
-        return "badge-warning text-warning-content";
+        return "bg-gradient-to-r from-[#E8931A] to-[#E8931A]/80 text-white shadow-lg shadow-[#E8931A]/30";
       case "basic":
-        return "badge-info text-info-content";
+        return "bg-gradient-to-r from-[#90AC19] to-[#90AC19]/80 text-white shadow-lg shadow-[#90AC19]/30";
       default:
-        return "badge-ghost";
+        return "bg-gray-100 text-gray-700";
     }
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "admin":
-        return "badge-error text-error-content";
+        return "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30";
       case "tutor":
-        return "badge-success text-success-content";
+        return "bg-gradient-to-r from-[#A25F97] to-[#A25F97]/80 text-white shadow-lg shadow-[#A25F97]/30";
       default:
-        return "badge-primary text-primary-content";
+        return "bg-gradient-to-r from-[#90AC19] to-[#90AC19]/80 text-white shadow-lg shadow-[#90AC19]/30";
     }
   };
 
   if (loading) {
     return (
-      <div className="flex gap-2 mt-2">
-        <div className="skeleton h-6 w-20"></div>
-        <div className="skeleton h-6 w-16"></div>
+      <div className="flex flex-wrap gap-2 mt-2">
+        <div className="skeleton h-7 w-28 rounded-full"></div>
+        <div className="skeleton h-7 w-20 rounded-full"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex gap-2 mt-2">
+    <div className="flex flex-wrap items-center gap-2 md:gap-3">
       <div
-        className={`badge ${getMembershipBadgeColor(
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold text-sm ${getMembershipBadgeColor(
           membershipInfo.membershipType
         )}`}
       >
+        {membershipInfo.membershipType === "premium" ? (
+          <StarIcon className="w-4 h-4" />
+        ) : (
+          <ShieldCheckIcon className="w-4 h-4" />
+        )}
         {membershipInfo.membershipType.charAt(0).toUpperCase() +
           membershipInfo.membershipType.slice(1)}{" "}
         Member
       </div>
-      <div className={`badge ${getRoleBadgeColor(membershipInfo.role)}`}>
+      <div
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold text-sm ${getRoleBadgeColor(
+          membershipInfo.role
+        )}`}
+      >
         {membershipInfo.role.charAt(0).toUpperCase() +
           membershipInfo.role.slice(1)}
       </div>
-      {membershipInfo.address && <div>{membershipInfo.address}</div>}
-      {membershipInfo.phone && <div>{membershipInfo.phone}</div>}
+      {membershipInfo.phone && (
+        <div className="flex items-center gap-1.5 text-white/90 text-sm">
+          <PhoneIcon className="w-4 h-4" />
+          <span className="hidden md:inline">{membershipInfo.phone}</span>
+        </div>
+      )}
+      {membershipInfo.address && (
+        <div className="flex items-center gap-1.5 text-white/90 text-sm">
+          <MapPinIcon className="w-4 h-4" />
+          <span className="hidden lg:inline truncate max-w-xs">
+            {membershipInfo.address}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -311,25 +358,15 @@ function AdminDashboardLink() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <Link href="/dashboard" className="btn btn-primary btn-sm">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
+    <Link
+      href="/dashboard"
+      className="group relative inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#90AC19] rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-white hover:border-[#E8931A]"
+    >
+      <div className="absolute inset-0 bg-linear-to-r from-[#E8931A]/10 to-[#A25F97]/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <ChartBarSquareIcon className="h-5 w-5 relative z-10" />
+      <span className="relative z-10 text-sm md:text-base">
         Admin Dashboard
-      </Link>
-      <div className="badge badge-sm badge-outline">Administrator Access</div>
-    </div>
+      </span>
+    </Link>
   );
 }

@@ -1,4 +1,10 @@
-import { useState, useImperativeHandle, forwardRef, useRef } from "react";
+import {
+  useState,
+  useImperativeHandle,
+  forwardRef,
+  useRef,
+  useEffect,
+} from "react";
 import OptionalChild from "./OptionalChild";
 import PaymentSchedule from "./PaymentSchedule";
 import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
@@ -16,7 +22,31 @@ const ChildCareSpecificBookingForm =
     const [dropoffTime, setDropoffTime] = useState("");
     const [pickupTime, setPickupTime] = useState("");
     const [specialNeeds, setSpecialNeeds] = useState("");
+    const [dailyRate, setDailyRate] = useState(5000); // Default to ₦5,000/day
+    const [monthlyRate, setMonthlyRate] = useState(127500); // Default to ₦127,500/month (15% discount)
     const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+
+    // Fetch pricing from database
+    useEffect(() => {
+      const fetchPricing = async () => {
+        try {
+          const response = await fetch("/api/services/pricing");
+          if (response.ok) {
+            const { data } = await response.json();
+            if (data["childcare"]?.baseRate) {
+              const baseRate = data["childcare"].baseRate;
+              setDailyRate(baseRate);
+              // Calculate monthly rate with 15% discount (assuming 26 days)
+              setMonthlyRate(Math.floor(baseRate * 26 * 0.85));
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching pricing:", error);
+          // Keep default rates if fetch fails
+        }
+      };
+      fetchPricing();
+    }, []);
 
     const resetForm = () => {
       setTotalDays(0);
@@ -57,10 +87,6 @@ const ChildCareSpecificBookingForm =
       resetForm,
       validate,
     }));
-
-    const monthlyChildcareDiscount = 0.15;
-    const monthlyChildcareRate =
-      5 * 4 * 5000 - 5 * 4 * 5000 * monthlyChildcareDiscount;
 
     const handleOnDaysChange = (totalDays: number) => {
       setTotalDays(totalDays);
@@ -199,7 +225,7 @@ const ChildCareSpecificBookingForm =
                   <div>
                     <div className="font-medium">Monthly Plan</div>
                     <div className="text-sm text-base-content/70">
-                      ₦{monthlyChildcareRate.toLocaleString()} per month
+                      ₦{monthlyRate.toLocaleString()} per month
                     </div>
                   </div>
                 </label>
@@ -283,12 +309,14 @@ const ChildCareSpecificBookingForm =
           <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
             <div className="card-body">
               <PaymentSchedule
-                serviceCost={5000}
+                serviceCost={dailyRate}
                 childcare={true}
                 totalDays={totalDays}
-                monthlyChildcareRate={monthlyChildcareRate}
+                monthlyChildcareRate={monthlyRate}
                 isMonthSelected={isMonthSelected}
               />
+              <input type="hidden" name="dailyRate" value={dailyRate} />
+              <input type="hidden" name="monthlyRate" value={monthlyRate} />
             </div>
           </div>
         )}

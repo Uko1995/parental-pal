@@ -137,7 +137,6 @@ function ChildBookingForm() {
             </select>
           </div>
         </div>
-        <OptionalChild />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
@@ -165,6 +164,7 @@ function ChildBookingForm() {
               required
             />
           </div>
+          <OptionalChild />
         </div>
       </div>
     </div>

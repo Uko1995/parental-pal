@@ -39,9 +39,9 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
   ];
 
   const baseRates = {
-    indoor: 250000,
-    outdoor: 250000,
-    both: 470000,
+    indoor: 350000,
+    outdoor: 350000,
+    both: 650000,
   };
 
   const serviceRates = {
