@@ -3,16 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 
 export default function Testimonials() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const testimonials = [
     {
       id: 1,
-      name: "Sarah Johnson",
+      name: "Sarah Bamidele",
       role: "Mother of 2",
       rating: 5,
-      image: "/teacher1.jpg",
+      image: "/teacher1.webp",
       text: "PARENTALPAL connected us with an amazing tutor for our daughter's math struggles. Within just two months, her confidence and grades improved dramatically. The screening process gave us complete peace of mind.",
       service: "Academic Tutoring",
     },
@@ -21,7 +22,7 @@ export default function Testimonials() {
       name: "Michael Chen",
       role: "Single Father",
       rating: 5,
-      image: "/teacher2.jpg",
+      image: "/teacher2.webp",
       text: "As a working single dad, finding reliable childcare was my biggest challenge. The caregivers from PARENTALPAL are not just babysitters - they're educators who genuinely care about my son's development.",
       service: "Childcare Services",
     },
@@ -30,7 +31,7 @@ export default function Testimonials() {
       name: "Emily Rodriguez",
       role: "Homeschooling Mom",
       rating: 4,
-      image: "/teacher3.jpg",
+      image: "/teacher3.webp",
       text: "The homeschooling program resources and support network have been invaluable. My children are thriving academically and socially. The curriculum guidance saved me countless hours of research.",
       service: "Home Schooling Program",
     },
@@ -39,7 +40,7 @@ export default function Testimonials() {
       name: "David Thompson",
       role: "Father of 3",
       rating: 5,
-      image: "/man1.jpg",
+      image: "/man1.webp",
       text: "We hosted our daughter's 8th birthday party using their event planning service. Every detail was perfect, and the kids had an absolute blast. Stress-free party planning at its finest!",
       service: "Event Planning",
     },
@@ -48,7 +49,7 @@ export default function Testimonials() {
       name: "Lisa Park",
       role: "Working Mother",
       rating: 5,
-      image: "/man2.jpg",
+      image: "/man2.webp",
       text: "The holiday camp program was exactly what we needed during summer break. Educational activities, outdoor fun, and new friendships - my twins came home excited every single day.",
       service: "Holiday Camps",
     },
@@ -107,9 +108,11 @@ export default function Testimonials() {
         {/* Testimonials Carousel */}
         <div className="relative max-w-3xl mx-auto">
           {/* Navigation Arrows */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 hover:shadow-2xl transition-all duration-300 border border-gray-100"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 transition-colors duration-300 border border-gray-100"
             aria-label="Previous testimonial"
           >
             <svg
@@ -125,11 +128,13 @@ export default function Testimonials() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 hover:shadow-2xl transition-all duration-300 border border-gray-100"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-white shadow-xl rounded-full p-4 hover:bg-gray-50 transition-colors duration-300 border border-gray-100"
             aria-label="Next testimonial"
           >
             <svg
@@ -145,7 +150,7 @@ export default function Testimonials() {
                 d="M9 5l7 7-7 7"
               />
             </svg>
-          </button>
+          </motion.button>
 
           {/* Carousel Container */}
           <div className="overflow-hidden rounded-3xl shadow-2xl">
@@ -265,7 +270,11 @@ export default function Testimonials() {
               children&apos;s future. Your success story could be next!
             </p>
             <Link href="/services" passHref>
-              <button className="bg-white text-[#90AC19] hover:bg-gray-50 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+              <motion.button
+                whileHover={{ scale: 1.05, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white text-[#90AC19] hover:bg-gray-50 px-10 py-4 rounded-xl font-bold text-lg transition-colors duration-300 shadow-lg"
+              >
                 Get Started Today
                 <svg
                   className="w-5 h-5 ml-2 inline-block"
@@ -280,7 +289,7 @@ export default function Testimonials() {
                     d="M13 7l5 5m0 0l-5 5m5-5H6"
                   />
                 </svg>
-              </button>
+              </motion.button>
             </Link>
           </div>
         </div>

@@ -17,21 +17,12 @@ export async function registerChild(formData: FormData) {
     redirect("/auth/signin?callbackUrl=/booking&action=submit");
   }
 
-  console.log("Form Data Received:", Object.fromEntries(formData.entries()));
-
   // Clean up Next.js internal form data
   const cleanedData = Object.fromEntries(formData.entries());
   Object.keys(cleanedData).forEach((key) => {
     if (key.startsWith("$ACTION_ID")) {
       delete cleanedData[key];
     }
-  });
-
-  console.log("Cleaned Data:", cleanedData);
-  console.log("Session User Data:", {
-    name: session.user.name,
-    email: session.user.email,
-    image: session.user.image,
   });
 
   // Get or create user in database
@@ -70,14 +61,6 @@ export async function registerChild(formData: FormData) {
     session.user
   );
 
-  // Debug logging to identify missing required fields
-  console.log("Booking data validation:");
-  console.log("- parentName:", bookingData.parentName);
-  console.log("- parentEmail:", bookingData.parentEmail);
-  console.log("- serviceType:", bookingData.serviceType);
-  console.log("- selectedService from form:", formEntries.selectedService);
-  console.log("- serviceType from form:", formEntries.serviceType);
-
   // Validate required fields before saving
   if (!bookingData.parentName) {
     throw new Error(
@@ -110,45 +93,38 @@ export async function registerChild(formData: FormData) {
   }
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
-  console.log("✅ Booking saved to database:", savedBooking._id);
 
   // Send booking confirmation email
   try {
-    const emailResponse = await fetch(
-      `${process.env.NEXTAUTH_URL}/api/email` ||
-        "http://localhost:3000/api/email",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const emailResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "booking-confirmation",
+        to: user.userData.user.email,
+        userName: user.userData.user.name || "Parent",
+        apiKey: process.env.EMAIL_API_KEY,
+        data: {
+          _id: savedBooking._id?.toString(),
+          serviceType: savedBooking.serviceType,
+          schedule: savedBooking.schedule,
+          children: savedBooking.children,
+          status: savedBooking.status,
+          pricing: savedBooking.pricing,
         },
-        body: JSON.stringify({
-          type: "booking-confirmation",
-          to: user.userData.user.email,
-          userName: user.userData.user.name || "Parent",
-          data: {
-            _id: savedBooking._id?.toString(),
-            serviceType: savedBooking.serviceType,
-            schedule: savedBooking.schedule,
-            children: savedBooking.children,
-            status: savedBooking.status,
-            pricing: savedBooking.pricing,
-          },
-        }),
-      }
-    );
+      }),
+    });
 
-    if (emailResponse.ok) {
-      console.log("✅ Booking confirmation email sent successfully");
-    } else {
-      console.error(
-        "❌ Failed to send booking confirmation email:",
-        await emailResponse.text()
-      );
+    if (!emailResponse.ok) {
+      // Silently fail email sending, don't block booking
     }
-  } catch (emailError) {
-    console.error("❌ Error sending booking confirmation email:", emailError);
+  } catch {
+    // Silently fail email sending, don't block booking
   }
+
+  revalidatePath("/booking");
 
   // Optional: Also save to Google Sheets for backup
   // console.log("Google Script URL:", process.env.GOOGLE_SCRIPT_URL);
@@ -509,6 +485,8 @@ async function parseFormDataToBooking(
       cleanedData.source ||
       "other") as BookingInterface["source"],
     referralSource: cleanedData.otherHearAboutUsText || undefined,
+    socialMediaPlatform: cleanedData.socialMediaPlatform || undefined,
+    referralName: cleanedData.referralName || undefined,
     followUpRequired: cleanedData.followUpRequired === "true",
     isRepeatedCustomer: cleanedData.isRepeatedCustomer === "true",
   };

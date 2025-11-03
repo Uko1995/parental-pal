@@ -23,6 +23,8 @@ import { BanknotesIcon } from "@heroicons/react/24/outline";
 interface DashboardStats {
   totalRevenue: number;
   revenueChange: number;
+  pendingPayments: number;
+  pendingChange: number;
   activeBookings: number;
   bookingsChange: number;
   totalParents: number;
@@ -70,12 +72,20 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
   const statItems = useMemo(
     () => [
       {
-        name: "Total Revenue",
+        name: "Total Revenue (Paid)",
         value: formatCurrency(stats.totalRevenue),
         change: formatChange(stats.revenueChange),
         changeType: stats.revenueChange >= 0 ? "positive" : "negative",
         icon: BanknotesIcon,
         color: "text-green-600",
+      },
+      {
+        name: "Pending Payments",
+        value: formatCurrency(stats.pendingPayments),
+        change: formatChange(stats.pendingChange),
+        changeType: stats.pendingChange >= 0 ? "positive" : "negative",
+        icon: BanknotesIcon,
+        color: "text-orange-600",
       },
       {
         name: "Active Bookings",
@@ -106,7 +116,7 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
       {statItems.map((stat) => {
         const Icon = stat.icon;
         return (
@@ -118,7 +128,7 @@ const StatsCards = memo(({ stats }: { stats: DashboardStats }) => {
                   <p className="text-2xl font-semibold text-gray-900">
                     {stat.value}
                   </p>
-                  <div className="flex items-center mt-2">
+                  <div className="flex items-center flex-col mt-2">
                     {stat.changeType === "positive" ? (
                       <ArrowTrendingUpIcon className="w-4 h-4 text-green-500 mr-1" />
                     ) : (

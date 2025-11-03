@@ -1,9 +1,10 @@
 import { registerChild } from "./action";
 import BookingForm from "./BookingForm";
+import { Suspense } from "react";
 
 export default function Page() {
   return (
-    <section className="min-h-screen bg-gradient-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50 py-12 px-4">
+    <section className="min-h-screen bg-linear-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -17,7 +18,9 @@ export default function Page() {
         </div>
 
         {/* Registration Form */}
-        <BookingForm submitAction={registerChild} />
+        <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+          <BookingForm submitAction={registerChild} />
+        </Suspense>
 
         {/* Contact Info */}
         <div className="text-center mt-8 p-6 bg-white/50 rounded-xl border border-gray-100">

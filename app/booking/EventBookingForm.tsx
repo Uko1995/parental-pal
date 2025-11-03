@@ -41,7 +41,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
   const baseRates = {
     indoor: 350000,
     outdoor: 350000,
-    both: 650000,
+    both: 644000,
   };
 
   const serviceRates = {
@@ -136,7 +136,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Full Name *
@@ -151,7 +151,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Email Address *
@@ -166,7 +166,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Phone Number *
@@ -181,7 +181,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
               />
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label">
                 <span className="label-text font-medium flex items-center gap-2">
                   Event Date *
@@ -200,55 +200,66 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
         </div>
       </div>
 
+      {/* Child Information Section */}
+      <div className="card bg-base-100 shadow-lg border border-accent/10">
+        <div className="card-body">
+          <h3 className="card-title text-xl flex items-center text-accent mb-6">
+            Child Information
+          </h3>
+          <OptionalChild />
+        </div>
+      </div>
+
       {/* Event Details Section */}
       <div className="card bg-base-100 shadow-lg border border-secondary/10">
-        <div className="card-body">
+        <div className="card-body ">
           <h3 className="card-title text-xl flex items-center text-secondary mb-6">
             Event Details
           </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Event Type */}
+            <div className="form-control flex flex-col mb-6">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Event Type *
+                </span>
+              </label>
+              <select
+                name="eventType"
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                className="select select-bordered select-primary focus:select-primary"
+                required
+              >
+                <option value="">Select event type</option>
+                {eventTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Event Type */}
-          <div className="form-control mb-6">
-            <label className="label">
-              <span className="label-text font-medium flex items-center gap-2">
-                Event Type *
-              </span>
-            </label>
-            <select
-              name="eventType"
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="select select-bordered select-primary focus:select-primary"
-              required
-            >
-              <option value="">Select event type</option>
-              {eventTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Event Time */}
-          <div className="form-control mb-6">
-            <label className="label">
-              <span className="label-text font-medium flex items-center gap-2">
-                Event Time *
-              </span>
-            </label>
-            <input
-              type="time"
-              name="eventTime"
-              value={eventTime}
-              onChange={(e) => setEventTime(e.target.value)}
-              className="input input-bordered input-primary focus:input-primary"
-              required
-            />
+            {/* Event Time */}
+            <div className="form-control flex flex-col mb-6">
+              <label className="label">
+                <span className="label-text font-medium flex items-center gap-2">
+                  Event Time *
+                </span>
+              </label>
+              <input
+                type="time"
+                name="eventTime"
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                className="input input-bordered input-primary focus:input-primary"
+                required
+              />
+            </div>
           </div>
 
           {/* Expected Guests */}
-          <div className="form-control mb-6">
+          <div className="form-control flex flex-col mb-6">
             <label className="label">
               <span className="label-text font-medium flex items-center gap-2">
                 Expected Number of Guests *
@@ -268,7 +279,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
           </div>
 
           {/* Venue Type */}
-          <div className="form-control mb-6">
+          <div className="form-control flex flex-col mb-6">
             <label className="label">
               <span className="label-text font-medium flex items-center gap-2">
                 Venue Type *
@@ -340,7 +351,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* DJ Service */}
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
                 <input
                   type="checkbox"
@@ -361,7 +372,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
             </div>
 
             {/* MC Service */}
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
                 <input
                   type="checkbox"
@@ -382,7 +393,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
             </div>
 
             {/* Event Planning */}
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
                 <input
                   type="checkbox"
@@ -407,7 +418,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
             </div>
 
             {/* Extra Carers */}
-            <div className="form-control">
+            <div className="form-control flex flex-col">
               <label className="label cursor-pointer justify-start gap-4 p-4 rounded-lg border border-base-300 hover:bg-base-200 transition-colors">
                 <input
                   type="checkbox"
@@ -471,16 +482,6 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
             name="extraServices"
             value={JSON.stringify(extraServices)}
           />
-        </div>
-      </div>
-
-      {/* Child Information Section */}
-      <div className="card bg-base-100 shadow-lg border border-accent/10">
-        <div className="card-body">
-          <h3 className="card-title text-xl flex items-center text-accent mb-6">
-            Child Information
-          </h3>
-          <OptionalChild />
         </div>
       </div>
 

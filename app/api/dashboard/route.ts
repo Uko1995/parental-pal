@@ -6,6 +6,8 @@ import { UserInterface } from "@/models/User";
 interface DashboardStats {
   totalRevenue: number;
   revenueChange: number;
+  pendingPayments: number;
+  pendingChange: number;
   activeBookings: number;
   bookingsChange: number;
   totalParents: number;
@@ -86,18 +88,32 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
 
-    // Calculate total revenue
-    const currentRevenue = currentBookings.reduce(
-      (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
-      0
-    );
-    const previousRevenue = previousBookings.reduce(
-      (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
-      0
-    );
+    // Calculate total revenue (only paid bookings)
+    const currentRevenue = currentBookings
+      .filter((booking) => booking.payment?.status === "paid")
+      .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
+    const previousRevenue = previousBookings
+      .filter((booking) => booking.payment?.status === "paid")
+      .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
     const revenueChange =
       previousRevenue > 0
         ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+        : 0;
+
+    // Calculate pending payments
+    const currentPending = currentBookings
+      .filter((booking) => booking.payment?.status === "pending")
+      .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
+    const previousPending = previousBookings
+      .filter((booking) => booking.payment?.status === "pending")
+      .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
+    const pendingChange =
+      previousPending > 0
+        ? ((currentPending - previousPending) / previousPending) * 100
         : 0;
 
     // Calculate active bookings (confirmed and in-progress)
@@ -302,6 +318,8 @@ export async function GET(request: NextRequest) {
     const stats: DashboardStats = {
       totalRevenue: currentRevenue,
       revenueChange: Math.round(revenueChange * 10) / 10,
+      pendingPayments: currentPending,
+      pendingChange: Math.round(pendingChange * 10) / 10,
       activeBookings,
       bookingsChange: Math.round(bookingsChange * 10) / 10,
       totalParents: currentParents,

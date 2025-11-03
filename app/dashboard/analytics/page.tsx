@@ -26,6 +26,7 @@ import {
   getMonthlyRevenueData,
   getServicePerformanceData,
   getUserEngagementMetrics,
+  getSiteMonitoringData,
 } from "./action";
 
 interface AnalyticsData {
@@ -69,6 +70,15 @@ interface UserEngagement {
   newUsersThisMonth: number;
 }
 
+interface SiteMonitoring {
+  totalPageViews: number;
+  uniqueVisitors: number;
+  pageViewsTrend: Array<{ date: string; views: number }>;
+  topPages: Array<{ page: string; views: number }>;
+  deviceBreakdown: Array<{ device: string; count: number }>;
+  signupsTrend: Array<{ date: string; signups: number }>;
+}
+
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
@@ -77,6 +87,9 @@ export default function AnalyticsPage() {
   const [servicePerformance, setServicePerformance] = useState<
     ServicePerformance[]
   >([]);
+  const [siteMonitoring, setSiteMonitoring] = useState<SiteMonitoring | null>(
+    null
+  );
   const [userEngagement, setUserEngagement] = useState<UserEngagement | null>(
     null
   );
@@ -86,17 +99,20 @@ export default function AnalyticsPage() {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        const [analytics, monthly, services, engagement] = await Promise.all([
-          getAnalyticsData(),
-          getMonthlyRevenueData(),
-          getServicePerformanceData(),
-          getUserEngagementMetrics(),
-        ]);
+        const [analytics, monthly, services, engagement, monitoring] =
+          await Promise.all([
+            getAnalyticsData(),
+            getMonthlyRevenueData(),
+            getServicePerformanceData(),
+            getUserEngagementMetrics(),
+            getSiteMonitoringData(),
+          ]);
 
         setAnalyticsData(analytics);
         setMonthlyData(monthly);
         setServicePerformance(services);
         setUserEngagement(engagement);
+        setSiteMonitoring(monitoring);
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
       } finally {
@@ -409,6 +425,192 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
+      {/* Site Monitoring Section */}
+      {siteMonitoring && (
+        <>
+          <div className="divider">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Site Monitoring & Traffic
+            </h2>
+          </div>
+
+          {/* Traffic Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="card bg-linear-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-90">Total Page Views</p>
+                    <p className="text-3xl font-bold">
+                      {siteMonitoring.totalPageViews.toLocaleString()}
+                    </p>
+                    <p className="text-xs opacity-75 mt-1">Last 30 days</p>
+                  </div>
+                  <ChartBarIcon className="w-12 h-12 opacity-80" />
+                </div>
+              </div>
+            </div>
+
+            <div className="card bg-linear-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-90">Unique Visitors</p>
+                    <p className="text-3xl font-bold">
+                      {siteMonitoring.uniqueVisitors.toLocaleString()}
+                    </p>
+                    <p className="text-xs opacity-75 mt-1">Last 30 days</p>
+                  </div>
+                  <UsersIcon className="w-12 h-12 opacity-80" />
+                </div>
+              </div>
+            </div>
+
+            <div className="card bg-linear-to-br from-green-500 to-green-600 text-white shadow-lg">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-90">New Signups</p>
+                    <p className="text-3xl font-bold">
+                      {siteMonitoring.signupsTrend
+                        .reduce((sum, item) => sum + item.signups, 0)
+                        .toLocaleString()}
+                    </p>
+                    <p className="text-xs opacity-75 mt-1">Last 7 days</p>
+                  </div>
+                  <ArrowTrendingUpIcon className="w-12 h-12 opacity-80" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Traffic Trends Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Page Views Trend */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg mb-4">
+                  Page Views Trend (Last 7 Days)
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={siteMonitoring.pageViewsTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="views" fill="#90AC19" name="Page Views" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Signups Trend */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg mb-4">
+                  New Signups Trend (Last 7 Days)
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={siteMonitoring.signupsTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="signups" fill="#E8931A" name="Signups" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Pages and Device Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Pages Table */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg mb-4">
+                  Top Pages (Last 30 Days)
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Page</th>
+                        <th className="text-right">Views</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {siteMonitoring.topPages.map((page, index) => (
+                        <tr key={index}>
+                          <td className="font-mono text-xs">{page.page}</td>
+                          <td className="text-right font-semibold">
+                            {page.views.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Device Breakdown Pie Chart */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg mb-4">
+                  Device Breakdown (Last 30 Days)
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={siteMonitoring.deviceBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(props) => {
+                        const { device, percent } = props as unknown as {
+                          device: string;
+                          percent: number;
+                        };
+                        return `${device}: ${(percent * 100).toFixed(0)}%`;
+                      }}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="device"
+                    >
+                      {siteMonitoring.deviceBreakdown.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Recent Bookings */}
       <div className="card bg-base-100 shadow-lg">

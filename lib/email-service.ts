@@ -161,7 +161,7 @@ export const emailTemplates = {
             <p>Ready to get started? Browse our services and make your first booking!</p>
             
             <center>
-              <a href={'${process.env.NEXTAUTH_URL}/services' || "http://localhost:3000/services"} class="cta-button">Explore Services</a>
+              <a href={'${process.env.NEXTAUTH_URL}/services'} class="cta-button">Explore Services</a>
             </center>
 
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
@@ -170,7 +170,7 @@ export const emailTemplates = {
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
-            <p>Email: ${process.env.EMAIL_USER} | Website: {'${process.env.NEXTAUTH_URL}/services' || "http://localhost:3000/services"}</p>
+            <p>Email: ${process.env.EMAIL_USER} | Website: {'${process.env.NEXTAUTH_URL}/services'}</p>
           </div>
         </div>
       </body>
@@ -206,7 +206,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📅 Booking Confirmed!</h1>
+            <h1> Booking Confirmed!</h1>
           </div>
           <div class="content">
             <p>Hello ${userName},</p>
@@ -255,6 +255,7 @@ export const emailTemplates = {
     }
             </div>
 
+            <p>You can proceed to make payments..</p>
             <p>We'll be in touch soon to finalize the arrangements. If you have any questions, please don't hesitate to contact us.</p>
           </div>
           <div class="footer">

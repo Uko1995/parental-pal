@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PaymentInterface } from "@/models/Payment";
 import { BookingInterface } from "@/models/Booking";
+import { UserInterface } from "@/models/User";
 import { getCollection } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
         ? savedPayment.bookingId.toString()
         : String(savedPayment.bookingId);
 
-    await bookings.findOneAndUpdate(
+    const updatedBooking = await bookings.findOneAndUpdate(
       { _id: new ObjectId(bookingIdString) },
       {
         $set: {
@@ -83,8 +84,60 @@ export async function POST(req: NextRequest) {
             paystackData.data?.status === "success" ? "confirmed" : "pending",
           updatedAt: new Date(),
         },
-      }
+      },
+      { returnDocument: "after" }
     );
+
+    // Send payment confirmation email if payment was successful
+    if (paystackData.data?.status === "success" && updatedBooking) {
+      try {
+        // Get user details
+        const users = await getCollection<UserInterface>("users");
+        const user = await users.findOne({
+          _id: new ObjectId(updatedBooking.userId),
+        });
+
+        if (user?.userData?.user?.email) {
+          const emailResponse = await fetch(
+            `${process.env.NEXTAUTH_URL}/api/email` ||
+              "http://localhost:3000/api/email",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "payment-confirmation",
+                to: user.userData.user.email,
+                userName: user.userData.user.name || "Customer",
+                apiKey: process.env.EMAIL_API_KEY,
+                data: {
+                  transactionId: reference,
+                  amount: (paystackData.data?.amount || 0) / 100,
+                  currency: paystackData.data?.currency || "NGN",
+                  method: "Card Payment",
+                  serviceType: updatedBooking.serviceType,
+                },
+              }),
+            }
+          );
+
+          if (emailResponse.ok) {
+            console.log("✅ Payment confirmation email sent successfully");
+          } else {
+            console.error(
+              "❌ Failed to send payment confirmation email:",
+              await emailResponse.text()
+            );
+          }
+        }
+      } catch (emailError) {
+        console.error(
+          "❌ Error sending payment confirmation email:",
+          emailError
+        );
+      }
+    }
   }
 
   return NextResponse.json({

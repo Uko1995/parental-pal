@@ -2,21 +2,17 @@ import Image from "next/image";
 
 export default function Loading() {
   return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+    <div className="fixed inset-0 bg-white w-full h-screen flex flex-col items-center justify-center z-50">
       {/* Animated Logo */}
       <div className="relative">
-        {/* Pulsing background circle */}
-        <div className="absolute inset-0 bg-[#90AC19]/20 rounded-full animate-ping"></div>
-        <div className="absolute inset-0 bg-[#90AC19]/10 rounded-full animate-pulse"></div>
-
         {/* Logo container with bounce animation */}
-        <div className="relative bg-white rounded-full p-6">
+        <div className="relative ">
           <Image
             src="/parentalpalLOGO.webp"
             alt="PARENTALPAL Loading"
             width={120}
             height={120}
-            className="w-24 h-24 object-contain animate-spin-slow"
+            className="w-full h-auto object-contain "
             priority
           />
         </div>

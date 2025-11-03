@@ -206,7 +206,6 @@ export default function TutorRegistrationForm() {
 
     setIsSubmitting(true);
     try {
-      console.log("Submitting Tutor Application:", formData);
       const response = await fetch("/api/tutors", {
         method: "POST",
         headers: {

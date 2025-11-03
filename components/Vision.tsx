@@ -1,8 +1,14 @@
+"use client";
+
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function Vision() {
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+
   const ageGroups = [
     {
       range: "0-4 Years",
@@ -152,25 +158,32 @@ export default function Vision() {
   ];
 
   return (
-    <section className="py-16 px-4 ">
+    <section className="py-16 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Our Approach Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
           {/* Image */}
-          <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+          <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
             <Image
               src="/woman2.webp"
               alt="Our teaching approach with children"
               fill
-              className="object-cover"
+              className="object-cover hover:scale-105 transition-transform duration-500"
             />
           </div>
+          
 
           {/* Text Content */}
-          <div>
-            <h2 className="text-3xl font-bold text-[#90AC19] mb-6">
+          <div className="space-y-4">
+            <motion.h2
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-3xl font-bold text-[#90AC19] mb-6"
+            >
               OUR APPROACH
-            </h2>
+            </motion.h2>
             <p className="text-lg text-gray-700 leading-relaxed mb-8">
               We recognize that parents have the biggest responsibility in
               raising children right so we provide support just as the parent
@@ -497,16 +510,151 @@ export default function Vision() {
                     24/7 support access
                   </div>
                 </div>
-                <Link href={"/about"} passHref>
-                  <button className="bg-white font-bold text-[#90AC19] cursor-pointer px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-300 text-lg">
-                    Learn More
-                  </button>
-                </Link>
+                <button
+                  onClick={() => setShowPremiumModal(true)}
+                  className="bg-white font-bold text-[#90AC19] cursor-pointer px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-300 text-lg"
+                >
+                  Learn More
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Premium Membership Modal */}
+      {showPremiumModal && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-2xl bg-linear-to-br from-white to-[#90AC19]/5">
+            <button
+              onClick={() => setShowPremiumModal(false)}
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+            >
+              ✕
+            </button>
+
+            <div className="text-center py-8">
+              {/* Coming Soon Badge */}
+              <div className="mb-6">
+                <span className="inline-block bg-linear-to-r from-[#90AC19] to-[#E8931A] text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider">
+                  Coming Soon
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                Premium Membership
+              </h3>
+
+              {/* Description */}
+              <p className="text-lg text-gray-600 mb-6 max-w-xl mx-auto">
+                We&apos;re working on something special! Premium membership will
+                give you exclusive access to enhanced features, priority
+                booking, and much more.
+              </p>
+
+              {/* Features Preview */}
+              <div className="bg-white rounded-xl p-6 mb-6 shadow-lg">
+                <h4 className="font-bold text-gray-800 mb-4">
+                  What to Expect:
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Priority booking access
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Exclusive discounts
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Dedicated support
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700">
+                      Early access to events
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification */}
+              <div className="bg-[#E8931A]/10 border border-[#E8931A]/30 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-700">
+                  🔔 Want to be notified when we launch?{" "}
+                  <Link
+                    href="/contact"
+                    className="text-[#E8931A] font-semibold hover:underline"
+                  >
+                    Contact us
+                  </Link>{" "}
+                  to join our waitlist!
+                </p>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowPremiumModal(false)}
+                className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop"
+            onClick={() => setShowPremiumModal(false)}
+          ></div>
+        </div>
+      )}
     </section>
   );
 }

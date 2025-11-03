@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   HomeIcon,
   ChartBarIcon,
@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
 interface NavigationItem {
   name: string;
@@ -52,12 +53,47 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const Name =
     session?.user?.name
       ?.split(" ")
       ?.map((name) => name.charAt(0).toUpperCase() + name.slice(1))
       .join(" ") || "User Name";
+
+  // Check if user is admin
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!session) {
+      toast.error("Please sign in to access the dashboard");
+      router.push("/auth/signin?callbackUrl=/dashboard");
+      return;
+    }
+
+    if (session.user?.role !== "admin") {
+      toast.error("Access denied. Admin privileges required.");
+      router.push("/");
+      return;
+    }
+  }, [session, status, router]);
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg text-[#90AC19]"></span>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show nothing if not authenticated or not admin (will redirect)
+  if (!session || session.user?.role !== "admin") {
+    return null;
+  }
 
   const isActivePath = (href: string) => {
     if (href === "/dashboard") {
@@ -160,13 +196,19 @@ export default function DashboardLayout({
       >
         <div className="flex flex-col h-full">
           {/* Mobile header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-[#90AC19] to-[#E8931A]">
-            <Link href="/" className="text-white font-bold text-lg">
-              PARENTALPAL
+          <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-base-200">
+            <Link href="/" className="shrink-0">
+              <Image
+                src="/parentalpalLOGO.webp"
+                alt="Logo"
+                width={150}
+                height={30}
+                className="h-12 w-auto object-contain"
+              />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded-md"
+              className="text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>

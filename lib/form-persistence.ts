@@ -6,6 +6,8 @@ export interface FormPersistenceData {
   selectedService: string;
   selectedHearAboutUs: string;
   otherHearAboutUsText: string;
+  socialMediaPlatform: string;
+  referralName: string;
   priority: "low" | "normal" | "high" | "urgent";
   followUpRequired: boolean;
   isRepeatedCustomer: boolean;
@@ -36,6 +38,8 @@ export function saveFormData(data: Partial<FormPersistenceData>): void {
       selectedService: "",
       selectedHearAboutUs: "",
       otherHearAboutUsText: "",
+      socialMediaPlatform: "",
+      referralName: "",
       priority: "normal",
       followUpRequired: false,
       isRepeatedCustomer: false,
@@ -139,6 +143,40 @@ export function extractFormDataForPersistence(
     }
   }
 
+  // Also capture all form inputs not in FormData (for controlled inputs)
+  if (typeof document !== "undefined") {
+    const inputs = document.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input, select, textarea");
+
+    inputs.forEach((element) => {
+      if (element.name && !element.name.startsWith("$ACTION_ID")) {
+        if (element instanceof HTMLInputElement) {
+          if (element.type === "checkbox" || element.type === "radio") {
+            if (element.checked) {
+              if (extracted[element.name]) {
+                if (Array.isArray(extracted[element.name])) {
+                  (extracted[element.name] as string[]).push(element.value);
+                } else {
+                  extracted[element.name] = [
+                    extracted[element.name] as string,
+                    element.value,
+                  ];
+                }
+              } else {
+                extracted[element.name] = element.value;
+              }
+            }
+          } else if (!extracted[element.name]) {
+            extracted[element.name] = element.value;
+          }
+        } else if (!extracted[element.name]) {
+          extracted[element.name] = element.value;
+        }
+      }
+    });
+  }
+
   return {
     serviceFormData: extracted,
     ...additionalData,
@@ -147,6 +185,7 @@ export function extractFormDataForPersistence(
 
 /**
  * Restore form data to form elements by name
+ * Dispatches input/change events to trigger React state updates
  */
 export function restoreFormDataToElements(data: FormPersistenceData): void {
   try {
@@ -160,16 +199,34 @@ export function restoreFormDataToElements(data: FormPersistenceData): void {
       elements.forEach((element) => {
         if (element.type === "checkbox" || element.type === "radio") {
           const inputElement = element as HTMLInputElement;
-          if (Array.isArray(value)) {
-            inputElement.checked = value.includes(inputElement.value);
-          } else {
-            inputElement.checked = inputElement.value === String(value);
+          const shouldBeChecked = Array.isArray(value)
+            ? value.includes(inputElement.value)
+            : inputElement.value === String(value);
+
+          if (inputElement.checked !== shouldBeChecked) {
+            inputElement.checked = shouldBeChecked;
+            // Dispatch change event to trigger React state updates
+            inputElement.dispatchEvent(
+              new Event("change", { bubbles: true, cancelable: true })
+            );
           }
         } else if (element.tagName === "SELECT") {
           const selectElement = element as HTMLSelectElement;
-          selectElement.value = String(value);
+          if (selectElement.value !== String(value)) {
+            selectElement.value = String(value);
+            // Dispatch change event to trigger React state updates
+            selectElement.dispatchEvent(
+              new Event("change", { bubbles: true, cancelable: true })
+            );
+          }
         } else {
-          element.value = String(value);
+          if (element.value !== String(value)) {
+            element.value = String(value);
+            // Dispatch input event to trigger React state updates
+            element.dispatchEvent(
+              new Event("input", { bubbles: true, cancelable: true })
+            );
+          }
         }
       });
     });

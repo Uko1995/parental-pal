@@ -9,13 +9,15 @@ import { auth } from "@/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication for admin-only access
+    const { type, to, userName, data, apiKey } = await request.json();
+
+    // Check for API key (for server-side automated emails) or session auth (for admin)
     const session = await auth();
-    if (!session?.user) {
+    const isServerRequest = apiKey === process.env.EMAIL_API_KEY;
+
+    if (!session?.user && !isServerRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { type, to, userName, data } = await request.json();
 
     // Validate required fields
     if (!type || !to || !userName) {

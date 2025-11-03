@@ -2,10 +2,11 @@
 
 import { signIn, getProviders } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 interface Provider {
   id: string;
@@ -17,11 +18,12 @@ interface Provider {
 
 type ProvidersType = Record<string, Provider> | null;
 
-export default function SignIn() {
+function SignInContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [providers, setProviders] = useState<ProvidersType>(null);
-  const [loading, setLoading] = useState(false);
+  const [credentialsLoading, setCredentialsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -140,7 +142,7 @@ export default function SignIn() {
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     toast.promise(
       signIn("google", {
         callbackUrl,
@@ -152,7 +154,7 @@ export default function SignIn() {
         error: "Google sign-in failed. Please try again.",
       }
     );
-    setLoading(false);
+    setGoogleLoading(false);
   };
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {
@@ -164,7 +166,7 @@ export default function SignIn() {
       return;
     }
 
-    setLoading(true);
+    setCredentialsLoading(true);
     try {
       const result = await signIn("credentials", {
         email: formData.email,
@@ -182,7 +184,7 @@ export default function SignIn() {
       console.error("Sign in error:", error);
       toast.error("An error occurred during sign in");
     } finally {
-      setLoading(false);
+      setCredentialsLoading(false);
     }
   };
 
@@ -195,7 +197,7 @@ export default function SignIn() {
       return;
     }
 
-    setLoading(true);
+    setCredentialsLoading(true);
 
     try {
       const response = await fetch("/api/auth/register", {
@@ -228,7 +230,7 @@ export default function SignIn() {
       console.error("Registration error:", error);
       toast.error("An error occurred during registration");
     } finally {
-      setLoading(false);
+      setCredentialsLoading(false);
     }
   };
 
@@ -309,27 +311,46 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen  flex items-center justify-center md:gap-20 p-4">
-      <div className="hidden md:block h-auto w-1/4">
-        <Image
-          src="/parentalpalLOGO.webp"
-          alt="Logo"
-          width={200}
-          height={200}
-          className="size-full"
-        />
-      </div>
-      <div className="card w-full max-w-lg ">
+    <div className="min-h-screen flex items-center justify-center md:gap-20 p-4 bg-linear-to-br from-gray-50 via-white to-[#FFEACF]/30">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="hidden md:block h-auto w-1/4"
+      >
+        <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
+          <Image
+            src="/parentalpalLOGO.webp"
+            alt="Logo"
+            width={200}
+            height={200}
+            className="size-full"
+          />
+        </motion.div>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="card w-full max-w-lg shadow-2xl bg-base-100"
+      >
         <div className="card-body">
           {/* Header */}
-          <div className="text-center mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-center mb-6"
+          >
             <h1 className="text-3xl font-bold text-[#90AC19] mb-2">
-              Welcome Back
+              {isRegisterMode ? "Create Account" : "Welcome Back"}
             </h1>
             <p className="text-base-content/70">
-              Sign in to your ParentalPal account
+              {isRegisterMode
+                ? "Join ParentalPal and access amazing childcare services"
+                : "Sign in to your ParentalPal account"}
             </p>
-          </div>
+          </motion.div>
 
           {/* Error Message */}
           {error && (
@@ -352,72 +373,112 @@ export default function SignIn() {
           )}
 
           {/* Email/Password Form - Primary Option */}
-          <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="space-y-4"
+          >
             <form
               onSubmit={
                 isRegisterMode ? handleRegister : handleCredentialsSignIn
               }
+              className="space-y-4"
             >
               {isRegisterMode && (
-                <div className="form-control w-full mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.5 }}
+                  className="form-control w-full"
+                >
                   <label className="label">
-                    <span className="label-text text-gray-800">Full Name</span>
+                    <span className="label-text text-gray-800 font-medium">
+                      Full Name
+                    </span>
                   </label>
-                  <input
+                  <motion.input
+                    whileFocus={{ scale: 1.02 }}
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`input input-bordered w-full ${
+                    className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
                       validationErrors.name ? "input-error" : ""
                     }`}
                     placeholder="Enter your full name"
                     required
                   />
                   {validationErrors.name && (
-                    <label className="label">
+                    <motion.label
+                      initial={{ x: -10 }}
+                      animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                      transition={{ duration: 0.5 }}
+                      className="label"
+                    >
                       <span className="label-text-alt text-error">
                         {validationErrors.name}
                       </span>
-                    </label>
+                    </motion.label>
                   )}
-                </div>
+                </motion.div>
               )}
 
-              <div className="form-control w-full mb-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+                className="form-control w-full"
+              >
                 <label className="label">
-                  <span className="label-text text-gray-800">Email</span>
+                  <span className="label-text text-gray-800 font-medium">
+                    Email
+                  </span>
                 </label>
-                <input
+                <motion.input
+                  whileFocus={{ scale: 1.02 }}
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`input input-bordered w-full ${
+                  className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
                     validationErrors.email ? "input-error" : ""
                   }`}
                   placeholder="Enter your email"
                   required
                 />
                 {validationErrors.email && (
-                  <label className="label">
+                  <motion.label
+                    initial={{ x: -10 }}
+                    animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                    className="label"
+                  >
                     <span className="label-text-alt text-error">
                       {validationErrors.email}
                     </span>
-                  </label>
+                  </motion.label>
                 )}
-              </div>
+              </motion.div>
 
-              <div className="form-control w-full mb-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
+                className="form-control w-full"
+              >
                 <label className="label">
-                  <span className="label-text text-gray-800">Password</span>
+                  <span className="label-text text-gray-800 font-medium">
+                    Password
+                  </span>
                 </label>
-                <input
+                <motion.input
+                  whileFocus={{ scale: 1.02 }}
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`input input-bordered w-full ${
+                  className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
                     validationErrors.password ? "input-error" : ""
                   }`}
                   placeholder="Enter your password"
@@ -425,7 +486,13 @@ export default function SignIn() {
                 />
                 {/* Password strength indicator */}
                 {isRegisterMode && formData.password && (
-                  <div className="mt-2 mb-1">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-2 mb-1"
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-gray-600">
                         Password strength:
@@ -434,7 +501,7 @@ export default function SignIn() {
                         {[1, 2, 3, 4, 5].map((level) => (
                           <div
                             key={level}
-                            className={`h-1 flex-1 rounded-full ${
+                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${
                               level <= passwordStrength
                                 ? passwordStrength <= 2
                                   ? "bg-red-400"
@@ -458,15 +525,20 @@ export default function SignIn() {
                           : "Strong"}
                       </span>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {validationErrors.password && (
-                  <label className="label">
+                  <motion.label
+                    initial={{ x: -10 }}
+                    animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                    className="label"
+                  >
                     <span className="label-text-alt text-error text-xs">
                       {validationErrors.password}
                     </span>
-                  </label>
+                  </motion.label>
                 )}
 
                 {/* Password requirements hint */}
@@ -475,85 +547,113 @@ export default function SignIn() {
                     must have uppercase, lowercase, number & special character
                   </span>
                 </label>
-              </div>
+              </motion.div>
 
               {isRegisterMode && (
-                <div className="form-control w-full mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.8 }}
+                  className="form-control w-full"
+                >
                   <label className="label">
-                    <span className="label-text text-gray-800">
+                    <span className="label-text text-gray-800 font-medium">
                       Confirm Password
                     </span>
                   </label>
-                  <input
+                  <motion.input
+                    whileFocus={{ scale: 1.02 }}
                     type="password"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className={`input input-bordered w-full ${
+                    className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
                       validationErrors.confirmPassword ? "input-error" : ""
                     }`}
                     placeholder="Confirm your password"
                     required
                   />
                   {validationErrors.confirmPassword && (
-                    <label className="label">
+                    <motion.label
+                      initial={{ x: -10 }}
+                      animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                      transition={{ duration: 0.5 }}
+                      className="label"
+                    >
                       <span className="label-text-alt text-error">
                         {validationErrors.confirmPassword}
                       </span>
-                    </label>
+                    </motion.label>
                   )}
-                </div>
+                </motion.div>
               )}
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={
-                  loading ||
+                  credentialsLoading ||
                   (!isFormValid &&
                     (isRegisterMode || !!formData.email || !!formData.password))
                 }
-                className={`btn bg-[#90AC19] text-white w-full ${
+                className={`btn bg-[#90AC19] hover:bg-[#7A9216] text-white w-full transition-colors duration-300 ${
                   !isFormValid &&
                   (isRegisterMode || !!formData.email || !!formData.password)
                     ? "btn-disabled"
                     : ""
                 }`}
               >
-                {loading ? (
+                {credentialsLoading ? (
                   <span className="loading loading-spinner loading-sm"></span>
                 ) : isRegisterMode ? (
                   "Create Account"
                 ) : (
                   "Sign In"
                 )}
-              </button>
+              </motion.button>
             </form>
 
             {/* Toggle between signin/register */}
-            <div className="text-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+              className="text-center"
+            >
               <button
                 onClick={() => setIsRegisterMode(!isRegisterMode)}
-                className="link text-[#90AC19] text-sm"
+                className="link text-[#90AC19] hover:text-[#7A9216] text-sm transition-colors duration-300"
               >
                 {isRegisterMode
                   ? "Already have an account? Sign in"
                   : "Don't have an account? Create one"}
               </button>
-            </div>
+            </motion.div>
 
             {/* Divider */}
-            <div className="divider text-base-content/50 my-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 1 }}
+              className="divider text-base-content/50 my-6"
+            >
               or continue with
-            </div>
+            </motion.div>
 
             {/* Google Sign In - Alternative Option */}
             {providers?.google && (
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="btn btn-outline w-full gap-3 hover:btn-neutral "
+                disabled={googleLoading}
+                className="btn btn-outline w-full gap-3 hover:btn-neutral transition-colors duration-300"
               >
-                {loading ? (
+                {googleLoading ? (
                   <span className="loading loading-spinner loading-sm"></span>
                 ) : (
                   <svg
@@ -587,9 +687,9 @@ export default function SignIn() {
                   </svg>
                 )}
                 Google
-              </button>
+              </motion.button>
             )}
-          </div>
+          </motion.div>
 
           {/* Footer */}
           <div className="text-center mt-6 space-y-2">
@@ -612,7 +712,21 @@ export default function SignIn() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="loading loading-spinner loading-lg"></div>
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }

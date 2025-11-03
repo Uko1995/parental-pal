@@ -58,19 +58,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      name,
-      email,
-      phone,
-      address,
-      bio,
-      specialties,
-      qualifications,
-      subjects,
-      experience,
-      hourlyRate,
-      availability,
-    } = body;
+
+    // Extract data from nested structure or flat structure (support both)
+    const name = body.userData?.user?.name || body.name;
+    const email = body.userData?.user?.email || body.email;
+    const phone = body.phone;
+    const address = body.address;
+    const bio = body.tutorProfile?.bio || body.bio;
+    const specialty = body.tutorProfile?.specialty || body.specialty;
+    const specialties = body.specialties || (specialty ? [specialty] : []);
+    const qualifications =
+      body.tutorProfile?.qualifications || body.qualifications || [];
+    const subjects = body.tutorProfile?.subjects || body.subjects || [];
+    const experience = body.tutorProfile?.experience || body.experience;
+    const hourlyRate = body.tutorProfile?.hourlyRate || body.hourlyRate;
+    const availability = body.tutorProfile?.availability || body.availability;
 
     if (
       !name ||

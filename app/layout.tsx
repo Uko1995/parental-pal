@@ -4,16 +4,14 @@ import { Manrope } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 import ConditionalLayout from "../components/ConditionalLayout";
+import AnalyticsProvider from "../components/AnalyticsProvider";
+import { baseMetadata } from "../lib/metadata";
 
 const manRope = Manrope({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "PARENTALPAL - Childcare Solutions",
-  description:
-    "Connect with tutors, holiday camps, playgroups, homeschooling resources, and children's events",
-};
+export const metadata: Metadata = baseMetadata;
 
 export default function RootLayout({
   children,
@@ -24,7 +22,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${manRope.className}  antialiased`}>
         <SessionProvider>
-          <ConditionalLayout>{children}</ConditionalLayout>
+          <AnalyticsProvider>
+            <ConditionalLayout>{children}</ConditionalLayout>
+          </AnalyticsProvider>
           <Toaster
             position="top-right"
             toastOptions={{

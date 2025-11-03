@@ -1,4 +1,21 @@
+import { Metadata } from "next";
 import Image from "next/image";
+import { generateMetadata } from "../../lib/metadata";
+
+export const metadata: Metadata = generateMetadata({
+  title: "About ParentalPal - Your Trusted Childcare Partner",
+  description:
+    "Learn about ParentalPal's mission to provide quality childcare solutions. We connect families with verified tutors, enrichment programs, and educational services across Nigeria.",
+  path: "/about",
+  keywords: [
+    "about parentalpal",
+    "childcare mission",
+    "trusted tutors",
+    "educational platform Nigeria",
+    "child development",
+    "parenting support",
+  ],
+});
 
 export default function AboutPage() {
   const values = [

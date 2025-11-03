@@ -260,6 +260,18 @@ export default function ServiceDetailsModal({
                   Service Requirements
                 </h3>
                 <div className="space-y-3">
+                  {/* Age Group */}
+                  {service.requirements.ageGroup && (
+                    <div>
+                      <span className="text-gray-600 block mb-1">
+                        Age Group:
+                      </span>
+                      <span className="badge badge-info">
+                        {service.requirements.ageGroup}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Equipment */}
                   {service.requirements.equipmentProvided &&
                     service.requirements.equipmentProvided.length > 0 && (

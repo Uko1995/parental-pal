@@ -42,11 +42,11 @@ function PaymentSchedule({
   const getEventModeCost = () => {
     switch (eventMode) {
       case "indoor":
-        return 250000;
+        return 350000;
       case "outdoor":
-        return 250000;
-      case "indoorAndOutdoor":
-        return 470000;
+        return 350000;
+      case "both":
+        return 644000;
       default:
         return 0;
     }
@@ -102,7 +102,7 @@ function PaymentSchedule({
                 " Childcare (₦5,000/day)"
               )
             ) : (
-              " Academic tutoring (₦15,000/hour)"
+              " Academic tutoring (₦12,000/hour)"
             )}
           </span>
           <span>

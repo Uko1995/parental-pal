@@ -1,4 +1,34 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+
 export default function Statistics() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const currentRef = sectionRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
+
   const stats = [
     {
       number: "2,500+",
@@ -112,28 +142,57 @@ export default function Statistics() {
   ];
 
   return (
-    <section className="py-16 px-4 bg-[#FFEACF]/30">
+    <section ref={sectionRef} className="py-16 px-4 bg-[#FFEACF]/30">
       <div className="max-w-7xl mx-auto">
         {/* Statistics Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+          transition={{ duration: 1 }}
+          className="text-center mb-16"
+        >
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-4xl font-bold text-gray-900 mb-4"
+          >
             Trusted by Families Everywhere
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-lg text-gray-600 max-w-2xl mx-auto mb-12"
+          >
             Our track record speaks for itself - real numbers that demonstrate
             our commitment to excellence
-          </p>
+          </motion.p>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={
+                  isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+                }
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow:
+                    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                }}
+                className="bg-white rounded-2xl p-6 shadow-lg transition-colors duration-300 border border-gray-100"
               >
-                <div className="text-[#90AC19] mb-4 flex justify-center">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  className="text-[#90AC19] mb-4 flex justify-center"
+                >
                   {stat.icon}
-                </div>
+                </motion.div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {stat.number}
                 </div>
@@ -143,43 +202,73 @@ export default function Statistics() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {stat.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Trust Indicators Section */}
-        <div className="border-t border-gray-200 pt-16">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+          transition={{ duration: 1, delay: 0.6 }}
+          className="border-t border-gray-200 pt-16"
+        >
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            <motion.h3
+              initial={{ opacity: 0, y: -20 }}
+              animate={
+                isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }
+              }
+              transition={{ duration: 0.6, delay: 0.8 }}
+              className="text-3xl font-bold text-gray-900 mb-4"
+            >
               Safety & Trust Certifications
-            </h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.8, delay: 1 }}
+              className="text-lg text-gray-600 max-w-2xl mx-auto"
+            >
               Your family&lsquo;s safety is our top priority. Every service
               provider meets our rigorous standards.
-            </p>
+            </motion.p>
           </div>
 
           {/* Certifications Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {certifications.map((cert, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={
+                  isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+                }
+                transition={{ duration: 0.6, delay: 1.2 + index * 0.15 }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+                }}
+                className="bg-white rounded-xl p-6 shadow-md transition-colors duration-300 border border-gray-100 text-center"
               >
-                <div className="text-[#90AC19] mb-3 flex justify-center">
+                <motion.div
+                  whileHover={{ rotate: 12 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="text-[#90AC19] mb-3 flex justify-center"
+                >
                   {cert.icon}
-                </div>
+                </motion.div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
                   {cert.title}
                 </h4>
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {cert.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

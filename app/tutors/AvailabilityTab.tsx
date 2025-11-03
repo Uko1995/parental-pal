@@ -332,7 +332,7 @@ export default function AvailabilityTab({
                 />
                 <div>
                   <span className="label-text font-medium text-gray-800 text-wrap">
-                    I accept the hourly rate range of ₦5,000 - ₦9,000 per hour
+                    I accept the hourly rate range of ₦5,000 - ₦7,000 per hour
                   </span>
                 </div>
               </div>

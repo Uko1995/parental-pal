@@ -22,6 +22,7 @@ import {
   extractFormDataForPersistence,
   hasPersistedFormData,
   getPersistedValueWithFallback,
+  restoreFormDataToElements,
 } from "@/lib/form-persistence";
 
 interface AboutUs {
@@ -58,6 +59,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [selectedService, setSelectedService] = useState("");
   const [selectedHearAboutUs, setSelectedHearAboutUs] = useState("");
   const [otherHearAboutUsText, setOtherHearAboutUsText] = useState("");
+  const [socialMediaPlatform, setSocialMediaPlatform] = useState("");
+  const [referralName, setReferralName] = useState("");
   const [priority, setPriority] = useState<
     "low" | "normal" | "high" | "urgent"
   >("normal");
@@ -78,6 +81,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     setOtherHearAboutUsText(
       getPersistedValueWithFallback("otherHearAboutUsText", "")
     );
+    setSocialMediaPlatform(
+      getPersistedValueWithFallback("socialMediaPlatform", "")
+    );
+    setReferralName(getPersistedValueWithFallback("referralName", ""));
     setPriority(getPersistedValueWithFallback("priority", "normal"));
     setFollowUpRequired(
       getPersistedValueWithFallback("followUpRequired", false)
@@ -102,6 +109,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       selectedService,
       selectedHearAboutUs,
       otherHearAboutUsText,
+      socialMediaPlatform,
+      referralName,
       priority,
       followUpRequired,
       isRepeatedCustomer,
@@ -123,6 +132,16 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
     if (selectedHearAboutUs === "other" && !otherHearAboutUsText.trim()) {
       toast.error("Please specify how you heard about us");
+      return;
+    }
+
+    if (selectedHearAboutUs === "socialMedia" && !socialMediaPlatform.trim()) {
+      toast.error("Please specify which social media platform");
+      return;
+    }
+
+    if (selectedHearAboutUs === "referral" && !referralName.trim()) {
+      toast.error("Please specify who referred you");
       return;
     }
 
@@ -170,6 +189,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       selectedService,
       selectedHearAboutUs,
       otherHearAboutUsText,
+      socialMediaPlatform,
+      referralName,
       priority,
       followUpRequired,
       isRepeatedCustomer,
@@ -297,36 +318,14 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         setTimeout(() => {
           // Use the restoreFormDataToElements utility to restore all form fields
           if (persistedData.serviceFormData) {
-            Object.entries(persistedData.serviceFormData).forEach(
-              ([key, value]) => {
-                const elements = document.getElementsByName(key) as NodeListOf<
-                  HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-                >;
-
-                elements.forEach((element) => {
-                  if (element.type === "checkbox" || element.type === "radio") {
-                    const inputElement = element as HTMLInputElement;
-                    if (Array.isArray(value)) {
-                      inputElement.checked = value.includes(inputElement.value);
-                    } else {
-                      inputElement.checked =
-                        inputElement.value === String(value);
-                    }
-                  } else if (element.tagName === "SELECT") {
-                    const selectElement = element as HTMLSelectElement;
-                    selectElement.value = String(value);
-                  } else {
-                    element.value = String(value);
-                  }
-                });
-              }
-            );
+            restoreFormDataToElements(persistedData);
           }
-        }, 100); // Small delay to ensure DOM is ready
+        }, 300); // Increased delay to ensure DOM is fully ready
 
         // Show success toast to inform user their data was preserved
         toast.success(
-          "Your form data has been restored. Please review and submit."
+          "Your form data has been restored. Please review and submit.",
+          { duration: 5000 }
         );
 
         // First scroll to top, then scroll to submit button after delay
@@ -353,15 +352,31 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
   const handleHearAboutUsChange = (value: string) => {
     setSelectedHearAboutUs(value);
-    // Clear the other text if a different option is selected
+    // Clear related fields when switching options
     if (value !== "other") {
       setOtherHearAboutUsText("");
+    }
+    if (value !== "socialMedia") {
+      setSocialMediaPlatform("");
+    }
+    if (value !== "referral") {
+      setReferralName("");
     }
     saveCurrentFormData();
   };
 
   const handleOtherTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setOtherHearAboutUsText(e.target.value);
+    saveCurrentFormData();
+  };
+
+  const handleSocialMediaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSocialMediaPlatform(e.target.value);
+    saveCurrentFormData();
+  };
+
+  const handleReferralChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setReferralName(e.target.value);
     saveCurrentFormData();
   };
 
@@ -626,6 +641,58 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                       onChange={handleOtherTextChange}
                       className="textarea w-full textarea-bordered  h-24"
                       placeholder="Please tell us how you heard about us..."
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Show dropdown when "Social Media" is selected */}
+              {selectedHearAboutUs === "socialMedia" && (
+                <div className="mt-6">
+                  <div className="form-control flex flex-col gap-2">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Which social media platform? *
+                      </span>
+                    </label>
+                    <select
+                      name="socialMediaPlatform"
+                      value={socialMediaPlatform}
+                      onChange={handleSocialMediaChange}
+                      className="select select-bordered w-full"
+                      required
+                    >
+                      <option value="">Select platform...</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Twitter/X">Twitter/X</option>
+                      <option value="LinkedIn">LinkedIn</option>
+                      <option value="TikTok">TikTok</option>
+                      <option value="YouTube">YouTube</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Show input when "Referral" is selected */}
+              {selectedHearAboutUs === "referral" && (
+                <div className="mt-6">
+                  <div className="form-control flex flex-col gap-2">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Who referred you? *
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      name="referralName"
+                      value={referralName}
+                      onChange={handleReferralChange}
+                      className="input input-bordered w-full"
+                      placeholder="Enter the name of the person who referred you..."
                       required
                     />
                   </div>

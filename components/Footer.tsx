@@ -22,9 +22,9 @@ export default function Footer() {
     ],
     resources: [{ name: "FAQ", href: "/faq" }],
     legal: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Cookie Policy", href: "#" },
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Terms of Service", href: "terms" },
+      { name: "Cookie Policy", href: "/cookie-policy" },
     ],
   };
 

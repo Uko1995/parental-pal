@@ -118,6 +118,38 @@ export async function POST(request: NextRequest) {
 
     const createdUser = await UserRepository.createUser(newUser);
 
+    // Send welcome email
+    try {
+      const emailResponse = await fetch(
+        `${process.env.NEXTAUTH_URL}/api/email` ||
+          "http://localhost:3000/api/email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "welcome",
+            to: email,
+            userName: name,
+            apiKey: process.env.EMAIL_API_KEY,
+          }),
+        }
+      );
+
+      if (emailResponse.ok) {
+        console.log("✅ Welcome email sent successfully");
+      } else {
+        console.error(
+          "❌ Failed to send welcome email:",
+          await emailResponse.text()
+        );
+      }
+    } catch (emailError) {
+      console.error("❌ Error sending welcome email:", emailError);
+      // Don't fail registration if email fails
+    }
+
     // Remove password from response
     const userResponse = { ...createdUser };
     delete userResponse.password;

@@ -8,6 +8,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import PaymentReceiptModal from "./PaymentReceiptModal";
+import PaymentDetailsModal from "./PaymentDetailsModal";
 
 interface Payment {
   _id: string;
@@ -50,6 +52,9 @@ export default function PaymentsSection() {
   const [paymentInProgress, setPaymentInProgress] = useState<string | null>(
     null
   );
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -148,6 +153,26 @@ export default function PaymentsSection() {
   const filteredPayments = payments.filter(
     (payment) => filterStatus === "all" || payment.status === filterStatus
   );
+
+  const openReceiptModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsReceiptModalOpen(true);
+  };
+
+  const openDetailsModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsDetailsModalOpen(true);
+  };
+
+  const closeReceiptModal = () => {
+    setIsReceiptModalOpen(false);
+    setSelectedPayment(null);
+  };
+
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedPayment(null);
+  };
 
   if (loading) {
     return (
@@ -318,9 +343,17 @@ export default function PaymentsSection() {
                         </button>
                       ) : (
                         <>
-                          <button className="btn btn-ghost btn-xs">View</button>
+                          <button
+                            onClick={() => openDetailsModal(payment)}
+                            className="btn btn-ghost btn-xs"
+                          >
+                            View
+                          </button>
                           {payment.status === "paid" && (
-                            <button className="btn btn-ghost btn-xs">
+                            <button
+                              onClick={() => openReceiptModal(payment)}
+                              className="btn btn-ghost btn-xs"
+                            >
                               Receipt
                             </button>
                           )}
@@ -395,6 +428,18 @@ export default function PaymentsSection() {
           <button className="btn btn-sm btn-ghost">FAQ</button>
         </div>
       </div>
+
+      {/* Modals */}
+      <PaymentReceiptModal
+        payment={selectedPayment}
+        isOpen={isReceiptModalOpen}
+        onClose={closeReceiptModal}
+      />
+      <PaymentDetailsModal
+        payment={selectedPayment}
+        isOpen={isDetailsModalOpen}
+        onClose={closeDetailsModal}
+      />
     </div>
   );
 }

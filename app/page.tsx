@@ -7,11 +7,16 @@ import Testimonials from "../components/Testimonials";
 import Vision from "../components/Vision";
 import Contact from "../components/Contact";
 import MiniServices from "../components/MiniServices";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import {
+  generateOrganizationSchema,
+  generateLocalBusinessSchema,
+  generateJsonLdScript,
+} from "../lib/metadata";
 
-export default function Page() {
+function PageContent() {
   const searchParams = useSearchParams();
   const signout = searchParams.get("signout");
 
@@ -25,8 +30,27 @@ export default function Page() {
     }
   }, [signout]);
 
+  return null;
+}
+
+export default function Page() {
   return (
     <>
+      <Suspense fallback={null}>
+        <PageContent />
+      </Suspense>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: generateJsonLdScript(generateOrganizationSchema()),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: generateJsonLdScript(generateLocalBusinessSchema()),
+        }}
+      />
       <Hero />
       <Vision />
       <MiniServices />

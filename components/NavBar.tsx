@@ -19,11 +19,29 @@ export default function NavBar() {
     href: string;
   }
 
+  // Define protected routes that require authentication
+  const protectedRoutes = ["/dashboard", "/profile", "/booking", "/payment"];
+
+  // Helper function to check if current route is protected
+  const isProtectedRoute = () => {
+    return protectedRoutes.some((route) => pathname.startsWith(route));
+  };
+
+  // Smart signout handler
+  const handleSignOut = () => {
+    const shouldRedirectHome = isProtectedRoute();
+    signOut({
+      callbackUrl: shouldRedirectHome ? "/?signout=success" : pathname,
+      redirect: true,
+    });
+  };
+
   const navItems: NavItem[] = [
     { name: "Home", href: "/" },
     { name: "About Us", href: "/about" },
     { name: "Blog", href: "/blog" },
     { name: "Services", href: "/services" },
+    { name: "Contact", href: "/contact" },
   ];
 
   useEffect(() => {
@@ -42,7 +60,7 @@ export default function NavBar() {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isTransparent
-          ? "bg-white backdrop-blur-md shadow-md border-b border-gray-200 md:bg-transparent md:backdrop-blur-sm "
+          ? "bg-white backdrop-blur-md shadow-md border-b border-gray-200 md:bg-transparent md:backdrop-blur-sm md:border-b-0 md:shadow-none"
           : "bg-white backdrop-blur-md shadow-md border-b border-gray-200"
       }`}
     >
@@ -93,45 +111,56 @@ export default function NavBar() {
 
           <div className="hidden md:block">
             {session?.user ? (
-              <div className="ml-4 flex items-center md:ml-6">
-                {session?.user?.image ? (
-                  <Image
-                    src={`${session?.user?.image}`}
-                    alt={`${session?.user?.name}`}
-                    width={30}
-                    height={30}
-                    className="rounded-full mr-2 object-cover"
-                  />
-                ) : (
-                  <div
-                    className={`rounded-full mr-2 p-1  ${
-                      isScrolled ? "bg-black" : "bg-white"
-                    }`}
-                  >
-                    <UserIcon
-                      strokeWidth={2}
-                      className={`w-5 h-5 ${
-                        isScrolled ? "text-white" : "text-black"
-                      }`}
+              <div className="ml-4 flex items-center md:ml-6 gap-3">
+                {/* User Avatar */}
+                <div className="relative">
+                  {session?.user?.image ? (
+                    <Image
+                      src={`${session?.user?.image}`}
+                      alt={`${session?.user?.name}`}
+                      width={40}
+                      height={40}
+                      className="rounded-full ring-2 ring-[#90AC19] ring-offset-2 object-cover"
                     />
-                  </div>
-                )}
-                <Link
-                  href={`/profile`}
-                  className={`${
-                    isTransparent ? "text-white" : "text-gray-800"
-                  } mr-4 font-medium`}
-                >
-                  {session.user.name}
-                </Link>
+                  ) : (
+                    <div className="rounded-full p-2 bg-linear-to-br from-[#90AC19] to-[#7A9216] ring-2 ring-[#90AC19] ring-offset-2">
+                      <UserIcon
+                        strokeWidth={2}
+                        className="w-5 h-5 text-white"
+                      />
+                    </div>
+                  )}
+                  {/* Online Status Indicator */}
+                  <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></span>
+                </div>
+
+                {/* User Info */}
+                <div className="flex flex-col">
+                  <Link
+                    href={`/profile`}
+                    className={`${
+                      isTransparent ? "text-white" : "text-gray-800"
+                    } font-semibold text-sm hover:text-[#90AC19] transition-colors`}
+                  >
+                    {session.user.name}
+                  </Link>
+                  <span
+                    className={`${
+                      isTransparent ? "text-white/70" : "text-gray-500"
+                    } text-xs`}
+                  >
+                    {session.user.role === "admin"
+                      ? "Administrator"
+                      : session.user.role === "tutor"
+                      ? "Tutor"
+                      : "Parent"}
+                  </span>
+                </div>
+
+                {/* Sign Out Button */}
                 <button
-                  onClick={() =>
-                    signOut({
-                      callbackUrl: "/?signout=success",
-                      redirect: true,
-                    })
-                  }
-                  className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300"
+                  onClick={handleSignOut}
+                  className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   Sign Out
                 </button>
@@ -278,12 +307,10 @@ export default function NavBar() {
 
                   {/* Sign Out Button */}
                   <button
-                    onClick={() =>
-                      signOut({
-                        callbackUrl: "/?signout=success",
-                        redirect: true,
-                      })
-                    }
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleSignOut();
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                       isTransparent
                         ? "text-white/90 hover:text-white hover:bg-white/10"

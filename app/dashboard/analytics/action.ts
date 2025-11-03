@@ -312,3 +312,134 @@ export const getServicePerformanceData = unstable_cache(
     tags: [CACHE_TAGS.ANALYTICS, CACHE_TAGS.BOOKINGS],
   }
 );
+
+// Site Monitoring - Page Views and Traffic
+export const getSiteMonitoringData = unstable_cache(
+  async () => {
+    const analyticsCollection = await getCollection("analyticsevents");
+    const sessionsCollection = await getCollection("analyticssessions");
+
+    const now = new Date();
+    const last7Days = new Date(now);
+    last7Days.setDate(last7Days.getDate() - 7);
+    const last30Days = new Date(now);
+    last30Days.setDate(last30Days.getDate() - 30);
+
+    // Total page views (last 30 days)
+    const totalPageViews = await analyticsCollection.countDocuments({
+      eventType: "page_view",
+      timestamp: { $gte: last30Days },
+    });
+
+    // Unique visitors (unique sessions)
+    const uniqueVisitors = await sessionsCollection.countDocuments({
+      startTime: { $gte: last30Days },
+    });
+
+    // Page views by day (last 7 days)
+    const pageViewsTrend = await analyticsCollection
+      .aggregate([
+        {
+          $match: {
+            eventType: "page_view",
+            timestamp: { $gte: last7Days },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$timestamp" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray();
+
+    // Top pages
+    const topPages = await analyticsCollection
+      .aggregate([
+        {
+          $match: {
+            eventType: "page_view",
+            timestamp: { $gte: last30Days },
+          },
+        },
+        {
+          $group: {
+            _id: "$path",
+            views: { $sum: 1 },
+          },
+        },
+        { $sort: { views: -1 } },
+        { $limit: 5 },
+      ])
+      .toArray();
+
+    // Device breakdown
+    const deviceBreakdown = await sessionsCollection
+      .aggregate([
+        {
+          $match: {
+            startTime: { $gte: last30Days },
+          },
+        },
+        {
+          $group: {
+            _id: "$deviceType",
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray();
+
+    // Signups over time (last 7 days)
+    const usersCollection = await getCollection("users");
+    const signupsTrend = await usersCollection
+      .aggregate([
+        {
+          $match: {
+            createdAt: { $gte: last7Days },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray();
+
+    return {
+      totalPageViews,
+      uniqueVisitors,
+      pageViewsTrend: pageViewsTrend.map((item) => ({
+        date: (item as { _id: string; count: number })._id,
+        views: (item as { _id: string; count: number }).count,
+      })),
+      topPages: topPages.map((item) => ({
+        page: (item as { _id: string; views: number })._id,
+        views: (item as { _id: string; views: number }).views,
+      })),
+      deviceBreakdown: deviceBreakdown.map((item) => ({
+        device:
+          (item as { _id: string | null; count: number })._id || "Unknown",
+        count: (item as { _id: string | null; count: number }).count,
+      })),
+      signupsTrend: signupsTrend.map((item) => ({
+        date: (item as { _id: string; count: number })._id,
+        signups: (item as { _id: string; count: number }).count,
+      })),
+    };
+  },
+  ["site-monitoring-data"],
+  {
+    revalidate: CACHE_TIMES.DASHBOARD_STATS,
+    tags: [CACHE_TAGS.ANALYTICS],
+  }
+);

@@ -137,13 +137,15 @@ export interface BookingInterface {
 
   // Source tracking
   source:
-    | "social media"
-    | "online search"
+    | "socialMedia"
+    | "onlineSearch"
     | "signage"
     | "referral"
-    | "walk in"
+    | "walkIn"
     | "other";
-  referralSource?: string;
+  referralSource?: string; // For "other" option
+  socialMediaPlatform?: string; // For "socialMedia" option
+  referralName?: string; // For "referral" option
 
   // Follow-up and relationship management
   followUpRequired?: boolean;
