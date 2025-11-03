@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Jost } from "next/font/google";
+
+const jost = Jost({ subsets: ["latin"], weight: "900" });
 
 export default function Hero() {
   return (
@@ -30,22 +33,22 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="relative text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold"
+                className={`relative text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold ${jost.className}`}
                 style={{
                   textShadow: `
                   -1px -1px 0 #000,
                   1px -1px 0 #000,
                   -1px 1px 0 #000,
                   1px 1px 0 #000,
-                  -2px -2px 0 #000,
-                  2px -2px 0 #000,
-                  -2px 2px 0 #000,
-                  2px 2px 0 #000,
-                  0 2px 4px rgba(0, 0, 0, 0.6),
-                  0 4px 8px rgba(0, 0, 0, 0.4),
-                  0 6px 12px rgba(0, 0, 0, 0.3)
+                  -1px -1px 0 #000,
+                  1px -1px 0 #000,
+                  -1px 1px 0 #000,
+                  1px 1px 0 #000,
+                  0 1px 2px rgba(0, 0, 0, 0.6),
+                  0 2px 2px rgba(0, 0, 0, 0.4),
+                  0 3px 6px rgba(0, 0, 0, 0.3)
                 `,
-                  color: "#90AC19",
+                  color: "#bde022",
                   WebkitTextStroke: "1px ",
                 }}
               >
@@ -58,14 +61,14 @@ export default function Hero() {
                 className="mt-2 md:mt-4 text-lg font-extrabold sm:text-xl max-w-md mx-auto md:mx-0"
                 style={{
                   textShadow: `
-                  -1px -1px 0 #90AC19,
-                  1px -1px 0 #90AC19,
-                  -1px 1px 0 #90AC19,
-                  1px 1px 0 #90AC19,
-                  -2px -2px 0 #90AC19,
-                  2px -2px 0 #90AC19,
-                  -2px 2px 0 #90AC19,
-                  2px 2px 0 #90AC19,
+                  -1px -1px 0 #bde022,
+                  1px -1px 0 #bde022,
+                  -1px 1px 0 #bde022,
+                  1px 1px 0 #bde022,
+                  -2px -2px 0 #bde022,
+                  2px -2px 0 #bde022,
+                  -2px 2px 0 #bde022,
+                  2px 2px 0 #bde022,
                   0 2px 4px rgba(0, 0, 0, 0.6),
                   0 4px 8px rgba(0, 0, 0, 0.4),
                   0 6px 12px rgba(0, 0, 0, 0.3)
@@ -90,7 +93,7 @@ export default function Hero() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="bg-[#90AC19] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto"
+                    className="bg-[#bde022] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto"
                   >
                     Services
                   </motion.button>
