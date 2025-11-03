@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
     remotePatterns: [
       {
         protocol: "https",
@@ -24,6 +28,23 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+  },
+  // Optimize fonts
+  optimizeFonts: true,
+  // Enable compression
+  compress: true,
+  // Enable SWC minification
+  swcMinify: true,
+  // Optimize production builds
+  productionBrowserSourceMaps: false,
+  // Reduce bundle size
+  modularizeImports: {
+    "@heroicons/react/24/outline": {
+      transform: "@heroicons/react/24/outline/{{member}}",
+    },
+    "@heroicons/react/24/solid": {
+      transform: "@heroicons/react/24/solid/{{member}}",
+    },
   },
 };
 

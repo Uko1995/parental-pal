@@ -1,13 +1,7 @@
 "use client";
 
 import Hero from "../components/Hero";
-import MiniBlog from "../components/MiniBlog";
-import Statistics from "../components/Statistics";
-import Testimonials from "../components/Testimonials";
-import Vision from "../components/Vision";
-import Contact from "../components/Contact";
-import MiniServices from "../components/MiniServices";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -15,6 +9,14 @@ import {
   generateLocalBusinessSchema,
   generateJsonLdScript,
 } from "../lib/metadata";
+
+// Lazy load below-the-fold components
+const Vision = lazy(() => import("../components/Vision"));
+const MiniServices = lazy(() => import("../components/MiniServices"));
+const MiniBlog = lazy(() => import("../components/MiniBlog"));
+const Statistics = lazy(() => import("../components/Statistics"));
+const Testimonials = lazy(() => import("../components/Testimonials"));
+const Contact = lazy(() => import("../components/Contact"));
 
 function PageContent() {
   const searchParams = useSearchParams();
@@ -52,12 +54,24 @@ export default function Page() {
         }}
       />
       <Hero />
-      <Vision />
-      <MiniServices />
-      <MiniBlog />
-      <Statistics />
-      <Testimonials />
-      <Contact />
+      <Suspense fallback={<div className="h-96" />}>
+        <Vision />
+      </Suspense>
+      <Suspense fallback={<div className="h-96" />}>
+        <MiniServices />
+      </Suspense>
+      <Suspense fallback={<div className="h-96" />}>
+        <MiniBlog />
+      </Suspense>
+      <Suspense fallback={<div className="h-64" />}>
+        <Statistics />
+      </Suspense>
+      <Suspense fallback={<div className="h-96" />}>
+        <Testimonials />
+      </Suspense>
+      <Suspense fallback={<div className="h-64" />}>
+        <Contact />
+      </Suspense>
     </>
   );
 }

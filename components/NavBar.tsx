@@ -67,7 +67,7 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="shrink-0">
+          <div className="shrink-0 w-[200px] h-[50px]">
             <Link
               href="/"
               className="flex items-center transition-all duration-300"
@@ -77,7 +77,7 @@ export default function NavBar() {
                 alt="PARENTALPAL logo"
                 width={200}
                 height={50}
-                className="h-15 w-auto object-contain"
+                className="h-[50px] w-[200px] object-contain"
                 priority
               />
             </Link>

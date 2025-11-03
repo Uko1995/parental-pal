@@ -8,7 +8,10 @@ const jost = Jost({ subsets: ["latin"], weight: "900" });
 
 export default function Hero() {
   return (
-    <section className="relative h-screen -mt-16 mb-10 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col">
+    <section
+      className="relative h-screen -mt-16 mb-10 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col"
+      style={{ contentVisibility: "auto" }}
+    >
       {/* Mobile: Content centered, CTAs at bottom */}
       {/* Desktop (md+): Content and CTAs together in the middle */}
       <div className="relative z-10 flex flex-col h-full px-4 sm:px-6 lg:px-8">
@@ -32,7 +35,7 @@ export default function Hero() {
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
                 className={`relative text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold ${jost.className}`}
                 style={{
                   textShadow: `
@@ -40,16 +43,12 @@ export default function Hero() {
                   1px -1px 0 #000,
                   -1px 1px 0 #000,
                   1px 1px 0 #000,
-                  -1px -1px 0 #000,
-                  1px -1px 0 #000,
-                  -1px 1px 0 #000,
-                  1px 1px 0 #000,
                   0 1px 2px rgba(0, 0, 0, 0.6),
-                  0 2px 2px rgba(0, 0, 0, 0.4),
-                  0 3px 6px rgba(0, 0, 0, 0.3)
+                  0 2px 2px rgba(0, 0, 0, 0.4)
                 `,
                   color: "#bde022",
                   WebkitTextStroke: "1px ",
+                  willChange: "transform, opacity",
                 }}
               >
                 ParentalPal
@@ -57,7 +56,7 @@ export default function Hero() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
                 className="mt-2 md:mt-4 text-lg font-extrabold sm:text-xl max-w-md mx-auto md:mx-0"
                 style={{
                   textShadow: `
@@ -65,16 +64,11 @@ export default function Hero() {
                   1px -1px 0 #bde022,
                   -1px 1px 0 #bde022,
                   1px 1px 0 #bde022,
-                  -2px -2px 0 #bde022,
-                  2px -2px 0 #bde022,
-                  -2px 2px 0 #bde022,
-                  2px 2px 0 #bde022,
-                  0 2px 4px rgba(0, 0, 0, 0.6),
-                  0 4px 8px rgba(0, 0, 0, 0.4),
-                  0 6px 12px rgba(0, 0, 0, 0.3)
+                  0 2px 4px rgba(0, 0, 0, 0.6)
                 `,
                   color: "#101828",
                   WebkitTextStroke: "0.5px rgba(0, 0, 0, 0.3)",
+                  willChange: "opacity",
                 }}
               >
                 Your one-stop solution for all childcare needs.
@@ -85,27 +79,19 @@ export default function Hero() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
               className="mt-6 hidden md:block"
             >
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 md:mb-0 justify-center md:justify-start">
                 <Link href={"/services"} passHref>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-[#bde022] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto"
-                  >
+                  <button className="bg-[#bde022] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                     Services
-                  </motion.button>
+                  </button>
                 </Link>
                 <Link href={"/about"} passHref>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="border-2 cursor-pointer border-gray-900 bg-gray-900 text-white hover:bg-gray-900/80 hover:border-gray-900/80 px-6 sm:px-8 py-3 rounded-lg font-bold transition-colors duration-300 text-2xl sm:text-lg w-full sm:w-auto"
-                  >
+                  <button className="border-2 cursor-pointer border-gray-900 bg-gray-900 text-white hover:bg-gray-900/80 hover:border-gray-900/80 px-6 sm:px-8 py-3 rounded-lg font-bold transition-colors duration-200 text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                     Learn more
-                  </motion.button>
+                  </button>
                 </Link>
               </div>
             </motion.div>
@@ -116,27 +102,19 @@ export default function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
+          transition={{ duration: 0.4, delay: 0.6 }}
           className="pb-8 md:hidden"
         >
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
             <Link href={"/services"} passHref>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-[#90AC19] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-300 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto"
-              >
+              <button className="bg-[#90AC19] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                 Services
-              </motion.button>
+              </button>
             </Link>
             <Link href={"/about"} passHref>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 cursor-pointer border-gray-900 bg-gray-900 text-white hover:bg-gray-900/80 hover:border-gray-900/80 px-6 sm:px-8 py-3 rounded-lg font-bold transition-colors duration-300 text-2xl sm:text-lg w-full sm:w-auto"
-              >
+              <button className="border-2 cursor-pointer border-gray-900 bg-gray-900 text-white hover:bg-gray-900/80 hover:border-gray-900/80 px-6 sm:px-8 py-3 rounded-lg font-bold transition-colors duration-200 text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                 Learn more
-              </motion.button>
+              </button>
             </Link>
           </div>
         </motion.div>

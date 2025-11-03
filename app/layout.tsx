@@ -9,6 +9,8 @@ import { baseMetadata } from "../lib/metadata";
 
 const manRope = Manrope({
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = baseMetadata;
@@ -20,6 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className={`${manRope.className}  antialiased`}>
         <SessionProvider>
           <AnalyticsProvider>

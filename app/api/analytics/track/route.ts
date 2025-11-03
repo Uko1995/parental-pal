@@ -164,7 +164,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Analytics tracking error:", error);
     return NextResponse.json(
       {
         error: "Failed to track event",
@@ -279,7 +278,6 @@ export async function GET(request: NextRequest) {
       deviceBreakdown,
     });
   } catch (error) {
-    console.error("Analytics fetch error:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch analytics",
