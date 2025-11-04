@@ -80,9 +80,9 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.6 }}
-              className="mt-6 hidden md:block"
+              className="mt-3 hidden md:block"
             >
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 md:mb-0 justify-center md:justify-start">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 md:mb-0 justify-center md:justify-start">
                 <Link href={"/services"} passHref>
                   <button className="bg-[#bde022] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                     Services

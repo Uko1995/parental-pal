@@ -40,7 +40,7 @@ function SignInContent() {
   const [isFormValid, setIsFormValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const redirectTo = searchParams.get("callbackUrl");
   const error = searchParams.get("error");
 
   useEffect(() => {
@@ -145,12 +145,12 @@ function SignInContent() {
     setGoogleLoading(true);
     toast.promise(
       signIn("google", {
-        callbackUrl,
+        redirectTo: redirectTo || "/",
         redirect: true,
       }),
       {
         loading: "Redirecting to Google...",
-        success: "Google sign-in successful!",
+        success: "Redirect successfull!",
         error: "Google sign-in failed. Please try again.",
       }
     );
@@ -178,7 +178,7 @@ function SignInContent() {
         toast.error("Invalid credentials. Please try again.");
       } else if (result?.ok) {
         toast.success("Signed in successfully!");
-        router.push(callbackUrl);
+        router.push(redirectTo || "/");
       }
     } catch (error) {
       console.error("Sign in error:", error);

@@ -125,8 +125,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             // Send welcome email for new users
             try {
               const emailResponse = await fetch(
-                `${process.env.NEXTAUTH_URL}/api/email` ||
-                  "http://localhost:3000/api/email",
+                `${process.env.NEXTAUTH_URL}/api/email`,
                 {
                   method: "POST",
                   headers: {

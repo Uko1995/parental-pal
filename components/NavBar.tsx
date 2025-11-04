@@ -162,7 +162,7 @@ export default function NavBar() {
                   onClick={handleSignOut}
                   className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                 >
-                  Sign Out
+                  SIGN OUT
                 </button>
               </div>
             ) : (
@@ -173,7 +173,7 @@ export default function NavBar() {
                     status === "loading" ? "cursor-progress" : "cursor-pointer"
                   }  text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300`}
                 >
-                  {status === "loading" ? "Loading..." : "LOGIN"}
+                  {status === "loading" ? "Loading..." : "SIGN IN"}
                 </Link>
               </div>
             )}

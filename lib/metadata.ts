@@ -99,8 +99,11 @@ export const baseMetadata: Metadata = {
     canonical: siteConfig.url,
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
+    icon: [
+      { url: "/icon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
+    shortcut: "/icon.ico",
     apple: "/apple-touch-icon.png",
   },
 };
