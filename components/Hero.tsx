@@ -9,7 +9,7 @@ const jost = Jost({ subsets: ["latin"], weight: "900" });
 export default function Hero() {
   return (
     <section
-      className="relative h-screen -mt-16 mb-10 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col"
+      className="relative h-screen -mt-16 mb-15 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col"
       style={{ contentVisibility: "auto" }}
     >
       {/* Mobile: Content centered, CTAs at bottom */}
@@ -36,19 +36,17 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className={`relative text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold ${jost.className}`}
+                className={`relative text-[#90AC19] text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold ${jost.className}`}
                 style={{
                   textShadow: `
-                  -1px -1px 0 #000,
-                  1px -1px 0 #000,
-                  -1px 1px 0 #000,
-                  1px 1px 0 #000,
-                  0 1px 2px rgba(0, 0, 0, 0.6),
-                  0 2px 2px rgba(0, 0, 0, 0.4)
+                  -2px -2px 0 #bde022,
+                  2px -2px 0 #bde022,
+                  -2px 2px 0 #bde022,
+                  2px 2px 0 #bde022,
+                  0 4px 8px rgba(0, 0, 0, 0.6)
                 `,
-                  color: "#bde022",
-                  WebkitTextStroke: "1px ",
-                  willChange: "transform, opacity",
+                  color: "#90AC19",
+                  willChange: "opacity",
                 }}
               >
                 ParentalPal
@@ -82,9 +80,9 @@ export default function Hero() {
               transition={{ duration: 0.4, delay: 0.6 }}
               className="mt-3 hidden md:block"
             >
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 md:mb-0 justify-center md:justify-start">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
                 <Link href={"/services"} passHref>
-                  <button className="bg-[#bde022] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
+                  <button className="bg-[#90AC19] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                     Services
                   </button>
                 </Link>
@@ -103,7 +101,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.6 }}
-          className="pb-8 md:hidden"
+          className="pb-12 md:hidden"
         >
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
             <Link href={"/services"} passHref>

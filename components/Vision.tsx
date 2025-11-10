@@ -171,7 +171,6 @@ export default function Vision() {
               className="object-cover hover:scale-105 transition-transform duration-500"
             />
           </div>
-          
 
           {/* Text Content */}
           <div className="space-y-4">
@@ -408,7 +407,7 @@ export default function Vision() {
                           {service.subjects?.map((subject, subjectIndex) => (
                             <span
                               key={subjectIndex}
-                              className="text-xs bg-[#E8931A]/10 text-[#E8931A] px-2 py-1 rounded-full font-medium"
+                              className="text-xs bg-[#E8931A]/5 text-[#E8931A] font-semibold px-2 py-1 rounded-full "
                             >
                               {subject}
                             </span>
@@ -419,9 +418,9 @@ export default function Vision() {
                         {service.features?.map((feature, featureIndex) => (
                           <span
                             key={featureIndex}
-                            className="text-xs bg-[#90AC19]/10 text-[#90AC19] px-2 py-1 rounded-full flex items-center"
+                            className="text-xs bg-[#90AC19]/5 text-[#90AC19] px-2 py-1 font-semibold rounded-full flex items-center"
                           >
-                            <div className="w-1.5 h-1.5 bg-[#90AC19] rounded-full mr-2"></div>
+                            <div className="w-1.5 h-1.5 bg-[#90AC19]  rounded-full mr-2"></div>
                             {feature}
                           </span>
                         ))}

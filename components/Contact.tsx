@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ export default function Contact() {
     message: "",
     serviceType: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -24,10 +26,62 @@ export default function Contact() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission logic here
-    console.log("Form submitted:", formData);
+
+    // Validate required fields
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.subject ||
+      !formData.message
+    ) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Message sent successfully!");
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+          serviceType: "",
+        });
+      } else {
+        toast.error(data.error || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+      toast.error(
+        "An error occurred while sending your message. Please try again or contact us directly."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [
@@ -121,7 +175,7 @@ export default function Contact() {
             <div className="space-y-8">
               {contactInfo.map((info, index) => (
                 <div key={index} className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-[#90AC19] rounded-full flex items-center justify-center text-white">
+                  <div className="shrink-0 w-12 h-12 bg-[#90AC19] rounded-full flex items-center justify-center text-white">
                     {info.icon}
                   </div>
                   <div>
@@ -300,9 +354,17 @@ export default function Contact() {
                   <p className="text-sm text-gray-500">* Required fields</p>
                   <button
                     type="submit"
-                    className="bg-[#90AC19] hover:bg-[#7A9216] text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300 shadow-lg hover:shadow-xl"
+                    disabled={isSubmitting}
+                    className="bg-[#90AC19] hover:bg-[#7A9216] text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    Send Message
+                    {isSubmitting ? (
+                      <>
+                        <span className="loading loading-spinner loading-sm"></span>
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Message"
+                    )}
                   </button>
                 </div>
               </form>
@@ -311,7 +373,7 @@ export default function Contact() {
         </div>
 
         {/* Emergency Contact */}
-        <div className="mt-16 bg-gradient-to-r from-[#90AC19] to-[#7A9216] rounded-2xl p-8 text-white text-center">
+        <div className="mt-16 bg-linear-to-r from-[#90AC19] to-[#7A9216] rounded-2xl p-8 text-white text-center">
           <h3 className="text-2xl font-bold mb-4">
             Need Immediate Assistance?
           </h3>
