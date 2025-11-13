@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { v4 as uuidv4 } from "uuid";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
 import ChildCareSpecificBookingForm, {
   ChildCareSpecificBookingFormRef,
@@ -213,27 +212,27 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       }
 
       // 2. Initialize payment with Paystack
-      const idempotencyKey = uuidv4();
-      const paymentRes = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: bookingResult.bookingId,
-          userId: bookingResult.userId,
-          amount: bookingResult.amount,
-          currency: bookingResult.currency || "NGN",
-          email: bookingResult.email,
-          idempotencyKey,
-        }),
-      });
+      // const idempotencyKey = uuidv4();
+      // const paymentRes = await fetch("/api/payments/initialize", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     bookingId: bookingResult.bookingId,
+      //     userId: bookingResult.userId,
+      //     amount: bookingResult.amount,
+      //     currency: bookingResult.currency || "NGN",
+      //     email: bookingResult.email,
+      //     idempotencyKey,
+      //   }),
+      // });
 
-      const paymentData = await paymentRes.json();
+      // const paymentData = await paymentRes.json();
 
-      if (!paymentData.success || !paymentData.data?.authorization_url) {
-        toast.dismiss("booking-submit");
-        toast.error(paymentData.error || "Payment initialization failed");
-        return;
-      }
+      // if (!paymentData.success || !paymentData.data?.authorization_url) {
+      //   toast.dismiss("booking-submit");
+      //   toast.error(paymentData.error || "Payment initialization failed");
+      //   return;
+      // }
 
       // Clear persisted data after successful booking
       clearFormData();
@@ -264,7 +263,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       toast.success("Redirecting to payment...");
 
       // Redirect to Paystack checkout
-      window.location.href = paymentData.data.authorization_url;
+      // window.location.href = paymentData.data.authorization_url;
     } catch (error: unknown) {
       toast.dismiss("booking-submit");
 
@@ -399,8 +398,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       return <TutoringForm ref={tutoringFormRef} />;
     } else {
       return (
-        <div className="text-center py-8">
-          <p className="text-gray-500">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-12 text-center">
+          <p className="text-gray-600 text-base">
             Please select a service to continue with booking.
           </p>
         </div>
@@ -436,67 +435,63 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   ];
 
   return (
-    <div className="bg-base-100 min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="card bg-linear-to-r from-primary to-secondary text-primary-content shadow-2xl mb-8">
-          <div className="card-body text-center">
-            <h1 className="card-title text-3xl font-bold justify-center mb-2">
-              Book Our Services
-            </h1>
-            <p className="text-lg opacity-90">
-              Choose your service and provide the necessary details for your
-              booking
-            </p>
-          </div>
+        <div className=" mb-8 p-8 sm:p-10 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+            Book Our Services
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+            Choose your service and provide the necessary details for your
+            booking
+          </p>
         </div>
 
         <Form action={handleFormSubmit} className="space-y-8">
           {/* Service Selection */}
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body">
-              <h2 className="card-title text-lg flex items-center  mb-6">
-                Select Your Service
-              </h2>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">
+              Select Your Service
+            </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services.map((service) => {
-                  return (
-                    <label
-                      key={service.value}
-                      className={`
-                        cursor-pointer p-2 rounded-xs border transition-all duration-300 hover:shadow-lg
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {services.map((service) => {
+                return (
+                  <label
+                    key={service.value}
+                    className={`
+                        cursor-pointer p-4 sm:p-5 rounded-lg border transition-all duration-200
                         ${
                           selectedService === service.value
-                            ? " shadow-lg"
-                            : "border-base-300 hover:border-base-300/50"
+                            ? "border-[#90AC19] bg-[#90AC19]/5 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                         }
                       `}
-                    >
-                      <input
-                        type="radio"
-                        name="serviceType"
-                        value={service.value}
-                        checked={selectedService === service.value}
-                        onChange={handleServiceChange}
-                        className="sr-only"
-                        required
-                      />
-                      <div className="text-center">
-                        <h3
-                          className={`font-semibold text-base mb-2 ${
-                            selectedService === service.value
-                              ? ""
-                              : "text-base-content"
-                          }`}
-                        >
-                          {service.label}
-                        </h3>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
+                  >
+                    <input
+                      type="radio"
+                      name="serviceType"
+                      value={service.value}
+                      checked={selectedService === service.value}
+                      onChange={handleServiceChange}
+                      className="sr-only"
+                      required
+                    />
+                    <div className="text-center">
+                      <h3
+                        className={`font-semibold text-sm sm:text-base ${
+                          selectedService === service.value
+                            ? "text-[#90AC19]"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {service.label}
+                      </h3>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -505,87 +500,81 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
           {/* Additional Booking Information */}
           {selectedService && (
-            <div className="card bg-base-100 shadow-lg ">
-              <div className="card-body">
-                <h2 className="card-title text-xl flex items-center mb-6">
-                  Additional Information
-                </h2>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+                Additional Information
+              </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {/* Priority Level */}
-                  <div className="form-control">
-                    <label className="label mb-2">
-                      <span className="label-text font-medium">
-                        Priority Level
-                      </span>
-                      <span className="label-text-alt text-xs">
-                        How urgent is this booking?
-                      </span>
-                    </label>
-                    <select
-                      name="priority"
-                      value={priority}
-                      onChange={(e) => {
-                        setPriority(
-                          e.target.value as "low" | "normal" | "high" | "urgent"
-                        );
-                        saveCurrentFormData();
-                      }}
-                      className="select select-bordered "
-                    >
-                      <option value="low">Low - Flexible timing</option>
-                      <option value="normal">Normal - Standard priority</option>
-                      <option value="high">High - Preferred soon</option>
-                      <option value="urgent">Urgent - ASAP</option>
-                    </select>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                {/* Priority Level */}
+                <div className="form-control">
+                  <label className="block mb-2">
+                    <span className="text-sm font-medium text-gray-900 block mb-1">
+                      Priority Level
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      How urgent is this booking?
+                    </span>
+                  </label>
+                  <select
+                    name="priority"
+                    value={priority}
+                    onChange={(e) => {
+                      setPriority(
+                        e.target.value as "low" | "normal" | "high" | "urgent"
+                      );
+                      saveCurrentFormData();
+                    }}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                  >
+                    <option value="low">Low - Flexible timing</option>
+                    <option value="normal">Normal - Standard priority</option>
+                    <option value="high">High - Preferred soon</option>
+                    <option value="urgent">Urgent - ASAP</option>
+                  </select>
+                </div>
+
+                {/* Customer Type */}
+                <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    name="isRepeatedCustomer"
+                    checked={isRepeatedCustomer}
+                    onChange={(e) => {
+                      setIsRepeatedCustomer(e.target.checked);
+                      saveCurrentFormData();
+                    }}
+                    className="mt-0.5 w-4 h-4 text-[#90AC19] border-gray-300 rounded focus:ring-[#90AC19]"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900 block">
+                      Returning Customer?
+                    </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Check if you&apos;ve used our services before
+                    </div>
                   </div>
+                </div>
 
-                  {/* Customer Type */}
-                  <div className="form-control">
-                    <label className="label cursor-pointer justify-start gap-3">
-                      <input
-                        type="checkbox"
-                        name="isRepeatedCustomer"
-                        checked={isRepeatedCustomer}
-                        onChange={(e) => {
-                          setIsRepeatedCustomer(e.target.checked);
-                          saveCurrentFormData();
-                        }}
-                        className="checkbox"
-                      />
-                      <div>
-                        <span className="label-text font-medium">
-                          Returning Customer?
-                        </span>
-                        <div className="text-xs text-base-content/70">
-                          Check if you&apos;ve used our services before
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Follow-up Required */}
-                  <div className="form-control">
-                    <label className="label cursor-pointer justify-start gap-3">
-                      <input
-                        type="checkbox"
-                        name="followUpRequired"
-                        checked={followUpRequired}
-                        onChange={(e) => {
-                          setFollowUpRequired(e.target.checked);
-                          saveCurrentFormData();
-                        }}
-                        className="checkbox"
-                      />
-                      <div>
-                        <span className="label-text font-medium">
-                          Request Follow-up Contact
-                        </span>
-                        <div className="text-xs text-base-content/70">
-                          We&apos;ll call you to confirm details
-                        </div>
-                      </div>
-                    </label>
+                {/* Follow-up Required */}
+                <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    name="followUpRequired"
+                    checked={followUpRequired}
+                    onChange={(e) => {
+                      setFollowUpRequired(e.target.checked);
+                      saveCurrentFormData();
+                    }}
+                    className="mt-0.5 w-4 h-4 text-[#90AC19] border-gray-300 rounded focus:ring-[#90AC19]"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900 block">
+                      Request Follow-up Contact
+                    </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      We&apos;ll call you to confirm details
+                    </div>
                   </div>
                 </div>
               </div>
@@ -593,129 +582,131 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           )}
 
           {/* How did you hear about us Selection */}
-          <div className="card bg-base-100 shadow-lg ">
-            <div className="card-body">
-              <h2 className="card-title text-xl flex items-center  mb-6">
-                How did you hear about us? *
-              </h2>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+              How did you hear about us? <span className="text-red-500">*</span>
+            </h2>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {HearAboutUs.map((option) => (
-                  <label
-                    key={option.value}
-                    className={`
-                      cursor-pointer p-4 rounded-lg border-2 transition-all duration-300 text-center
-                      ${
-                        isHearAboutUsSelected(option.value)
-                          ? " "
-                          : "border-base-300 "
-                      }
-                    `}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {HearAboutUs.map((option) => (
+                <label
+                  key={option.value}
+                  className={`
+                    cursor-pointer p-4 rounded-lg border transition-all duration-200 text-center
+                    ${
+                      isHearAboutUsSelected(option.value)
+                        ? "border-[#90AC19] bg-[#90AC19]/5 shadow-sm"
+                        : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="source"
+                    value={option.value}
+                    checked={isHearAboutUsSelected(option.value)}
+                    onChange={() => handleHearAboutUsChange(option.value)}
+                    className="sr-only"
+                    required
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      isHearAboutUsSelected(option.value)
+                        ? "text-[#90AC19]"
+                        : "text-gray-700"
+                    }`}
                   >
-                    <input
-                      type="radio"
-                      name="source"
-                      value={option.value}
-                      checked={isHearAboutUsSelected(option.value)}
-                      onChange={() => handleHearAboutUsChange(option.value)}
-                      className="sr-only"
-                      required
-                    />
-                    <span className="text-sm font-medium">{option.label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Show textarea when "Other" is selected */}
-              {selectedHearAboutUs === "other" && (
-                <div className="mt-6">
-                  <div className="form-control flex flex-col gap-2">
-                    <label className="label">
-                      <span className="label-text font-medium">
-                        Please specify *
-                      </span>
-                    </label>
-                    <textarea
-                      name="referralSource"
-                      value={otherHearAboutUsText}
-                      onChange={handleOtherTextChange}
-                      className="textarea w-full textarea-bordered  h-24"
-                      placeholder="Please tell us how you heard about us..."
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Show dropdown when "Social Media" is selected */}
-              {selectedHearAboutUs === "socialMedia" && (
-                <div className="mt-6">
-                  <div className="form-control flex flex-col gap-2">
-                    <label className="label">
-                      <span className="label-text font-medium">
-                        Which social media platform? *
-                      </span>
-                    </label>
-                    <select
-                      name="socialMediaPlatform"
-                      value={socialMediaPlatform}
-                      onChange={handleSocialMediaChange}
-                      className="select select-bordered w-full"
-                      required
-                    >
-                      <option value="">Select platform...</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="Twitter/X">Twitter/X</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="TikTok">TikTok</option>
-                      <option value="YouTube">YouTube</option>
-                      <option value="WhatsApp">WhatsApp</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Show input when "Referral" is selected */}
-              {selectedHearAboutUs === "referral" && (
-                <div className="mt-6">
-                  <div className="form-control flex flex-col gap-2">
-                    <label className="label">
-                      <span className="label-text font-medium">
-                        Who referred you? *
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      name="referralName"
-                      value={referralName}
-                      onChange={handleReferralChange}
-                      className="input input-bordered w-full"
-                      placeholder="Enter the name of the person who referred you..."
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+                    {option.label}
+                  </span>
+                </label>
+              ))}
             </div>
+
+            {/* Show textarea when "Other" is selected */}
+            {selectedHearAboutUs === "other" && (
+              <div className="mt-6">
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    Please specify <span className="text-red-500">*</span>
+                  </span>
+                </label>
+                <textarea
+                  name="referralSource"
+                  value={otherHearAboutUsText}
+                  onChange={handleOtherTextChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 resize-none"
+                  placeholder="Please tell us how you heard about us..."
+                  rows={4}
+                  required
+                />
+              </div>
+            )}
+
+            {/* Show dropdown when "Social Media" is selected */}
+            {selectedHearAboutUs === "socialMedia" && (
+              <div className="mt-6">
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    Which social media platform?{" "}
+                    <span className="text-red-500">*</span>
+                  </span>
+                </label>
+                <select
+                  name="socialMediaPlatform"
+                  value={socialMediaPlatform}
+                  onChange={handleSocialMediaChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white"
+                  required
+                >
+                  <option value="" className="text-gray-500">
+                    Select platform...
+                  </option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Twitter/X">Twitter/X</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="YouTube">YouTube</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            )}
+
+            {/* Show input when "Referral" is selected */}
+            {selectedHearAboutUs === "referral" && (
+              <div className="mt-6">
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    Who referred you? <span className="text-red-500">*</span>
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  name="referralName"
+                  value={referralName}
+                  onChange={handleReferralChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900"
+                  placeholder="Enter the name of the person who referred you..."
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
-          <div className="card bg-linear-to-r from-primary to-secondary text-primary-content shadow-lg">
-            <div className="card-body text-center">
-              <button
-                ref={submitButtonRef}
-                type="submit"
-                className="btn btn-lg btn-ghost text-white border-white/30 hover:bg-white/20 hover:border-white/50 w-full transition-all duration-300"
-              >
-                Complete Registration & Continue to Payment
-              </button>
-              <p className="text-sm opacity-80 mt-2">
-                By registering, you agree to our Terms of Service and Privacy
-                Policy
-              </p>
-            </div>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+            <button
+              ref={submitButtonRef}
+              type="submit"
+              className="w-full bg-[#90AC19] hover:bg-[#7a9315] text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-base sm:text-lg"
+            >
+              Complete Registration & Continue to Payment
+            </button>
+            <p className="text-xs sm:text-sm text-gray-500 text-center mt-4">
+              By registering, you agree to our Terms of Service and Privacy
+              Policy
+            </p>
           </div>
         </Form>
       </div>

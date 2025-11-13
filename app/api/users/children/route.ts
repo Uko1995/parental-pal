@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import { BookingRepository } from "@/lib/BookingRepository";
 
 export async function GET() {
   try {
@@ -16,9 +17,95 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Return children data
+    // Get children from user profile
+    const profileChildren = user.children || [];
+
+    // Get children from bookings
+    const bookings = await BookingRepository.findByUserId(user._id!);
+
+    // Extract unique children from bookings
+    interface ChildWithServices {
+      name: string;
+      age: number;
+      gender?: "male" | "female";
+      class?: string;
+      schoolName?: string;
+      subjects?: string[];
+      services: Array<{
+        serviceType: string;
+        status: string;
+        bookingId: string;
+        createdAt: Date;
+      }>;
+    }
+
+    const childrenMap = new Map<string, ChildWithServices>();
+
+    bookings.forEach((booking) => {
+      (booking.children || []).forEach((child) => {
+        const key = `${child.name.toLowerCase()}_${child.age}`;
+
+        if (!childrenMap.has(key)) {
+          childrenMap.set(key, {
+            name: child.name,
+            age: child.age,
+            class: child.class,
+            schoolName: child.schoolName,
+            subjects:
+              "subjects" in child && Array.isArray(child.subjects)
+                ? (child.subjects as string[])
+                : [],
+            services: [],
+          });
+        }
+
+        // Add service information
+        const existingChild = childrenMap.get(key);
+        if (existingChild) {
+          existingChild.services.push({
+            serviceType: booking.serviceType,
+            status: booking.status,
+            bookingId: booking._id!.toString(),
+            createdAt: booking.createdAt,
+          });
+        }
+      });
+    });
+
+    // Merge profile children with booking children
+    const allChildren: Array<ChildWithServices> = profileChildren.map(
+      (child) => ({
+        ...child,
+        services: [],
+      })
+    );
+
+    childrenMap.forEach((bookingChild) => {
+      const exists = allChildren.some(
+        (profileChild) =>
+          profileChild.name.toLowerCase() === bookingChild.name.toLowerCase() &&
+          profileChild.age === bookingChild.age
+      );
+
+      if (!exists) {
+        allChildren.push(bookingChild);
+      } else {
+        // Merge services into existing profile child
+        const existingChild = allChildren.find(
+          (profileChild) =>
+            profileChild.name.toLowerCase() ===
+              bookingChild.name.toLowerCase() &&
+            profileChild.age === bookingChild.age
+        );
+        if (existingChild) {
+          existingChild.services = bookingChild.services;
+        }
+      }
+    });
+
+    // Return children data with services
     return NextResponse.json({
-      children: user.children || [],
+      children: allChildren,
     });
   } catch (error) {
     console.error("Error fetching children:", error);

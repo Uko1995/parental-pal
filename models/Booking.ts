@@ -23,15 +23,62 @@ export interface BookingInterface {
     age: number;
     class?: string;
     schoolName?: string;
+    specialNeeds?: string;
   }>;
 
   // Service-specific data
   serviceData: {
-    // Tutoring specific
+    // Per-child data structure (used by multiple services)
+    childrenData?: Array<{
+      childId: string;
+      // Tutoring specific
+      subjects?: string[];
+      academicLevel?: string;
+      learningGoals?: string;
+      totalHours?: number;
+      schedule?: Array<{
+        day: string;
+        hours: number;
+        startTime?: string;
+        dates?: Array<{
+          date: string;
+          startTime: string;
+        }>;
+      }>;
+      // Childcare specific
+      careType?: "daily" | "monthly";
+      totalDays?: number;
+      isMonthSelected?: boolean;
+      dropoffTime?: string;
+      pickupTime?: string;
+      specialNeeds?: string;
+      // Holiday camp specific
+      campWeeks?: Array<{
+        startDate: string;
+        endDate: string;
+        weekNumber: number;
+      }>;
+      // Homeschooling specific
+      selectedSubjects?: string[];
+      gradeLevel?: string;
+      curriculum?: string;
+      learningStyle?: string;
+      educationalGoals?: string;
+      selectedTerm?: string;
+      // Kiddies enrichment specific
+      selectedPrograms?: string[];
+      interests?: string;
+      parentGoals?: string;
+    }>;
+    // Legacy/general fields (kept for backward compatibility)
     subjects?: string[];
     academicLevel?: string;
     learningGoals?: string;
     hourlyRate?: number;
+
+    // Homeschooling specific
+    curriculum?: string;
+    learningStyle?: string;
 
     // Childcare specific
     careType?: "daily" | "monthly";
@@ -80,6 +127,12 @@ export interface BookingInterface {
       hours: number;
       startTime?: string;
       endTime?: string;
+      // Array of specific dates for this weekday (e.g., all Mondays in the month)
+      dates?: Array<{
+        date: string; // ISO date string
+        startTime: string;
+        endTime?: string;
+      }>;
     }>;
     isRecurring: boolean;
     frequency?: "daily" | "weekly" | "monthly";
@@ -338,6 +391,18 @@ export const BookingSchema = {
                   endTime: {
                     bsonType: "string",
                     pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+                  },
+                  dates: {
+                    bsonType: "array",
+                    items: {
+                      bsonType: "object",
+                      required: ["date", "startTime"],
+                      properties: {
+                        date: { bsonType: "string" },
+                        startTime: { bsonType: "string" },
+                        endTime: { bsonType: "string" },
+                      },
+                    },
                   },
                 },
               },

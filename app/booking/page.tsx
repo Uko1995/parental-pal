@@ -4,19 +4,8 @@ import { Suspense } from "react";
 
 export default function Page() {
   return (
-    <section className="min-h-screen bg-linear-to-br from-[#FFEACF]/50 via-white to-[#FFEACF]/50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Enroll Your Child
-          </h1>
-          <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Join the PARENTALPAL family and give your child access to
-            exceptional learning opportunities.
-          </p>
-        </div>
-
+    <section className="min-h-screen  py-8 px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Registration Form */}
         <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
           <BookingForm submitAction={registerChild} />

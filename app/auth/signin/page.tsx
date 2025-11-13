@@ -311,12 +311,13 @@ function SignInContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center md:gap-20 p-4 bg-linear-to-br from-gray-50 via-white to-[#FFEACF]/30">
+    <div className="min-h-screen flex items-center justify-center md:gap-20 p-4 bg-[url('/greenBG.jpg')] object-cover relative ">
+      <div className="absolute inset-0 bg-black/30 "></div>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="hidden md:block h-auto w-1/4"
+        className="hidden md:block h-auto bg-white rounded-md z-10  w-1/4"
       >
         <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
           <Image

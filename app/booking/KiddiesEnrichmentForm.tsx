@@ -1,30 +1,70 @@
 "use client";
 
-import OptionalChild from "./OptionalChild";
+import ChildInfoForm from "./ChildInfoForm";
 import PaymentSchedule from "./PaymentSchedule";
-import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
 import {
   useState,
   useImperativeHandle,
   forwardRef,
-  useRef,
   useEffect,
+  useCallback,
 } from "react";
+import { useSession } from "next-auth/react";
+import {
+  UserIcon,
+  PlusIcon,
+  TrashIcon,
+  CurrencyDollarIcon,
+  InformationCircleIcon,
+  CalendarIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
+import { v4 as uuidv4 } from "uuid";
+import PhoneInput from "@/components/PhoneInput";
 
 export interface KiddiesEnrichmentFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
 }
 
+interface ChildEnrichmentData {
+  id: string;
+  index: number;
+  selectedPrograms: string[];
+  interests: string;
+  parentGoals: string;
+  eventDate: string; // Single event date
+  startTime: string; // Event start time
+  hours: number; // Duration in hours
+}
+
 const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
   (props, ref) => {
-    const [totalHours, setTotalHours] = useState(0);
-    const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
-    const [ageGroup, setAgeGroup] = useState("");
-    const [interests, setInterests] = useState("");
-    const [parentGoals, setParentGoals] = useState("");
+    const { data: session } = useSession();
+    const [parentName, setParentName] = useState("");
+    const [parentEmail, setParentEmail] = useState("");
+
+    const [childrenData, setChildrenData] = useState<ChildEnrichmentData[]>([
+      {
+        id: uuidv4(),
+        index: 0,
+        selectedPrograms: [],
+        interests: "",
+        parentGoals: "",
+        eventDate: "",
+        startTime: "",
+        hours: 1, // Default 1 hours
+      },
+    ]);
     const [hourlyRate, setHourlyRate] = useState(8000); // Default to ₦8,000/hour
-    const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+
+    // Autofill parent info from session
+    useEffect(() => {
+      if (session?.user) {
+        if (session.user.name) setParentName(session.user.name);
+        if (session.user.email) setParentEmail(session.user.email);
+      }
+    }, [session]);
 
     // Fetch pricing from database
     useEffect(() => {
@@ -60,57 +100,109 @@ const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
       "Nature & Science Exploration",
     ];
 
-    const ageGroups = [
-      "Toddlers (1-2 years)",
-      "Pre-School (3-5 years)",
-      "Early Primary (5-7 years)",
-      "Primary (7-10 years)",
-      "Pre-Teen (10-12 years)",
-    ];
+    const handleProgramChange = useCallback(
+      (childId: string, program: string) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId
+              ? {
+                  ...child,
+                  selectedPrograms: child.selectedPrograms.includes(program)
+                    ? child.selectedPrograms.filter((p) => p !== program)
+                    : [...child.selectedPrograms, program],
+                }
+              : child
+          )
+        );
+      },
+      []
+    );
 
-    const handleHoursChange = (totalHours: number) => {
-      setTotalHours(totalHours);
+    const handleFieldChange = useCallback(
+      (
+        childId: string,
+        field: keyof ChildEnrichmentData,
+        value: string | number
+      ) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId ? { ...child, [field]: value } : child
+          )
+        );
+      },
+      []
+    );
+
+    const addChild = () => {
+      const newChild: ChildEnrichmentData = {
+        id: uuidv4(),
+        index: childrenData.length,
+        selectedPrograms: [],
+        interests: "",
+        parentGoals: "",
+        eventDate: "",
+        startTime: "",
+        hours: 2,
+      };
+      setChildrenData((prev) => [...prev, newChild]);
     };
 
-    const handleProgramChange = (program: string) => {
-      setSelectedPrograms((prev) => {
-        if (prev.includes(program)) {
-          return prev.filter((p) => p !== program);
-        } else {
-          return [...prev, program];
-        }
-      });
+    const removeChild = (id: string) => {
+      if (childrenData.length > 1) {
+        setChildrenData((prev) => prev.filter((child) => child.id !== id));
+      }
     };
 
     const resetForm = () => {
-      setTotalHours(0);
-      setSelectedPrograms([]);
-      setAgeGroup("");
-      setInterests("");
-      setParentGoals("");
-      weekdaysScheduleRef.current?.resetSchedule();
+      const initialChild: ChildEnrichmentData = {
+        id: uuidv4(),
+        index: 0,
+        selectedPrograms: [],
+        interests: "",
+        parentGoals: "",
+        eventDate: "",
+        startTime: "",
+        hours: 2,
+      };
+      setChildrenData([initialChild]);
     };
 
     const validate = (): { isValid: boolean; errors: string[] } => {
       const errors: string[] = [];
 
-      if (selectedPrograms.length === 0) {
-        errors.push("Please select at least one enrichment program");
-      }
+      childrenData.forEach((child, index) => {
+        if (child.selectedPrograms.length === 0) {
+          errors.push(
+            `Child ${index + 1}: Please select at least one enrichment program`
+          );
+        }
 
-      if (!ageGroup) {
-        errors.push("Please select an age group");
-      }
+        if (!child.eventDate) {
+          errors.push(`Child ${index + 1}: Please select an event date`);
+        }
 
-      if (totalHours === 0) {
-        errors.push("Please select at least one day and specify hours");
-      }
+        if (!child.startTime) {
+          errors.push(`Child ${index + 1}: Please select a start time`);
+        }
+
+        if (child.hours <= 0) {
+          errors.push(
+            `Child ${index + 1}: Please specify valid hours (minimum 1 hour)`
+          );
+        }
+      });
 
       return {
         isValid: errors.length === 0,
         errors,
       };
     };
+
+    // const calculateTotalCost = () => {
+    //   return childrenData.reduce((total, child) => {
+    //     return total + child.hours * hourlyRate;
+    //   }, 0);
+    // };
 
     useImperativeHandle(ref, () => ({
       resetForm,
@@ -120,77 +212,65 @@ const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
     return (
       <div className="space-y-8">
         {/* Parent Information Section */}
-        <div className="card bg-base-100 shadow-lg">
+        <div className="card  shadow-lg border border-gray-300">
           <div className="card-body">
-            <h3 className="card-title text-xl flex items-center mb-6">
-              <svg
-                className="w-6 h-6 mr-2 text-[#90AC19]"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            <h3 className="text-lg md:text-xl font-semibold flex items-center text-gray-800 mb-6">
+              <UserIcon className="w-6 h-6 mr-2 text-gray-600" />
               Parent/Guardian Information
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="form-control flex flex-col gap-2">
+              <div className="form-control flex flex-col">
                 <label className="label">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Full Name *
+                  <span className="label-text font-medium text-gray-800">
+                    Full Name <span className="text-red-600">*</span>
                   </span>
                 </label>
                 <input
                   type="text"
                   name="parentName"
-                  className="input input-bordered"
+                  value={parentName}
+                  onChange={(e) => setParentName(e.target.value)}
+                  className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800"
                   placeholder="Enter your full name"
                   required
                 />
               </div>
 
-              <div className="form-control flex flex-col gap-2">
+              <div className="form-control flex flex-col">
                 <label className="label">
-                  <span className="label-text font-medium">
-                    Email Address *
+                  <span className="label-text font-medium text-gray-800">
+                    Email Address <span className="text-red-600">*</span>
                   </span>
                 </label>
                 <input
                   type="email"
                   name="parentEmail"
-                  className="input input-bordered"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800"
                   placeholder="your.email@example.com"
                   required
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium">Phone Number *</span>
-                </label>
-                <input
-                  type="tel"
-                  name="parentPhone"
-                  className="input input-bordered"
-                  placeholder="+234 XXX XXX XXXX"
-                  required
-                />
-              </div>
+              <PhoneInput
+                name="parentPhone"
+                label="Phone Number"
+                required
+                placeholder="Enter phone number"
+              />
 
-              <div className="form-control flex flex-col gap-2">
+              <div className="form-control flex flex-col">
                 <label className="label">
-                  <span className="label-text font-medium">Address *</span>
+                  <span className="label-text font-medium text-gray-800">
+                    Address <span className="text-red-600">*</span>
+                  </span>
                 </label>
                 <input
                   type="text"
                   name="parentAddress"
-                  className="input input-bordered"
+                  className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800"
                   placeholder="Enter your address"
                   required
                 />
@@ -199,207 +279,326 @@ const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
           </div>
         </div>
 
-        {/* Child Information Section */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center mb-6">
-              <svg
-                className="w-6 h-6 mr-2 text-[#E8931A]"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-              </svg>
-              Child Information
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium">
-                    Child&apos;s Name *
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  name="childName"
-                  className="input input-bordered"
-                  placeholder="Enter child's full name"
-                  required
-                />
-              </div>
-
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium">Age *</span>
-                </label>
-                <input
-                  type="number"
-                  name="childAge"
-                  className="input input-bordered"
-                  placeholder="Enter child's age"
-                  min="2"
-                  max="12"
-                  required
-                />
-              </div>
-            </div>
-            {/* Optional Additional Children */}
-            <OptionalChild />
-
-            <div className="form-control flex flex-col gap-2 mt-4">
-              <label className="label">
-                <span className="label-text font-medium">Age Group *</span>
-              </label>
-              <select
-                name="ageGroup"
-                className="select select-bordered"
-                value={ageGroup}
-                onChange={(e) => setAgeGroup(e.target.value)}
-                required
-              >
-                <option value="">Select age group</option>
-                {ageGroups.map((group) => (
-                  <option key={group} value={group}>
-                    {group}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Enrichment Program Details Section */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center mb-6">
-              <svg
-                className="w-6 h-6 mr-2 text-[#A25F97]"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              Enrichment Program Selection
-            </h3>
-
-            {/* Program Selection */}
-            <div className="form-control flex flex-col gap-2 mb-6">
-              <label className="label">
-                <span className="label-text font-medium">
-                  Select Programs of Interest *
-                </span>
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {enrichmentPrograms.map((program) => (
-                  <label
-                    key={program}
-                    className="flex items-center gap-2 cursor-pointer hover:bg-base-200 p-2 rounded transition-colors"
+        {/* Children Sections */}
+        {childrenData.map((child, index) => (
+          <div
+            key={child.id}
+            className="card bg-white shadow-lg border-2 border-gray-300"
+          >
+            <div className="card-body">
+              {/* Child Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold flex items-center text-gray-800">
+                  Child {index + 1} - Enrichment Details
+                </h3>
+                {childrenData.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeChild(child.id)}
+                    className="btn btn-sm btn-ghost text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary"
-                      checked={selectedPrograms.includes(program)}
-                      onChange={() => handleProgramChange(program)}
-                    />
-                    <span className="label-text">{program}</span>
-                  </label>
-                ))}
+                    <TrashIcon className="w-5 h-5" />
+                    Remove
+                  </button>
+                )}
               </div>
-              <input
-                type="hidden"
-                name="selectedPrograms"
-                value={JSON.stringify(selectedPrograms)}
-              />
-              <input type="hidden" name="hourlyRate" value={hourlyRate} />
-              <span className="text-sm text-gray-500 mt-1">
-                Choose one or more activities that interest your child
-              </span>
-            </div>
 
-            {/* Child's Interests */}
-            <div className="form-control flex flex-col gap-2 mb-6">
-              <label className="label">
-                <span className="label-text font-medium">
-                  Child&apos;s Interests & Hobbies *
-                </span>
-              </label>
-              <textarea
-                name="interests"
-                className="textarea textarea-bordered h-24"
-                placeholder="Tell us about your child's interests, hobbies, and what they enjoy doing..."
-                value={interests}
-                onChange={(e) => setInterests(e.target.value)}
-                required
-              />
-            </div>
-
-            {/* Parent Goals */}
-            <div className="form-control flex flex-col gap-2">
-              <label className="label">
-                <span className="label-text font-medium">
-                  What are your goals for this program? *
-                </span>
-              </label>
-              <textarea
-                name="parentGoals"
-                className="textarea textarea-bordered h-32"
-                placeholder="What skills or abilities would you like your child to develop through this enrichment program?"
-                value={parentGoals}
-                onChange={(e) => setParentGoals(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Schedule Section */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center mb-6">
-              <svg
-                className="w-6 h-6 mr-2 text-[#90AC19]"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                  clipRule="evenodd"
+              {/* Basic Child Information */}
+              <div className="mb-8">
+                <ChildInfoForm
+                  childIndex={index}
+                  childId={child.id}
+                  onRemove={() => removeChild(child.id)}
+                  showRemoveButton={false}
                 />
-              </svg>
-              Weekly Schedule
-            </h3>
+              </div>
 
-            <WeekdaysSchedule
-              ref={weekdaysScheduleRef}
-              onHoursChange={handleHoursChange}
-            />
+              {/* Enrichment Program Selection */}
+              <div className="space-y-6">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-gray-800 font-medium text-lg">
+                      Select Enrichment Programs{" "}
+                      <span className="text-red-600">*</span>
+                    </span>
+                    <span className="label-text-alt text-gray-500">
+                      Choose one or more programs
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {enrichmentPrograms.map((program) => (
+                      <label
+                        key={program}
+                        className="label cursor-pointer justify-start space-x-3 hover:bg-gray-100 p-3 rounded-lg transition-colors border-2 border-gray-200"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={child.selectedPrograms.includes(program)}
+                          onChange={() =>
+                            handleProgramChange(child.id, program)
+                          }
+                          className="checkbox checkbox-sm border-2 border-gray-400 checked:border-gray-600 [--chkbg:var(--color-gray-600)] [--chkfg:white]"
+                        />
+                        <span className="label-text text-gray-700">
+                          {program}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <input
+                    type="hidden"
+                    name={`selectedPrograms_${child.id}`}
+                    value={JSON.stringify(child.selectedPrograms)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 w-full">
+                  {/* Child's Interests */}
+                  <div className="form-control flex flex-col w-full">
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium">
+                        Child&apos;s Interests & Hobbies
+                      </span>
+                      <span className="label-text-alt text-gray-500">
+                        What does this child enjoy?
+                      </span>
+                    </label>
+                    <textarea
+                      name={`interests_${child.id}`}
+                      value={child.interests}
+                      onChange={(e) =>
+                        handleFieldChange(child.id, "interests", e.target.value)
+                      }
+                      className="textarea textarea-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800 h-24"
+                      placeholder="Tell us about this child's interests, hobbies, and what they enjoy doing..."
+                    />
+                  </div>
 
-            <div className="alert alert-info shadow-sm mt-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                className="stroke-current shrink-0 w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              <span className="text-sm">
-                Sessions are typically 1-2 hours. Select days and hours that
-                work best for your child&apos;s schedule.
-              </span>
+                  {/* Parent Goals for this Child */}
+                  <div className="form-control flex flex-col w-full">
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium">
+                        Program Goals for This Child
+                      </span>
+                      <span className="label-text-alt text-gray-500">
+                        What skills would you like them to develop?
+                      </span>
+                    </label>
+                    <textarea
+                      name={`parentGoals_${child.id}`}
+                      value={child.parentGoals}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          child.id,
+                          "parentGoals",
+                          e.target.value
+                        )
+                      }
+                      className="textarea textarea-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800 h-24"
+                      placeholder="What skills or abilities would you like this child to develop through this enrichment program?"
+                    />
+                  </div>
+                </div>
+
+                {/* Event Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text text-base text-gray-800 font-medium ">
+                        Event Date <span className="text-red-600">*</span>
+                      </span>
+                      <span className="label-text-alt text-xs text-gray-500">
+                        Select weekend date (Sat/Sun only)
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <CalendarIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="date"
+                        name={`eventDate_${child.id}`}
+                        value={child.eventDate}
+                        onChange={(e) => {
+                          const selectedDate = new Date(e.target.value);
+                          const dayOfWeek = selectedDate.getDay();
+                          // 0 = Sunday, 6 = Saturday
+                          if (dayOfWeek === 0 || dayOfWeek === 6) {
+                            handleFieldChange(
+                              child.id,
+                              "eventDate",
+                              e.target.value
+                            );
+                          } else {
+                            alert(
+                              "Please select a weekend date (Saturday or Sunday)"
+                            );
+                          }
+                        }}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800 pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium text-base">
+                        Start Time <span className="text-red-600">*</span>
+                      </span>
+                      <span className="label-text-alt text-xs text-gray-500">
+                        Event start time
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <ClockIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name={`startTime_${child.id}`}
+                        value={child.startTime}
+                        onChange={(e) =>
+                          handleFieldChange(
+                            child.id,
+                            "startTime",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., 10:00 AM or 14:30"
+                        className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800 pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium text-base">
+                        Duration (Hours) <span className="text-red-600">*</span>
+                      </span>
+                      <span className="label-text-alt text-xs text-gray-500">
+                        Event duration
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      name={`hours_${child.id}`}
+                      value={child.hours}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          child.id,
+                          "hours",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      min="1"
+                      max="8"
+                      className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="alert alert-info bg-blue-50 border-blue-300 mt-4">
+                  <InformationCircleIcon className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm text-gray-700">
+                    <strong>Weekends Only:</strong> Enrichment programs are
+                    available on Saturdays and Sundays. Select date, start time,
+                    and duration for this event.
+                  </span>
+                </div>
+
+                {/* Individual Child Subtotal */}
+                {child.hours > 0 && (
+                  <div className="card bg-linear-to-br from-gray-50 to-gray-100 border-2 border-gray-300">
+                    <div className="card-body py-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <CurrencyDollarIcon className="w-6 h-6 text-gray-600" />
+                          <span className="text-gray-700 font-medium">
+                            Child {index + 1} Subtotal:
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">
+                            {child.hours} {child.hours === 1 ? "hour" : "hours"}{" "}
+                            × ₦{hourlyRate.toLocaleString()}/hour
+                          </p>
+                          <p className="text-2xl font-bold text-gray-800">
+                            ₦{(child.hours * hourlyRate).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+        ))}
+
+        {/* Add Another Child Button */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={addChild}
+            className="btn btn-outline border-gray-400 text-gray-700 hover:bg-gray-100 hover:border-gray-500 gap-2 px-8"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Add Another Child
+          </button>
         </div>
 
-        {/* Payment Schedule */}
-        <PaymentSchedule totalHours={totalHours} serviceCost={hourlyRate} />
+        {/* Hidden Fields */}
+        <input type="hidden" name="childrenCount" value={childrenData.length} />
+        <input type="hidden" name="hourlyRate" value={hourlyRate} />
+
+        {/* Payment Summary */}
+        {childrenData.some((child) => child.hours > 0) && (
+          <div className="card bg-linear-to-br from-gray-800 to-gray-900 text-white shadow-2xl border-2 border-gray-700">
+            <div className="card-body">
+              <h3 className="card-title text-2xl mb-4">
+                <CurrencyDollarIcon className="w-7 h-7" />
+                Payment Summary
+              </h3>
+
+              <div className="space-y-3 mb-4">
+                {childrenData.map(
+                  (child, index) =>
+                    child.hours > 0 && (
+                      <div
+                        key={child.id}
+                        className="flex justify-between items-center py-2 border-b border-gray-600"
+                      >
+                        <span className="text-gray-300">
+                          Child {index + 1}: {child.hours}{" "}
+                          {child.hours === 1 ? "hour" : "hours"}
+                        </span>
+                        <span className="font-semibold">
+                          ₦{(child.hours * hourlyRate).toLocaleString()}
+                        </span>
+                      </div>
+                    )
+                )}
+              </div>
+
+              {/* PaymentSchedule Component */}
+              <PaymentSchedule
+                totalHours={childrenData.reduce(
+                  (total, child) => total + child.hours,
+                  0
+                )}
+                serviceCost={hourlyRate}
+              />
+
+              <div className="alert bg-gray-700 border-gray-600 mt-4">
+                <InformationCircleIcon className="w-6 h-6" />
+                <span className="text-sm">
+                  Payment can be made via bank transfer, card payment, or at our
+                  facility. You will receive payment instructions after booking
+                  confirmation.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

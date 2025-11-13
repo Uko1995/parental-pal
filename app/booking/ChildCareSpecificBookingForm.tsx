@@ -4,27 +4,75 @@ import {
   forwardRef,
   useRef,
   useEffect,
+  useCallback,
 } from "react";
-import OptionalChild from "./OptionalChild";
-import PaymentSchedule from "./PaymentSchedule";
+import { useSession } from "next-auth/react";
+import ChildInfoForm from "./ChildInfoForm";
 import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
+import PhoneInput from "@/components/PhoneInput";
+import {
+  PlusIcon,
+  UserIcon,
+  ClockIcon,
+  CalendarIcon,
+  TrashIcon,
+  CurrencyDollarIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/outline";
+import { v4 as uuidv4 } from "uuid";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
 }
 
+interface ChildCareData {
+  id: string;
+  index: number;
+  careType: "daily" | "monthly" | "";
+  totalDays: number;
+  isMonthSelected: boolean;
+  dropoffTime: string;
+  pickupTime: string;
+  specialNeeds: string;
+}
+
 const ChildCareSpecificBookingForm =
   forwardRef<ChildCareSpecificBookingFormRef>((props, ref) => {
-    const [totalDays, setTotalDays] = useState(0);
-    const [isMonthSelected, setIsMonthSelected] = useState(false);
-    const [careType, setCareType] = useState<"daily" | "monthly" | "">("");
-    const [dropoffTime, setDropoffTime] = useState("");
-    const [pickupTime, setPickupTime] = useState("");
-    const [specialNeeds, setSpecialNeeds] = useState("");
+    const { data: session } = useSession();
+    const [parentName, setParentName] = useState("");
+    const [parentEmail, setParentEmail] = useState("");
+
+    const [childrenData, setChildrenData] = useState<ChildCareData[]>([
+      {
+        id: uuidv4(),
+        index: 0,
+        careType: "",
+        totalDays: 0,
+        isMonthSelected: false,
+        dropoffTime: "",
+        pickupTime: "",
+        specialNeeds: "",
+      },
+    ]);
     const [dailyRate, setDailyRate] = useState(5000); // Default to ₦5,000/day
-    const [monthlyRate, setMonthlyRate] = useState(127500); // Default to ₦127,500/month (15% discount)
-    const weekdaysScheduleRef = useRef<WeekdaysScheduleRef>(null);
+    const [monthlyRate, setMonthlyRate] = useState(110500); // Default to ₦110,500/month (15% discount)
+    const [startDate, setStartDate] = useState<string>(
+      new Date().toISOString().split("T")[0]
+    ); // Default to today
+
+    // Create refs for each child's WeekdaysSchedule
+    const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
+      {}
+    );
+
+    // Autofill parent info from session
+    useEffect(() => {
+      if (session?.user) {
+        if (session.user.name) setParentName(session.user.name);
+        if (session.user.email) setParentEmail(session.user.email);
+      }
+    }, [session]);
 
     // Fetch pricing from database
     useEffect(() => {
@@ -48,34 +96,131 @@ const ChildCareSpecificBookingForm =
       fetchPricing();
     }, []);
 
+    const handleCareTypeChange = useCallback(
+      (childId: string, type: "daily" | "monthly" | "") => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId
+              ? {
+                  ...child,
+                  careType: type,
+                  isMonthSelected: type === "monthly",
+                }
+              : child
+          )
+        );
+      },
+      []
+    );
+
+    const handleDropoffTimeChange = useCallback(
+      (childId: string, time: string) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId ? { ...child, dropoffTime: time } : child
+          )
+        );
+      },
+      []
+    );
+
+    const handlePickupTimeChange = useCallback(
+      (childId: string, time: string) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId ? { ...child, pickupTime: time } : child
+          )
+        );
+      },
+      []
+    );
+
+    const handleSpecialNeedsChange = useCallback(
+      (childId: string, needs: string) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId ? { ...child, specialNeeds: needs } : child
+          )
+        );
+      },
+      []
+    );
+
+    const handleOnDaysChange = useCallback(
+      (childId: string, totalDays: number) => {
+        setChildrenData((prev) =>
+          prev.map((child) =>
+            child.id === childId ? { ...child, totalDays } : child
+          )
+        );
+      },
+      []
+    );
+
+    const addChild = () => {
+      setChildrenData((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          index: prev.length,
+          careType: "",
+          totalDays: 0,
+          isMonthSelected: false,
+          dropoffTime: "",
+          pickupTime: "",
+          specialNeeds: "",
+        },
+      ]);
+    };
+
+    const removeChild = (id: string) => {
+      if (childrenData.length > 1) {
+        setChildrenData((prev) => prev.filter((child) => child.id !== id));
+        // Clean up the schedule ref
+        delete scheduleRefs.current[id];
+      }
+    };
+
     const resetForm = () => {
-      setTotalDays(0);
-      setIsMonthSelected(false);
-      setCareType("");
-      setDropoffTime("");
-      setPickupTime("");
-      setSpecialNeeds("");
-      weekdaysScheduleRef.current?.resetSchedule();
+      setChildrenData([
+        {
+          id: uuidv4(),
+          index: 0,
+          careType: "",
+          totalDays: 0,
+          isMonthSelected: false,
+          dropoffTime: "",
+          pickupTime: "",
+          specialNeeds: "",
+        },
+      ]);
+      // Reset all schedule refs
+      Object.values(scheduleRefs.current).forEach((scheduleRef) => {
+        if (scheduleRef && scheduleRef.resetSchedule) {
+          scheduleRef.resetSchedule();
+        }
+      });
     };
 
     const validate = (): { isValid: boolean; errors: string[] } => {
       const errors: string[] = [];
 
-      if (!careType) {
-        errors.push("Please select a care type (daily or monthly)");
-      }
-
-      if (!dropoffTime) {
-        errors.push("Please specify drop-off time");
-      }
-
-      if (!pickupTime) {
-        errors.push("Please specify pickup time");
-      }
-
-      if (totalDays === 0) {
-        errors.push("Please select at least one day");
-      }
+      childrenData.forEach((child, index) => {
+        if (!child.careType) {
+          errors.push(
+            `Child ${index + 1}: Please select a care type (daily or monthly)`
+          );
+        }
+        if (!child.dropoffTime) {
+          errors.push(`Child ${index + 1}: Please specify drop-off time`);
+        }
+        if (!child.pickupTime) {
+          errors.push(`Child ${index + 1}: Please specify pickup time`);
+        }
+        if (child.totalDays === 0) {
+          errors.push(`Child ${index + 1}: Please select at least one day`);
+        }
+      });
 
       return {
         isValid: errors.length === 0,
@@ -88,143 +233,191 @@ const ChildCareSpecificBookingForm =
       validate,
     }));
 
-    const handleOnDaysChange = (totalDays: number) => {
-      setTotalDays(totalDays);
-    };
-
-    const handleOnMonthSelected = (isMonthSelected: boolean) => {
-      setIsMonthSelected(isMonthSelected);
+    // Calculate total cost for all children
+    const calculateTotalCost = () => {
+      return childrenData.reduce((total, child) => {
+        if (child.careType === "monthly") {
+          return total + monthlyRate;
+        } else if (child.careType === "daily") {
+          return total + child.totalDays * dailyRate;
+        }
+        return total;
+      }, 0);
     };
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Parent Information Section */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center  mb-6">
-              Parent/Guardian Information
-            </h3>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+          <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-6 text-gray-900">
+            <UserIcon className="w-6 h-6 mr-2 text-gray-700" />
+            Parent/Guardian Information
+          </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Full Name *
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  name="parentName"
-                  className="input input-bordered "
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 block mb-1">
+                  Full Name <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <input
+                type="text"
+                name="parentName"
+                value={parentName}
+                onChange={(e) => setParentName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
 
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Email Address *
-                  </span>
-                </label>
-                <input
-                  type="email"
-                  name="parentEmail"
-                  className="input input-bordered "
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 block mb-1">
+                  Email Address <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <input
+                type="email"
+                name="parentEmail"
+                value={parentEmail}
+                onChange={(e) => setParentEmail(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
 
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Phone Number *
-                  </span>
-                </label>
-                <input
-                  type="tel"
-                  name="parentPhone"
-                  className="input input-bordered "
-                  placeholder="Enter your phone number"
-                  required
-                />
-              </div>
+            <PhoneInput
+              name="parentPhone"
+              label="Phone Number"
+              required
+              placeholder="Enter phone number"
+            />
 
-              <div className="form-control flex flex-col gap-2">
-                <label className="label">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Address *
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  className="input input-bordered "
-                  placeholder="Enter your address"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 block mb-1">
+                  Address <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <input
+                type="text"
+                name="address"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                placeholder="Enter your address"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 flex items-center gap-2 mb-1">
+                  <CalendarIcon className="w-4 h-4 text-gray-700" />
+                  Start Date <span className="text-red-500">*</span>
+                </span>
+                <span className="text-xs text-gray-600">
+                  When should childcare begin?
+                </span>
+              </label>
+              <input
+                type="date"
+                name="startDate"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                required
+              />
             </div>
           </div>
         </div>
 
-        {/* Child Information Section */}
-        <div className="card bg-base-100 shadow-lg ">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center  mb-6">
-              Child Information
-            </h3>
-            <OptionalChild />
+        {/* Header for Children Sections */}
+        <div className="flex items-center justify-between py-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+            Children & Childcare Details
+          </h2>
+          <div className="px-3 py-1 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700">
+            {childrenData.length}{" "}
+            {childrenData.length === 1 ? "Child" : "Children"}
           </div>
         </div>
 
-        {/* Childcare Specific Information */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center mb-6">
-              Childcare Details
-            </h3>
+        {/* Map through children - each gets complete section */}
+        {childrenData.map((child, index) => (
+          <div
+            key={child.id}
+            className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8 space-y-6"
+          >
+            {/* Child Header with Remove Button */}
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <ClockIcon className="w-6 h-6 text-gray-700" />
+                Child #{index + 1} - Childcare Information
+              </h3>
+              {childrenData.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeChild(child.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-400 transition-colors text-sm font-medium"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  Remove Child
+                </button>
+              )}
+            </div>
 
-            {/* Care Type Selection */}
-            <div className="form-control mb-6">
-              <label className="label mb-2">
-                <span className="label-text font-medium flex items-center gap-2">
-                  Care Type *
-                </span>
-                <span className="label-text-alt text-xs">
+            {/* Basic Child Info */}
+            <ChildInfoForm
+              childIndex={index}
+              childId={child.id}
+              onRemove={() => removeChild(child.id)}
+              showRemoveButton={false}
+            />
+
+            {/* Care Type Selection for this child */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium text-gray-900">
+                  Care Type <span className="text-red-500">*</span>
+                </label>
+                <span className="text-xs px-2 py-1 bg-gray-100 border border-gray-200 rounded text-gray-700">
                   Monthly plans include 15% discount
                 </span>
-              </label>
+              </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <label className="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200 transition-colors flex-1">
+                <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors flex-1">
                   <input
                     type="radio"
-                    name="careType"
+                    name={`careType_${child.id}`}
                     value="daily"
-                    checked={careType === "daily"}
-                    onChange={(e) => setCareType(e.target.value as "daily")}
-                    className="radio"
+                    checked={child.careType === "daily"}
+                    onChange={() => handleCareTypeChange(child.id, "daily")}
+                    className="w-4 h-4 text-[#90AC19] border-gray-300 focus:ring-[#90AC19]"
                   />
                   <div>
-                    <div className="font-medium">Daily Care</div>
-                    <div className="text-sm text-base-content/70">
-                      ₦5,000 per day
+                    <div className="font-medium text-gray-900">Daily Care</div>
+                    <div className="text-sm text-gray-600 font-semibold">
+                      ₦{dailyRate.toLocaleString()} per day
                     </div>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200 transition-colors flex-1">
+                <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors flex-1">
                   <input
                     type="radio"
-                    name="careType"
+                    name={`careType_${child.id}`}
                     value="monthly"
-                    checked={careType === "monthly"}
-                    onChange={(e) => setCareType(e.target.value as "monthly")}
-                    className="radio "
+                    checked={child.careType === "monthly"}
+                    onChange={() => handleCareTypeChange(child.id, "monthly")}
+                    className="w-4 h-4 text-[#90AC19] border-gray-300 focus:ring-[#90AC19]"
                   />
                   <div>
-                    <div className="font-medium">Monthly Plan</div>
-                    <div className="text-sm text-base-content/70">
+                    <div className="font-medium text-gray-900">
+                      Monthly Plan
+                    </div>
+                    <div className="text-sm text-gray-600 font-semibold">
                       ₦{monthlyRate.toLocaleString()} per month
                     </div>
                   </div>
@@ -232,91 +425,224 @@ const ChildCareSpecificBookingForm =
               </div>
             </div>
 
-            {/* Time Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="form-control">
-                <label className="label mb-2">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Drop-off Time *
+            {/* Time Selection for this child */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900 block mb-1">
+                    Drop-off Time <span className="text-red-500">*</span>
                   </span>
+                  <span className="text-xs text-gray-600">e.g., 08:00 AM</span>
                 </label>
                 <input
-                  type="time"
-                  name="dropoffTime"
-                  value={dropoffTime}
-                  onChange={(e) => setDropoffTime(e.target.value)}
-                  className="input input-bordered "
+                  type="text"
+                  name={`dropoffTime_${child.id}`}
+                  value={child.dropoffTime}
+                  onChange={(e) =>
+                    handleDropoffTimeChange(child.id, e.target.value)
+                  }
+                  placeholder="08:00 AM"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
                   required
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label mb-2">
-                  <span className="label-text font-medium flex items-center gap-2">
-                    Pick-up Time *
+              <div>
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900 block mb-1">
+                    Pick-up Time <span className="text-red-500">*</span>
                   </span>
+                  <span className="text-xs text-gray-600">e.g., 05:00 PM</span>
                 </label>
                 <input
-                  type="time"
-                  name="pickupTime"
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="input input-bordered "
+                  type="text"
+                  name={`pickupTime_${child.id}`}
+                  value={child.pickupTime}
+                  onChange={(e) =>
+                    handlePickupTimeChange(child.id, e.target.value)
+                  }
+                  placeholder="05:00 PM"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
                   required
                 />
               </div>
             </div>
 
-            {/* Special Needs */}
-            <div className="form-control mb-6">
-              <label className="label mb-2">
-                <span className="label-text font-medium flex items-center gap-2">
+            {/* Special Needs for this child */}
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 block mb-1">
                   Special Needs or Instructions
                 </span>
-                <span className="label-text-alt text-xs">
+                <span className="text-xs text-gray-600">
                   Optional - Any allergies, medical conditions, or special care
                   instructions
                 </span>
               </label>
               <textarea
-                name="specialNeeds"
-                value={specialNeeds}
-                onChange={(e) => setSpecialNeeds(e.target.value)}
-                className="textarea textarea-bordered  w-full h-32"
+                name={`specialNeeds_${child.id}`}
+                value={child.specialNeeds}
+                onChange={(e) =>
+                  handleSpecialNeedsChange(child.id, e.target.value)
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 resize-none"
                 placeholder="e.g., Food allergies, medication schedule, behavioral considerations, special activities..."
+                rows={4}
               />
             </div>
-          </div>
-        </div>
 
-        {/* Schedule Selection */}
-        <div className="card bg-base-100 shadow-lg border border-primary/10">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center text-primary mb-6">
-              Schedule & Availability
-            </h3>
-            <WeekdaysSchedule
-              ref={weekdaysScheduleRef}
-              childcare={true}
-              onDaysChange={handleOnDaysChange}
-              onMonthSelected={handleOnMonthSelected}
-            />
-          </div>
-        </div>
-
-        {/* Payment Summary */}
-        {totalDays > 0 && (
-          <div className="card bg-linear-to-r from-primary/5 to-secondary/5 shadow-lg border border-primary/20">
-            <div className="card-body">
-              <PaymentSchedule
-                serviceCost={dailyRate}
+            {/* Schedule for this child */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
+              <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <CalendarIcon className="w-5 h-5 text-gray-700" />
+                Weekly Childcare Schedule
+              </h4>
+              <WeekdaysSchedule
+                ref={(el) => {
+                  scheduleRefs.current[child.id] = el;
+                }}
                 childcare={true}
-                totalDays={totalDays}
-                monthlyChildcareRate={monthlyRate}
-                isMonthSelected={isMonthSelected}
+                onDaysChange={(days) => handleOnDaysChange(child.id, days)}
+                onMonthSelected={(isMonth) => {
+                  setChildrenData((prev) =>
+                    prev.map((c) =>
+                      c.id === child.id ? { ...c, isMonthSelected: isMonth } : c
+                    )
+                  );
+                }}
               />
-              <input type="hidden" name="dailyRate" value={dailyRate} />
-              <input type="hidden" name="monthlyRate" value={monthlyRate} />
+              <input
+                type="hidden"
+                name={`totalDays_${child.id}`}
+                value={child.totalDays}
+              />
+              <input
+                type="hidden"
+                name={`isMonthSelected_${child.id}`}
+                value={child.isMonthSelected ? "true" : "false"}
+              />
+            </div>
+
+            {/* Subtotal for this child */}
+            {child.careType && child.totalDays > 0 && (
+              <div className="bg-[#90AC19]/5 border border-[#90AC19]/20 rounded-lg p-4 sm:p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      Subtotal for Child #{index + 1}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {child.careType === "monthly"
+                        ? "Monthly plan (26 days, 15% discount)"
+                        : `${
+                            child.totalDays
+                          } days × ₦${dailyRate.toLocaleString()}/day`}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold text-[#90AC19]">
+                    ₦
+                    {(child.careType === "monthly"
+                      ? monthlyRate
+                      : child.totalDays * dailyRate
+                    ).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Add Another Child Button */}
+        <button
+          type="button"
+          onClick={addChild}
+          className="w-full flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-gray-300 text-gray-700 rounded-lg hover:border-[#90AC19] hover:bg-[#90AC19]/5 hover:text-[#90AC19] transition-all duration-200 font-medium"
+        >
+          <PlusIcon className="w-6 h-6" />
+          Add Another Child
+        </button>
+
+        {/* Hidden field for children count */}
+        <input type="hidden" name="childrenCount" value={childrenData.length} />
+
+        {/* Final Payment Summary */}
+        {childrenData.some(
+          (child) => child.careType && child.totalDays > 0
+        ) && (
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+            <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-gray-900 mb-6">
+              <CurrencyDollarIcon className="w-6 h-6 mr-2 text-gray-700" />
+              Final Payment Summary
+            </h3>
+
+            {/* Individual child costs */}
+            <div className="space-y-3 mb-6">
+              {childrenData.map((child, index) => {
+                if (child.careType && child.totalDays > 0) {
+                  const childCost =
+                    child.careType === "monthly"
+                      ? monthlyRate
+                      : child.totalDays * dailyRate;
+                  return (
+                    <div
+                      key={child.id}
+                      className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            Child #{index + 1}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {child.careType === "monthly"
+                              ? "Monthly plan"
+                              : `${child.totalDays} days/week`}{" "}
+                            •
+                            {child.dropoffTime &&
+                              child.pickupTime &&
+                              ` ${child.dropoffTime} - ${child.pickupTime}`}
+                          </p>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">
+                          ₦{childCost.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+
+            {/* Grand Total */}
+            <div className="bg-[#90AC19] text-white p-6 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-lg font-semibold">Total Amount</p>
+                  <p className="text-sm opacity-90">All children combined</p>
+                </div>
+                <p className="text-3xl font-bold">
+                  ₦{calculateTotalCost().toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <input type="hidden" name="dailyRate" value={dailyRate} />
+            <input type="hidden" name="monthlyRate" value={monthlyRate} />
+            <input
+              type="hidden"
+              name="totalCost"
+              value={calculateTotalCost()}
+            />
+
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <InformationCircleIcon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">
+                  Professional childcare in a safe, nurturing environment with
+                  qualified staff. Meals and activities included.
+                </span>
+              </div>
             </div>
           </div>
         )}

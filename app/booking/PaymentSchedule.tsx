@@ -60,6 +60,9 @@ function PaymentSchedule({
     "extra-carers": 8000,
   };
 
+  // Helper to format currency
+  const formatCurrency = (amount: number) => `₦${amount.toLocaleString()}`;
+
   const calculateExtraServicesCost = () => {
     if (!selectedServices) return 0;
 
@@ -89,7 +92,7 @@ function PaymentSchedule({
               "Event Services"
             ) : holidayCamp ? (
               <div>
-                Holiday Camp (₦30,000/week)
+                Holiday Camp (₦{serviceCost.toLocaleString()}/week)
                 <br />
                 <span className="text-xs text-gray-500 font-normal">
                   Exclusive of other activity costs
@@ -97,12 +100,12 @@ function PaymentSchedule({
               </div>
             ) : childcare ? (
               isMonthSelected ? (
-                " Childcare (₦5,000/day) 15% discount per month"
+                ` Childcare (₦${serviceCost.toLocaleString()}/day) 15% discount per month`
               ) : (
-                " Childcare (₦5,000/day)"
+                ` Childcare (₦${serviceCost.toLocaleString()}/day)`
               )
             ) : (
-              " Academic tutoring (₦12,000/hour)"
+              ` Academic tutoring (₦${serviceCost.toLocaleString()}/hour)`
             )}
           </span>
           <span>
@@ -157,7 +160,7 @@ function PaymentSchedule({
                     ? "Outdoor Event"
                     : "Indoor & Outdoor Event"}
                 </span>
-                <span>₦{getEventModeCost().toLocaleString()}</span>
+                <span>{formatCurrency(getEventModeCost())}</span>
               </div>
             )}
 
@@ -182,7 +185,7 @@ function PaymentSchedule({
                       className="flex justify-between text-sm text-gray-700 mb-1"
                     >
                       <span>{serviceName}</span>
-                      <span>₦{cost.toLocaleString()}</span>
+                      <span>{formatCurrency(cost)}</span>
                     </div>
                   );
                 } else {
@@ -205,7 +208,7 @@ function PaymentSchedule({
                       className="flex justify-between text-sm text-gray-700 mb-1"
                     >
                       <span>{serviceName}</span>
-                      <span>₦{cost.toLocaleString()}</span>
+                      <span>{formatCurrency(cost)}</span>
                     </div>
                   );
                 }
@@ -215,7 +218,7 @@ function PaymentSchedule({
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between text-sm text-orange-600 font-medium">
                 <span>Refundable Caution Fee</span>
-                <span>₦50,000</span>
+                <span>{formatCurrency(50000)}</span>
               </div>
               <p className="text-xs text-gray-600 mt-1">
                 This fee will be fully refunded after the event if no damages

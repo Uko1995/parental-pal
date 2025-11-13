@@ -78,9 +78,9 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.6 }}
-              className="mt-3 hidden md:block"
+              className="mt-3 "
             >
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
+              <div className="flex  gap-3 sm:gap-4 justify-start">
                 <Link href={"/services"} passHref>
                   <button className="bg-[#90AC19] tracking-wide cursor-pointer hover:bg-[#7A9216] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-bold transition-colors duration-200 shadow-lg hover:shadow-xl text-2xl sm:text-lg w-full sm:w-auto active:scale-95">
                     Services
@@ -97,7 +97,7 @@ export default function Hero() {
         </div>
 
         {/* CTA Buttons - at bottom on mobile only */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.6 }}
@@ -115,7 +115,7 @@ export default function Hero() {
               </button>
             </Link>
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );

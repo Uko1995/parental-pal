@@ -610,8 +610,9 @@ export default function EditTutorModal({
                     <span className="label-text">Start Time</span>
                   </label>
                   <input
-                    type="time"
+                    type="text"
                     name="availabilityStart"
+                    placeholder="e.g., 9:00 AM"
                     className="input  input-bordered"
                     value={formData.availabilityStart}
                     onChange={handleInputChange}
@@ -623,8 +624,9 @@ export default function EditTutorModal({
                     <span className="label-text">End Time</span>
                   </label>
                   <input
-                    type="time"
+                    type="text"
                     name="availabilityEnd"
+                    placeholder="e.g., 5:00 PM"
                     className="input input-bordered"
                     value={formData.availabilityEnd}
                     onChange={handleInputChange}

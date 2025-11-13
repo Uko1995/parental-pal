@@ -23,8 +23,12 @@ interface Booking {
     paidAmount: number;
   };
   children: Array<{
+    id?: string;
     name: string;
     age: number;
+    class?: string;
+    schoolName?: string;
+    specialNeeds?: string;
   }>;
   schedule: {
     startDate: string;
@@ -32,14 +36,72 @@ interface Booking {
     weekdays?: Array<{
       day: string;
       hours: number;
+      startTime?: string;
+      endTime?: string;
+      dates?: Array<{
+        date: string;
+        startTime: string;
+        endTime?: string;
+      }>;
     }>;
   };
   serviceData?: {
-    // Tutoring specific
+    // Per-child data structure (used by multiple services)
+    childrenData?: Array<{
+      childId: string;
+      // Tutoring specific
+      subjects?: string[];
+      academicLevel?: string;
+      learningGoals?: string;
+      totalHours?: number;
+      schedule?: Array<{
+        day: string;
+        hours: number;
+        startTime?: string;
+        dates?: Array<{
+          date: string;
+          startTime: string;
+        }>;
+      }>;
+      // Childcare specific
+      careType?: "daily" | "monthly";
+      totalDays?: number;
+      isMonthSelected?: boolean;
+      dropoffTime?: string;
+      pickupTime?: string;
+      specialNeeds?: string;
+      // Holiday camp specific
+      campWeeks?: Array<{
+        startDate: string;
+        endDate: string;
+        weekNumber: number;
+      }>;
+      // Homeschooling specific
+      selectedSubjects?: string[];
+      gradeLevel?: string;
+      curriculum?: string;
+      learningStyle?: string;
+      educationalGoals?: string;
+      selectedTerm?: string;
+      // Kiddies enrichment specific
+      selectedPrograms?: string[];
+      interests?: string;
+      parentGoals?: string;
+      hours?: number;
+      eventDate?: string;
+      startTime?: string;
+    }>;
+
+    // Legacy/general fields (kept for backward compatibility)
     subjects?: string[];
     academicLevel?: string;
     learningGoals?: string;
     hourlyRate?: number;
+
+    // Homeschooling specific
+    curriculum?: string;
+    learningStyle?: string;
+    termRate?: number;
 
     // Childcare specific
     careType?: "daily" | "monthly";
@@ -107,7 +169,15 @@ export default function BookingsSection() {
       const response = await fetch("/api/bookings");
       if (response.ok) {
         const data = await response.json();
-        setBookings(data.bookings || []);
+        // Sort bookings by creation date, most recent first
+        const sortedBookings = (data.bookings || []).sort(
+          (a: Booking, b: Booking) => {
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          }
+        );
+        setBookings(sortedBookings);
       } else {
         toast.error("Failed to load bookings");
       }
@@ -319,7 +389,8 @@ export default function BookingsSection() {
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Cancel Booking</h3>
             <p className="py-4">
-              Are you sure you want to cancel and permanently delete this booking for{" "}
+              Are you sure you want to cancel and permanently delete this
+              booking for{" "}
               <span className="font-semibold">
                 {SERVICE_TYPE_LABELS[
                   bookingToCancel.serviceType as keyof typeof SERVICE_TYPE_LABELS
@@ -358,8 +429,8 @@ interface BookingDetailsModalProps {
 
 function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="modal-box w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div className="modal modal-open">
+      <div className="modal-box max-w-4xl w-11/12 max-h-[90vh]">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-xl">
             Booking Details -{" "}
@@ -426,14 +497,40 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
                 booking.schedule.weekdays.length > 0 && (
                   <div>
                     <p className="font-medium mb-2">Weekly Schedule:</p>
-                    <div className="grid grid-cols-1 gap-1">
+                    <div className="space-y-2">
                       {booking.schedule.weekdays.map((day, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between py-1 px-2 bg-base-200 rounded"
-                        >
-                          <span className="capitalize">{day.day}</span>
-                          <span>{day.hours} hours</span>
+                        <div key={index} className="space-y-1">
+                          <div className="flex justify-between py-1 px-2 bg-base-200 rounded font-medium">
+                            <span className="capitalize">{day.day}</span>
+                            <span>
+                              {day.startTime && `${day.startTime} • `}
+                              {day.hours} hour{day.hours !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          {day.dates && day.dates.length > 0 && (
+                            <div className="ml-4 text-xs">
+                              <p className="text-base-content/70 mb-1">
+                                Specific dates:
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {day.dates.map((dateInfo, dateIdx) => (
+                                  <span
+                                    key={dateIdx}
+                                    className="badge badge-sm badge-outline"
+                                  >
+                                    {new Date(dateInfo.date).toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        month: "short",
+                                        day: "numeric",
+                                      }
+                                    )}{" "}
+                                    {dateInfo.startTime}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -445,13 +542,23 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
           {/* Children Information */}
           <div>
             <h4 className="font-semibold text-lg mb-3">Children</h4>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {booking.children.map((child, index) => (
-                <div key={index} className="p-3 bg-base-200 rounded">
-                  <p className="font-medium">{child.name}</p>
+                <div key={index} className="p-3 bg-base-200 rounded space-y-2">
+                  <p className="font-medium text-base">{child.name}</p>
                   <p className="text-sm text-base-content/70">
                     Age: {child.age} years
                   </p>
+                  {child.class && (
+                    <p className="text-sm text-base-content/70">
+                      Class: {child.class}
+                    </p>
+                  )}
+                  {child.schoolName && (
+                    <p className="text-sm text-base-content/70">
+                      School: {child.schoolName}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -495,12 +602,589 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
 
         {/* Service-Specific Details */}
         {booking.serviceData && Object.keys(booking.serviceData).length > 0 && (
-          <div className="mt-6">
+          <div className="mt-6 col-span-full">
             <h4 className="font-semibold text-lg mb-3">Service Details</h4>
-            <div className="bg-base-200 p-4 rounded text-sm">
-              <pre className="whitespace-pre-wrap text-xs">
-                {JSON.stringify(booking.serviceData, null, 2)}
-              </pre>
+            <div className="bg-base-200 p-4 rounded space-y-4">
+              {/* Tutoring Details - Per Child */}
+              {booking.serviceType === "tutoring" &&
+                booking.serviceData.childrenData && (
+                  <div className="space-y-4">
+                    {Array.isArray(booking.serviceData.childrenData) ? (
+                      booking.serviceData.childrenData.map(
+                        (childData, idx: number) => {
+                          // Find the corresponding child info
+                          const childInfo = booking.children[idx];
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-base-100 p-4 rounded-lg border border-base-300"
+                            >
+                              <h5 className="font-semibold text-base mb-3">
+                                {childInfo?.name || `Child ${idx + 1}`} -
+                                Tutoring Details
+                              </h5>
+                              <div className="space-y-2 text-sm">
+                                {childData.subjects && (
+                                  <div>
+                                    <p className="font-medium mb-1">
+                                      Subjects:
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {childData.subjects.map(
+                                        (subject: string, sidx: number) => (
+                                          <span
+                                            key={sidx}
+                                            className="badge badge-primary badge-sm"
+                                          >
+                                            {subject}
+                                          </span>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {childData.academicLevel && (
+                                  <p>
+                                    <span className="font-medium">
+                                      Academic Level:
+                                    </span>{" "}
+                                    {childData.academicLevel}
+                                  </p>
+                                )}
+                                {childData.schedule &&
+                                  childData.schedule.length > 0 && (
+                                    <div>
+                                      <p className="font-medium mb-1">
+                                        Schedule:
+                                      </p>
+                                      <div className="space-y-2">
+                                        {childData.schedule.map(
+                                          (daySchedule, didx: number) => (
+                                            <div key={didx}>
+                                              <div className="flex justify-between items-center bg-base-200 p-2 rounded">
+                                                <span className="capitalize font-medium">
+                                                  {daySchedule.day}
+                                                </span>
+                                                <span className="text-xs">
+                                                  {daySchedule.startTime} •{" "}
+                                                  {daySchedule.hours}h
+                                                </span>
+                                              </div>
+                                              {daySchedule.dates &&
+                                                daySchedule.dates.length >
+                                                  0 && (
+                                                  <div className="ml-4 mt-1">
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {daySchedule.dates.map(
+                                                        (
+                                                          dateInfo,
+                                                          daidx: number
+                                                        ) => (
+                                                          <span
+                                                            key={daidx}
+                                                            className="badge badge-ghost badge-xs"
+                                                          >
+                                                            {new Date(
+                                                              dateInfo.date
+                                                            ).toLocaleDateString(
+                                                              "en-US",
+                                                              {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                              }
+                                                            )}{" "}
+                                                            {dateInfo.startTime}
+                                                          </span>
+                                                        )
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                {childData?.totalHours &&
+                                  childData.totalHours > 0 &&
+                                  booking.serviceData?.hourlyRate && (
+                                    <p className="font-semibold text-base mt-2">
+                                      Cost: ₦
+                                      {(
+                                        childData.totalHours *
+                                        (booking.serviceData?.hourlyRate || 0)
+                                      ).toLocaleString()}{" "}
+                                      <span className="text-xs font-normal text-base-content/70">
+                                        ({childData.totalHours} hours × ₦
+                                        {(
+                                          booking.serviceData?.hourlyRate || 0
+                                        ).toLocaleString()}
+                                        /hour)
+                                      </span>
+                                    </p>
+                                  )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      )
+                    ) : (
+                      <div>
+                        <p className="font-medium mb-1">Subjects:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {booking.serviceData.subjects?.map((subject, idx) => (
+                            <span key={idx} className="badge badge-primary">
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                        {booking.serviceData.academicLevel && (
+                          <p className="mt-2 text-sm">
+                            <span className="font-medium">Academic Level:</span>{" "}
+                            {booking.serviceData.academicLevel}
+                          </p>
+                        )}
+                        {booking.serviceData.learningGoals && (
+                          <p className="mt-2 text-sm">
+                            <span className="font-medium">Learning Goals:</span>{" "}
+                            {booking.serviceData.learningGoals}
+                          </p>
+                        )}
+                        {booking.serviceData.hourlyRate && (
+                          <p className="mt-2 text-sm font-semibold">
+                            Rate: ₦
+                            {booking.serviceData.hourlyRate.toLocaleString()}
+                            /hour
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {/* Childcare Details */}
+              {booking.serviceType === "childcare" && booking.serviceData && (
+                <div className="space-y-4">
+                  {booking.children?.map((child, index) => {
+                    // Find matching childData from childrenData array
+                    const childData = booking.serviceData?.childrenData?.find(
+                      (cd) => cd.childId === child.id
+                    );
+
+                    return (
+                      <div key={index} className="bg-base-200 p-3 rounded-lg">
+                        <h6 className="font-semibold text-sm mb-2">
+                          {child.name} (Age {child.age})
+                        </h6>
+                        <div className="space-y-2">
+                          {childData?.careType && (
+                            <p className="text-sm">
+                              <span className="font-medium">Care Type:</span>{" "}
+                              <span className="badge badge-info badge-sm">
+                                {childData.careType === "daily"
+                                  ? "Daily Care"
+                                  : "Monthly Care"}
+                              </span>
+                            </p>
+                          )}
+                          {childData?.dropoffTime && childData?.pickupTime && (
+                            <p className="text-sm">
+                              <span className="font-medium">Time:</span>{" "}
+                              {childData.dropoffTime} - {childData.pickupTime}
+                            </p>
+                          )}
+                          {childData?.totalDays && (
+                            <p className="text-sm">
+                              <span className="font-medium">Total Days:</span>{" "}
+                              {childData.totalDays} days
+                            </p>
+                          )}
+                          {childData?.specialNeeds && (
+                            <p className="text-sm">
+                              <span className="font-medium">
+                                Special Needs:
+                              </span>{" "}
+                              {childData.specialNeeds}
+                            </p>
+                          )}
+                          {childData && (
+                            <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300">
+                              {childData.isMonthSelected ||
+                              childData.careType === "monthly" ? (
+                                <>
+                                  Cost: ₦
+                                  {(
+                                    booking.serviceData?.monthlyRate || 0
+                                  ).toLocaleString()}
+                                  <span className="text-xs font-normal text-base-content/70 ml-1">
+                                    (monthly rate)
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  Cost: ₦
+                                  {(
+                                    (childData.totalDays || 0) *
+                                    (booking.serviceData?.dailyRate || 0)
+                                  ).toLocaleString()}
+                                  <span className="text-xs font-normal text-base-content/70 ml-1">
+                                    ({childData.totalDays || 0}{" "}
+                                    {childData.totalDays === 1 ? "day" : "days"}{" "}
+                                    × ₦
+                                    {(
+                                      booking.serviceData?.dailyRate || 0
+                                    ).toLocaleString()}
+                                    /day)
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Holiday Camp Details */}
+              {booking.serviceType === "holiday-camps" &&
+                booking.serviceData && (
+                  <div className="space-y-4">
+                    {booking.children?.map((child, index) => {
+                      // Find matching childData from childrenData array
+                      const childData = booking.serviceData?.childrenData?.find(
+                        (cd) => cd.childId === child.id
+                      );
+
+                      return (
+                        <div key={index} className="bg-base-200 p-3 rounded-lg">
+                          <h6 className="font-semibold text-sm mb-2">
+                            {child.name} (Age {child.age})
+                          </h6>
+                          <div className="space-y-2">
+                            {childData?.campWeeks &&
+                              childData.campWeeks.length > 0 && (
+                                <div>
+                                  <p className="font-medium text-sm mb-2">
+                                    Camp Weeks:
+                                  </p>
+                                  <div className="space-y-1">
+                                    {childData.campWeeks.map((week, wIdx) => (
+                                      <div
+                                        key={wIdx}
+                                        className="flex items-center justify-between p-2 bg-base-100 rounded text-sm"
+                                      >
+                                        <div>
+                                          <span className="font-medium">
+                                            Week {week.weekNumber}
+                                          </span>
+                                          <span className="text-xs text-base-content/70 ml-2">
+                                            {new Date(
+                                              week.startDate
+                                            ).toLocaleDateString("en-US", {
+                                              month: "short",
+                                              day: "numeric",
+                                            })}{" "}
+                                            -{" "}
+                                            {new Date(
+                                              week.endDate
+                                            ).toLocaleDateString("en-US", {
+                                              month: "short",
+                                              day: "numeric",
+                                            })}
+                                          </span>
+                                        </div>
+                                        {booking.serviceData?.weeklyRate && (
+                                          <span className="badge badge-primary badge-xs">
+                                            ₦
+                                            {booking.serviceData.weeklyRate.toLocaleString()}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            {childData?.campWeeks &&
+                              booking.serviceData?.weeklyRate && (
+                                <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300">
+                                  Cost: ₦
+                                  {(
+                                    childData.campWeeks.length *
+                                    booking.serviceData.weeklyRate
+                                  ).toLocaleString()}
+                                  <span className="text-xs font-normal text-base-content/70 ml-1">
+                                    ({childData.campWeeks.length}{" "}
+                                    {childData.campWeeks.length === 1
+                                      ? "week"
+                                      : "weeks"}{" "}
+                                    × ₦
+                                    {booking.serviceData.weeklyRate.toLocaleString()}
+                                    /week)
+                                  </span>
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+              {/* Homeschooling Details */}
+              {booking.serviceType === "homeschooling" &&
+                booking.serviceData && (
+                  <div className="space-y-4">
+                    {booking.children?.map((child, index) => {
+                      // Find matching childData from childrenData array
+                      const childData = booking.serviceData?.childrenData?.find(
+                        (cd) => cd.childId === child.id
+                      );
+
+                      return (
+                        <div key={index} className="bg-base-200 p-3 rounded-lg">
+                          <h6 className="font-semibold text-sm mb-2">
+                            {child.name} (Age {child.age})
+                          </h6>
+                          <div className="space-y-2">
+                            {childData?.selectedSubjects &&
+                              childData.selectedSubjects.length > 0 && (
+                                <div>
+                                  <p className="font-medium text-sm mb-2">
+                                    Subjects:
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {childData.selectedSubjects.map(
+                                      (subject, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="badge badge-primary badge-sm"
+                                        >
+                                          {subject}
+                                        </span>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            {(childData?.gradeLevel || child.class) && (
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  Grade Level:
+                                </span>{" "}
+                                {childData?.gradeLevel || child.class}
+                              </p>
+                            )}
+                            {childData?.curriculum && (
+                              <p className="text-sm">
+                                <span className="font-medium">Curriculum:</span>{" "}
+                                {childData.curriculum}
+                              </p>
+                            )}
+                            {childData?.learningStyle && (
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  Learning Style:
+                                </span>{" "}
+                                {childData.learningStyle}
+                              </p>
+                            )}
+                            {childData?.selectedTerm && (
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  Selected Term:
+                                </span>{" "}
+                                {childData.selectedTerm}
+                              </p>
+                            )}
+                            {childData?.educationalGoals && (
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  Educational Goals:
+                                </span>{" "}
+                                {childData.educationalGoals}
+                              </p>
+                            )}
+                            {booking.serviceData?.termRate && (
+                              <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300">
+                                Cost: ₦
+                                {booking.serviceData.termRate.toLocaleString()}
+                                <span className="text-xs font-normal text-base-content/70 ml-1">
+                                  (per term)
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+              {/* Kiddies Enrichment Details */}
+              {booking.serviceType === "kiddies-enrichment" &&
+                booking.serviceData && (
+                  <div className="space-y-4">
+                    {booking.children?.map((child, index) => {
+                      // Find matching childData from childrenData array
+                      const childData = booking.serviceData?.childrenData?.find(
+                        (cd) => cd.childId === child.id
+                      );
+
+                      return (
+                        <div key={index} className="bg-base-200 p-3 rounded-lg">
+                          <h6 className="font-semibold text-sm mb-2">
+                            {child.name} (Age {child.age})
+                          </h6>
+                          <div className="space-y-2">
+                            {childData?.selectedPrograms &&
+                              childData.selectedPrograms.length > 0 && (
+                                <div>
+                                  <p className="font-medium text-sm mb-2">
+                                    Programs:
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {childData.selectedPrograms.map(
+                                      (program, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="badge badge-primary badge-sm"
+                                        >
+                                          {program}
+                                        </span>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            {(childData?.eventDate ||
+                              childData?.startTime ||
+                              childData?.hours) && (
+                              <div className="bg-base-100 p-2 rounded mt-2">
+                                <p className="font-medium text-sm mb-1">
+                                  Event Details:
+                                </p>
+                                {childData?.eventDate && (
+                                  <p className="text-sm">
+                                    <span className="font-medium">Date:</span>{" "}
+                                    {new Date(
+                                      childData.eventDate
+                                    ).toLocaleDateString("en-US", {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </p>
+                                )}
+                                {childData?.startTime && (
+                                  <p className="text-sm">
+                                    <span className="font-medium">Time:</span>{" "}
+                                    {childData.startTime}
+                                  </p>
+                                )}
+                                {childData?.hours && (
+                                  <p className="text-sm">
+                                    <span className="font-medium">
+                                      Duration:
+                                    </span>{" "}
+                                    <span className="badge badge-accent badge-xs">
+                                      {childData.hours}{" "}
+                                      {childData.hours === 1 ? "hour" : "hours"}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {childData?.interests && (
+                              <p className="text-sm">
+                                <span className="font-medium">Interests:</span>{" "}
+                                {childData.interests}
+                              </p>
+                            )}
+                            {childData?.parentGoals && (
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  Parent Goals:
+                                </span>{" "}
+                                {childData.parentGoals}
+                              </p>
+                            )}
+                            {childData?.hours &&
+                              booking.serviceData?.hourlyRate && (
+                                <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300">
+                                  Cost: ₦
+                                  {(
+                                    childData.hours *
+                                    booking.serviceData.hourlyRate
+                                  ).toLocaleString()}
+                                  <span className="text-xs font-normal text-base-content/70 ml-1">
+                                    ({childData.hours}h × ₦
+                                    {booking.serviceData.hourlyRate.toLocaleString()}
+                                    /h)
+                                  </span>
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+              {/* Event/Space Rental Details */}
+              {booking.serviceType === "space-rental" && (
+                <div>
+                  {booking.serviceData.eventType && (
+                    <p className="text-sm">
+                      <span className="font-medium">Event Type:</span>{" "}
+                      {booking.serviceData.eventType}
+                    </p>
+                  )}
+                  {booking.serviceData.venueType && (
+                    <p className="mt-2 text-sm">
+                      <span className="font-medium">Venue:</span>{" "}
+                      <span className="badge badge-accent">
+                        {booking.serviceData.venueType}
+                      </span>
+                    </p>
+                  )}
+                  {booking.serviceData.eventDate && (
+                    <p className="mt-2 text-sm">
+                      <span className="font-medium">Date:</span>{" "}
+                      {new Date(
+                        booking.serviceData.eventDate
+                      ).toLocaleDateString()}{" "}
+                      {booking.serviceData.eventTime &&
+                        `at ${booking.serviceData.eventTime}`}
+                    </p>
+                  )}
+                  {booking.serviceData.expectedGuests && (
+                    <p className="mt-2 text-sm">
+                      <span className="font-medium">Expected Guests:</span>{" "}
+                      {booking.serviceData.expectedGuests}
+                    </p>
+                  )}
+                  {booking.serviceData.extraServices &&
+                    booking.serviceData.extraServices.length > 0 && (
+                      <div className="mt-2">
+                        <p className="font-medium mb-1">Extra Services:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {booking.serviceData.extraServices.map(
+                            (service, idx) => (
+                              <span key={idx} className="badge badge-secondary">
+                                {service.service}
+                                {service.quantity && ` (${service.quantity})`}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -511,6 +1195,9 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
           </button>
         </div>
       </div>
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button>close</button>
+      </form>
     </div>
   );
 }

@@ -12,6 +12,12 @@ interface Child {
   class?: string;
   schoolName?: string;
   subjects?: string[];
+  services?: Array<{
+    serviceType: string;
+    status: string;
+    bookingId: string;
+    createdAt: Date;
+  }>;
 }
 
 export default function ChildrenSection() {
@@ -195,6 +201,29 @@ export default function ChildrenSection() {
                       <span className="font-medium">Subjects:</span>{" "}
                       {child.subjects.join(", ")}
                     </p>
+                  )}
+                  {child.services && child.services.length > 0 && (
+                    <div className="mt-3">
+                      <span className="font-medium">Enrolled Services:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {child.services.map((service, idx) => (
+                          <span
+                            key={idx}
+                            className={`badge badge-sm ${
+                              service.status === "completed"
+                                ? "badge-success"
+                                : service.status === "confirmed"
+                                ? "badge-info"
+                                : service.status === "pending"
+                                ? "badge-warning"
+                                : "badge-ghost"
+                            }`}
+                          >
+                            {service.serviceType}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="card-actions justify-end mt-4">

@@ -94,6 +94,14 @@ export async function registerChild(formData: FormData) {
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
 
+  // Sync children from booking to user profile
+  try {
+    await syncChildrenFromBooking(user._id!, bookingData);
+  } catch (error) {
+    console.error("Failed to sync children to user profile:", error);
+    // Don't block booking if child sync fails
+  }
+
   // Send booking confirmation email
   try {
     const emailResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
@@ -190,6 +198,40 @@ export async function registerChild(formData: FormData) {
 // Type for form data
 type FormDataEntries = Record<string, string>;
 
+// Helper function to sync children from booking to user profile
+async function syncChildrenFromBooking(
+  userId: ObjectId,
+  bookingData: BookingInterface
+): Promise<void> {
+  // Get the user to check existing children
+  const user = await UserRepository.findById(userId);
+  if (!user) return;
+
+  const existingChildren = user.children || [];
+  const newChildren = bookingData.children || [];
+
+  // For each child in the booking, check if they already exist in user profile
+  for (const newChild of newChildren) {
+    const exists = existingChildren.some(
+      (existingChild) =>
+        existingChild.name.toLowerCase() === newChild.name.toLowerCase() &&
+        existingChild.age === newChild.age
+    );
+
+    if (!exists) {
+      // Add this child to the user profile
+      await UserRepository.addChildToParent(userId, {
+        name: newChild.name,
+        age: newChild.age,
+        gender: "male", // Default, can be updated later by parent
+        class: newChild.class,
+        schoolName: newChild.schoolName,
+        subjects: [],
+      });
+    }
+  }
+}
+
 // Helper function to parse form data into BookingInterface format
 async function parseFormDataToBooking(
   cleanedData: FormDataEntries,
@@ -200,7 +242,7 @@ async function parseFormDataToBooking(
     image?: string | null;
   }
 ): Promise<BookingInterface> {
-  // Parse children data - handle both formats
+  // Parse children data - NEW per-child architecture
   const children: Array<{
     name: string;
     age: number;
@@ -208,29 +250,57 @@ async function parseFormDataToBooking(
     schoolName?: string;
   }> = [];
 
-  // First try the expected format (child-0-name, etc.)
-  let childIndex = 0;
-  while (cleanedData[`child-${childIndex}-name`]) {
-    children.push({
-      name: cleanedData[`child-${childIndex}-name`],
-      age: parseInt(cleanedData[`child-${childIndex}-age`]) || 0,
-      class: cleanedData[`child-${childIndex}-class`] || undefined,
-      schoolName: cleanedData[`child-${childIndex}-schoolName`] || undefined,
-    });
-    childIndex++;
-  }
+  // Extract all unique child IDs from form fields
+  const childIds = new Set<string>();
+  Object.keys(cleanedData).forEach((key) => {
+    // Match fields like childName_uuid, childAge_uuid, etc.
+    const match = key.match(/^child\w+_([a-f0-9-]+)$/);
+    if (match) {
+      childIds.add(match[1]);
+    }
+  });
 
-  // If no children found, try the alternative format (childName1, etc.)
-  if (children.length === 0) {
-    let altChildIndex = 1;
-    while (cleanedData[`childName${altChildIndex}`]) {
+  // Parse each child's basic information
+  Array.from(childIds).forEach((childId) => {
+    const name = cleanedData[`childName_${childId}`];
+    const age = parseInt(cleanedData[`childAge_${childId}`]) || 0;
+
+    if (name) {
       children.push({
-        name: cleanedData[`childName${altChildIndex}`],
-        age: parseInt(cleanedData[`childAge${altChildIndex}`]) || 0,
-        class: cleanedData[`childClass${altChildIndex}`] || undefined,
-        schoolName: cleanedData[`childSchool${altChildIndex}`] || undefined,
+        name,
+        age,
+        class: cleanedData[`childClass_${childId}`] || undefined,
+        schoolName: cleanedData[`childSchool_${childId}`] || undefined,
       });
-      altChildIndex++;
+    }
+  });
+
+  // Fallback to old format if no children found with new format
+  if (children.length === 0) {
+    // Try the old format (child-0-name, etc.)
+    let childIndex = 0;
+    while (cleanedData[`child-${childIndex}-name`]) {
+      children.push({
+        name: cleanedData[`child-${childIndex}-name`],
+        age: parseInt(cleanedData[`child-${childIndex}-age`]) || 0,
+        class: cleanedData[`child-${childIndex}-class`] || undefined,
+        schoolName: cleanedData[`child-${childIndex}-schoolName`] || undefined,
+      });
+      childIndex++;
+    }
+
+    // If still no children found, try the alternative format (childName1, etc.)
+    if (children.length === 0) {
+      let altChildIndex = 1;
+      while (cleanedData[`childName${altChildIndex}`]) {
+        children.push({
+          name: cleanedData[`childName${altChildIndex}`],
+          age: parseInt(cleanedData[`childAge${altChildIndex}`]) || 0,
+          class: cleanedData[`childClass${altChildIndex}`] || undefined,
+          schoolName: cleanedData[`childSchool${altChildIndex}`] || undefined,
+        });
+        altChildIndex++;
+      }
     }
   }
 
@@ -240,6 +310,11 @@ async function parseFormDataToBooking(
     hours: number;
     startTime?: string;
     endTime?: string;
+    dates?: Array<{
+      date: string;
+      startTime: string;
+      endTime?: string;
+    }>;
   }> = [];
 
   const days = [
@@ -269,16 +344,25 @@ async function parseFormDataToBooking(
     try {
       const daySchedules = JSON.parse(cleanedData.daySchedules);
       if (Array.isArray(daySchedules)) {
-        daySchedules.forEach((schedule: { day: string; hours?: number }) => {
-          if (schedule.day) {
-            weekdays.push({
-              day: schedule.day,
-              hours: schedule.hours || 8, // Default 8 hours for childcare
-              startTime: cleanedData.dropoffTime || undefined,
-              endTime: cleanedData.pickupTime || undefined,
-            });
+        daySchedules.forEach(
+          (schedule: {
+            day: string;
+            hours?: number;
+            startTime?: string;
+            dates?: Array<{ date: string; startTime: string }>;
+          }) => {
+            if (schedule.day) {
+              weekdays.push({
+                day: schedule.day,
+                hours: schedule.hours || 8, // Default 8 hours for childcare
+                startTime:
+                  schedule.startTime || cleanedData.dropoffTime || undefined,
+                endTime: cleanedData.pickupTime || undefined,
+                dates: schedule.dates || undefined,
+              });
+            }
           }
-        });
+        );
       }
     } catch (error) {
       console.warn("Failed to parse daySchedules JSON:", error);
@@ -316,48 +400,198 @@ async function parseFormDataToBooking(
   const serviceData: Record<string, string | number | boolean | object> = {};
 
   if (serviceType === "tutoring") {
-    serviceData.subjects = cleanedData.subjects
-      ? JSON.parse(cleanedData.subjects)
-      : [];
-    serviceData.academicLevel = cleanedData.academicLevel;
-    serviceData.learningGoals = cleanedData.learningGoals;
-    // Tutoring is now 1-hour flat session - get rate from form or default to 15000
+    // NEW: Parse per-child tutoring data with individual schedules
+    const childrenTutoringData: Array<{
+      childId: string;
+      subjects: string[];
+      academicLevel: string;
+      learningGoals: string;
+      totalHours: number;
+      schedule?: Array<{
+        day: string;
+        hours: number;
+        startTime?: string;
+        dates?: Array<{ date: string; startTime: string }>;
+      }>;
+    }> = [];
+
+    Array.from(childIds).forEach((childId) => {
+      const subjects = cleanedData[`subjects_${childId}`];
+      const academicLevel = cleanedData[`academicLevel_${childId}`];
+      const learningGoals = cleanedData[`learningGoals_${childId}`];
+      const totalHours = parseFloat(cleanedData[`totalHours_${childId}`]) || 0;
+      const scheduleJson = cleanedData[`schedule_${childId}`];
+
+      if (subjects && academicLevel) {
+        const childData: {
+          childId: string;
+          subjects: string[];
+          academicLevel: string;
+          learningGoals: string;
+          totalHours: number;
+          schedule?: Array<{
+            day: string;
+            hours: number;
+            startTime?: string;
+            dates?: Array<{ date: string; startTime: string }>;
+          }>;
+        } = {
+          childId,
+          subjects: JSON.parse(subjects),
+          academicLevel,
+          learningGoals: learningGoals || "",
+          totalHours,
+        };
+
+        // Parse schedule if available
+        if (scheduleJson) {
+          try {
+            childData.schedule = JSON.parse(scheduleJson);
+          } catch (error) {
+            console.warn(
+              `Failed to parse schedule for child ${childId}:`,
+              error
+            );
+          }
+        }
+
+        childrenTutoringData.push(childData);
+      }
+    });
+
+    serviceData.childrenData = childrenTutoringData;
     serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
-    serviceData.sessionHours = parseInt(cleanedData.sessionHours) || 1;
   } else if (serviceType === "childcare") {
-    serviceData.careType = cleanedData.careType;
-    serviceData.dropoffTime = cleanedData.dropoffTime;
-    serviceData.pickupTime = cleanedData.pickupTime;
-    serviceData.specialNeeds = cleanedData.specialNeeds;
-    // Get rates from form or use defaults
+    // NEW: Parse per-child childcare data
+    const childrenCareData: Array<{
+      childId: string;
+      careType: string;
+      totalDays: number;
+      isMonthSelected: boolean;
+      dropoffTime: string;
+      pickupTime: string;
+      specialNeeds: string;
+    }> = [];
+
+    Array.from(childIds).forEach((childId) => {
+      const careType = cleanedData[`careType_${childId}`];
+      const totalDays = parseFloat(cleanedData[`totalDays_${childId}`]) || 0;
+      const dropoffTime = cleanedData[`dropoffTime_${childId}`];
+      const pickupTime = cleanedData[`pickupTime_${childId}`];
+
+      if (careType) {
+        childrenCareData.push({
+          childId,
+          careType,
+          totalDays,
+          isMonthSelected: careType === "monthly",
+          dropoffTime: dropoffTime || "",
+          pickupTime: pickupTime || "",
+          specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",
+        });
+      }
+    });
+
+    serviceData.childrenData = childrenCareData;
     serviceData.dailyRate = parseInt(cleanedData.dailyRate) || 5000;
     serviceData.monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
   } else if (serviceType === "holiday-camps") {
-    serviceData.campWeeks = cleanedData.campWeeks
-      ? JSON.parse(cleanedData.campWeeks)
-      : [];
-    // Get weekly rate from form or default to 30000
+    // NEW: Parse per-child holiday camp data
+    const childrenCampData: Array<{
+      childId: string;
+      campWeeks: Array<{
+        startDate: string;
+        endDate: string;
+        weekNumber: number;
+      }>;
+    }> = [];
+
+    Array.from(childIds).forEach((childId) => {
+      const campWeeks = cleanedData[`campWeeks_${childId}`];
+
+      if (campWeeks) {
+        try {
+          childrenCampData.push({
+            childId,
+            campWeeks: JSON.parse(campWeeks),
+          });
+        } catch (error) {
+          console.warn(
+            `Failed to parse campWeeks for child ${childId}:`,
+            error
+          );
+        }
+      }
+    });
+
+    serviceData.childrenData = childrenCampData;
     serviceData.weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
   } else if (serviceType === "homeschooling") {
-    serviceData.subjects = cleanedData.selectedSubjects
-      ? JSON.parse(cleanedData.selectedSubjects)
-      : [];
-    serviceData.gradeLevel = cleanedData.gradeLevel;
-    serviceData.curriculum = cleanedData.curriculum;
-    serviceData.learningStyle = cleanedData.learningStyle;
-    serviceData.specialNeeds = cleanedData.specialNeeds || "";
-    serviceData.educationalGoals = cleanedData.educationalGoals;
-    serviceData.schoolTerm = cleanedData.schoolTerm;
-    serviceData.termCost = 250000; // ₦250,000 per term
+    // NEW: Parse per-child homeschooling data
+    const childrenHomeschoolData: Array<{
+      childId: string;
+      selectedSubjects: string[];
+      gradeLevel: string;
+      curriculum: string;
+      learningStyle: string;
+      specialNeeds: string;
+      educationalGoals: string;
+      selectedTerm: string;
+    }> = [];
+
+    Array.from(childIds).forEach((childId) => {
+      const subjects = cleanedData[`subjects_${childId}`];
+      const gradeLevel = cleanedData[`gradeLevel_${childId}`];
+      const curriculum = cleanedData[`curriculum_${childId}`];
+
+      if (subjects && gradeLevel) {
+        childrenHomeschoolData.push({
+          childId,
+          selectedSubjects: JSON.parse(subjects),
+          gradeLevel,
+          curriculum: curriculum || "",
+          learningStyle: cleanedData[`learningStyle_${childId}`] || "",
+          specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",
+          educationalGoals: cleanedData[`educationalGoals_${childId}`] || "",
+          selectedTerm: cleanedData[`schoolTerm_${childId}`] || "",
+        });
+      }
+    });
+
+    serviceData.childrenData = childrenHomeschoolData;
+    serviceData.termRate = parseInt(cleanedData.termRate) || 150000;
   } else if (serviceType === "kiddies-enrichment") {
-    serviceData.programs = cleanedData.selectedPrograms
-      ? JSON.parse(cleanedData.selectedPrograms)
-      : [];
-    serviceData.ageGroup = cleanedData.ageGroup;
-    serviceData.interests = cleanedData.interests;
-    serviceData.previousExperience = cleanedData.previousExperience || "";
-    serviceData.parentGoals = cleanedData.parentGoals;
-    // Get hourly rate from form or default to 8000
+    // Parse per-child enrichment data (single-day events)
+    const childrenEnrichmentData: Array<{
+      childId: string;
+      selectedPrograms: string[];
+      interests: string;
+      parentGoals: string;
+      hours: number;
+      eventDate: string;
+      startTime: string;
+    }> = [];
+
+    Array.from(childIds).forEach((childId) => {
+      const programs = cleanedData[`selectedPrograms_${childId}`];
+      const hours = parseFloat(cleanedData[`hours_${childId}`]) || 0;
+      const eventDate = cleanedData[`eventDate_${childId}`] || "";
+      const startTime = cleanedData[`startTime_${childId}`] || "";
+
+      if (programs) {
+        childrenEnrichmentData.push({
+          childId,
+          selectedPrograms: JSON.parse(programs),
+          interests: cleanedData[`interests_${childId}`] || "",
+          parentGoals: cleanedData[`parentGoals_${childId}`] || "",
+          hours,
+          eventDate,
+          startTime,
+        });
+      }
+    });
+
+    serviceData.childrenData = childrenEnrichmentData;
     serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 8000;
   } else if (serviceType === "space-rental") {
     serviceData.eventType = cleanedData.eventType;
@@ -376,36 +610,67 @@ async function parseFormDataToBooking(
     serviceData.cautionFee = 50000;
   }
 
-  // Calculate total amount
+  // Calculate total amount - NEW per-child calculations
   let totalAmount = 0;
 
   if (serviceType === "tutoring") {
-    // Tutoring is now 1-hour flat session - use sessionHours from form
-    const sessionHours = parseInt(cleanedData.sessionHours) || 1;
+    // Sum up hours from all children
+    const childrenData = serviceData.childrenData as Array<{
+      totalHours: number;
+    }>;
+    const totalHours = childrenData.reduce(
+      (sum, child) => sum + child.totalHours,
+      0
+    );
     const hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
-    totalAmount = sessionHours * hourlyRate;
+    totalAmount = totalHours * hourlyRate;
   } else if (serviceType === "homeschooling") {
-    totalAmount = 250000; // Fixed term-based pricing
+    // Each child pays the term rate
+    const childrenData = serviceData.childrenData as Array<{ childId: string }>;
+    const termRate = parseInt(cleanedData.termRate) || 150000;
+    totalAmount = childrenData.length * termRate;
   } else if (serviceType === "kiddies-enrichment") {
-    // Calculate total hours from weekday schedule
-    const totalHours = weekdays.reduce((sum, day) => sum + day.hours, 0);
-    const hourlyRate = parseInt(cleanedData.hourlyRate) || 10000;
+    // Sum up hours from all children (single-day events)
+    const childrenData = serviceData.childrenData as Array<{
+      hours: number;
+    }>;
+    const totalHours = childrenData.reduce(
+      (sum, child) => sum + child.hours,
+      0
+    );
+    const hourlyRate = parseInt(cleanedData.hourlyRate) || 8000;
     totalAmount = totalHours * hourlyRate;
   } else if (serviceType === "childcare") {
+    // Calculate per child based on care type
+    const childrenData = serviceData.childrenData as Array<{
+      careType: string;
+      totalDays: number;
+      isMonthSelected: boolean;
+    }>;
     const dailyRate = parseInt(cleanedData.dailyRate) || 5000;
-    const monthlyRate = parseInt(cleanedData.monthlyRate) || 110500;
-    totalAmount =
-      cleanedData.careType === "monthly"
-        ? monthlyRate
-        : weekdays.length * dailyRate;
+    const monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
+
+    totalAmount = childrenData.reduce((sum, child) => {
+      if (child.isMonthSelected || child.careType === "monthly") {
+        return sum + monthlyRate;
+      } else {
+        return sum + child.totalDays * dailyRate;
+      }
+    }, 0);
   } else if (serviceType === "holiday-camps") {
-    const campWeeks = serviceData.campWeeks as Array<{
-      startDate: string;
-      endDate: string;
-      weekNumber: number;
+    // Sum up weeks from all children
+    const childrenData = serviceData.childrenData as Array<{
+      campWeeks: Array<{
+        startDate: string;
+        endDate: string;
+        weekNumber: number;
+      }>;
     }>;
     const weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
-    totalAmount = (campWeeks?.length || 1) * weeklyRate;
+
+    totalAmount = childrenData.reduce((sum, child) => {
+      return sum + child.campWeeks.length * weeklyRate;
+    }, 0);
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);

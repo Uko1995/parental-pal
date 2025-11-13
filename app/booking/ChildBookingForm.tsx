@@ -1,4 +1,5 @@
 import OptionalChild from "./OptionalChild";
+import PhoneInput from "@/components/PhoneInput";
 
 function ChildBookingForm() {
   return (
@@ -49,18 +50,12 @@ function ChildBookingForm() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] transition-colors duration-300"
-              placeholder="Enter your phone number"
-              required
-            />
-          </div>
+          <PhoneInput
+            name="phone"
+            label="Phone Number"
+            required
+            placeholder="Enter phone number"
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

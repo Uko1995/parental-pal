@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { PhoneIcon } from "@heroicons/react/24/outline";
 
 interface PhoneInputProps {
   name: string;
@@ -13,21 +12,21 @@ interface PhoneInputProps {
 }
 
 const countryCodes = [
-  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
-  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
-  { code: "+44", country: "UK", flag: "🇬🇧" },
-  { code: "+27", country: "South Africa", flag: "🇿🇦" },
-  { code: "+254", country: "Kenya", flag: "🇰🇪" },
-  { code: "+233", country: "Ghana", flag: "🇬🇭" },
-  { code: "+91", country: "India", flag: "🇮🇳" },
-  { code: "+86", country: "China", flag: "🇨🇳" },
-  { code: "+81", country: "Japan", flag: "🇯🇵" },
-  { code: "+33", country: "France", flag: "🇫🇷" },
-  { code: "+49", country: "Germany", flag: "🇩🇪" },
-  { code: "+971", country: "UAE", flag: "🇦🇪" },
-  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
-  { code: "+61", country: "Australia", flag: "🇦🇺" },
-  { code: "+55", country: "Brazil", flag: "🇧🇷" },
+  { code: "+234", country: "Nigeria", flag: "NG" },
+  { code: "+1", country: "USA/Canada", flag: "US" },
+  { code: "+44", country: "UK", flag: "GP" },
+  { code: "+27", country: "South Africa", flag: "ZAF" },
+  { code: "+254", country: "Kenya", flag: "KEN" },
+  { code: "+233", country: "Ghana", flag: "GHA" },
+  { code: "+91", country: "India", flag: "IND" },
+  { code: "+86", country: "China", flag: "CHN" },
+  { code: "+81", country: "Japan", flag: "JPN" },
+  { code: "+33", country: "France", flag: "FRA" },
+  { code: "+49", country: "Germany", flag: "DEU" },
+  { code: "+971", country: "UAE", flag: "ARE" },
+  { code: "+966", country: "Saudi Arabia", flag: "SAU" },
+  { code: "+61", country: "Australia", flag: "AUS" },
+  { code: "+55", country: "Brazil", flag: "BRA" },
 ];
 
 export default function PhoneInput({
@@ -48,22 +47,22 @@ export default function PhoneInput({
     <div className="form-control">
       {label && (
         <label className="label">
-          <span className="label-text font-semibold text-gray-700 flex items-center gap-2">
-            <PhoneIcon className="w-4 h-4 text-[#90AC19]" />
-            {label} {required && <span className="text-error">*</span>}
+          <span className="label-text text-sm font-semibold text-gray-800 flex items-center gap-2">
+            {label} {required && <span className="text-red-600">*</span>}
           </span>
         </label>
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-0">
         {/* Country Code Selector */}
         <select
           value={countryCode}
           onChange={(e) => setCountryCode(e.target.value)}
-          className="select select-bordered w-32 bg-white focus:outline-none focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20"
+          className="select select-bordered w-25 ps-1 bg-white focus:outline-none focus:border-gray-600 focus:ring focus:ring-gray-300 text-gray-800"
         >
           {countryCodes.map((country) => (
             <option key={country.code} value={country.code}>
-              {country.flag} {country.code}
+              {country.flag}
+              {"  "} {country.code}
             </option>
           ))}
         </select>
@@ -77,7 +76,7 @@ export default function PhoneInput({
             const value = e.target.value.replace(/[^0-9]/g, "");
             setPhoneNumber(value);
           }}
-          className="input input-bordered flex-1 bg-white focus:outline-none focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20"
+          className="input border-gray-500 bg-white focus:border-gray-600 focus:ring focus:ring-gray-300 text-gray-800"
           placeholder={placeholder}
           required={required}
         />
@@ -89,7 +88,7 @@ export default function PhoneInput({
       {/* Display formatted phone number */}
       {phoneNumber && (
         <label className="label">
-          <span className="label-text-alt text-gray-500">
+          <span className="label-text-alt text-sm text-gray-700">
             Full number: {fullPhoneNumber}
           </span>
         </label>
