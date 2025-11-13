@@ -65,7 +65,12 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
       schedule: [],
     },
   ]);
-  const [hourlyRate, setHourlyRate] = useState(15000); // Default fallback
+  const [tutoringLocation, setTutoringLocation] = useState<
+    "virtual" | "physical"
+  >("physical");
+  const [virtualRate, setVirtualRate] = useState(11000); // ₦11,000 for virtual
+  const [physicalRate, setPhysicalRate] = useState(12000); // ₦12,000 for physical
+  const [hourlyRate, setHourlyRate] = useState(12000); // Default to physical rate
   const [startDate, setStartDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   ); // Default to today
@@ -90,7 +95,13 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         const response = await fetch("/api/services/pricing");
         const data = await response.json();
         if (data.success && data.data.tutoring) {
-          setHourlyRate(data.data.tutoring.baseRate);
+          // Set rates from database or use defaults
+          const vRate = data.data.tutoring.virtualRate || 11000;
+          const pRate = data.data.tutoring.physicalRate || 12000;
+          setVirtualRate(vRate);
+          setPhysicalRate(pRate);
+          // Set initial hourly rate based on default location
+          setHourlyRate(pRate);
         }
       } catch (error) {
         console.error("Error fetching tutoring pricing:", error);
@@ -98,6 +109,11 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
     };
     fetchPricing();
   }, []);
+
+  // Update hourly rate when location changes
+  useEffect(() => {
+    setHourlyRate(tutoringLocation === "virtual" ? virtualRate : physicalRate);
+  }, [tutoringLocation, virtualRate, physicalRate]);
 
   const subjects = [
     "Mathematics",
@@ -345,6 +361,88 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         </div>
       </div>
 
+      {/* Tutoring Location Selection */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
+          Tutoring Location
+        </h3>
+        <p className="text-sm text-gray-600 mb-6">
+          Choose whether you prefer virtual (online) or physical (in-person)
+          tutoring sessions.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Virtual Option */}
+          <label
+            className={`cursor-pointer flex flex-col p-6 rounded-lg border-2 transition-all duration-200 ${
+              tutoringLocation === "virtual"
+                ? " "
+                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="radio"
+                name="tutoringLocation"
+                value="virtual"
+                checked={tutoringLocation === "virtual"}
+                onChange={(e) =>
+                  setTutoringLocation(e.target.value as "virtual" | "physical")
+                }
+                className="w-5 h-5  border-gray-300 text-gray-700 focus:ring-gray-400"
+              />
+              <span className="text-base font-semibold text-gray-900">
+                Virtual Tutoring
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              Online sessions via video call with digital learning tools
+            </p>
+            <div className="mt-auto pt-3 border-t  border-gray-200">
+              <p className="text-lg font-bold ">
+                ₦{virtualRate.toLocaleString()}/hour
+              </p>
+            </div>
+          </label>
+
+          {/* Physical Option */}
+          <label
+            className={`cursor-pointer flex flex-col p-6 rounded-lg border-2 transition-all duration-200 ${
+              tutoringLocation === "physical"
+                ? ""
+                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="radio"
+                name="tutoringLocation"
+                value="physical"
+                checked={tutoringLocation === "physical"}
+                onChange={(e) =>
+                  setTutoringLocation(e.target.value as "virtual" | "physical")
+                }
+                className="w-5 h-5  border-gray-300 text-gray-700 focus:ring-gray-400"
+              />
+              <span className="text-base font-semibold text-gray-900">
+                Physical Tutoring
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              In-person sessions at your home or our center with hands-on
+              learning
+            </p>
+            <div className="mt-auto pt-3 border-t border-gray-200">
+              <p className="text-lg font-bold ">
+                ₦{physicalRate.toLocaleString()}/hour
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <input type="hidden" name="tutoringLocation" value={tutoringLocation} />
+      </div>
+
       {/* Header for Children Sections */}
       <div className="flex items-center justify-between py-4">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -535,6 +633,9 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
 
       {/* Hidden field for children count */}
       <input type="hidden" name="childrenCount" value={childrenData.length} />
+      <input type="hidden" name="hourlyRate" value={hourlyRate} />
+      <input type="hidden" name="virtualRate" value={virtualRate} />
+      <input type="hidden" name="physicalRate" value={physicalRate} />
 
       {/* Final Payment Summary */}
       {childrenData.some(

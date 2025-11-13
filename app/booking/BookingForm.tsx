@@ -455,7 +455,29 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
               Select Your Service
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {/* Mobile Dropdown */}
+            <div className="block md:hidden">
+              <select
+                name="serviceType"
+                value={selectedService}
+                onChange={(e) => {
+                  setSelectedService(e.target.value);
+                  saveCurrentFormData();
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                required
+              >
+                <option value="">Select a service...</option>
+                {services.map((service) => (
+                  <option key={service.value} value={service.value}>
+                    {service.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Desktop/Tablet Grid */}
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {services.map((service) => {
                 return (
                   <label

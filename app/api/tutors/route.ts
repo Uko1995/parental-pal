@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
             end: "17:00",
           },
         },
-        hourlyRate: hourlyRate || 15000,
+        hourlyRate: hourlyRate || 12000,
         hourlyRateAccepted: true,
         bio: bio || "",
         isVerified: true, // Admin created, so verified

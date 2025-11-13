@@ -90,7 +90,7 @@ export default function AddTutorModal({
     qualifications: [] as string[],
     subjects: [] as string[],
     experience: "",
-    hourlyRate: 15000,
+    hourlyRate: 12000,
     availability: [] as string[],
     languages: [] as string[],
     certifications: [] as Array<{
@@ -187,7 +187,7 @@ export default function AddTutorModal({
       qualifications: [],
       subjects: [],
       experience: "",
-      hourlyRate: 15000,
+      hourlyRate: 12000,
       availability: [],
       languages: [],
       certifications: [],
@@ -419,7 +419,7 @@ export default function AddTutorModal({
                   onChange={handleInputChange}
                   min="1000"
                   step="1000"
-                  placeholder="15000"
+                  placeholder="12000"
                 />
               </div>
             </div>

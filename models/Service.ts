@@ -31,6 +31,12 @@ export interface ServiceInterface {
       | "session"
       | "custom";
 
+    // Location-based rates for tutoring
+    locationRates?: {
+      virtual: number;
+      physical: number;
+    };
+
     // Package deals and discounts
     packages?: Array<{
       name: string;

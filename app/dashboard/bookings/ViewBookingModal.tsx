@@ -113,6 +113,9 @@ interface Booking {
     academicLevel?: string;
     learningGoals?: string;
     hourlyRate?: number;
+    tutoringLocation?: "virtual" | "physical";
+    virtualRate?: number;
+    physicalRate?: number;
 
     // Homeschooling specific
     curriculum?: string;
@@ -369,6 +372,21 @@ export default function ViewBookingModal({
                   <h5 className="card-title text-lg mb-4">
                     Per-Child Tutoring Details
                   </h5>
+
+                  {/* Tutoring Location Badge */}
+                  {booking.serviceData.tutoringLocation && (
+                    <div className="mb-4">
+                      <div className="badge badge-lg badge-info">
+                        {booking.serviceData.tutoringLocation === "virtual"
+                          ? "Virtual Tutoring (Online)"
+                          : "Physical Tutoring (In-Person)"}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Rate: ₦
+                        {booking.serviceData.hourlyRate?.toLocaleString()}/hour
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     {booking.serviceData.childrenData.map((childData, idx) => {

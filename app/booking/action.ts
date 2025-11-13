@@ -460,7 +460,11 @@ async function parseFormDataToBooking(
     });
 
     serviceData.childrenData = childrenTutoringData;
-    serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
+    serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 12000;
+    serviceData.tutoringLocation =
+      (cleanedData.tutoringLocation as "virtual" | "physical") || "physical";
+    serviceData.virtualRate = parseInt(cleanedData.virtualRate) || 11000;
+    serviceData.physicalRate = parseInt(cleanedData.physicalRate) || 12000;
   } else if (serviceType === "childcare") {
     // NEW: Parse per-child childcare data
     const childrenCareData: Array<{

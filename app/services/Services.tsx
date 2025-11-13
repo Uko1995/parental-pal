@@ -167,21 +167,21 @@ export default async function Services() {
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-600 line-through text-xs">
+                                {/* <span className="text-gray-600 line-through text-xs">
                                   {formatCurrency(
                                     unDiscountedPrice,
                                     service.pricing.currency
                                   )}
-                                </span>
-                                <span className="text-[#90AC19] font-bold">
+                                </span> */}
+                                <span className="text-[#90AC19] text-base font-bold">
                                   {formatCurrency(
                                     discountedPrice,
                                     service.pricing.currency
                                   )}
                                 </span>
-                                <span className="text-xs bg-[#E8931A] text-white px-2 py-0.5 rounded-full font-semibold">
+                                {/* <span className="text-xs bg-[#E8931A] text-white px-2 py-0.5 rounded-full font-semibold">
                                   -{pkg.discountPercentage}%
-                                </span>
+                                </span> */}
                               </div>
                             </div>
                           );

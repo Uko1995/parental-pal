@@ -59,6 +59,8 @@ export default function AddServiceModal({
     shortDescription: "",
     image: "",
     baseRate: "",
+    virtualRate: "11000",
+    physicalRate: "12000",
     currency: "NGN",
     billingType: "hour" as ServiceInterface["pricing"]["billingType"],
     status: "active" as ServiceInterface["status"],
@@ -83,7 +85,11 @@ export default function AddServiceModal({
     setFormData((prev) => ({
       ...prev,
       [name]:
-        name === "baseRate" || name === "minimumAge" || name === "maximumAge"
+        name === "baseRate" ||
+        name === "virtualRate" ||
+        name === "physicalRate" ||
+        name === "minimumAge" ||
+        name === "maximumAge"
           ? parseInt(value) || 0
           : value,
     }));
@@ -202,6 +208,13 @@ export default function AddServiceModal({
           baseRate: formData.baseRate,
           currency: formData.currency,
           billingType: formData.billingType,
+          locationRates:
+            formData.type === "tutoring"
+              ? {
+                  virtual: parseInt(formData.virtualRate) || 11000,
+                  physical: parseInt(formData.physicalRate) || 12000,
+                }
+              : undefined,
           packages:
             formData.packages.length > 0 ? formData.packages : undefined,
         },
@@ -237,6 +250,8 @@ export default function AddServiceModal({
           shortDescription: "",
           image: "",
           baseRate: "",
+          virtualRate: "11000",
+          physicalRate: "12000",
           currency: "NGN",
           billingType: "hour",
           status: "active",
@@ -489,6 +504,60 @@ export default function AddServiceModal({
                 </select>
               </div>
             </div>
+
+            {/* Tutoring Location Rates - Show only for tutoring service */}
+            {formData.type === "tutoring" && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                  Tutoring Location-Based Rates
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Virtual Rate (₦/hour)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      name="virtualRate"
+                      value={formData.virtualRate}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      placeholder="11000"
+                      min="0"
+                    />
+                    <label className="label">
+                      <span className="label-text-alt text-gray-600">
+                        Rate for online tutoring sessions
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        Physical Rate (₦/hour)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      name="physicalRate"
+                      value={formData.physicalRate}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      placeholder="12000"
+                      min="0"
+                    />
+                    <label className="label">
+                      <span className="label-text-alt text-gray-600">
+                        Rate for in-person tutoring sessions
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Requirements */}
@@ -590,14 +659,15 @@ export default function AddServiceModal({
                   <div className="form-control">
                     <label htmlFor={pkg.name}>Percentage</label>
                     <input
-                      type="string"
+                      type="number"
+                      step="any"
                       placeholder="Discount %"
-                      value={Number(pkg.discountPercentage) || ""}
+                      value={pkg.discountPercentage}
                       onChange={(e) =>
                         updatePackage(
                           index,
                           "discountPercentage",
-                          parseInt(e.target.value) || 0
+                          parseFloat(e.target.value) || 0
                         )
                       }
                       className="input input-bordered input-sm"

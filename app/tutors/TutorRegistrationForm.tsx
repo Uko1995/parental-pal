@@ -64,7 +64,7 @@ const initialFormData: TutorFormData = {
   experience: 0,
   qualifications: [],
   subjects: [],
-  hourlyRate: 15000,
+  hourlyRate: 12000,
   bio: "",
   availability: {
     days: [],

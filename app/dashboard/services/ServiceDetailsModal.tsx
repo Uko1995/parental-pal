@@ -150,6 +150,41 @@ export default function ServiceDetailsModal({
             </div>
           </div>
 
+          {/* Show location rates for tutoring */}
+          {service.type === "tutoring" && service.pricing.locationRates && (
+            <>
+              <div className="stat bg-linear-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-lg">
+                <div className="stat-figure text-indigo-600">
+                  <BanknotesIcon className="w-6 h-6" />
+                </div>
+                <div className="stat-title text-indigo-800">Virtual Rate</div>
+                <div className="stat-value text-indigo-900 text-xl">
+                  {formatCurrency(
+                    Number(service.pricing.locationRates.virtual)
+                  )}
+                </div>
+                <div className="stat-desc text-indigo-700">
+                  per hour (online)
+                </div>
+              </div>
+
+              <div className="stat bg-linear-to-br from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
+                <div className="stat-figure text-teal-600">
+                  <BanknotesIcon className="w-6 h-6" />
+                </div>
+                <div className="stat-title text-teal-800">Physical Rate</div>
+                <div className="stat-value text-teal-900 text-xl">
+                  {formatCurrency(
+                    Number(service.pricing.locationRates.physical)
+                  )}
+                </div>
+                <div className="stat-desc text-teal-700">
+                  per hour (in-person)
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="stat bg-linear-to-br from-blue-50 to-sky-50 border border-blue-200 rounded-lg">
             <div className="stat-figure text-blue-600">
               <CalendarDaysIcon className="w-6 h-6" />

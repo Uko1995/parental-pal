@@ -27,6 +27,8 @@ export async function GET() {
         baseRate: number;
         currency: string;
         billingType: string;
+        virtualRate?: number;
+        physicalRate?: number;
       }
     > = {};
 
@@ -36,6 +38,14 @@ export async function GET() {
         currency: service.pricing.currency,
         billingType: service.pricing.billingType,
       };
+
+      // Add location-specific rates for tutoring
+      if (service.type === "tutoring" && service.pricing.locationRates) {
+        pricingMap[service.type].virtualRate =
+          service.pricing.locationRates.virtual || 11000;
+        pricingMap[service.type].physicalRate =
+          service.pricing.locationRates.physical || 12000;
+      }
     });
 
     return NextResponse.json({

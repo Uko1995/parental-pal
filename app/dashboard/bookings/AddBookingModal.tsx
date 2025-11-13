@@ -130,14 +130,21 @@ const AddBookingModal = forwardRef<
   const calculateCost = () => {
     const baseCosts = {
       childcare: 5000,
-      tutoring: 15000,
+      tutoring: 12000, // Physical tutoring default
+      "tutoring-virtual": 11000,
       homeschooling: 10000,
       "holiday-camps": 30000,
       "space-rental": 250000,
       "kiddies-enrichment": 8000,
     };
 
-    const cost = baseCosts[formData.serviceType as keyof typeof baseCosts] || 0;
+    let cost = baseCosts[formData.serviceType as keyof typeof baseCosts] || 0;
+
+    // Use location-based rate for tutoring
+    if (formData.serviceType === "tutoring") {
+      cost = 12000; // Default to physical rate
+    }
+
     const childrenCount = formData.children.length;
 
     let totalCost = cost;

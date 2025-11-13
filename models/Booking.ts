@@ -28,6 +28,11 @@ export interface BookingInterface {
 
   // Service-specific data
   serviceData: {
+    // Tutoring location type
+    tutoringLocation?: "virtual" | "physical";
+    virtualRate?: number;
+    physicalRate?: number;
+
     // Per-child data structure (used by multiple services)
     childrenData?: Array<{
       childId: string;
