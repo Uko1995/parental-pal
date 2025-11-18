@@ -69,7 +69,7 @@ export default function ViewProductModal({
     <div className="modal modal-open">
       <div className="modal-box max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4 sticky top-0 bg-base-100 z-10 pb-4">
-          <h3 className="font-bold text-2xl">Product Details</h3>
+          <h3 className="font-bold text-lg">Product Details</h3>
           <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>
             <XMarkIcon className="w-5 h-5" />
           </button>

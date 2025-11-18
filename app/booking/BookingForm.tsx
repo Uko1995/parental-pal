@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { v4 as uuidv4 } from "uuid";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
 import ChildCareSpecificBookingForm, {
   ChildCareSpecificBookingFormRef,
@@ -197,11 +198,14 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     saveFormData(persistenceData);
 
     // Show loading state immediately
-    toast.loading("Processing your booking...", { id: "booking-submit" });
+    toast.loading("Creating your booking...", { id: "booking-submit" });
 
     try {
       // 1. Submit booking and get booking data
       const bookingResult = await submitAction(formData);
+
+      // Update progress
+      toast.loading("Initializing payment...", { id: "booking-submit" });
 
       // Check if this is an auth redirect (the action will throw/redirect before returning)
       // If we got here, user is authenticated
@@ -211,28 +215,28 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         return;
       }
 
-      // 2. Initialize payment with Paystack
-      // const idempotencyKey = uuidv4();
-      // const paymentRes = await fetch("/api/payments/initialize", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     bookingId: bookingResult.bookingId,
-      //     userId: bookingResult.userId,
-      //     amount: bookingResult.amount,
-      //     currency: bookingResult.currency || "NGN",
-      //     email: bookingResult.email,
-      //     idempotencyKey,
-      //   }),
-      // });
+      //2. Initialize payment with Paystack
+      const idempotencyKey = uuidv4();
+      const paymentRes = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: bookingResult.bookingId,
+          userId: bookingResult.userId,
+          amount: bookingResult.amount,
+          currency: bookingResult.currency || "NGN",
+          email: bookingResult.email,
+          idempotencyKey,
+        }),
+      });
 
-      // const paymentData = await paymentRes.json();
+      const paymentData = await paymentRes.json();
 
-      // if (!paymentData.success || !paymentData.data?.authorization_url) {
-      //   toast.dismiss("booking-submit");
-      //   toast.error(paymentData.error || "Payment initialization failed");
-      //   return;
-      // }
+      if (!paymentData.success || !paymentData.data?.authorization_url) {
+        toast.dismiss("booking-submit");
+        toast.error(paymentData.error || "Payment initialization failed");
+        return;
+      }
 
       // Clear persisted data after successful booking
       clearFormData();
@@ -260,10 +264,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setIsRepeatedCustomer(false);
 
       toast.dismiss("booking-submit");
-      toast.success("Redirecting to payment...");
+      toast.success("Redirecting to secure payment...", { duration: 500 });
 
-      // Redirect to Paystack checkout
-      // window.location.href = paymentData.data.authorization_url;
+      // Redirect to Paystack checkout immediately
+      window.location.href = paymentData.data.authorization_url;
     } catch (error: unknown) {
       toast.dismiss("booking-submit");
 

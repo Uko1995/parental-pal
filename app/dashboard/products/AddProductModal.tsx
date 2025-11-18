@@ -10,7 +10,6 @@ interface AddProductModalProps {
   onSuccess: () => void;
 }
 
-
 export default function AddProductModal({
   isOpen,
   onClose,
@@ -237,13 +236,13 @@ export default function AddProductModal({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
-          <div className="space-y-4">
+          <div className="space-y-4 ">
             <h4 className="font-semibold text-lg">Basic Information</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Title *</span>
+                  <span className="label-text text-gray-700">Title *</span>
                 </label>
                 <input
                   type="text"
@@ -255,9 +254,9 @@ export default function AddProductModal({
                 />
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Author *</span>
+                  <span className="label-text text-gray-700">Author *</span>
                 </label>
                 <input
                   type="text"
@@ -270,10 +269,10 @@ export default function AddProductModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="form-control">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Category</span>
+                  <span className="label-text text-gray-700">Category</span>
                 </label>
                 <select
                   name="category"
@@ -288,15 +287,15 @@ export default function AddProductModal({
                 </select>
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Age Range</span>
+                  <span className="label-text text-gray-700">Age Range</span>
                 </label>
                 <select
                   name="ageRange"
                   value={formData.ageRange}
                   onChange={handleInputChange}
-                  className="select select-bordered"
+                  className="select select-bordered ps-2"
                 >
                   <option value="0-2">0-2 years</option>
                   <option value="3-5">3-5 years</option>
@@ -306,9 +305,9 @@ export default function AddProductModal({
                 </select>
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Pages</span>
+                  <span className="label-text text-gray-700">Pages</span>
                 </label>
                 <input
                   type="number"
@@ -322,9 +321,9 @@ export default function AddProductModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Language</span>
+                  <span className="label-text text-gray-700">Language</span>
                 </label>
                 <input
                   type="text"
@@ -335,9 +334,11 @@ export default function AddProductModal({
                 />
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">ISBN (optional)</span>
+                  <span className="label-text text-gray-700">
+                    ISBN (optional)
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -349,15 +350,15 @@ export default function AddProductModal({
               </div>
             </div>
 
-            <div className="form-control">
+            <div className="form-control flex flex-col w-full gap-1">
               <label className="label">
-                <span className="label-text">Description</span>
+                <span className="label-text text-gray-700">Description</span>
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="textarea textarea-bordered h-24"
+                className="textarea textarea-bordered h-24 w-full"
                 placeholder="Enter product description..."
               />
             </div>
@@ -367,7 +368,7 @@ export default function AddProductModal({
           <div className="space-y-4">
             <h4 className="font-semibold text-lg">Features</h4>
 
-            <div className="form-control">
+            <div className="form-control ">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -420,9 +421,11 @@ export default function AddProductModal({
             <h4 className="font-semibold text-lg">Files</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Thumbnail Image *</span>
+                  <span className="label-text text-gray-700">
+                    Thumbnail Image *
+                  </span>
                 </label>
                 <input
                   type="file"
@@ -440,9 +443,9 @@ export default function AddProductModal({
                 )}
               </div>
 
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">PDF File *</span>
+                  <span className="label-text text-gray-700">PDF File *</span>
                 </label>
                 <input
                   type="file"
@@ -468,9 +471,11 @@ export default function AddProductModal({
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h5 className="card-title text-base">Softcopy (PDF)</h5>
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-1">
                     <label className="label">
-                      <span className="label-text">Price (₦)</span>
+                      <span className="label-text text-gray-700">
+                        Price (₦)
+                      </span>
                     </label>
                     <input
                       type="number"
@@ -483,7 +488,9 @@ export default function AddProductModal({
                   </div>
                   <div className="form-control">
                     <label className="label cursor-pointer">
-                      <span className="label-text">Available</span>
+                      <span className="label-text text-gray-700">
+                        Available
+                      </span>
                       <input
                         type="checkbox"
                         name="softcopyAvailable"
@@ -499,9 +506,11 @@ export default function AddProductModal({
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h5 className="card-title text-base">Paperback (Print)</h5>
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-1">
                     <label className="label">
-                      <span className="label-text">Price (₦)</span>
+                      <span className="label-text text-gray-700">
+                        Price (₦)
+                      </span>
                     </label>
                     <input
                       type="number"
@@ -514,7 +523,9 @@ export default function AddProductModal({
                   </div>
                   <div className="form-control">
                     <label className="label cursor-pointer">
-                      <span className="label-text">Available</span>
+                      <span className="label-text text-gray-700">
+                        Available
+                      </span>
                       <input
                         type="checkbox"
                         name="paperbackAvailable"
@@ -524,9 +535,11 @@ export default function AddProductModal({
                       />
                     </label>
                   </div>
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-1">
                     <label className="label">
-                      <span className="label-text">Stock Quantity</span>
+                      <span className="label-text text-gray-700">
+                        Stock Quantity
+                      </span>
                     </label>
                     <input
                       type="number"
@@ -537,9 +550,11 @@ export default function AddProductModal({
                       min="0"
                     />
                   </div>
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-1">
                     <label className="label">
-                      <span className="label-text">Low Stock Alert</span>
+                      <span className="label-text text-gray-700">
+                        Low Stock Alert
+                      </span>
                     </label>
                     <input
                       type="number"
@@ -560,15 +575,15 @@ export default function AddProductModal({
             <h4 className="font-semibold text-lg">Status</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
+              <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text">Status</span>
+                  <span className="label-text text-gray-700">Status</span>
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="select select-bordered"
+                  className="select select-bordered ps-2"
                 >
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
@@ -585,7 +600,9 @@ export default function AddProductModal({
                     onChange={handleInputChange}
                     className="checkbox checkbox-primary"
                   />
-                  <span className="label-text">Featured Product</span>
+                  <span className="label-text text-gray-700">
+                    Featured Product
+                  </span>
                 </label>
               </div>
             </div>

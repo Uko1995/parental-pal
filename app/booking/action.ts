@@ -102,35 +102,31 @@ export async function registerChild(formData: FormData) {
     // Don't block booking if child sync fails
   }
 
-  // Send booking confirmation email
-  try {
-    const emailResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  // Send booking confirmation email (fire-and-forget, non-blocking)
+  // Email is sent asynchronously without blocking the booking response
+  fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "booking-confirmation",
+      to: user.userData.user.email,
+      userName: user.userData.user.name || "Parent",
+      apiKey: process.env.EMAIL_API_KEY,
+      data: {
+        _id: savedBooking._id?.toString(),
+        serviceType: savedBooking.serviceType,
+        schedule: savedBooking.schedule,
+        children: savedBooking.children,
+        status: savedBooking.status,
+        pricing: savedBooking.pricing,
       },
-      body: JSON.stringify({
-        type: "booking-confirmation",
-        to: user.userData.user.email,
-        userName: user.userData.user.name || "Parent",
-        apiKey: process.env.EMAIL_API_KEY,
-        data: {
-          _id: savedBooking._id?.toString(),
-          serviceType: savedBooking.serviceType,
-          schedule: savedBooking.schedule,
-          children: savedBooking.children,
-          status: savedBooking.status,
-          pricing: savedBooking.pricing,
-        },
-      }),
-    });
-
-    if (!emailResponse.ok) {
-      // Silently fail email sending, don't block booking
-    }
-  } catch {
-    // Silently fail email sending, don't block booking
-  }
+    }),
+  }).catch((error) => {
+    // Log error but don't block booking
+    console.error("Background email send failed:", error);
+  });
 
   revalidatePath("/booking");
 

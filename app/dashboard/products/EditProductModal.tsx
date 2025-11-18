@@ -61,16 +61,16 @@ export default function EditProductModal({
     <div className="modal modal-open">
       <div className="modal-box">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-xl">Edit Product</h3>
+          <h3 className="font-bold text-lg">Edit Product</h3>
           <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="form-control">
+          <div className="form-control flex flex-col gap-1">
             <label className="label">
-              <span className="label-text">Title</span>
+              <span className="label-text text-gray-700 ">Title</span>
             </label>
             <input
               type="text"
@@ -81,9 +81,9 @@ export default function EditProductModal({
             />
           </div>
 
-          <div className="form-control">
+          <div className="form-control flex flex-col gap-1">
             <label className="label">
-              <span className="label-text">Author</span>
+              <span className="label-text text-gray-700">Author</span>
             </label>
             <input
               type="text"
