@@ -69,7 +69,7 @@ export default function Vision() {
           subjects: ["Mathematics", "English", "Science", "Social Studies"],
         },
         {
-          type: "At out Centre",
+          type: "At our Centre",
           description:
             "Face-to-face academic support with hands-on learning activities",
           features: [

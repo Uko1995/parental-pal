@@ -14,11 +14,16 @@ export default function AnalyticsProvider({
 }: {
   children: React.ReactNode;
 }) {
+  // Only run analytics in production
+  const isProduction = process.env.NODE_ENV === "production";
+
   return (
     <>
-      <Suspense fallback={null}>
-        <AnalyticsTracking />
-      </Suspense>
+      {isProduction && (
+        <Suspense fallback={null}>
+          <AnalyticsTracking />
+        </Suspense>
+      )}
       {children}
     </>
   );

@@ -358,6 +358,247 @@ export const emailTemplates = {
       paymentDetails.serviceType || "N/A"
     }`,
   }),
+
+  // Product order confirmation email
+  productOrderConfirmation: (
+    customerName: string,
+    orderDetails: {
+      orderNumber: string;
+      productTitle: string;
+      productThumbnail: string;
+      orderType: "softcopy" | "paperback";
+      totalAmount: number;
+      currency: string;
+      delivery?: {
+        address: string;
+        city: string;
+        state: string;
+        estimatedDeliveryDate?: Date;
+      };
+    }
+  ) => ({
+    subject: `Order Confirmation - ${orderDetails.productTitle}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 600px; margin: 0 auto; background-color: white; }
+          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 30px 20px; }
+          .order-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .product-info { display: flex; gap: 15px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #90AC19; }
+          .product-img { width: 100px; height: 140px; object-fit: cover; border-radius: 8px; }
+          .detail-row { padding: 10px 0; border-bottom: 1px solid #ddd; }
+          .detail-label { font-weight: bold; color: #333; }
+          .detail-value { color: #666; }
+          .total { font-size: 20px; font-weight: bold; color: #90AC19; padding: 15px 0; }
+          .cta-button { display: inline-block; background: linear-gradient(135deg, #90AC19, #E8931A); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; margin: 20px 0; font-weight: bold; }
+          .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Order Confirmed!</h1>
+          </div>
+          <div class="content">
+            <p style="font-size: 18px; color: #333;">Hello ${customerName},</p>
+            <p>Thank you for your order! We've received your payment and your order is being processed.</p>
+            
+            <div class="order-details">
+              <h3 style="color: #90AC19; margin-top: 0;">Order Details</h3>
+              <div class="product-info">
+                <img src="${orderDetails.productThumbnail}" alt="${
+      orderDetails.productTitle
+    }" class="product-img" />
+                <div>
+                  <h4 style="margin: 0 0 10px 0; color: #333;">${
+                    orderDetails.productTitle
+                  }</h4>
+                  <p style="margin: 5px 0; color: #666;">Order #: ${
+                    orderDetails.orderNumber
+                  }</p>
+                  <p style="margin: 5px 0; color: #666;">Format: ${
+                    orderDetails.orderType === "softcopy"
+                      ? "Digital PDF"
+                      : "Paperback"
+                  }</p>
+                </div>
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">Order Type:</span>
+                <span class="detail-value">${
+                  orderDetails.orderType === "softcopy"
+                    ? "Softcopy (PDF)"
+                    : "Paperback (Physical Book)"
+                }</span>
+              </div>
+              
+              ${
+                orderDetails.delivery
+                  ? `
+              <div class="detail-row">
+                <span class="detail-label">Delivery Address:</span>
+                <span class="detail-value">${orderDetails.delivery.address}, ${
+                      orderDetails.delivery.city
+                    }, ${orderDetails.delivery.state}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Estimated Delivery:</span>
+                <span class="detail-value">${orderDetails.delivery.estimatedDeliveryDate?.toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</span>
+              </div>
+              `
+                  : ""
+              }
+              
+              <div class="total">
+                Total Paid: ${
+                  orderDetails.currency
+                } ${orderDetails.totalAmount.toLocaleString()}
+              </div>
+            </div>
+
+            ${
+              orderDetails.orderType === "softcopy"
+                ? `
+            <p style="color: #90AC19; font-weight: bold;">📧 Your download link will be sent to you shortly in a separate email.</p>
+            `
+                : `
+            <p style="color: #90AC19; font-weight: bold;">📦 Your book will be delivered within 2 business days.</p>
+            <p>You'll receive a shipping notification with tracking details once your order is dispatched.</p>
+            `
+            }
+
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+              If you have any questions about your order, please contact our support team.
+            </p>
+          </div>
+          <div class="footer">
+            <p>© 2024 ParentalPal. All rights reserved.</p>
+            <p>Email: ${process.env.EMAIL_USER}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `Order Confirmation - ${orderDetails.productTitle}. Order #${
+      orderDetails.orderNumber
+    }. Total: ${
+      orderDetails.currency
+    } ${orderDetails.totalAmount.toLocaleString()}. ${
+      orderDetails.orderType === "softcopy"
+        ? "Download link will be sent shortly."
+        : "Delivery within 2 business days."
+    }`,
+  }),
+
+  // Download link email
+  downloadLinkEmail: (
+    customerName: string,
+    productDetails: {
+      productTitle: string;
+      productThumbnail: string;
+      orderNumber: string;
+      downloadUrl: string;
+      expiryDate: Date;
+      maxDownloads: number;
+    }
+  ) => ({
+    subject: `Your Download Link - ${productDetails.productTitle}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Download Your Book</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 600px; margin: 0 auto; background-color: white; }
+          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 30px 20px; }
+          .download-box { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px; border-radius: 12px; text-align: center; margin: 20px 0; }
+          .download-button { display: inline-block; background: white; color: #90AC19; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 18px; margin: 10px 0; }
+          .info-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+          .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📚 Your Book is Ready!</h1>
+          </div>
+          <div class="content">
+            <p style="font-size: 18px; color: #333;">Hello ${customerName},</p>
+            <p>Your purchase of <strong>${
+              productDetails.productTitle
+            }</strong> (Order #${productDetails.orderNumber}) is complete!</p>
+            
+            <div class="download-box">
+              <h2 style="color: white; margin: 0 0 10px 0;">Click below to download your book</h2>
+              <a href="${
+                productDetails.downloadUrl
+              }" class="download-button">Download PDF</a>
+            </div>
+
+            <div class="info-box">
+              <strong>⚠️ Important Information:</strong>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>This link will expire on ${productDetails.expiryDate.toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</li>
+                <li>You can download this file up to ${
+                  productDetails.maxDownloads
+                } times</li>
+                <li>Save the PDF to your device for offline reading</li>
+                <li>Do not share this link with others</li>
+              </ul>
+            </div>
+
+            <p>Enjoy your reading! We hope your child loves this story.</p>
+            
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+              If you have any issues downloading, please contact our support team immediately.
+            </p>
+          </div>
+          <div class="footer">
+            <p>© 2024 ParentalPal. All rights reserved.</p>
+            <p>Email: ${process.env.EMAIL_USER}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `Your book "${
+      productDetails.productTitle
+    }" is ready! Download here: ${
+      productDetails.downloadUrl
+    }. Link expires ${productDetails.expiryDate.toLocaleDateString()}. Maximum ${
+      productDetails.maxDownloads
+    } downloads.`,
+  }),
 };
 
 export default transporter;

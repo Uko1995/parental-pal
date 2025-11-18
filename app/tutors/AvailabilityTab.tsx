@@ -295,9 +295,7 @@ export default function AvailabilityTab({
           <div className="bg-white rounded-lg p-4 border border-green-200">
             <p className="text-gray-700 mb-3">
               Our tutoring hourly rate ranges from{" "}
-              <span className="font-bold text-green-600">
-                ₦11,000 to ₦12,000
-              </span>{" "}
+              <span className="font-bold text-green-600">₦4,000 to ₦6,000</span>{" "}
               per hour, depending on:
             </p>
 
@@ -334,7 +332,7 @@ export default function AvailabilityTab({
                 />
                 <div>
                   <span className="label-text font-medium text-gray-800 text-wrap">
-                    I accept the hourly rate range of ₦11,000 - ₦12,000 per hour
+                    I accept the hourly rate range of ₦4,000 - ₦6,000 per hour
                   </span>
                 </div>
               </div>
