@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 interface Product {
   _id: string;
@@ -61,7 +62,7 @@ export default function MiniProducts() {
   };
 
   return (
-    <section className="py-16 px-4 bg-gradient-to-b from-white to-[#FFEACF]/20">
+    <section className="py-16 px-4 bg-linear-to-b from-white to-[#FFEACF]/20">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
@@ -103,7 +104,7 @@ export default function MiniProducts() {
                 className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
               >
                 <figure className="relative h-80">
-                  <img
+                  <Image
                     src={product.thumbnail.url}
                     alt={product.title}
                     className="w-full h-full object-cover"

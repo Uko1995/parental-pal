@@ -137,12 +137,7 @@ export default async function Services() {
                         {service.pricing.packages.map((pkg, idx) => {
                           const basePrice =
                             Number(service.pricing.baseRate) || 0;
-                          const unDiscountedPrice =
-                            service?.type === "childcare"
-                              ? basePrice * 26
-                              : service?.type === "space-rental"
-                              ? basePrice * 2
-                              : basePrice;
+
                           const discountedPrice =
                             service?.type === "childcare"
                               ? basePrice *

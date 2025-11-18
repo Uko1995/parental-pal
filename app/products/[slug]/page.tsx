@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ProductPurchaseClient from "./ProductPurchaseClient";
 import Image from "next/image";
 import { Metadata } from "next";
+import Link from "next/link";
 
 export async function generateMetadata({
   params,
@@ -50,7 +51,7 @@ export default async function ProductDetailPage({
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
-        <a
+        <Link
           href="/products"
           className="inline-flex items-center text-[#90AC19] hover:text-[#7A9216] mb-8 font-medium"
         >
@@ -68,7 +69,7 @@ export default async function ProductDetailPage({
             />
           </svg>
           Back to Products
-        </a>
+        </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Book Cover */}

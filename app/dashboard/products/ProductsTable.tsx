@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import EditProductModal from "./EditProductModal";
 import DeleteProductModal from "./DeleteProductModal";
+import Image from "next/image";
 
 interface Product {
   _id: string;
@@ -278,7 +279,7 @@ export default function ProductsTable({
                       <div className="flex items-center space-x-3">
                         <div className="avatar">
                           <div className="mask mask-squircle w-12 h-12">
-                            <img
+                            <Image
                               src={product.thumbnail.url}
                               alt={product.title}
                               loading="lazy"

@@ -7,10 +7,10 @@ import {
   FunnelIcon,
   XMarkIcon,
   TruckIcon,
-  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import UpdateOrderStatusModal from "./UpdateOrderStatusModal";
+import Image from "next/image";
 
 interface Order {
   _id: string;
@@ -258,7 +258,7 @@ export default function OrdersTable({
                       <div className="flex items-center space-x-3">
                         <div className="avatar">
                           <div className="mask mask-squircle w-12 h-12">
-                            <img
+                            <Image
                               src={order.productThumbnail}
                               alt={order.productTitle}
                               loading="lazy"

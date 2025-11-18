@@ -1,6 +1,7 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 interface Product {
   _id: string;
@@ -77,7 +78,7 @@ export default function ViewProductModal({
         <div className="space-y-6">
           {/* Product Image */}
           <div className="flex justify-center">
-            <img
+            <Image
               src={product.thumbnail.url}
               alt={product.title}
               className="w-64 h-80 object-cover rounded-lg shadow-lg"

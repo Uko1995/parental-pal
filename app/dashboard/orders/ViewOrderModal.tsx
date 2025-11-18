@@ -1,6 +1,7 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 interface Order {
   _id: string;
@@ -70,7 +71,7 @@ export default function ViewOrderModal({
             <div className="card-body">
               <h4 className="font-semibold text-lg">Product Information</h4>
               <div className="flex items-center gap-4">
-                <img
+                <Image
                   src={order.productThumbnail}
                   alt={order.productTitle}
                   className="w-24 h-32 object-cover rounded"
