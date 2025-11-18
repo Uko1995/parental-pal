@@ -163,37 +163,61 @@ export default function Vision() {
         {/* Our Approach Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
           {/* Image */}
-          <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative h-96 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+          >
             <Image
               src="/woman2.webp"
               alt="Our teaching approach with children"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
             />
-          </div>
+          </motion.div>
 
           {/* Text Content */}
-          <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="space-y-4"
+          >
             <motion.h2
               initial={{ opacity: 0, y: -20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               className="text-3xl font-bold text-[#90AC19] mb-6"
             >
               OUR APPROACH
             </motion.h2>
-            <p className="text-lg text-gray-700 leading-relaxed mb-8">
-              We recognize that parents have the biggest responsibility in
-              raising children right so we provide support just as the parent
-              would, but with the additional advantage of qualified and
-              experienced hands. So in our approach to care and teaching, we put
-              ourselves in the shoes of the parents to guide the kids through
-              the following activities:
-            </p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-lg text-gray-700 leading-relaxed mb-8"
+            >
+              We recognize that parents have the biggest responsibility in raise
+              children right so we provide support just as the parent would, but
+              with the additional advantage of qualified and experienced hands.
+              So in our approach to care and teaching, we put ourselves in the
+              shoes of the parents to guide the kids through the following
+              activities:
+            </motion.p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               {/* Tutoring Approach */}
-              <div className="mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="mb-8"
+              >
                 <h4 className="text-base font-semibold text-[#E8931A] mb-4 flex items-center">
                   <svg
                     className="w-5 h-5 mr-2"
@@ -261,10 +285,15 @@ export default function Vision() {
                     </span>
                   </li>
                 </ul>
-              </div>
+              </motion.div>
 
               {/* Childcare Approach */}
-              <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+              >
                 <h4 className="text-base font-semibold text-[#90AC19] mb-4 flex items-center">
                   <UserGroupIcon className="w-5 h-5 mr-2" />
                   Childcare Services
@@ -325,20 +354,37 @@ export default function Vision() {
                     </span>
                   </li>
                 </ul>
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Age Groups Section */}
-        <div className="mb-16">
-          <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="mb-16"
+        >
+          <motion.h3
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl font-bold text-gray-900 text-center mb-12"
+          >
             Age-Appropriate Programs
-          </h3>
+          </motion.h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {ageGroups.map((group, index) => (
-              <div
+              <motion.div
                 key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.15 }}
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
                 className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-center mb-6">
@@ -363,19 +409,38 @@ export default function Vision() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Learning Options - Virtual and Physical Sessions Side by Side */}
-        <div className="mb-16">
-          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="mb-16"
+        >
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-2xl font-bold text-gray-900 mb-8 text-center"
+          >
             Learning Options
-          </h3>
+          </motion.h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {sessionTypes?.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="space-y-4">
+              <motion.div
+                key={categoryIndex}
+                initial={{ opacity: 0, x: categoryIndex === 0 ? -30 : 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, delay: categoryIndex * 0.2 }}
+                className="space-y-4"
+              >
                 {/* Category Header */}
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="text-[#90AC19] shrink-0">{category.icon}</div>
@@ -392,8 +457,19 @@ export default function Vision() {
                 {/* Services under this category */}
                 <div className="space-y-4">
                   {category.services?.map((service, serviceIndex) => (
-                    <div
+                    <motion.div
                       key={serviceIndex}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        duration: 0.5,
+                        delay: categoryIndex * 0.2 + serviceIndex * 0.1,
+                      }}
+                      whileHover={{
+                        scale: 1.02,
+                        transition: { duration: 0.2 },
+                      }}
                       className="bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
                     >
                       <div className="mb-4">
@@ -425,33 +501,70 @@ export default function Vision() {
                           </span>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Membership & Support - Now Below Learning Options */}
-        <div className="mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mb-16"
+        >
           <div className="max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+            <motion.h3
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-2xl font-bold text-gray-900 mb-8 text-center"
+            >
               Membership & Support
-            </h3>
+            </motion.h3>
 
             {/* Membership Card */}
-            <div className="bg-[url('/orangeBG.webp')] object-cover rounded-xl p-8 text-white relative">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              whileHover={{ scale: 1.02, transition: { duration: 0.3 } }}
+              className="bg-[url('/orangeBG.webp')] object-cover rounded-xl p-8 text-white relative"
+            >
               <div className="absolute inset-0 bg-orange-700/50 rounded-xl"></div>
               <div className="relative z-10 text-white text-center">
-                <h4 className="text-2xl font-semibold mb-4">
+                <motion.h4
+                  initial={{ opacity: 0, y: -20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="text-2xl font-semibold mb-4"
+                >
                   Premium Membership
-                </h4>
-                <p className="mb-6 text-lg">
+                </motion.h4>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="mb-6 text-lg"
+                >
                   Join our premium membership for exclusive benefits and
                   priority access to all services.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
+                >
                   <div className="flex items-center justify-center md:justify-start">
                     <svg
                       className="w-5 h-5 mr-3"
@@ -508,23 +621,41 @@ export default function Vision() {
                     </svg>
                     24/7 support access
                   </div>
-                </div>
-                <button
+                </motion.div>
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setShowPremiumModal(true)}
                   className="bg-white font-bold text-[#90AC19] cursor-pointer px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-300 text-lg"
                 >
                   Learn More
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Premium Membership Modal */}
       {showPremiumModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-2xl bg-linear-to-br from-white to-[#90AC19]/5">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="modal modal-open"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="modal-box max-w-2xl bg-linear-to-br from-white to-[#90AC19]/5"
+          >
             <button
               onClick={() => setShowPremiumModal(false)}
               className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
@@ -534,99 +665,87 @@ export default function Vision() {
 
             <div className="text-center py-8">
               {/* Coming Soon Badge */}
-              <div className="mb-6">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+                className="mb-6"
+              >
                 <span className="inline-block bg-linear-to-r from-[#90AC19] to-[#E8931A] text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider">
                   Coming Soon
                 </span>
-              </div>
+              </motion.div>
 
               {/* Title */}
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <motion.h3
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="text-3xl font-bold text-gray-900 mb-4"
+              >
                 Premium Membership
-              </h3>
+              </motion.h3>
 
               {/* Description */}
-              <p className="text-lg text-gray-600 mb-6 max-w-xl mx-auto">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="text-lg text-gray-600 mb-6 max-w-xl mx-auto"
+              >
                 We&apos;re working on something special! Premium membership will
                 give you exclusive access to enhanced features, priority
                 booking, and much more.
-              </p>
+              </motion.p>
 
               {/* Features Preview */}
-              <div className="bg-white rounded-xl p-6 mb-6 shadow-lg">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="bg-white rounded-xl p-6 mb-6 shadow-lg"
+              >
                 <h4 className="font-bold text-gray-800 mb-4">
                   What to Expect:
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
+                  {[
+                    "Priority booking access",
+                    "Exclusive discounts",
+                    "Dedicated support",
+                    "Early access to events",
+                  ].map((feature, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                      className="flex items-start gap-2"
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-sm text-gray-700">
-                      Priority booking access
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-sm text-gray-700">
-                      Exclusive discounts
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-sm text-gray-700">
-                      Dedicated support
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-sm text-gray-700">
-                      Early access to events
-                    </span>
-                  </div>
+                      <svg
+                        className="w-5 h-5 text-[#90AC19] shrink-0 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm text-gray-700">{feature}</span>
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Notification */}
-              <div className="bg-[#E8931A]/10 border border-[#E8931A]/30 rounded-lg p-4 mb-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1 }}
+                className="bg-[#E8931A]/10 border border-[#E8931A]/30 rounded-lg p-4 mb-6"
+              >
                 <p className="text-sm text-gray-700">
                   🔔 Want to be notified when we launch?{" "}
                   <Link
@@ -637,22 +756,30 @@ export default function Vision() {
                   </Link>{" "}
                   to join our waitlist!
                 </p>
-              </div>
+              </motion.div>
 
               {/* Close Button */}
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowPremiumModal(false)}
                 className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none"
               >
                 Got it, thanks!
-              </button>
+              </motion.button>
             </div>
-          </div>
-          <div
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="modal-backdrop"
             onClick={() => setShowPremiumModal(false)}
-          ></div>
-        </div>
+          ></motion.div>
+        </motion.div>
       )}
     </section>
   );
