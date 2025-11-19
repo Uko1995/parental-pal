@@ -6,6 +6,62 @@ import {
   getTutorRegistrationTrends,
 } from "../../dashboard/tutors/action";
 import { UserRepository } from "@/lib/UserRepository";
+import { auth } from "@/auth";
+import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+
+interface TutorCreateRequest {
+  userData?: {
+    user?: {
+      name?: string;
+      email?: string;
+      image?: string;
+    };
+  };
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  profileImage?: string;
+  tutorProfile?: {
+    bio?: string;
+    specialty?: string;
+    qualifications?: string[];
+    subjects?: string[];
+    experience?: number | string;
+    hourlyRate?: number;
+    availability?: {
+      days?: string[];
+      hours?: {
+        start: string;
+        end: string;
+      };
+    };
+    documents?: string[];
+    hourlyRateAccepted?: boolean;
+  };
+  bio?: string;
+  specialty?: string;
+  specialties?: string[];
+  qualifications?: string[];
+  subjects?: string[];
+  experience?: number | string;
+  hourlyRate?: number;
+  availability?:
+    | string[]
+    | {
+        days?: string[];
+        hours?: {
+          start: string;
+          end: string;
+        };
+      };
+  documents?: string[];
+  adminCreated?: boolean;
+  preferences?: {
+    preferredServices?: string[];
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,7 +113,51 @@ export async function GET(request: NextRequest) {
 // Create tutor (Admin)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const ip = getClientIp(request);
+
+    // Rate limiting
+    const rateLimitResult = rateLimit(`tutor-create:${ip}`, 10, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // Authentication check
+    const session = await auth();
+    if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized tutor create attempt"
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: Only admins can create tutors
+    if (currentUser.role !== "admin") {
+      logAuthEvent(
+        AuditEventType.FORBIDDEN_ACCESS,
+        currentUser._id?.toString(),
+        session.user.email,
+        ip,
+        false,
+        "Non-admin tried to create tutor"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Admin only" },
+        { status: 403 }
+      );
+    }
+
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody) as TutorCreateRequest;
 
     // Extract data from nested structure or flat structure (support both)
     const name = body.userData?.user?.name || body.name;
@@ -133,11 +233,23 @@ export async function POST(request: NextRequest) {
         rating: 0,
         totalReviews: 0,
         availability: {
-          days: availability?.days || availability || [],
-          hours: availability?.hours || {
-            start: "09:00",
-            end: "17:00",
-          },
+          days: (Array.isArray(availability)
+            ? availability
+            : availability?.days || []) as (
+            | "Monday"
+            | "Tuesday"
+            | "Wednesday"
+            | "Thursday"
+            | "Friday"
+            | "Saturday"
+            | "Sunday"
+          )[],
+          hours: Array.isArray(availability)
+            ? { start: "09:00", end: "17:00" }
+            : availability?.hours || {
+                start: "09:00",
+                end: "17:00",
+              },
         },
         hourlyRate: hourlyRate || 6000,
         hourlyRateAccepted: body.tutorProfile?.hourlyRateAccepted ?? true,
@@ -150,9 +262,9 @@ export async function POST(request: NextRequest) {
           sms: false,
           push: true,
         },
-        preferredServices: body.preferences?.preferredServices || [
-          "tutoring" as const,
-        ],
+        preferredServices: (body.preferences?.preferredServices || [
+          "tutoring",
+        ]) as ("tutoring" | "homeschooling")[],
       },
       createdAt: new Date(),
       updatedAt: new Date(),

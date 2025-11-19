@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@/lib/UserRepository";
 import { ObjectId } from "mongodb";
+import { auth } from "@/auth";
+import { rateLimit, getClientIp } from "@/lib/security";
+import {
+  logDataEvent,
+  logAuthEvent,
+  AuditEventType,
+} from "@/lib/audit-logger-mongodb";
 
 export async function GET(
   request: NextRequest,
@@ -59,12 +66,63 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const ip = getClientIp(request);
+
+    // Rate limiting
+    const rateLimitResult = rateLimit(`tutor-delete:${ip}`, 5, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // Authentication check
+    const session = await auth();
+    if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized tutor delete attempt"
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: Only admins can delete tutors
+    if (currentUser.role !== "admin") {
+      logAuthEvent(
+        AuditEventType.FORBIDDEN_ACCESS,
+        currentUser._id?.toString(),
+        session.user.email,
+        ip,
+        false,
+        "Non-admin tried to delete tutor"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Admin only" },
+        { status: 403 }
+      );
+    }
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid tutor ID" }, { status: 400 });
     }
 
     const result = await UserRepository.deleteUser(id);
+
+    logDataEvent(
+      AuditEventType.USER_DELETED,
+      currentUser._id!.toString(),
+      "tutor",
+      "delete",
+      true,
+      { tutorId: id }
+    );
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

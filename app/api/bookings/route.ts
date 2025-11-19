@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from "next/server";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { auth } from "@/auth";
+import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
 
 export async function GET() {
   try {
@@ -124,13 +126,65 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
+    const ip = getClientIp(request);
+
+    // Rate limiting: 20 bookings per hour
+    const rateLimitResult = rateLimit(`booking-create:${ip}`, 20, 3600000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Too many booking requests" },
+        { status: 429 }
+      );
+    }
+
+    // Authentication check
+    const session = await auth();
+    if (!session?.user?.email) {
+      logSecurityEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        ip,
+        "Unauthenticated booking attempt"
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const rawData = await request.json();
+    const data = sanitizeObject(rawData);
+
+    // Authorization: Verify userId matches current user (unless admin)
+    if (
+      data.userId &&
+      data.userId !== currentUser._id?.toString() &&
+      currentUser.role !== "admin"
+    ) {
+      logSecurityEvent(
+        AuditEventType.SUSPICIOUS_ACTIVITY,
+        currentUser._id?.toString(),
+        ip,
+        "User attempted to create booking for another user"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Cannot create booking for another user" },
+        { status: 403 }
+      );
+    }
+
+    // Ensure userId is set to current user
+    const bookingData = {
+      ...data,
+      userId: currentUser._id?.toString(),
+      status: "pending" as const,
+    };
 
     // Create new booking using the correct method
-    const booking = await BookingRepository.createBooking({
-      ...data,
-      status: "pending",
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const booking = await BookingRepository.createBooking(bookingData as any);
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {

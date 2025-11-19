@@ -1,11 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@/lib/UserRepository";
+import { auth } from "@/auth";
+import {
+  rateLimit,
+  getClientIp,
+  sanitizeString,
+  sanitizeObject,
+} from "@/lib/security";
+import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
 
 // Create new parent
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+
+  // Rate limiting
+  const rateLimitResult = rateLimit(`parents-create:${ip}`, 10, 3600000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  // Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Authorization - only admins can create parents
+  if (session.user.role !== "admin") {
+    await logAuthEvent(
+      AuditEventType.FORBIDDEN_ACCESS,
+      session.user.id,
+      session.user.email || undefined,
+      ip,
+      false,
+      "Non-admin attempted to create parent"
+    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
-    const body = await request.json();
-    const { name, email, phone, address, children } = body;
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
+    const name = sanitizeString(String(body.name || ""));
+    const email = sanitizeString(String(body.email || ""));
+    const phone = sanitizeString(String(body.phone || ""));
+    const address = sanitizeString(String(body.address || ""));
+    const children = (body.children || []) as Array<{
+      name: string;
+      age: number;
+      gender: "male" | "female";
+    }>;
 
     if (!name || !email) {
       return NextResponse.json(
@@ -31,7 +75,9 @@ export async function POST(request: NextRequest) {
           email: email.trim().toLowerCase(),
           image: null,
         },
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        expiresAt: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 30 days from now
       },
       phone: phone || "",
       address: address || "",

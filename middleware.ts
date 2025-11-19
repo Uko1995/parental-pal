@@ -30,12 +30,72 @@ const publicRoutes = [
   "/api/auth",
 ];
 
+/**
+ * Add security headers to response
+ */
+function addSecurityHeaders(response: NextResponse, request: NextRequest): NextResponse {
+  // Content Security Policy - tightened to remove unsafe-inline/unsafe-eval where possible
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://js.paystack.co; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "img-src 'self' data: https: blob:; " +
+      "connect-src 'self' https://accounts.google.com https://api.cloudinary.com https://api.paystack.co; " +
+      "frame-src 'self' https://accounts.google.com https://js.paystack.co; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
+  );
+
+  // Strict Transport Security - Force HTTPS
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains; preload"
+  );
+
+  // Prevent clickjacking
+  response.headers.set("X-Frame-Options", "DENY");
+
+  // Prevent MIME type sniffing
+  response.headers.set("X-Content-Type-Options", "nosniff");
+
+  // XSS Protection
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+
+  // Referrer Policy
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Permissions Policy
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()"
+  );
+
+  // CSRF Protection: Verify origin header for state-changing requests
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    
+    // Allow requests from same origin or if origin is not set (non-browser requests)
+    if (origin && host && !origin.includes(host)) {
+      console.warn(`CSRF: Origin mismatch - origin: ${origin}, host: ${host}`);
+      // Return 403 for suspicious cross-origin requests
+      return NextResponse.json({ error: "Forbidden - Invalid origin" }, { status: 403 });
+    }
+  }
+
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes and API auth routes
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    return addSecurityHeaders(response, request);
   }
 
   // For Edge Runtime compatibility, we'll use cookies to check session
@@ -71,7 +131,8 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     // Skip auth API routes
     if (pathname.startsWith("/api/auth/")) {
-      return NextResponse.next();
+      const response = NextResponse.next();
+      return addSecurityHeaders(response, request);
     }
 
     // Public API routes
@@ -87,7 +148,8 @@ export async function middleware(request: NextRequest) {
         request.method === "GET" ||
         (request.method === "POST" && pathname.startsWith("/api/bookings"))
       ) {
-        return NextResponse.next();
+        const response = NextResponse.next();
+        return addSecurityHeaders(response, request);
       }
     }
 
@@ -103,10 +165,11 @@ export async function middleware(request: NextRequest) {
 
     if (adminApiRoutes.some((route) => pathname.startsWith(route))) {
       if (!hasSession) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Authentication required" },
           { status: 401 }
         );
+        return addSecurityHeaders(response, request);
       }
       // Let the API route itself handle role-based authorization
     }
@@ -120,15 +183,17 @@ export async function middleware(request: NextRequest) {
         request.method !== "GET" &&
         !(request.method === "POST" && pathname === "/api/bookings")
       ) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: "Authentication required" },
           { status: 401 }
         );
+        return addSecurityHeaders(response, request);
       }
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  return addSecurityHeaders(response, request);
 }
 
 export const config = {

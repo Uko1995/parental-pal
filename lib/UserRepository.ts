@@ -582,6 +582,19 @@ export class UserRepository {
     };
   }
 
+  // get all users with tokens
+  static async getUsersWithTokens(): Promise<UserInterface[]> {
+    const collection = await getCollection(this.collectionName);
+    return (await collection
+      .find({
+        $or: [
+          { "verificationToken.token": { $exists: true } },
+          { "passwordResetToken.token": { $exists: true } },
+        ],
+      })
+      .toArray()) as UserInterface[];
+  }
+
   // Update last login
   static async updateLastLogin(userId: string | ObjectId): Promise<void> {
     const collection = await getCollection(this.collectionName);

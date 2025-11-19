@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@/lib/UserRepository";
+import { auth } from "@/auth";
+import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 
 // Update child within parent document
 export async function PUT(request: NextRequest) {
+  const ip = getClientIp(request);
+
+  // Rate limiting
+  const rateLimitResult = rateLimit(`children-update:${ip}`, 20, 3600000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  // Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
     const {
       parentId,
       originalName,
@@ -24,7 +41,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get the parent user
-    const parent = await UserRepository.findById(parentId);
+    const parent = await UserRepository.findById(String(parentId));
     if (!parent) {
       return NextResponse.json(
         { success: false, error: "Parent not found" },
@@ -35,7 +52,7 @@ export async function PUT(request: NextRequest) {
     // Find the child index by matching the original name
     const children = parent.children || [];
     const childIndex = children.findIndex(
-      (child) => child.name === originalName
+      (child) => child.name === String(originalName)
     );
 
     if (childIndex === -1) {
@@ -48,16 +65,16 @@ export async function PUT(request: NextRequest) {
     // Update the specific child
     children[childIndex] = {
       ...children[childIndex],
-      name,
-      age,
-      gender,
-      class: childClass,
-      schoolName,
-      subjects,
+      name: String(name),
+      age: Number(age),
+      gender: String(gender) as "male" | "female",
+      class: childClass ? String(childClass) : undefined,
+      schoolName: schoolName ? String(schoolName) : undefined,
+      subjects: subjects as string[] | undefined,
     };
 
     // Update the parent document
-    const result = await UserRepository.updateUser(parentId, {
+    const result = await UserRepository.updateUser(String(parentId), {
       children,
       updatedAt: new Date(),
     });

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollection } from "@/lib/mongodb";
 import { ServiceInterface } from "@/models/Service";
+import { auth } from "@/auth";
+import { UserRepository } from "@/lib/UserRepository";
+import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import {
+  logDataEvent,
+  logAuthEvent,
+  AuditEventType,
+} from "@/lib/audit-logger-mongodb";
 
 export async function GET() {
   try {
@@ -28,7 +36,51 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const serviceData = await request.json();
+    const ip = getClientIp(request);
+
+    // Rate limiting
+    const rateLimitResult = rateLimit(`service-create:${ip}`, 10, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // Authentication check
+    const session = await auth();
+    if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized service create attempt"
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: Only admins can create services
+    if (currentUser.role !== "admin") {
+      logAuthEvent(
+        AuditEventType.FORBIDDEN_ACCESS,
+        currentUser._id?.toString(),
+        session.user.email,
+        ip,
+        false,
+        "Non-admin tried to create service"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Admin only" },
+        { status: 403 }
+      );
+    }
+
+    const rawServiceData = await request.json();
+    const serviceData = sanitizeObject(rawServiceData);
     const collection = await getCollection("services");
 
     // Add timestamps
@@ -39,6 +91,15 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await collection.insertOne(newService);
+
+    logDataEvent(
+      AuditEventType.SERVICE_CREATED,
+      currentUser._id!.toString(),
+      "service",
+      "create",
+      true,
+      { serviceId: result.insertedId }
+    );
 
     return NextResponse.json({
       success: true,

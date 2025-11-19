@@ -2,16 +2,64 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { UserRepository } from "@/lib/UserRepository";
 import { UserInterface } from "@/models/User";
+import {
+  validateEmail,
+  validatePassword,
+  sanitizeString,
+  sanitizeObject,
+  getClientIp,
+  rateLimit,
+} from "@/lib/security";
+import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+import { createVerificationToken } from "@/lib/email-verification";
+import { sendEmail } from "@/lib/email-service";
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+
   try {
+    // Rate limiting - 5 registration attempts per 15 minutes per IP
+    const rateLimitResult = rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+
+    if (!rateLimitResult.success) {
+      logAuthEvent(
+        AuditEventType.RATE_LIMIT_EXCEEDED,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Registration rate limit exceeded"
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Too many registration attempts. Please try again in 15 minutes.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(
+              (rateLimitResult.resetTime - Date.now()) / 1000
+            ).toString(),
+          },
+        }
+      );
+    }
+
+    const rawData = await request.json();
     const {
-      name,
-      email,
+      name: rawName,
+      email: rawEmail,
       password,
       role = "parent",
-      tutorData,
-    } = await request.json();
+      tutorData: rawTutorData,
+    } = rawData;
+
+    // Sanitize inputs
+    const name = sanitizeString(rawName);
+    const email = sanitizeString(rawEmail);
+    const tutorData = rawTutorData ? sanitizeObject(rawTutorData) : undefined;
 
     // Validation
     if (!name || !email || !password) {
@@ -29,26 +77,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validate email with enhanced security
+    if (!validateEmail(email)) {
+      logAuthEvent(
+        AuditEventType.REGISTER,
+        undefined,
+        email,
+        ip,
+        false,
+        "Invalid email format"
+      );
       return NextResponse.json(
         { success: false, error: "Please provide a valid email address" },
         { status: 400 }
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password strength with enhanced validation
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      logAuthEvent(
+        AuditEventType.REGISTER,
+        undefined,
+        email,
+        ip,
+        false,
+        `Weak password: ${passwordValidation.errors.join(", ")}`
+      );
       return NextResponse.json(
         {
           success: false,
-          error: "Password must be at least 8 characters long",
+          error: passwordValidation.errors[0],
         },
         { status: 400 }
       );
     }
 
+    // Old validation logic kept for backwards compatibility
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
@@ -94,13 +159,21 @@ export async function POST(request: NextRequest) {
     // Check if user already exists
     const existingUser = await UserRepository.findByEmail(email);
     if (existingUser) {
+      logAuthEvent(
+        AuditEventType.REGISTER,
+        undefined,
+        email,
+        ip,
+        false,
+        "User with email already exists"
+      );
       return NextResponse.json(
         { success: false, error: "User with this email already exists" },
         { status: 400 }
       );
     }
 
-    // Hash password
+    // Hash password with stronger work factor
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create new user with tutor data if provided
@@ -112,39 +185,84 @@ export async function POST(request: NextRequest) {
         user: {
           name,
           email,
-          image: tutorData?.profileImage || null,
+          image: (tutorData?.profileImage as string) || null,
         },
       },
-      phone: tutorData?.phone || undefined,
-      address: tutorData?.address || undefined,
+      phone: (tutorData?.phone as string) || undefined,
+      address: (tutorData?.address as string) || undefined,
       password: hashedPassword,
       role: role as "admin" | "parent" | "tutor",
       isActive: true,
       lastLoginAt: new Date(),
       membershipType: "basic",
-      // Include tutor profile if tutorData is provided
-      ...(tutorData?.tutorProfile && {
-        tutorProfile: {
-          ...tutorData.tutorProfile,
-          rating: 0,
-          totalReviews: 0,
-          isVerified: true,
-        },
-      }),
-      // Include preferences if provided
-      ...(tutorData?.preferences && {
-        preferences: {
-          notifications: {
-            email: true,
-            sms: false,
-            push: true,
-          },
-          ...tutorData.preferences,
-        },
-      }),
     };
 
+    // Include tutor profile if tutorData is provided
+    if (tutorData?.tutorProfile) {
+      newUser.tutorProfile = {
+        ...(tutorData.tutorProfile as Record<string, unknown>),
+        rating: 0,
+        totalReviews: 0,
+        isVerified: true,
+      } as UserInterface["tutorProfile"];
+    }
+
+    // Include preferences if provided
+    if (tutorData?.preferences) {
+      newUser.preferences = {
+        notifications: {
+          email: true,
+          sms: false,
+          push: true,
+        },
+        ...(tutorData.preferences as Record<string, unknown>),
+      } as UserInterface["preferences"];
+    }
+
     const createdUser = await UserRepository.createUser(newUser);
+
+    // Log successful registration
+    await logAuthEvent(
+      AuditEventType.REGISTER,
+      createdUser._id?.toString(),
+      email,
+      ip,
+      true,
+      `User registered successfully with role: ${role}`
+    );
+
+    // Send verification email
+    try {
+      const token = await createVerificationToken(email);
+      const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify?token=${token}`;
+
+      await sendEmail({
+        to: email,
+        subject: "Verify your email - PARENTALPAL",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #90AC19;">Welcome to PARENTALPAL!</h2>
+            <p>Hello ${name},</p>
+            <p>Thank you for registering. Please verify your email address to activate your account:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationUrl}" 
+                 style="background-color: #90AC19; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Verify Email
+              </a>
+            </div>
+            <p>Or copy and paste this link:</p>
+            <p style="color: #666; word-break: break-all;">${verificationUrl}</p>
+            <p style="margin-top: 30px; color: #666; font-size: 12px;">
+              This link expires in 24 hours.
+            </p>
+          </div>
+        `,
+      });
+      console.log("✅ Verification email sent successfully");
+    } catch (emailError) {
+      console.error("❌ Error sending verification email:", emailError);
+      // Don't fail registration if email fails
+    }
 
     // Send welcome email (tutor-specific or general welcome)
     try {
@@ -159,10 +277,11 @@ export async function POST(request: NextRequest) {
 
       // Add tutor-specific data if applicable
       if (emailType === "tutor-registration" && tutorData) {
+        const tutorProfile = tutorData.tutorProfile as Record<string, unknown>;
         emailData.data = {
           tutorId: createdUser._id?.toString(),
-          specialty: tutorData.tutorProfile?.specialty || "General",
-          subjects: tutorData.tutorProfile?.subjects || [],
+          specialty: (tutorProfile?.specialty as string) || "",
+          subjects: (tutorProfile?.subjects as string[]) || [],
         };
       }
 
@@ -194,6 +313,7 @@ export async function POST(request: NextRequest) {
     // Remove password from response
     const userResponse = { ...createdUser };
     delete userResponse.password;
+    delete userResponse.googleId;
 
     return NextResponse.json({
       success: true,
@@ -202,6 +322,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Registration error:", error);
+    logAuthEvent(
+      AuditEventType.REGISTER,
+      undefined,
+      undefined,
+      ip,
+      false,
+      `Registration error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 }

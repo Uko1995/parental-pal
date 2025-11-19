@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PostRepository } from "@/lib/PostRepository";
+import { UserRepository } from "@/lib/UserRepository";
+import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
 
 // Get individual blog post
 export async function GET(
@@ -52,13 +55,48 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIp(request);
+
+    // Rate limiting
+    const rateLimitResult = rateLimit(`blog-update:${ip}`, 10, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized blog update attempt"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Check if user is admin
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: Only admins can update blog posts
+    if (currentUser.role !== "admin") {
+      logAuthEvent(
+        AuditEventType.FORBIDDEN_ACCESS,
+        currentUser._id?.toString(),
+        session.user.email,
+        ip,
+        false,
+        "Non-admin tried to update blog"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Admin only" },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
 
@@ -69,7 +107,8 @@ export async function PATCH(
       );
     }
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
     const updates = { ...body };
 
     // Remove _id from updates if present
@@ -109,13 +148,48 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIp(request);
+
+    // Rate limiting
+    const rateLimitResult = rateLimit(`blog-delete:${ip}`, 5, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized blog delete attempt"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Check if user is admin
+    const currentUser = await UserRepository.findByEmail(session.user.email);
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: Only admins can delete blog posts
+    if (currentUser.role !== "admin") {
+      logAuthEvent(
+        AuditEventType.FORBIDDEN_ACCESS,
+        currentUser._id?.toString(),
+        session.user.email,
+        ip,
+        false,
+        "Non-admin tried to delete blog"
+      );
+      return NextResponse.json(
+        { error: "Forbidden - Admin only" },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
 

@@ -1,12 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import {
+  sanitizeObject,
+  sanitizeUserData,
+  getClientIp,
+  rateLimit,
+} from "@/lib/security";
+import {
+  logAuthEvent,
+  logDataEvent,
+  AuditEventType,
+} from "@/lib/audit-logger-mongodb";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = getClientIp(request);
+    const rateLimitResult = rateLimit(ip, 30, 60000); // 30 requests per minute
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(
+              (rateLimitResult.resetTime - Date.now()) / 1000
+            ).toString(),
+          },
+        }
+      );
+    }
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized profile access attempt"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -16,15 +53,17 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Return user profile data
-    return NextResponse.json({
+    // Return sanitized user profile data
+    const profileData = {
       name: user.userData?.user?.name || "",
       email: user.userData?.user?.email || "",
       phone: user.phone || "",
       address: user.address || "",
       membershipType: user.membershipType || "basic",
       role: user.role || "parent",
-    });
+    };
+
+    return NextResponse.json(profileData);
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return NextResponse.json(
@@ -36,14 +75,41 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = getClientIp(request);
+    const rateLimitResult = rateLimit(ip, 10, 60000); // 10 updates per minute
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil(
+              (rateLimitResult.resetTime - Date.now()) / 1000
+            ).toString(),
+          },
+        }
+      );
+    }
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.email) {
+      logAuthEvent(
+        AuditEventType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        ip,
+        false,
+        "Unauthorized profile update attempt"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Parse request body
-    const updateData = await request.json();
+    // Parse and sanitize request body
+    const rawData = await request.json();
+    const updateData = sanitizeObject(rawData);
 
     // Get user first to get the ID
     const user = await UserRepository.findByEmail(session.user.email);
@@ -57,28 +123,40 @@ export async function PATCH(request: NextRequest) {
         ...user.userData,
         user: {
           ...user.userData.user,
-          name: updateData.name,
+          name: updateData.name as string,
         },
       },
-      phone: updateData.phone,
-      address: updateData.address,
+      phone: updateData.phone as string,
+      address: updateData.address as string,
     });
 
     if (!updatedUser) {
+      logDataEvent(
+        AuditEventType.USER_UPDATED,
+        user._id!.toString(),
+        "user_profile",
+        "update",
+        false
+      );
       return NextResponse.json(
         { error: "Failed to update profile" },
         { status: 500 }
       );
     }
 
+    // Log successful update
+    logDataEvent(
+      AuditEventType.USER_UPDATED,
+      user._id!.toString(),
+      "user_profile",
+      "update",
+      true,
+      { updatedFields: Object.keys(updateData) }
+    );
+
     return NextResponse.json({
       message: "Profile updated successfully",
-      user: {
-        name: updatedUser.userData?.user?.name || "",
-        email: updatedUser.userData?.user?.email || "",
-        phone: updatedUser.phone || "",
-        address: updatedUser.address || "",
-      },
+      user: sanitizeUserData(updatedUser),
     });
   } catch (error) {
     console.error("Error updating user profile:", error);

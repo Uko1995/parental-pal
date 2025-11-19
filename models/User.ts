@@ -20,6 +20,18 @@ export interface UserInterface {
   isActive: boolean;
   lastLoginAt?: Date;
   membershipType: "basic" | "premium" | "none";
+  emailVerified?: boolean;
+
+  // Security tokens (stored temporarily in user document)
+  verificationToken?: {
+    token: string;
+    expiresAt: Date;
+  };
+  passwordResetToken?: {
+    token: string;
+    expiresAt: Date;
+    used?: boolean;
+  };
 
   // Parent-specific fields
   children?: {
@@ -171,6 +183,10 @@ export const UserSchema = {
           bsonType: "string",
           enum: ["basic", "premium", "none"],
           description: "User's membership level only for parents",
+        },
+        emailVerified: {
+          bsonType: ["bool", "null"],
+          description: "Whether the user's email is verified",
         },
         children: {
           bsonType: ["array", "null"],
