@@ -27,6 +27,10 @@ export async function registerChild(formData: FormData) {
 
   // Get or create user in database
   let user = await UserRepository.findByEmail(session.user.email!);
+  const bookingPhone = (cleanedData.parentPhone as string) || "";
+  const bookingAddress =
+    ((cleanedData.parentAddress || cleanedData.address) as string) || "";
+
   if (!user) {
     user = await UserRepository.createUser({
       userData: {
@@ -39,13 +43,30 @@ export async function registerChild(formData: FormData) {
           image: session.user.image || "",
         },
       },
-      phone: (cleanedData.parentPhone as string) || "",
-      address:
-        ((cleanedData.parentAddress || cleanedData.address) as string) || "",
+      phone: bookingPhone,
+      address: bookingAddress,
       role: "parent",
       isActive: true,
       membershipType: "basic",
     });
+  } else {
+    // Update user's phone and address if provided in booking
+    const updateData: { phone?: string; address?: string } = {};
+
+    if (bookingPhone && bookingPhone !== user.phone) {
+      updateData.phone = bookingPhone;
+    }
+
+    if (bookingAddress && bookingAddress !== user.address) {
+      updateData.address = bookingAddress;
+    }
+
+    // Only update if there are changes
+    if (Object.keys(updateData).length > 0) {
+      await UserRepository.updateUser(user._id!.toString(), updateData);
+      // Update local user object
+      user = { ...user, ...updateData };
+    }
   }
 
   // Convert form data to string entries

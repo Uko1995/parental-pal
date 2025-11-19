@@ -71,12 +71,12 @@ export default function PersonalInfoTab({
     return name.trim().length >= 2;
   };
 
-  const formatPhoneNumber = (value: string): string => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, "");
-    // Take only first 10 digits
-    return digits.slice(0, 10);
-  };
+  // const formatPhoneNumber = (value: string): string => {
+  //   // Remove all non-digits
+  //   const digits = value.replace(/\D/g, "");
+  //   // Take only first 10 digits
+  //   return digits.slice(0, 10);
+  // };
 
   const handleInputChange = (
     field: keyof TutorFormData,
@@ -213,18 +213,21 @@ export default function PersonalInfoTab({
               }`}
               value={
                 formData.phone.startsWith("+234")
-                  ? formData.phone.slice(4)
-                  : formData.phone
+                  ? formData.phone.replace("+234", "")
+                  : formData.phone.replace(/\D/g, "")
               }
               maxLength={10}
               onChange={(e) => {
-                const value = formatPhoneNumber(e.target.value);
-                const fullNumber = `+234${value}`;
+                // Only allow digits, max 10
+                const digitsOnly = e.target.value
+                  .replace(/\D/g, "")
+                  .slice(0, 10);
+                const fullNumber = `+234${digitsOnly}`;
                 handleInputChange("phone", fullNumber);
 
                 // Validate phone
                 const newErrors = { ...validationErrors };
-                if (value === "" || validatePhoneNumber(value)) {
+                if (digitsOnly === "" || validatePhoneNumber(digitsOnly)) {
                   delete newErrors.phone;
                 } else {
                   newErrors.phone =
@@ -261,10 +264,10 @@ export default function PersonalInfoTab({
 
           <div className="flex flex-col items-center space-y-4">
             {/* Image Preview */}
-            {formData.userData.user.image && (
+            {formData.profileImage && (
               <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100">
                 <CloudinaryImage
-                  src={formData.userData.user.image}
+                  src={formData.profileImage}
                   alt="Profile preview"
                   width={128}
                   height={128}
@@ -288,10 +291,7 @@ export default function PersonalInfoTab({
                   result.info &&
                   typeof result.info !== "string"
                 ) {
-                  handleNestedInputChange(
-                    "userData.user.image",
-                    result.info.secure_url
-                  );
+                  updateFormData({ profileImage: result.info.secure_url });
                   setImageError(null);
                 }
               }}
@@ -325,9 +325,7 @@ export default function PersonalInfoTab({
                   ) : (
                     <>
                       <CloudArrowUpIcon className="w-4 h-4 mr-2" />
-                      {formData.userData.user.image
-                        ? "Change Photo"
-                        : "Upload Photo"}
+                      {formData.profileImage ? "Change Photo" : "Upload Photo"}
                     </>
                   )}
                 </button>
@@ -341,11 +339,11 @@ export default function PersonalInfoTab({
               </div>
             )}
 
-            {formData.userData.user.image && (
+            {formData.profileImage && (
               <button
                 type="button"
                 onClick={() => {
-                  handleNestedInputChange("userData.user.image", "");
+                  updateFormData({ profileImage: null });
                   setImageError(null);
                 }}
                 className="btn btn-ghost btn-xs text-error"

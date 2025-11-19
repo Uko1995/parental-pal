@@ -5,7 +5,6 @@ import {
   UsersIcon,
   BanknotesIcon,
   UserGroupIcon,
-  IdentificationIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
 
@@ -49,6 +48,8 @@ interface ParentAnalytics {
   activeParents: number;
   totalChildren: number;
   averageChildrenPerParent: string | number;
+  actualRevenue: number;
+  pendingRevenue: number;
   totalRevenue: number;
   membershipDistribution: Array<{
     type: string;
@@ -66,6 +67,8 @@ export default function ParentsPage() {
     activeParents: 0,
     totalChildren: 0,
     averageChildrenPerParent: 0,
+    actualRevenue: 0,
+    pendingRevenue: 0,
     totalRevenue: 0,
     membershipDistribution: [],
   });
@@ -237,17 +240,17 @@ export default function ParentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-gray-600">
-                  Total Revenue
+                  Actual Payments
                 </h3>
-                <p className="text-2xl font-bold text-[#A25F97]">
-                  {formatCurrency(analytics.totalRevenue)}
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(analytics.actualRevenue)}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  From all parent bookings
+                  Successfully paid bookings
                 </p>
               </div>
               <div className="p-3 ">
-                <BanknotesIcon className="w-8 h-8 text-[#A25F97]" />
+                <BanknotesIcon className="w-8 h-8 text-green-600" />
               </div>
             </div>
           </div>
@@ -258,19 +261,17 @@ export default function ParentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-gray-600">
-                  Premium Members
+                  Pending Payments
                 </h3>
-                <p className="text-3xl font-bold text-blue-600">
-                  {analytics.membershipDistribution.find(
-                    (m: { type: string; count: number }) => m.type === "Premium"
-                  )?.count || 0}
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(analytics.pendingRevenue)}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Premium subscriptions
+                  Awaiting payment confirmation
                 </p>
               </div>
               <div className="p-3 ">
-                <IdentificationIcon className="w-8 h-8 text-blue-600" />
+                <BanknotesIcon className="w-8 h-8 text-orange-600" />
               </div>
             </div>
           </div>

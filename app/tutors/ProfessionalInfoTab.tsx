@@ -6,9 +6,15 @@ import {
   DocumentTextIcon,
   PlusIcon,
   XMarkIcon,
+  CloudArrowUpIcon,
+  ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { TutorFormData } from "./TutorRegistrationForm";
 import { useState } from "react";
+import {
+  CldUploadWidget,
+  CloudinaryUploadWidgetResults,
+} from "next-cloudinary";
 
 interface ProfessionalInfoTabProps {
   formData: TutorFormData;
@@ -21,6 +27,8 @@ export default function ProfessionalInfoTab({
 }: ProfessionalInfoTabProps) {
   const [newQualification, setNewQualification] = useState("");
   const [newSubject, setNewSubject] = useState("");
+  const [documentLoading, setDocumentLoading] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
 
   const specialties = [
     "Mathematics",
@@ -214,6 +222,124 @@ export default function ProfessionalInfoTab({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Document Upload for Qualifications */}
+      <div className="form-control">
+        <label className="label mb-1">
+          <span className="label-text font-semibold text-md text-gray-800">
+            <DocumentTextIcon className="w-4 h-4 inline mr-2" />
+            Upload Supporting Documents (Optional)
+          </span>
+        </label>
+        <p className="text-sm text-gray-600 mb-3">
+          Upload certificates, diplomas, or other proof of qualifications (Max 5
+          documents, 10MB each)
+        </p>
+
+        {/* Upload Widget */}
+        <CldUploadWidget
+          uploadPreset="tutor_documents"
+          onOpen={() => {
+            setDocumentLoading(true);
+            setDocumentError(null);
+          }}
+          onSuccess={(result: CloudinaryUploadWidgetResults) => {
+            setDocumentLoading(false);
+            if (
+              result.event === "success" &&
+              result.info &&
+              typeof result.info !== "string"
+            ) {
+              const newDocuments = [
+                ...formData.documents,
+                result.info.secure_url,
+              ];
+              updateFormData({ documents: newDocuments });
+              setDocumentError(null);
+            }
+          }}
+          onError={(error) => {
+            setDocumentLoading(false);
+            setDocumentError("Failed to upload document. Please try again.");
+            console.error("Upload error:", error);
+          }}
+          options={{
+            maxFiles: 1,
+            resourceType: "auto",
+            clientAllowedFormats: ["pdf", "jpg", "jpeg", "png", "doc", "docx"],
+            maxFileSize: 10000000, // 10MB
+            folder: "tutor-documents",
+          }}
+        >
+          {({ open }) => (
+            <button
+              type="button"
+              onClick={() => open()}
+              disabled={documentLoading || formData.documents.length >= 5}
+              className="btn btn-outline w-full sm:w-auto"
+            >
+              {documentLoading ? (
+                <>
+                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <CloudArrowUpIcon className="w-4 h-4 mr-2" />
+                  Upload Document ({formData.documents.length}/5)
+                </>
+              )}
+            </button>
+          )}
+        </CldUploadWidget>
+
+        {documentError && (
+          <div className="alert alert-error alert-sm mt-2">
+            <ExclamationCircleIcon className="w-4 h-4" />
+            <span className="text-xs">{documentError}</span>
+          </div>
+        )}
+
+        {/* Display Uploaded Documents */}
+        {formData.documents.length > 0 && (
+          <div className="space-y-2 mt-4">
+            {formData.documents.map((doc, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between bg-base-200 p-3 rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5 text-primary" />
+                  <a
+                    href={doc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Document {index + 1}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs text-error"
+                  onClick={() => {
+                    const newDocuments = formData.documents.filter(
+                      (_, i) => i !== index
+                    );
+                    updateFormData({ documents: newDocuments });
+                  }}
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <label className="label text-xs mt-1">
+          Accepted formats: PDF, JPG, PNG, DOC, DOCX. Max size: 10MB per file.
+        </label>
       </div>
 
       {/* Subjects */}

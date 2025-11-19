@@ -599,6 +599,143 @@ export const emailTemplates = {
       productDetails.maxDownloads
     } downloads.`,
   }),
+
+  // Tutor registration confirmation email
+  tutorRegistration: (
+    userName: string,
+    tutorDetails: {
+      tutorId: string;
+      specialty: string;
+      subjects: string[];
+    }
+  ) => ({
+    subject: "Welcome to ParentalPal - Tutor Registration Successful! 🎓",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tutor Registration Successful</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 600px; margin: 0 auto; background-color: white; }
+          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 40px 20px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 28px; }
+          .header p { color: white; margin: 10px 0 0 0; font-size: 16px; }
+          .content { padding: 40px 20px; }
+          .success-icon { text-align: center; font-size: 30px; margin: 20px 0; }
+          .details-box { background-color: #f8f9fa; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #90AC19; }
+          .detail-row { padding: 12px 0; border-bottom: 1px solid #e0e0e0; }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { font-weight: 600; color: #333; display: inline-block; width: 140px; }
+          .detail-value { color: #666; }
+          .subjects-list { display: inline-block; }
+          .subject-tag { display: inline-block; background-color: #90AC19; color: white; padding: 4px 12px; border-radius: 12px; margin: 4px; font-size: 12px; }
+          .cta-button { display: inline-block; background-color: #90AC19; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; margin: 25px 0; font-weight: 600; }
+          .cta-button:hover { background-color: #7a9315; }
+          .next-steps { background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #E8931A; }
+          .next-steps h3 { color: #856404; margin-top: 0; }
+          .next-steps ul { margin: 10px 0; padding-left: 20px; }
+          .next-steps li { margin: 8px 0; color: #856404; }
+          .footer { background-color: #f8f9fa; padding: 25px 20px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1> Welcome to ParentalPal!</h1>
+            <p>Your tutor registration is complete</p>
+          </div>
+          <div class="content">
+            <div class="success-icon">✅</div>
+            <p style="font-size: 18px; color: #333; text-align: center; margin-bottom: 30px;">
+              Congratulations, <strong>${userName}</strong>! You're now registered as a tutor on ParentalPal.
+            </p>
+            
+            <div class="details-box">
+              <div class="detail-row">
+                <span class="detail-label">Tutor ID:</span>
+                <span class="detail-value">#${tutorDetails.tutorId}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Specialty:</span>
+                <span class="detail-value">${tutorDetails.specialty}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subjects:</span>
+                <div class="subjects-list">
+                  ${tutorDetails.subjects
+                    .map(
+                      (subject) => `<span class="subject-tag">${subject}</span>`
+                    )
+                    .join("")}
+                </div>
+              </div>
+            </div>
+
+            <div class="next-steps">
+              <h3> Next Steps:</h3>
+              <ul>
+                <li><strong>Complete Your Account Setup:</strong> Sign in to set up your password and complete your profile</li>
+                <li><strong>Update Your Profile:</strong> Add more details, availability, and teaching preferences</li>
+                <li><strong>Start Teaching:</strong> Once your profile is complete, you'll be matched with students</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center;">
+              <a href="${
+                process.env.NEXTAUTH_URL
+              }/auth/signin" class="cta-button">
+                Sign In to Your Account
+              </a>
+            </div>
+
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+              <strong>Need Help Getting Started?</strong><br/>
+              Visit our <a href="${
+                process.env.NEXTAUTH_URL
+              }/faq" style="color: #90AC19;">FAQ page</a> or 
+              contact our support team at <a href="mailto:${
+                process.env.EMAIL_USER
+              }" style="color: #90AC19;">${process.env.EMAIL_USER}</a>
+            </p>
+
+            <p style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 13px; line-height: 1.6;">
+              <strong>Why ParentalPal?</strong><br/>
+              Join hundreds of tutors who trust us to connect them with students. We provide:
+              <br/>• Flexible scheduling and payment options
+              <br/>• Secure payment processing
+              <br/>• Professional support and resources
+              <br/>• Growing network of families
+            </p>
+          </div>
+          <div class="footer">
+            <p style="font-weight: 600;">© 2024 ParentalPal. All rights reserved.</p>
+            <p>Questions? Email us at ${process.env.EMAIL_USER}</p>
+            <p style="margin-top: 15px;">
+              <a href="${
+                process.env.NEXTAUTH_URL
+              }" style="color: #90AC19; text-decoration: none;">Visit Our Website</a> | 
+              <a href="${
+                process.env.NEXTAUTH_URL
+              }/tutors" style="color: #90AC19; text-decoration: none;">Tutor Portal</a>
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `Welcome to ParentalPal, ${userName}! Your tutor registration is complete. Tutor ID: #${
+      tutorDetails.tutorId
+    }, Specialty: ${
+      tutorDetails.specialty
+    }, Subjects: ${tutorDetails.subjects.join(
+      ", "
+    )}. Next steps: 1) Sign in to complete your profile, 2) Update availability, 3) Start teaching! Sign in at: ${
+      process.env.NEXTAUTH_URL
+    }/auth/signin`,
+  }),
 };
 
 export default transporter;

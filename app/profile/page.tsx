@@ -25,11 +25,20 @@ import {
   StarIcon,
 } from "@heroicons/react/24/solid";
 
-type TabType = "profile" | "children" | "bookings" | "payments";
+type TabType =
+  | "profile"
+  | "children"
+  | "bookings"
+  | "payments"
+  | "availability"
+  | "reviews";
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const [userRole, setUserRole] = useState<"parent" | "tutor" | "admin">(
+    "parent"
+  );
 
   useEffect(() => {
     if (status === "loading") return; // Still loading
@@ -39,8 +48,22 @@ export default function ProfilePage() {
       redirect("/auth/signin?callbackUrl=/profile");
     } else if (session && status === "authenticated") {
       toast.success(`Welcome back, ${session.user?.name || "User"}!`);
+      // Fetch user role
+      fetchUserRole();
     }
   }, [session, status]);
+
+  const fetchUserRole = async () => {
+    try {
+      const response = await fetch("/api/users/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setUserRole(data.role || "parent");
+      }
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -119,6 +142,7 @@ export default function ProfilePage() {
       <div className="bg-white shadow-md sticky top-0 z-40 border-b-2 border-gray-100">
         <div className="container mx-auto px-2 md:px-4">
           <div className="flex overflow-x-auto hide-scrollbar">
+            {/* Profile Tab - Always visible */}
             <button
               className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
                 activeTab === "profile"
@@ -133,48 +157,101 @@ export default function ProfilePage() {
                 <span className="sm:hidden">Profile</span>
               </span>
             </button>
-            <button
-              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
-                activeTab === "children"
-                  ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
-                  : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
-              }`}
-              onClick={() => setActiveTab("children")}
-            >
-              <UserGroupIcon className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="text-sm md:text-base font-semibold">
-                <span className="hidden sm:inline">My Children</span>
-                <span className="sm:hidden">Children</span>
-              </span>
-            </button>
-            <button
-              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
-                activeTab === "bookings"
-                  ? "border-[#A25F97] text-[#A25F97] bg-[#A25F97]/5"
-                  : "border-transparent text-gray-600 hover:text-[#A25F97] hover:bg-gray-50"
-              }`}
-              onClick={() => setActiveTab("bookings")}
-            >
-              <CalendarDaysIcon className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="text-sm md:text-base font-semibold">
-                <span className="hidden sm:inline">My Bookings</span>
-                <span className="sm:hidden">Bookings</span>
-              </span>
-            </button>
-            <button
-              className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
-                activeTab === "payments"
-                  ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
-                  : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
-              }`}
-              onClick={() => setActiveTab("payments")}
-            >
-              <CreditCardIcon className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="text-sm md:text-base font-semibold">
-                <span className="hidden sm:inline">Payments</span>
-                <span className="sm:hidden">Pay</span>
-              </span>
-            </button>
+
+            {/* Conditional Tabs based on Role */}
+            {userRole === "parent" && (
+              <>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "children"
+                      ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
+                      : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("children")}
+                >
+                  <UserGroupIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">My Children</span>
+                    <span className="sm:hidden">Children</span>
+                  </span>
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "bookings"
+                      ? "border-[#A25F97] text-[#A25F97] bg-[#A25F97]/5"
+                      : "border-transparent text-gray-600 hover:text-[#A25F97] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("bookings")}
+                >
+                  <CalendarDaysIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">My Bookings</span>
+                    <span className="sm:hidden">Bookings</span>
+                  </span>
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "payments"
+                      ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
+                      : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("payments")}
+                >
+                  <CreditCardIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">Payments</span>
+                    <span className="sm:hidden">Pay</span>
+                  </span>
+                </button>
+              </>
+            )}
+
+            {userRole === "tutor" && (
+              <>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "availability"
+                      ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
+                      : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("availability")}
+                >
+                  <CalendarDaysIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">Availability</span>
+                    <span className="sm:hidden">Schedule</span>
+                  </span>
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "bookings"
+                      ? "border-[#A25F97] text-[#A25F97] bg-[#A25F97]/5"
+                      : "border-transparent text-gray-600 hover:text-[#A25F97] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("bookings")}
+                >
+                  <UserGroupIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">My Sessions</span>
+                    <span className="sm:hidden">Sessions</span>
+                  </span>
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "reviews"
+                      ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
+                      : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("reviews")}
+                >
+                  <StarIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">Reviews & Ratings</span>
+                    <span className="sm:hidden">Reviews</span>
+                  </span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -182,10 +259,119 @@ export default function ProfilePage() {
       {/* Content Area with Animation */}
       <div className="container mx-auto px-4 py-6 md:py-10">
         <div className="animate-fadeIn">
-          {activeTab === "profile" && <ProfileDetails user={session.user} />}
-          {activeTab === "children" && <ChildrenSection />}
-          {activeTab === "bookings" && <BookingsSection />}
-          {activeTab === "payments" && <PaymentsSection />}
+          {activeTab === "profile" && (
+            <ProfileDetails user={session.user} userRole={userRole} />
+          )}
+
+          {/* Parent-specific tabs */}
+          {userRole === "parent" && (
+            <>
+              {activeTab === "children" && <ChildrenSection />}
+              {activeTab === "bookings" && <BookingsSection />}
+              {activeTab === "payments" && <PaymentsSection />}
+            </>
+          )}
+
+          {/* Tutor-specific tabs */}
+          {userRole === "tutor" && (
+            <>
+              {activeTab === "availability" && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    My Availability
+                  </h2>
+                  <div className="text-gray-600">
+                    <p className="mb-4">
+                      Manage your teaching schedule and availability here.
+                    </p>
+                    <div className="alert alert-info">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="stroke-current shrink-0 w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span>
+                        Availability management coming soon! Contact admin to
+                        update your schedule.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {activeTab === "bookings" && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    My Sessions
+                  </h2>
+                  <div className="text-gray-600">
+                    <p className="mb-4">
+                      View and manage your tutoring sessions with students.
+                    </p>
+                    <div className="alert alert-info">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="stroke-current shrink-0 w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span>
+                        Session management coming soon! Your assigned sessions
+                        will appear here.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {activeTab === "reviews" && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <StarIcon className="h-7 w-7 text-yellow-500" />
+                    Reviews & Ratings
+                  </h2>
+                  <div className="text-gray-600">
+                    <p className="mb-4">
+                      See what parents and students are saying about your
+                      tutoring.
+                    </p>
+                    <div className="alert alert-info">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="stroke-current shrink-0 w-6 h-6"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span>
+                        Reviews and ratings system coming soon! Build your
+                        reputation as a tutor.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 

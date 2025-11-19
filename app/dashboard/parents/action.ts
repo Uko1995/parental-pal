@@ -204,6 +204,23 @@ export const getParentAnalytics = unstable_cache(
         };
       }).reverse();
 
+      // Calculate actual revenue (paid) and pending revenue (pending)
+      const actualRevenue = parentBookings
+        .filter((b: BookingInterface) => b.payment?.status === "paid")
+        .reduce(
+          (sum: number, b: BookingInterface) =>
+            sum + (b.pricing?.totalAmount || 0),
+          0
+        );
+
+      const pendingRevenue = parentBookings
+        .filter((b: BookingInterface) => b.payment?.status === "pending")
+        .reduce(
+          (sum: number, b: BookingInterface) =>
+            sum + (b.pricing?.totalAmount || 0),
+          0
+        );
+
       return {
         totalParents: parents.length,
         activeParents: parents.filter((p: UserInterface) => p.isActive).length,
@@ -211,11 +228,9 @@ export const getParentAnalytics = unstable_cache(
           (sum: number, p: UserInterface) => sum + (p.children?.length || 0),
           0
         ),
-        totalRevenue: parentBookings.reduce(
-          (sum: number, b: BookingInterface) =>
-            sum + (b.pricing?.totalAmount || 0),
-          0
-        ),
+        actualRevenue,
+        pendingRevenue,
+        totalRevenue: actualRevenue + pendingRevenue,
         averageChildrenPerParent:
           parents.length > 0
             ? (
@@ -249,6 +264,8 @@ export const getParentAnalytics = unstable_cache(
         totalParents: 0,
         activeParents: 0,
         totalChildren: 0,
+        actualRevenue: 0,
+        pendingRevenue: 0,
         totalRevenue: 0,
         averageChildrenPerParent: 0,
         registrationTrends: [],

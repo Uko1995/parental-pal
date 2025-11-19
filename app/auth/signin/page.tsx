@@ -42,6 +42,9 @@ function SignInContent() {
 
   const redirectTo = searchParams.get("callbackUrl");
   const error = searchParams.get("error");
+  const newTutor = searchParams.get("newTutor");
+  const emailParam = searchParams.get("email");
+  const nameParam = searchParams.get("name");
 
   useEffect(() => {
     // Scroll to top when page loads
@@ -58,6 +61,22 @@ function SignInContent() {
     };
     loadProviders();
 
+    // If newTutor parameter is present, switch to register mode and prefill email/name
+    if (newTutor === "true") {
+      setIsRegisterMode(true);
+      if (emailParam || nameParam) {
+        setFormData((prev) => ({
+          ...prev,
+          email: emailParam ? decodeURIComponent(emailParam) : prev.email,
+          name: nameParam ? decodeURIComponent(nameParam) : prev.name,
+        }));
+        toast.success(
+          "Please create a password for your account to complete registration.",
+          { duration: 5000 }
+        );
+      }
+    }
+
     // Show toast for login errors from callback
     if (error) {
       toast.error(getErrorMessage(error));
@@ -66,7 +85,7 @@ function SignInContent() {
     if (searchParams.get("success")) {
       toast.success("Signed in successfully!");
     }
-  }, [error, searchParams]);
+  }, [error, searchParams, newTutor, emailParam, nameParam]);
 
   // Validation functions
   const validateEmail = (email: string): string => {
@@ -200,6 +219,10 @@ function SignInContent() {
     setCredentialsLoading(true);
 
     try {
+      // Check if there's pending tutor data from registration
+      const pendingTutorData = sessionStorage.getItem("pendingTutorData");
+      const tutorData = pendingTutorData ? JSON.parse(pendingTutorData) : null;
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -209,12 +232,19 @@ function SignInContent() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          role: tutorData ? "tutor" : "parent", // Set role based on tutor data
+          tutorData: tutorData, // Include tutor data if available
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Clear pending tutor data
+        if (tutorData) {
+          sessionStorage.removeItem("pendingTutorData");
+        }
+
         toast.success("Account created successfully! Please sign in.");
         setIsRegisterMode(false);
         setFormData({
@@ -317,7 +347,7 @@ function SignInContent() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="hidden md:block h-auto bg-white rounded-md z-10  w-1/4"
+        className="hidden md:block h-auto backdrop-blur-md bg-white/30 rounded-md z-10 w-1/4 p-4 shadow-xl "
       >
         <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
           <Image

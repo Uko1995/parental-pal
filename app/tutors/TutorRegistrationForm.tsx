@@ -21,12 +21,14 @@ export interface TutorFormData {
   };
   phone: string;
   address: string;
+  profileImage: string | null; // Cloudinary URL
 
   // Professional Information
   specialty: string;
   experience: number;
   qualifications: string[];
   subjects: string[];
+  documents: string[]; // Cloudinary URLs for qualification documents
   hourlyRate: number;
   bio: string;
 
@@ -60,10 +62,12 @@ const initialFormData: TutorFormData = {
   },
   phone: "",
   address: "",
+  profileImage: null,
   specialty: "",
   experience: 0,
   qualifications: [],
   subjects: [],
+  documents: [],
   hourlyRate: 12000,
   bio: "",
   availability: {
@@ -206,69 +210,41 @@ export default function TutorRegistrationForm() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/tutors", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          role: "tutor",
-          isActive: false, // Pending approval
+      // Store tutor data in sessionStorage instead of creating user immediately
+      sessionStorage.setItem(
+        "pendingTutorData",
+        JSON.stringify({
           tutorProfile: {
             specialty: formData.specialty,
             experience: formData.experience,
             qualifications: formData.qualifications,
             subjects: formData.subjects,
-            rating: 0,
-            totalReviews: 0,
-            availability: formData.availability,
+            documents: formData.documents,
             hourlyRate: formData.hourlyRate,
-            hourlyRateAccepted: formData.hourlyRateAccepted,
             bio: formData.bio,
-            isVerified: false,
+            availability: formData.availability,
+            hourlyRateAccepted: formData.hourlyRateAccepted,
           },
-          userData: {
-            expiresAt: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000
-            ).toISOString(), // 30 days
-            user: {
-              name: formData.userData.user.name,
-              email: formData.userData.user.email,
-              image: formData.userData.user.image || null,
-            },
-          },
+          phone: formData.phone,
+          address: formData.address,
+          profileImage: formData.profileImage,
           preferences: {
-            notifications: {
-              email: true,
-              sms: true,
-              push: true,
-            },
             preferredServices: formData.preferredServices,
             emergencyContact: formData.emergencyContact,
           },
-        }),
-      });
+        })
+      );
 
-      if (response.ok) {
-        // Success - show success message or redirect
-        toast.success(
-          "Application submitted successfully! We'll review your application and get back to you soon."
-        );
-        // Reset form completely
-        setFormData(initialFormData);
-        setActiveTab(0);
-        setCompletedTabs([]);
-        setTermsAccepted(false);
+      // Success - show success message and redirect to password setup
+      toast.success(
+        "Registration details saved! Please create a password to complete your account.",
+        { duration: 4000 }
+      );
 
-        // Scroll to top of form
-        scrollToTop();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage =
-          errorData.error || `Server error: ${response.status}`;
-        throw new Error(errorMessage);
-      }
+      // Redirect to signin with email and name prefilled
+      const email = encodeURIComponent(formData.userData.user.email);
+      const name = encodeURIComponent(formData.userData.user.name);
+      window.location.href = `/auth/signin?email=${email}&name=${name}&callbackUrl=/profile&newTutor=true`;
     } catch (error) {
       console.error("Error submitting application:", error);
       const errorMessage =

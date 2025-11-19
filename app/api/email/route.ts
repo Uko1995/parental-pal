@@ -65,6 +65,25 @@ export async function POST(request: NextRequest) {
         );
         break;
 
+      case "tutor-registration":
+        if (!data) {
+          return NextResponse.json(
+            {
+              error: "Tutor data is required for tutor registration email",
+            },
+            { status: 400 }
+          );
+        }
+        emailContent = emailTemplates.tutorRegistration(
+          userName,
+          data as {
+            tutorId: string;
+            specialty: string;
+            subjects: string[];
+          }
+        );
+        break;
+
       default:
         return NextResponse.json(
           {

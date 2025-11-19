@@ -16,6 +16,7 @@ import {
 
 interface ProfileDetailsProps {
   user: User;
+  userRole?: "parent" | "tutor" | "admin";
 }
 
 interface UserProfile {
@@ -23,9 +24,31 @@ interface UserProfile {
   email: string;
   phone: string;
   address: string;
+  tutorProfile?: {
+    specialty: string;
+    experience: number;
+    subjects: string[];
+    qualifications: string[];
+    bio: string;
+    hourlyRate: number;
+    rating: number;
+    totalReviews: number;
+    isVerified: boolean;
+    availability: {
+      days: string[];
+      hours: {
+        start: string;
+        end: string;
+      };
+    };
+    documents: string[];
+  };
 }
 
-export default function ProfileDetails({ user }: ProfileDetailsProps) {
+export default function ProfileDetails({
+  user,
+  userRole = "parent",
+}: ProfileDetailsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
@@ -33,6 +56,7 @@ export default function ProfileDetails({ user }: ProfileDetailsProps) {
     email: user.email || "",
     phone: "",
     address: "",
+    tutorProfile: undefined,
   });
 
   const fetchUserProfile = useCallback(async () => {
@@ -45,6 +69,7 @@ export default function ProfileDetails({ user }: ProfileDetailsProps) {
           email: userData.email || user.email || "",
           phone: userData.phone || "",
           address: userData.address || "",
+          tutorProfile: userData.tutorProfile || undefined,
         });
       } else {
         toast.error("Failed to fetch profile data");
@@ -243,6 +268,134 @@ export default function ProfileDetails({ user }: ProfileDetailsProps) {
           )}
         </div>
       </div>
+
+      {/* Tutor-Specific Information */}
+      {userRole === "tutor" && profile.tutorProfile && (
+        <div className="mt-8 pt-8 border-t-2 border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <div className="p-2 bg-linear-to-br from-[#E8931A] to-[#A25F97] rounded-xl">
+              <ShieldCheckIcon className="h-5 w-5 text-white" />
+            </div>
+            Tutor Profile
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Specialty */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Specialty
+              </label>
+              <div className="p-4 bg-linear-to-br from-[#E8931A]/5 to-[#E8931A]/10 rounded-xl border border-[#E8931A]/20">
+                <p className="text-gray-800 font-medium">
+                  {profile.tutorProfile.specialty}
+                </p>
+              </div>
+            </div>
+
+            {/* Experience */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Years of Experience
+              </label>
+              <div className="p-4 bg-linear-to-br from-[#A25F97]/5 to-[#A25F97]/10 rounded-xl border border-[#A25F97]/20">
+                <p className="text-gray-800 font-medium">
+                  {profile.tutorProfile.experience}{" "}
+                  {profile.tutorProfile.experience === 1 ? "year" : "years"}
+                </p>
+              </div>
+            </div>
+
+            {/* Hourly Rate */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Hourly Rate
+              </label>
+              <div className="p-4 bg-linear-to-br from-[#90AC19]/5 to-[#90AC19]/10 rounded-xl border border-[#90AC19]/20">
+                <p className="text-gray-800 font-medium">
+                  ₦{profile.tutorProfile.hourlyRate?.toLocaleString()}/hour
+                </p>
+              </div>
+            </div>
+
+            {/* Rating */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Rating & Reviews
+              </label>
+              <div className="p-4 bg-linear-to-br from-yellow-500/5 to-yellow-500/10 rounded-xl border border-yellow-500/20">
+                <p className="text-gray-800 font-medium flex items-center gap-2">
+                  ⭐ {profile.tutorProfile.rating?.toFixed(1) || "0.0"}
+                  <span className="text-sm text-gray-600">
+                    ({profile.tutorProfile.totalReviews || 0} reviews)
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Subjects */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Subjects I Teach
+              </label>
+              <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {profile.tutorProfile.subjects &&
+                  profile.tutorProfile.subjects.length > 0 ? (
+                    profile.tutorProfile.subjects.map((subject, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1.5 bg-[#90AC19] text-white rounded-lg text-sm font-medium"
+                      >
+                        {subject}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No subjects specified</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Qualifications */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-semibold text-gray-700">
+                Qualifications & Certifications
+              </label>
+              <div className="p-4 bg-linear-to-br from-[#E8931A]/5 to-[#E8931A]/10 rounded-xl border border-[#E8931A]/20">
+                <div className="space-y-2">
+                  {profile.tutorProfile.qualifications &&
+                  profile.tutorProfile.qualifications.length > 0 ? (
+                    profile.tutorProfile.qualifications.map((qual, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 text-gray-800"
+                      >
+                        <span className="text-[#E8931A] font-bold mt-0.5">
+                          •
+                        </span>
+                        <p className="font-medium">{qual}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No qualifications listed</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-semibold text-gray-700">
+                About Me
+              </label>
+              <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 min-h-24">
+                <p className="text-gray-800 whitespace-pre-wrap">
+                  {profile.tutorProfile.bio || "No bio provided"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info Banner */}
       {!isEditing && (

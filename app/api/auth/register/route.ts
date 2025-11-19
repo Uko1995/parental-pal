@@ -5,7 +5,13 @@ import { UserInterface } from "@/models/User";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, role = "parent" } = await request.json();
+    const {
+      name,
+      email,
+      password,
+      role = "parent",
+      tutorData,
+    } = await request.json();
 
     // Validation
     if (!name || !email || !password) {
@@ -97,29 +103,69 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new user
+    // Create new user with tutor data if provided
     const newUser: Omit<UserInterface, "_id" | "createdAt" | "updatedAt"> = {
       userData: {
         expiresAt: new Date(
-          Date.now() + 10 * 24 * 60 * 60 * 1000
-        ).toISOString(),
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 30 days OAuth session
         user: {
           name,
           email,
-          image: null,
+          image: tutorData?.profileImage || null,
         },
       },
+      phone: tutorData?.phone || undefined,
+      address: tutorData?.address || undefined,
       password: hashedPassword,
       role: role as "admin" | "parent" | "tutor",
       isActive: true,
       lastLoginAt: new Date(),
       membershipType: "basic",
+      // Include tutor profile if tutorData is provided
+      ...(tutorData?.tutorProfile && {
+        tutorProfile: {
+          ...tutorData.tutorProfile,
+          rating: 0,
+          totalReviews: 0,
+          isVerified: true,
+        },
+      }),
+      // Include preferences if provided
+      ...(tutorData?.preferences && {
+        preferences: {
+          notifications: {
+            email: true,
+            sms: false,
+            push: true,
+          },
+          ...tutorData.preferences,
+        },
+      }),
     };
 
     const createdUser = await UserRepository.createUser(newUser);
 
-    // Send welcome email
+    // Send welcome email (tutor-specific or general welcome)
     try {
+      const emailType =
+        role === "tutor" && tutorData ? "tutor-registration" : "welcome";
+      const emailData: Record<string, unknown> = {
+        type: emailType,
+        to: email,
+        userName: name,
+        apiKey: process.env.EMAIL_API_KEY,
+      };
+
+      // Add tutor-specific data if applicable
+      if (emailType === "tutor-registration" && tutorData) {
+        emailData.data = {
+          tutorId: createdUser._id?.toString(),
+          specialty: tutorData.tutorProfile?.specialty || "General",
+          subjects: tutorData.tutorProfile?.subjects || [],
+        };
+      }
+
       const emailResponse = await fetch(
         `${process.env.NEXTAUTH_URL}/api/email` ||
           "http://localhost:3000/api/email",
@@ -128,12 +174,7 @@ export async function POST(request: NextRequest) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            type: "welcome",
-            to: email,
-            userName: name,
-            apiKey: process.env.EMAIL_API_KEY,
-          }),
+          body: JSON.stringify(emailData),
         }
       );
 

@@ -100,41 +100,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine if this is admin-created or self-registration
+    const isAdminCreated = body.adminCreated === true;
+    const documents = body.tutorProfile?.documents || body.documents || [];
+
     // Create tutor data
     const tutorData = {
       userData: {
+        expiresAt: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 30 days OAuth session expiry
         user: {
           name: name.trim(),
           email: email.trim().toLowerCase(),
-          image: null,
+          image: body.profileImage || body.userData?.user?.image || null,
         },
-        expiresAt: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000
-        ).toISOString(), // 30 days from now
       },
       phone: phone || "",
       address: address || "",
       role: "tutor" as const,
-      isActive: true, // Admin created, so active by default
+      isActive: true, // Always active - no approval needed
       membershipType: "basic" as const,
       tutorProfile: {
-        specialty: specialties[0] || "General", // Use first specialty as main specialty
-        experience: parseInt(experience.replace(/[^\d]/g, "")) || 0, // Extract number from experience string
+        specialty: specialties[0] || "General",
+        experience:
+          typeof experience === "string"
+            ? parseInt(experience.replace(/[^\d]/g, "")) || 0
+            : experience || 0,
         qualifications: qualifications || [],
         subjects: subjects,
+        documents: documents,
         rating: 0,
         totalReviews: 0,
         availability: {
-          days: availability || [],
-          hours: {
+          days: availability?.days || availability || [],
+          hours: availability?.hours || {
             start: "09:00",
             end: "17:00",
           },
         },
-        hourlyRate: hourlyRate || 12000,
-        hourlyRateAccepted: true,
+        hourlyRate: hourlyRate || 6000,
+        hourlyRateAccepted: body.tutorProfile?.hourlyRateAccepted ?? true,
         bio: bio || "",
-        isVerified: true, // Admin created, so verified
+        isVerified: true, // Always verified
       },
       preferences: {
         notifications: {
@@ -142,13 +150,36 @@ export async function POST(request: NextRequest) {
           sms: false,
           push: true,
         },
-        preferredServices: ["tutoring" as const],
+        preferredServices: body.preferences?.preferredServices || [
+          "tutoring" as const,
+        ],
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const result = await UserRepository.createUser(tutorData);
+
+    // Send welcome email in background (non-blocking)
+    if (!isAdminCreated) {
+      fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "tutor-registration",
+          to: email.trim().toLowerCase(),
+          userName: name.trim(),
+          apiKey: process.env.EMAIL_API_KEY,
+          data: {
+            tutorId: result._id?.toString(),
+            specialty: specialties[0] || "General",
+            subjects: subjects,
+          },
+        }),
+      }).catch((error) => {
+        console.error("Background email send failed:", error);
+      });
+    }
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

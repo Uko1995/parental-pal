@@ -205,24 +205,55 @@ export default function TutorDetailsModal({
                       Experience
                     </label>
                     <p className="text-gray-900">
-                      {tutor.tutorProfile.experience || "Not provided"}
+                      {tutor.tutorProfile.experience
+                        ? `${tutor.tutorProfile.experience} ${
+                            tutor.tutorProfile.experience === 1
+                              ? "year"
+                              : "years"
+                          }`
+                        : "Not provided"}
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Qualifications
+                      Specialty
                     </label>
                     <p className="text-gray-900">
-                      {tutor.tutorProfile.qualifications || "Not provided"}
+                      {tutor.tutorProfile.specialty || "Not provided"}
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Qualifications & Certifications
+                    </label>
+                    {tutor.tutorProfile.qualifications &&
+                    Array.isArray(tutor.tutorProfile.qualifications) &&
+                    tutor.tutorProfile.qualifications.length > 0 ? (
+                      <ul className="space-y-2 list-none">
+                        {tutor.tutorProfile.qualifications.map((qual, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-gray-900"
+                          >
+                            <span className="text-[#E8931A] font-bold mt-0.5">
+                              •
+                            </span>
+                            <span>{qual}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500">No qualifications listed</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Bio
                     </label>
-                    <p className="text-gray-900">
+                    <p className="text-gray-900 whitespace-pre-wrap">
                       {tutor.tutorProfile.bio || "No bio provided"}
                     </p>
                   </div>
@@ -236,6 +267,142 @@ export default function TutorDetailsModal({
                         ? `₦${tutor.tutorProfile.hourlyRate.toLocaleString()}/hour`
                         : "Not specified"}
                     </p>
+                  </div>
+
+                  {/* Verification Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Verification Status
+                    </label>
+                    <div
+                      className={`badge ${
+                        tutor.tutorProfile.isVerified
+                          ? "badge-success"
+                          : "badge-warning"
+                      }`}
+                    >
+                      {tutor.tutorProfile.isVerified
+                        ? "✓ Verified"
+                        : "Pending Verification"}
+                    </div>
+                  </div>
+
+                  {/* Total Reviews */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Total Reviews
+                    </label>
+                    <p className="text-gray-900">
+                      {tutor.tutorProfile.totalReviews || 0} reviews
+                    </p>
+                  </div>
+
+                  {/* Availability */}
+                  {tutor.tutorProfile.availability && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Availability
+                      </label>
+                      <div className="space-y-2">
+                        {tutor.tutorProfile.availability.days &&
+                        tutor.tutorProfile.availability.days.length > 0 ? (
+                          <>
+                            <div>
+                              <span className="text-sm text-gray-600">
+                                Days:{" "}
+                              </span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {tutor.tutorProfile.availability.days.map(
+                                  (day, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="badge badge-primary badge-sm"
+                                    >
+                                      {day}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                            {tutor.tutorProfile.availability.hours && (
+                              <div>
+                                <span className="text-sm text-gray-600">
+                                  Hours:{" "}
+                                </span>
+                                <span className="text-gray-900 font-medium">
+                                  {tutor.tutorProfile.availability.hours.start}{" "}
+                                  - {tutor.tutorProfile.availability.hours.end}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-gray-500 text-sm">
+                            No availability set
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Documents Section */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Uploaded Documents
+                    </label>
+                    {tutor.tutorProfile.documents &&
+                    tutor.tutorProfile.documents.length > 0 ? (
+                      <div className="space-y-2">
+                        {tutor.tutorProfile.documents.map((docUrl, idx) => {
+                          const fileName =
+                            docUrl.split("/").pop()?.split(".")[0] ||
+                            `Document ${idx + 1}`;
+                          const fileExtension =
+                            docUrl.split(".").pop()?.toUpperCase() || "FILE";
+
+                          return (
+                            <a
+                              key={idx}
+                              href={docUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors group"
+                            >
+                              <div className="shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                <span className="text-xs font-bold text-blue-600">
+                                  {fileExtension}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {fileName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Click to view document
+                                </p>
+                              </div>
+                              <svg
+                                className="w-5 h-5 text-gray-400 group-hover:text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
+                              </svg>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No documents uploaded
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (

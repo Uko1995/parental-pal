@@ -58,6 +58,7 @@ export interface UserInterface {
     hourlyRateAccepted?: boolean;
     bio?: string;
     isVerified: boolean;
+    documents?: string[];
   };
 
   // User preferences
@@ -322,6 +323,14 @@ export const UserSchema = {
             isVerified: {
               bsonType: "bool",
               description: "Whether tutor is verified",
+            },
+            documents: {
+              bsonType: ["array", "null"],
+              items: {
+                bsonType: "string",
+                pattern: "^https?://.*",
+              },
+              description: "URLs of uploaded documents",
             },
           },
           description: "Tutor-specific profile information",
