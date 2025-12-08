@@ -12,6 +12,7 @@ export default function Contact() {
     message: "",
     serviceType: "",
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
