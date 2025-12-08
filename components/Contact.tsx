@@ -47,41 +47,56 @@ export default function Contact() {
       return;
     }
 
-    setIsSubmitting(true);
+    // Contact form temporarily disabled
+    toast.success(
+      "Thank you for your interest! Please contact us directly via phone, WhatsApp or email."
+    );
 
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+    // Reset form
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      subject: "",
+      message: "",
+      serviceType: "",
+    });
 
-      const data = await response.json();
+    // setIsSubmitting(true);
 
-      if (data.success) {
-        toast.success("Message sent successfully!");
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-          message: "",
-          serviceType: "",
-        });
-      } else {
-        toast.error(data.error || "Failed to send message. Please try again.");
-      }
-    } catch (error) {
-      console.error("Contact form submission error:", error);
-      toast.error(
-        "An error occurred while sending your message. Please try again or contact us directly."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    // try {
+    //   const response = await fetch("/api/contact", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify(formData),
+    //   });
+
+    //   const data = await response.json();
+
+    //   if (data.success) {
+    //     toast.success("Message sent successfully!");
+    //     // Reset form
+    //     setFormData({
+    //       name: "",
+    //       email: "",
+    //       phone: "",
+    //       subject: "",
+    //       message: "",
+    //       serviceType: "",
+    //     });
+    //   } else {
+    //     toast.error(data.error || "Failed to send message. Please try again.");
+    //   }
+    // } catch (error) {
+    //   console.error("Contact form submission error:", error);
+    //   toast.error(
+    //     "An error occurred while sending your message. Please try again or contact us directly."
+    //   );
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
   };
 
   const contactInfo = [
