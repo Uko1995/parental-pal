@@ -29,12 +29,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Optimize fonts
-  optimizeFonts: true,
+
   // Enable compression
   compress: true,
-  // Enable SWC minification
-  swcMinify: true,
+
   // Optimize production builds
   productionBrowserSourceMaps: false,
   // Reduce bundle size
