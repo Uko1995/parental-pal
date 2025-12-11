@@ -12,6 +12,8 @@ export default function Contact() {
     message: "",
     serviceType: "",
   });
+
+  //disabling eslint error
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSubmitting, setIsSubmitting] = useState(false);
 
