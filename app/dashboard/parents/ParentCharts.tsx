@@ -95,8 +95,8 @@ export default function ParentCharts({ analytics }: ParentChartsProps) {
                   tickFormatter={(value) => `₦${(value / 1000).toFixed(0)}K`}
                 />
                 <Tooltip
-                  formatter={(value: number) => [
-                    formatCurrency(value),
+                  formatter={(value: number | undefined) => [
+                    formatCurrency(value || 0),
                     "Revenue",
                   ]}
                   contentStyle={{

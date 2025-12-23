@@ -41,17 +41,6 @@ function createEmailTransporter() {
 // Create reusable transporter object
 const transporter = createEmailTransporter();
 
-// Verify connection configuration only if not in test mode
-if (process.env.EMAIL_USER || process.env.SMTP_HOST) {
-  transporter.verify(function (error: Error | null) {
-    if (error) {
-      console.log("Email transporter verification failed:", error);
-    } else {
-      console.log("Email server is ready to take our messages");
-    }
-  });
-}
-
 export interface EmailOptions {
   to: string;
   subject: string;
@@ -88,6 +77,15 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
       console.log("📧 Email (Development Mode):", { to, subject });
       console.log("📧 Email content:", text || "HTML content provided");
       return { success: true, messageId: "dev-mode-" + Date.now() };
+    }
+
+    // Verify connection configuration before sending (only when configured)
+    try {
+      await transporter.verify();
+      console.log("✅ Email server connection verified");
+    } catch (verifyError) {
+      console.warn("⚠️ Email transporter verification failed:", verifyError);
+      // Continue anyway - the actual send might still work
     }
 
     const mailOptions = {
@@ -852,9 +850,7 @@ export const emailTemplates = {
               <div style="font-size: 16px; font-weight: bold; color: #90AC19; margin-top: 5px;">
                 ${invoiceDetails.serviceType
                   .split("-")
-                  .map(
-                    (word) => word.charAt(0).toUpperCase() + word.slice(1)
-                  )
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(" ")}
               </div>
             </div>
@@ -983,9 +979,7 @@ export const emailTemplates = {
               <strong style="color: #856404;">💳 Payment Instructions:</strong>
               <p style="margin: 10px 0 0 0; color: #856404;">
                 Please log in to your ParentalPal account to make payment for this invoice. 
-                Visit <a href="${
-                  process.env.NEXTAUTH_URL
-                }/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
+                Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
               </p>
             </div>
             `
@@ -1045,9 +1039,7 @@ ${invoiceDetails.items
   )
   .join("\n")}
 
-Subtotal: ${
-      invoiceDetails.currency
-    }${invoiceDetails.subtotal.toLocaleString()}
+Subtotal: ${invoiceDetails.currency}${invoiceDetails.subtotal.toLocaleString()}
 ${
   invoiceDetails.discount
     ? `Discount: -${

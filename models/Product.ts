@@ -180,7 +180,9 @@ export const ProductSchema = {
   },
 };
 
-export default {
+const ProductModel = {
   collectionName: "products",
   schema: ProductSchema,
 };
+
+export default ProductModel;

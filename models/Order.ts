@@ -175,7 +175,9 @@ export const OrderSchema = {
   },
 };
 
-export default {
+const OrderModel = {
   collectionName: "orders",
   schema: OrderSchema,
 };
+
+export default OrderModel;

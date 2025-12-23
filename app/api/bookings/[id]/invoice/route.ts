@@ -58,9 +58,11 @@ function generateInvoiceItems(booking: {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     // Authentication check
     const session = await auth();
     if (!session?.user?.email) {
@@ -86,10 +88,8 @@ export async function POST(
       );
     }
 
-    const bookingId = params.id;
-
     // Fetch booking details
-    const booking = await BookingRepository.findById(bookingId);
+    const booking = await BookingRepository.findById(id);
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
@@ -115,7 +115,7 @@ export async function POST(
 
     const invoiceDetails = {
       invoiceNumber,
-      bookingId: booking._id?.toString() || bookingId,
+      bookingId: booking._id?.toString() || id,
       invoiceDate,
       dueDate,
       serviceType: booking.serviceType || "Service",
@@ -162,7 +162,7 @@ export async function POST(
       AuditEventType.ADMIN_ACTION,
       currentUser._id?.toString(),
       "",
-      `Invoice ${invoiceNumber} generated for booking ${bookingId}`
+      `Invoice ${invoiceNumber} generated for booking ${id}`
     );
 
     return NextResponse.json({
@@ -172,7 +172,7 @@ export async function POST(
       sentTo: parentEmail,
       invoiceDetails: {
         invoiceNumber,
-        bookingId,
+        bookingId: id,
         invoiceDate,
         dueDate,
         totalAmount,
