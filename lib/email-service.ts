@@ -736,6 +736,344 @@ export const emailTemplates = {
       process.env.NEXTAUTH_URL
     }/auth/signin`,
   }),
+
+  // Invoice email template
+  invoice: (
+    parentName: string,
+    invoiceDetails: {
+      invoiceNumber: string;
+      bookingId: string;
+      invoiceDate: Date;
+      dueDate: Date;
+      serviceType: string;
+      children: Array<{ name: string; age: number }>;
+      schedule?: {
+        startDate?: string;
+        endDate?: string;
+      };
+      items: Array<{
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        total: number;
+      }>;
+      subtotal: number;
+      tax?: number;
+      discount?: number;
+      totalAmount: number;
+      currency: string;
+      paymentInstructions?: string;
+    }
+  ) => ({
+    subject: `Invoice #${invoiceDetails.invoiceNumber} - ParentalPal Services`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invoice - ParentalPal</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 700px; margin: 0 auto; background-color: white; }
+          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; color: white; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .header .invoice-number { font-size: 18px; margin-top: 10px; opacity: 0.95; }
+          .content { padding: 30px 20px; }
+          .invoice-info { display: flex; justify-content: space-between; margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
+          .info-section { flex: 1; }
+          .info-label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+          .info-value { color: #333; font-size: 14px; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+          .items-table th { background-color: #90AC19; color: white; padding: 12px; text-align: left; font-size: 14px; }
+          .items-table td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+          .items-table tr:last-child td { border-bottom: none; }
+          .subtotal-row { text-align: right; padding: 8px 12px; font-size: 14px; }
+          .total-row { background-color: #90AC19; color: white; font-weight: bold; font-size: 18px; padding: 15px 12px; text-align: right; }
+          .payment-section { background-color: #fff3cd; border-left: 4px solid #E8931A; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .footer { background-color: #333; color: white; padding: 20px; text-align: center; font-size: 13px; }
+          .children-list { background-color: #f0f7ff; padding: 15px; border-radius: 8px; margin: 15px 0; }
+          .child-item { display: inline-block; background-color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; border: 1px solid #90AC19; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📋 INVOICE</h1>
+            <div class="invoice-number">Invoice #${
+              invoiceDetails.invoiceNumber
+            }</div>
+          </div>
+
+          <div class="content">
+            <div style="text-align: right; color: #666; margin-bottom: 20px;">
+              <strong>ParentalPal Services</strong><br/>
+              Email: ${process.env.EMAIL_USER || "info@parentalpal.com"}<br/>
+              Website: ${process.env.NEXTAUTH_URL || "www.parentalpal.com"}
+            </div>
+
+            <div class="invoice-info">
+              <div class="info-section">
+                <div class="info-label">Bill To:</div>
+                <div class="info-value">
+                  <strong>${parentName}</strong>
+                </div>
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Booking ID:</div>
+                  <div class="info-value">#${invoiceDetails.bookingId}</div>
+                </div>
+              </div>
+              <div class="info-section" style="text-align: right;">
+                <div class="info-label">Invoice Date:</div>
+                <div class="info-value">${invoiceDetails.invoiceDate.toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</div>
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Due Date:</div>
+                  <div class="info-value">${invoiceDetails.dueDate.toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="info-label">Service Type:</div>
+              <div style="font-size: 16px; font-weight: bold; color: #90AC19; margin-top: 5px;">
+                ${invoiceDetails.serviceType
+                  .split("-")
+                  .map(
+                    (word) => word.charAt(0).toUpperCase() + word.slice(1)
+                  )
+                  .join(" ")}
+              </div>
+            </div>
+
+            ${
+              invoiceDetails.children && invoiceDetails.children.length > 0
+                ? `
+            <div class="children-list">
+              <div class="info-label" style="margin-bottom: 10px;">Children Enrolled:</div>
+              ${invoiceDetails.children
+                .map(
+                  (child) =>
+                    `<span class="child-item">${child.name} (${child.age} years)</span>`
+                )
+                .join("")}
+            </div>
+            `
+                : ""
+            }
+
+            ${
+              invoiceDetails.schedule?.startDate
+                ? `
+            <div style="margin: 15px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+              <div class="info-label">Schedule:</div>
+              <div style="margin-top: 5px;">
+                <strong>Start Date:</strong> ${new Date(
+                  invoiceDetails.schedule.startDate
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+                ${
+                  invoiceDetails.schedule.endDate
+                    ? ` - <strong>End Date:</strong> ${new Date(
+                        invoiceDetails.schedule.endDate
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}`
+                    : ""
+                }
+              </div>
+            </div>
+            `
+                : ""
+            }
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th style="text-align: center;">Quantity</th>
+                  <th style="text-align: right;">Unit Price</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${invoiceDetails.items
+                  .map(
+                    (item) => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td style="text-align: center;">${item.quantity}</td>
+                  <td style="text-align: right;">${
+                    invoiceDetails.currency
+                  }${item.unitPrice.toLocaleString()}</td>
+                  <td style="text-align: right;">${
+                    invoiceDetails.currency
+                  }${item.total.toLocaleString()}</td>
+                </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+
+            <div style="text-align: right; margin: 20px 0;">
+              <div class="subtotal-row">
+                <strong>Subtotal:</strong> ${
+                  invoiceDetails.currency
+                }${invoiceDetails.subtotal.toLocaleString()}
+              </div>
+              ${
+                invoiceDetails.discount
+                  ? `
+              <div class="subtotal-row" style="color: #22c55e;">
+                <strong>Discount:</strong> -${
+                  invoiceDetails.currency
+                }${invoiceDetails.discount.toLocaleString()}
+              </div>
+              `
+                  : ""
+              }
+              ${
+                invoiceDetails.tax
+                  ? `
+              <div class="subtotal-row">
+                <strong>Tax:</strong> ${
+                  invoiceDetails.currency
+                }${invoiceDetails.tax.toLocaleString()}
+              </div>
+              `
+                  : ""
+              }
+            </div>
+
+            <div class="total-row">
+              <div>TOTAL AMOUNT DUE: ${
+                invoiceDetails.currency
+              }${invoiceDetails.totalAmount.toLocaleString()}</div>
+            </div>
+
+            ${
+              invoiceDetails.paymentInstructions
+                ? `
+            <div class="payment-section">
+              <strong style="color: #856404;">💳 Payment Instructions:</strong>
+              <p style="margin: 10px 0 0 0; color: #856404;">${invoiceDetails.paymentInstructions}</p>
+            </div>
+            `
+                : `
+            <div class="payment-section">
+              <strong style="color: #856404;">💳 Payment Instructions:</strong>
+              <p style="margin: 10px 0 0 0; color: #856404;">
+                Please log in to your ParentalPal account to make payment for this invoice. 
+                Visit <a href="${
+                  process.env.NEXTAUTH_URL
+                }/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
+              </p>
+            </div>
+            `
+            }
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 13px;">
+              <p><strong>Terms & Conditions:</strong></p>
+              <ul style="line-height: 1.6;">
+                <li>Payment is due by the due date specified above</li>
+                <li>Late payments may incur additional charges</li>
+                <li>Services are subject to ParentalPal's terms and conditions</li>
+                <li>For any questions regarding this invoice, please contact us</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 5px 0; font-weight: bold;">Thank you for choosing ParentalPal!</p>
+            <p style="margin: 5px 0;">© 2024 ParentalPal. All rights reserved.</p>
+            <p style="margin: 10px 0;">
+              Questions? Contact us at ${
+                process.env.EMAIL_USER || "info@parentalpal.com"
+              }
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+INVOICE #${invoiceDetails.invoiceNumber}
+ParentalPal Services
+
+Bill To: ${parentName}
+Booking ID: #${invoiceDetails.bookingId}
+Invoice Date: ${invoiceDetails.invoiceDate.toLocaleDateString()}
+Due Date: ${invoiceDetails.dueDate.toLocaleDateString()}
+
+Service: ${invoiceDetails.serviceType}
+${
+  invoiceDetails.children && invoiceDetails.children.length > 0
+    ? `Children: ${invoiceDetails.children
+        .map((child) => `${child.name} (${child.age} years)`)
+        .join(", ")}`
+    : ""
+}
+
+INVOICE ITEMS:
+${invoiceDetails.items
+  .map(
+    (item) =>
+      `${item.description} - Qty: ${item.quantity} x ${
+        invoiceDetails.currency
+      }${item.unitPrice.toLocaleString()} = ${
+        invoiceDetails.currency
+      }${item.total.toLocaleString()}`
+  )
+  .join("\n")}
+
+Subtotal: ${
+      invoiceDetails.currency
+    }${invoiceDetails.subtotal.toLocaleString()}
+${
+  invoiceDetails.discount
+    ? `Discount: -${
+        invoiceDetails.currency
+      }${invoiceDetails.discount.toLocaleString()}`
+    : ""
+}
+${
+  invoiceDetails.tax
+    ? `Tax: ${invoiceDetails.currency}${invoiceDetails.tax.toLocaleString()}`
+    : ""
+}
+
+TOTAL AMOUNT DUE: ${
+      invoiceDetails.currency
+    }${invoiceDetails.totalAmount.toLocaleString()}
+
+${
+  invoiceDetails.paymentInstructions ||
+  "Please log in to your ParentalPal account to make payment."
+}
+
+Thank you for choosing ParentalPal!
+Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
+    `,
+  }),
 };
 
 export default transporter;

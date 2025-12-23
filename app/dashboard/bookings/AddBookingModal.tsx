@@ -69,6 +69,9 @@ const AddBookingModal = forwardRef<
     specialRequests: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [showInvoiceOption, setShowInvoiceOption] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -80,6 +83,8 @@ const AddBookingModal = forwardRef<
       children: [{ name: "", age: 5, gender: "male" }],
       specialRequests: "",
     });
+    setCreatedBookingId(null);
+    setShowInvoiceOption(false);
   };
 
   useImperativeHandle(ref, () => ({
@@ -190,9 +195,11 @@ const AddBookingModal = forwardRef<
       });
 
       if (response.ok) {
+        const result = await response.json();
         toast.success("Booking created successfully!");
+        setCreatedBookingId(result._id || result.id);
+        setShowInvoiceOption(true);
         onSuccess();
-        resetForm();
       } else {
         const error = await response.json();
         toast.error(error.message || "Failed to create booking");
@@ -202,6 +209,47 @@ const AddBookingModal = forwardRef<
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!createdBookingId) {
+      toast.error("No booking ID available");
+      return;
+    }
+
+    setIsSendingInvoice(true);
+
+    try {
+      const response = await fetch(
+        `/api/bookings/${createdBookingId}/invoice`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          `Invoice ${result.invoiceNumber} sent to ${result.sentTo}!`
+        );
+        setShowInvoiceOption(false);
+        resetForm();
+        onClose();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to generate invoice");
+      }
+    } catch {
+      toast.error("Error generating invoice");
+    } finally {
+      setIsSendingInvoice(false);
+    }
+  };
+
+  const handleSkipInvoice = () => {
+    setShowInvoiceOption(false);
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -420,6 +468,60 @@ const AddBookingModal = forwardRef<
             </button>
           </div>
         </form>
+
+        {/* Invoice Generation Option */}
+        {showInvoiceOption && (
+          <div className="mt-6 p-4 bg-[#90AC19]/10 border-2 border-[#90AC19] rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0">
+                <svg
+                  className="w-6 h-6 text-[#90AC19]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-2">
+                  📋 Generate Invoice
+                </h4>
+                <p className="text-sm text-gray-700 mb-4">
+                  Would you like to generate and send an invoice to the
+                  parent&apos;s email ({formData.parentEmail})?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleGenerateInvoice}
+                    disabled={isSendingInvoice}
+                    className={`btn btn-sm btn-primary ${
+                      isSendingInvoice ? "loading" : ""
+                    }`}
+                  >
+                    {isSendingInvoice
+                      ? "Sending..."
+                      : "Generate & Send Invoice"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSkipInvoice}
+                    disabled={isSendingInvoice}
+                    className="btn btn-sm btn-ghost"
+                  >
+                    Skip for Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div className="modal-backdrop" onClick={onClose}></div>
     </div>

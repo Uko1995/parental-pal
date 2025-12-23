@@ -159,7 +159,7 @@ export default function ProfilePage() {
             </button>
 
             {/* Conditional Tabs based on Role */}
-            {userRole === "parent" && (
+            {(userRole === "parent" || userRole === "admin") && (
               <>
                 <button
                   className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
@@ -263,8 +263,8 @@ export default function ProfilePage() {
             <ProfileDetails user={session.user} userRole={userRole} />
           )}
 
-          {/* Parent-specific tabs */}
-          {userRole === "parent" && (
+          {/* Parent and Admin specific tabs */}
+          {(userRole === "parent" || userRole === "admin") && (
             <>
               {activeTab === "children" && <ChildrenSection />}
               {activeTab === "bookings" && <BookingsSection />}

@@ -2,6 +2,7 @@
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect } from "react";
 
 interface SerializedParentWithStats {
@@ -360,7 +361,9 @@ export default function ParentDetailsModal({
           <button onClick={onClose} className="btn btn-outline">
             Close
           </button>
-          <button className="btn btn-primary">View Bookings</button>
+          <Link href="/dashboard/bookings" className="btn btn-primary">
+            View Bookings
+          </Link>
         </div>
       </div>
     </div>

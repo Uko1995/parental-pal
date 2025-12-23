@@ -33,7 +33,10 @@ const publicRoutes = [
 /**
  * Add security headers to response
  */
-function addSecurityHeaders(response: NextResponse, request: NextRequest): NextResponse {
+function addSecurityHeaders(
+  response: NextResponse,
+  request: NextRequest
+): NextResponse {
   // Content Security Policy - tightened to remove unsafe-inline/unsafe-eval where possible
   response.headers.set(
     "Content-Security-Policy",
@@ -74,15 +77,25 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest): NextR
   );
 
   // CSRF Protection: Verify origin header for state-changing requests
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-    const origin = request.headers.get('origin');
-    const host = request.headers.get('host');
-    
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("host");
+    const pathname = request.nextUrl.pathname;
+
+    // Skip CSRF check for NextAuth API routes
+    if (pathname.startsWith("/api/auth/")) {
+      // NextAuth handles its own CSRF protection
+      return NextResponse.next();
+    }
+
     // Allow requests from same origin or if origin is not set (non-browser requests)
     if (origin && host && !origin.includes(host)) {
       console.warn(`CSRF: Origin mismatch - origin: ${origin}, host: ${host}`);
       // Return 403 for suspicious cross-origin requests
-      return NextResponse.json({ error: "Forbidden - Invalid origin" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden - Invalid origin" },
+        { status: 403 }
+      );
     }
   }
 
@@ -91,6 +104,11 @@ function addSecurityHeaders(response: NextResponse, request: NextRequest): NextR
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip middleware for NextAuth API routes entirely - they handle their own security
+  if (pathname.startsWith("/api/auth/")) {
+    return NextResponse.next();
+  }
 
   // Allow public routes and API auth routes
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
@@ -129,12 +147,6 @@ export async function middleware(request: NextRequest) {
 
   // Check API routes that require authentication
   if (pathname.startsWith("/api/")) {
-    // Skip auth API routes
-    if (pathname.startsWith("/api/auth/")) {
-      const response = NextResponse.next();
-      return addSecurityHeaders(response, request);
-    }
-
     // Public API routes
     const publicApiRoutes = [
       "/api/services",

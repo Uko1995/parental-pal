@@ -74,6 +74,9 @@ export default function BookingsTable({
   const [serviceFilter, setServiceFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [sendingInvoiceIds, setSendingInvoiceIds] = useState<Set<string>>(
+    new Set()
+  );
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     booking: Booking | null;
@@ -201,6 +204,35 @@ export default function BookingsTable({
         return newSet;
       });
       setDeleteModal({ isOpen: false, booking: null });
+    }
+  };
+
+  const handleGenerateInvoice = async (booking: Booking) => {
+    setSendingInvoiceIds((prev) => new Set(prev).add(booking._id));
+
+    try {
+      const response = await fetch(`/api/bookings/${booking._id}/invoice`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          `Invoice ${result.invoiceNumber} sent to ${result.sentTo}!`,
+          { duration: 4000 }
+        );
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to generate invoice");
+      }
+    } catch {
+      toast.error("Error generating invoice");
+    } finally {
+      setSendingInvoiceIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(booking._id);
+        return newSet;
+      });
     }
   };
 
@@ -348,12 +380,38 @@ export default function BookingsTable({
                         </div>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content menu menu-sm bg-base-100 rounded-box w-40 p-2 shadow-lg border z-50"
+                          className="dropdown-content menu menu-sm bg-base-100 rounded-box w-52 p-2 shadow-lg border z-50"
                         >
                           <li>
                             <a onClick={() => onView(booking)}>
                               <EyeIcon className="w-4 h-4" />
-                              View
+                              View Details
+                            </a>
+                          </li>
+
+                          <li>
+                            <a
+                              onClick={() => handleGenerateInvoice(booking)}
+                              className="text-[#90AC19]"
+                            >
+                              {sendingInvoiceIds.has(booking._id) ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                  />
+                                </svg>
+                              )}
+                              Generate Invoice
                             </a>
                           </li>
 
