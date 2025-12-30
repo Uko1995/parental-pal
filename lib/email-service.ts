@@ -8,7 +8,10 @@ function createEmailTransporter() {
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        pass: process.env.EMAIL_PASSWORD.replace(/\s/g, ""), // Remove any spaces from app password
+      },
+      tls: {
+        rejectUnauthorized: false, // Accept self-signed certificates
       },
     });
   }
@@ -77,15 +80,6 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
       console.log("📧 Email (Development Mode):", { to, subject });
       console.log("📧 Email content:", text || "HTML content provided");
       return { success: true, messageId: "dev-mode-" + Date.now() };
-    }
-
-    // Verify connection configuration before sending (only when configured)
-    try {
-      await transporter.verify();
-      console.log("✅ Email server connection verified");
-    } catch (verifyError) {
-      console.warn("⚠️ Email transporter verification failed:", verifyError);
-      // Continue anyway - the actual send might still work
     }
 
     const mailOptions = {
@@ -1061,6 +1055,372 @@ ${
   invoiceDetails.paymentInstructions ||
   "Please log in to your ParentalPal account to make payment."
 }
+
+Thank you for choosing ParentalPal!
+Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
+    `,
+  }),
+
+  // Receipt email template (for paid/confirmed bookings)
+  receipt: (
+    parentName: string,
+    receiptDetails: {
+      receiptNumber: string;
+      bookingId: string;
+      receiptDate: Date;
+      paymentDate?: Date;
+      serviceType: string;
+      children: Array<{ name: string; age: number }>;
+      schedule?: {
+        startDate?: string;
+        endDate?: string;
+      };
+      items: Array<{
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        total: number;
+      }>;
+      subtotal: number;
+      tax?: number;
+      discount?: number;
+      totalAmount: number;
+      currency: string;
+      paymentMethod?: string;
+      transactionId?: string;
+    }
+  ) => ({
+    subject: `Payment Receipt #${receiptDetails.receiptNumber} - ParentalPal Services`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Receipt - ParentalPal</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 700px; margin: 0 auto; background-color: white; }
+          .header { background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px 20px; color: white; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .header .receipt-number { font-size: 18px; margin-top: 10px; opacity: 0.95; }
+          .paid-badge { background-color: #22c55e; color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; font-weight: bold; margin-top: 10px; }
+          .content { padding: 30px 20px; }
+          .receipt-info { display: flex; justify-content: space-between; margin: 20px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 2px solid #22c55e; }
+          .info-section { flex: 1; }
+          .info-label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+          .info-value { color: #333; font-size: 14px; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+          .items-table th { background-color: #22c55e; color: white; padding: 12px; text-align: left; font-size: 14px; }
+          .items-table td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+          .items-table tr:last-child td { border-bottom: none; }
+          .subtotal-row { text-align: right; padding: 8px 12px; font-size: 14px; }
+          .total-row { background-color: #22c55e; color: white; font-weight: bold; font-size: 18px; padding: 15px 12px; text-align: right; }
+          .payment-section { background-color: #d1fae5; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .footer { background-color: #333; color: white; padding: 20px; text-align: center; font-size: 13px; }
+          .children-list { background-color: #f0f7ff; padding: 15px; border-radius: 8px; margin: 15px 0; }
+          .child-item { display: inline-block; background-color: white; padding: 8px 15px; margin: 5px; border-radius: 20px; border: 1px solid #22c55e; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ PAYMENT RECEIPT</h1>
+            <div class="receipt-number">Receipt #${
+              receiptDetails.receiptNumber
+            }</div>
+            <div class="paid-badge">✓ PAID IN FULL</div>
+          </div>
+
+          <div class="content">
+            <div style="text-align: right; color: #666; margin-bottom: 20px;">
+              <strong>ParentalPal Services</strong><br/>
+              Email: ${process.env.EMAIL_USER || "info@parentalpal.com"}<br/>
+              Website: ${process.env.NEXTAUTH_URL || "www.parentalpal.com"}
+            </div>
+
+            <div class="receipt-info">
+              <div class="info-section">
+                <div class="info-label">Received From:</div>
+                <div class="info-value">
+                  <strong>${parentName}</strong>
+                </div>
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Booking ID:</div>
+                  <div class="info-value">#${receiptDetails.bookingId}</div>
+                </div>
+                ${
+                  receiptDetails.transactionId
+                    ? `
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Transaction ID:</div>
+                  <div class="info-value">${receiptDetails.transactionId}</div>
+                </div>
+                `
+                    : ""
+                }
+              </div>
+              <div class="info-section" style="text-align: right;">
+                <div class="info-label">Receipt Date:</div>
+                <div class="info-value">${receiptDetails.receiptDate.toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</div>
+                ${
+                  receiptDetails.paymentDate
+                    ? `
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Payment Date:</div>
+                  <div class="info-value">${receiptDetails.paymentDate.toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}</div>
+                </div>
+                `
+                    : ""
+                }
+                ${
+                  receiptDetails.paymentMethod
+                    ? `
+                <div style="margin-top: 10px;">
+                  <div class="info-label">Payment Method:</div>
+                  <div class="info-value" style="text-transform: capitalize;">${receiptDetails.paymentMethod.replace(
+                    "_",
+                    " "
+                  )}</div>
+                </div>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+
+            <div>
+              <div class="info-label">Service Type:</div>
+              <div style="font-size: 16px; font-weight: bold; color: #22c55e; margin-top: 5px;">
+                ${receiptDetails.serviceType
+                  .split("-")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ")}
+              </div>
+            </div>
+
+            ${
+              receiptDetails.children && receiptDetails.children.length > 0
+                ? `
+            <div class="children-list">
+              <div class="info-label" style="margin-bottom: 10px;">Children Enrolled:</div>
+              ${receiptDetails.children
+                .map(
+                  (child) =>
+                    `<span class="child-item">${child.name} (${child.age} years old)</span>`
+                )
+                .join("")}
+            </div>
+            `
+                : ""
+            }
+
+            ${
+              receiptDetails.schedule?.startDate
+                ? `
+            <div style="margin: 15px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+              <div class="info-label">Schedule:</div>
+              <div style="margin-top: 5px;">
+                <strong>Start Date:</strong> ${new Date(
+                  receiptDetails.schedule.startDate
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+                ${
+                  receiptDetails.schedule.endDate
+                    ? ` - <strong>End Date:</strong> ${new Date(
+                        receiptDetails.schedule.endDate
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}`
+                    : ""
+                }
+              </div>
+            </div>
+            `
+                : ""
+            }
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th style="text-align: center;">Quantity</th>
+                  <th style="text-align: right;">Unit Price</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${receiptDetails.items
+                  .map(
+                    (item) => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td style="text-align: center;">${item.quantity}</td>
+                  <td style="text-align: right;">${
+                    receiptDetails.currency
+                  }${item.unitPrice.toLocaleString()}</td>
+                  <td style="text-align: right;">${
+                    receiptDetails.currency
+                  }${item.total.toLocaleString()}</td>
+                </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+
+            <div style="text-align: right; margin: 20px 0;">
+              <div class="subtotal-row">
+                <strong>Subtotal:</strong> ${
+                  receiptDetails.currency
+                }${receiptDetails.subtotal.toLocaleString()}
+              </div>
+              ${
+                receiptDetails.discount
+                  ? `
+              <div class="subtotal-row" style="color: #22c55e;">
+                <strong>Discount:</strong> -${
+                  receiptDetails.currency
+                }${receiptDetails.discount.toLocaleString()}
+              </div>
+              `
+                  : ""
+              }
+              ${
+                receiptDetails.tax
+                  ? `
+              <div class="subtotal-row">
+                <strong>Tax:</strong> ${
+                  receiptDetails.currency
+                }${receiptDetails.tax.toLocaleString()}
+              </div>
+              `
+                  : ""
+              }
+            </div>
+
+            <div class="total-row">
+              <div>TOTAL AMOUNT PAID: ${
+                receiptDetails.currency
+              }${receiptDetails.totalAmount.toLocaleString()}</div>
+            </div>
+
+            <div class="payment-section">
+              <strong style="color: #166534;">✅ Payment Confirmed</strong>
+              <p style="margin: 10px 0 0 0; color: #166534;">
+                Thank you for your payment! This receipt confirms that we have received your full payment for the services listed above. 
+                You can access this receipt anytime from your ParentalPal account dashboard.
+              </p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 13px;">
+              <p><strong>Important Information:</strong></p>
+              <ul style="line-height: 1.6;">
+                <li>This receipt serves as proof of payment</li>
+                <li>Please keep this receipt for your records</li>
+                <li>Services are subject to ParentalPal's terms and conditions</li>
+                <li>For any questions regarding this receipt, please contact us</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 5px 0; font-weight: bold;">Thank you for choosing ParentalPal!</p>
+            <p style="margin: 5px 0;">© 2024 ParentalPal. All rights reserved.</p>
+            <p style="margin: 10px 0;">
+              Questions? Contact us at ${
+                process.env.EMAIL_USER || "info@parentalpal.com"
+              }
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+PAYMENT RECEIPT #${receiptDetails.receiptNumber}
+✓ PAID IN FULL
+ParentalPal Services
+
+Received From: ${parentName}
+Booking ID: #${receiptDetails.bookingId}
+${
+  receiptDetails.transactionId
+    ? `Transaction ID: ${receiptDetails.transactionId}`
+    : ""
+}
+Receipt Date: ${receiptDetails.receiptDate.toLocaleDateString()}
+${
+  receiptDetails.paymentDate
+    ? `Payment Date: ${receiptDetails.paymentDate.toLocaleDateString()}`
+    : ""
+}
+${
+  receiptDetails.paymentMethod
+    ? `Payment Method: ${receiptDetails.paymentMethod}`
+    : ""
+}
+
+Service: ${receiptDetails.serviceType}
+${
+  receiptDetails.children && receiptDetails.children.length > 0
+    ? `Children: ${receiptDetails.children
+        .map((child) => `${child.name} (${child.age} years)`)
+        .join(", ")}`
+    : ""
+}
+
+RECEIPT ITEMS:
+${receiptDetails.items
+  .map(
+    (item) =>
+      `${item.description} - Qty: ${item.quantity} x ${
+        receiptDetails.currency
+      }${item.unitPrice.toLocaleString()} = ${
+        receiptDetails.currency
+      }${item.total.toLocaleString()}`
+  )
+  .join("\n")}
+
+Subtotal: ${receiptDetails.currency}${receiptDetails.subtotal.toLocaleString()}
+${
+  receiptDetails.discount
+    ? `Discount: -${
+        receiptDetails.currency
+      }${receiptDetails.discount.toLocaleString()}`
+    : ""
+}
+${
+  receiptDetails.tax
+    ? `Tax: ${receiptDetails.currency}${receiptDetails.tax.toLocaleString()}`
+    : ""
+}
+
+TOTAL AMOUNT PAID: ${
+      receiptDetails.currency
+    }${receiptDetails.totalAmount.toLocaleString()}
+
+Payment Confirmed - Thank you for your payment!
+This receipt confirms full payment for the services listed above.
 
 Thank you for choosing ParentalPal!
 Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}

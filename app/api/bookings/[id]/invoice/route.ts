@@ -103,31 +103,9 @@ export async function POST(
       );
     }
 
-    // Generate invoice details
-    const invoiceNumber = generateInvoiceNumber();
-    const invoiceDate = new Date();
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 7); // Due in 7 days
-
-    const items = generateInvoiceItems(booking);
-    const subtotal = booking.pricing?.totalAmount || 0;
-    const totalAmount = subtotal;
-
-    const invoiceDetails = {
-      invoiceNumber,
-      bookingId: booking._id?.toString() || id,
-      invoiceDate,
-      dueDate,
-      serviceType: booking.serviceType || "Service",
-      children: booking.children || [],
-      schedule: booking.schedule,
-      items,
-      subtotal,
-      totalAmount,
-      currency: booking.pricing?.currency || "₦",
-      paymentInstructions:
-        "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
-    };
+    // Check if booking is confirmed or payment is completed
+    const isPaymentConfirmed =
+      booking.status === "confirmed" || booking.payment?.status === "paid";
 
     // Get parent name and email
     const parentName = parent.userData?.user?.name || "Valued Customer";
@@ -141,8 +119,68 @@ export async function POST(
       );
     }
 
-    // Send invoice email
-    const emailContent = emailTemplates.invoice(parentName, invoiceDetails);
+    const items = generateInvoiceItems(booking);
+    const subtotal = booking.pricing?.totalAmount || 0;
+    const totalAmount = subtotal;
+
+    let emailContent;
+    let documentNumber: string;
+    let documentType: string;
+
+    if (isPaymentConfirmed) {
+      // Generate receipt for confirmed bookings
+      documentNumber = generateInvoiceNumber().replace("INV", "RCT");
+      documentType = "receipt";
+      const receiptDate = new Date();
+      const paymentDate = booking.payment?.paymentDate
+        ? new Date(booking.payment.paymentDate)
+        : receiptDate;
+
+      const receiptDetails = {
+        receiptNumber: documentNumber,
+        bookingId: booking._id?.toString() || id,
+        receiptDate,
+        paymentDate,
+        serviceType: booking.serviceType || "Service",
+        children: booking.children || [],
+        schedule: booking.schedule,
+        items,
+        subtotal,
+        totalAmount,
+        currency: booking.pricing?.currency || "₦",
+        paymentMethod: booking.payment?.method,
+        transactionId: booking.payment?.transactionId,
+      };
+
+      emailContent = emailTemplates.receipt(parentName, receiptDetails);
+    } else {
+      // Generate invoice for pending bookings
+      documentNumber = generateInvoiceNumber();
+      documentType = "invoice";
+      const invoiceDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 7); // Due in 7 days
+
+      const invoiceDetails = {
+        invoiceNumber: documentNumber,
+        bookingId: booking._id?.toString() || id,
+        invoiceDate,
+        dueDate,
+        serviceType: booking.serviceType || "Service",
+        children: booking.children || [],
+        schedule: booking.schedule,
+        items,
+        subtotal,
+        totalAmount,
+        currency: booking.pricing?.currency || "₦",
+        paymentInstructions:
+          "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
+      };
+
+      emailContent = emailTemplates.invoice(parentName, invoiceDetails);
+    }
+
+    // Send email (invoice or receipt)
     const emailResult = await sendEmail({
       to: parentEmail,
       subject: emailContent.subject,
@@ -152,31 +190,39 @@ export async function POST(
 
     if (!emailResult.success) {
       return NextResponse.json(
-        { error: "Failed to send invoice email", details: emailResult.error },
+        {
+          error: `Failed to send ${documentType} email`,
+          details: emailResult.error,
+        },
         { status: 500 }
       );
     }
 
-    // Log the invoice generation
+    // Log the document generation
     logSecurityEvent(
       AuditEventType.ADMIN_ACTION,
       currentUser._id?.toString(),
       "",
-      `Invoice ${invoiceNumber} generated for booking ${id}`
+      `${
+        documentType === "receipt" ? "Receipt" : "Invoice"
+      } ${documentNumber} generated for booking ${id}`
     );
 
     return NextResponse.json({
       success: true,
-      message: "Invoice generated and sent successfully",
-      invoiceNumber,
+      message: `${
+        documentType === "receipt" ? "Receipt" : "Invoice"
+      } generated and sent successfully`,
+      documentType,
+      documentNumber,
       sentTo: parentEmail,
-      invoiceDetails: {
-        invoiceNumber,
+      details: {
+        documentNumber,
+        documentType,
         bookingId: id,
-        invoiceDate,
-        dueDate,
         totalAmount,
-        currency: invoiceDetails.currency,
+        currency: booking.pricing?.currency || "₦",
+        isPaymentConfirmed,
       },
     });
   } catch (error) {

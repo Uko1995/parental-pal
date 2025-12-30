@@ -9,6 +9,7 @@ import {
   EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import InvoiceModal from "./InvoiceModal";
 
 interface Child {
   name: string;
@@ -55,6 +56,10 @@ interface Booking {
   createdAt: string;
   schedule?: Schedule;
   children?: Child[];
+  payment?: {
+    status: "pending" | "paid" | "refunded";
+    method?: string;
+  };
 }
 
 interface BookingsTableProps {
@@ -74,10 +79,11 @@ export default function BookingsTable({
   const [serviceFilter, setServiceFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [sendingInvoiceIds, setSendingInvoiceIds] = useState<Set<string>>(
-    new Set()
-  );
   const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    booking: Booking | null;
+  }>({ isOpen: false, booking: null });
+  const [invoiceModal, setInvoiceModal] = useState<{
     isOpen: boolean;
     booking: Booking | null;
   }>({ isOpen: false, booking: null });
@@ -207,33 +213,12 @@ export default function BookingsTable({
     }
   };
 
-  const handleGenerateInvoice = async (booking: Booking) => {
-    setSendingInvoiceIds((prev) => new Set(prev).add(booking._id));
+  const handleGenerateInvoice = (booking: Booking) => {
+    setInvoiceModal({ isOpen: true, booking });
+  };
 
-    try {
-      const response = await fetch(`/api/bookings/${booking._id}/invoice`, {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast.success(
-          `Invoice ${result.invoiceNumber} sent to ${result.sentTo}!`,
-          { duration: 4000 }
-        );
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to generate invoice");
-      }
-    } catch {
-      toast.error("Error generating invoice");
-    } finally {
-      setSendingInvoiceIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(booking._id);
-        return newSet;
-      });
-    }
+  const closeInvoiceModal = () => {
+    setInvoiceModal({ isOpen: false, booking: null });
   };
 
   const closeDeleteModal = () => {
@@ -392,26 +377,30 @@ export default function BookingsTable({
                           <li>
                             <a
                               onClick={() => handleGenerateInvoice(booking)}
-                              className="text-[#90AC19]"
+                              className={
+                                booking.status === "confirmed" ||
+                                booking.payment?.status === "paid"
+                                  ? "text-green-600"
+                                  : "text-[#90AC19]"
+                              }
                             >
-                              {sendingInvoiceIds.has(booking._id) ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                  />
-                                </svg>
-                              )}
-                              Generate Invoice
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                              {booking.status === "confirmed" ||
+                              booking.payment?.status === "paid"
+                                ? "Generate Receipt"
+                                : "Generate Invoice"}
                             </a>
                           </li>
 
@@ -573,6 +562,15 @@ export default function BookingsTable({
           </div>
           <div className="modal-backdrop" onClick={closeDeleteModal}></div>
         </div>
+      )}
+
+      {/* Invoice Modal */}
+      {invoiceModal.isOpen && invoiceModal.booking && (
+        <InvoiceModal
+          booking={invoiceModal.booking}
+          isOpen={invoiceModal.isOpen}
+          onClose={closeInvoiceModal}
+        />
       )}
     </div>
   );

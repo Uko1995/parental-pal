@@ -229,18 +229,20 @@ const AddBookingModal = forwardRef<
 
       if (response.ok) {
         const result = await response.json();
+        const docType =
+          result.documentType === "receipt" ? "Receipt" : "Invoice";
         toast.success(
-          `Invoice ${result.invoiceNumber} sent to ${result.sentTo}!`
+          `${docType} ${result.documentNumber} sent to ${result.sentTo}!`
         );
         setShowInvoiceOption(false);
         resetForm();
         onClose();
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to generate invoice");
+        toast.error(error.error || "Failed to generate document");
       }
     } catch {
-      toast.error("Error generating invoice");
+      toast.error("Error generating document");
     } finally {
       setIsSendingInvoice(false);
     }
