@@ -5,13 +5,15 @@ export interface ProductInterface {
   _id?: ObjectId;
   title: string;
   slug: string; // URL-friendly version of title
-  description: string;
-  shortDescription: string;
+  description?: string;
+  shortDescription?: string;
   author: string;
+  averageRating?: number;
+  reviewCount?: number;
 
   // Product type and category
   category: "storybook" | "educational" | "activity-book" | "coloring-book";
-  ageRange: string; // e.g., "3-5 years", "6-8 years"
+  ageRange?: string; // e.g., "3-5 years", "6-8 years"
 
   // Images stored in Cloudinary
   thumbnail: string; // Cloudinary URL for book cover
@@ -28,7 +30,7 @@ export interface ProductInterface {
       price: number; // ₦5,000
       currency: string; // "NGN"
       available: boolean;
-      deliveryDays: number; // 2 days
+      deliveryDays: number; // 3 days
     };
   };
 
@@ -48,8 +50,8 @@ export interface ProductInterface {
 
   // Inventory
   stock: {
-    softcopy: number; // Unlimited for digital = 999999
-    paperback: number; // Physical stock count
+    paperback: number; // unlimited too since print-on-demand
+    lowStockThreshold?: number; // e.g., 10 copies
   };
 
   // Features and highlights
@@ -90,7 +92,6 @@ export const ProductSchema = {
       required: [
         "title",
         "slug",
-        "description",
         "author",
         "category",
         "thumbnail",

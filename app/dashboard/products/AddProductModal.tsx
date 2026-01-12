@@ -33,7 +33,7 @@ export default function AddProductModal({
     paperbackAvailable: true,
     paperbackStock: 50,
     lowStockThreshold: 10,
-    status: "draft" as "active" | "draft" | "archived",
+    status: "active" as "active" | "draft" | "archived",
     featured: false,
   });
 
@@ -141,13 +141,12 @@ export default function AddProductModal({
         pages: formData.pages,
         language: formData.language,
         isbn: formData.isbn,
-        thumbnail: {
-          url: thumbnailData.url,
-          cloudinaryId: thumbnailData.public_id,
-        },
+        thumbnail: thumbnailData.secure_url || thumbnailData.url, // Store URL directly as string
         pdfFile: {
           cloudinaryId: pdfData.public_id,
-          url: pdfData.secure_url,
+          cloudinaryUrl: pdfData.secure_url || pdfData.url,
+          fileName: pdfFile.name,
+          fileSize: pdfFile.size,
         },
         pricing: {
           softcopy: {

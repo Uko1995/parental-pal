@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { UserRepository } from "@/lib/UserRepository";
 import { ObjectId } from "mongodb";
 import { auth } from "@/auth";
@@ -8,6 +9,7 @@ import {
   logAuthEvent,
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET(
   request: NextRequest,
@@ -123,6 +125,11 @@ export async function DELETE(
       true,
       { tutorId: id }
     );
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.TUTORS);
+    revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

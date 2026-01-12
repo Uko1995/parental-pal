@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { auth } from "@/auth";
@@ -9,6 +10,7 @@ import {
   logAuthEvent,
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET(
   request: NextRequest,
@@ -132,6 +134,10 @@ export async function PATCH(
       { serviceId: id }
     );
 
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.SERVICES);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error updating service:", error);
@@ -213,6 +219,10 @@ export async function DELETE(
       true,
       { serviceId: id }
     );
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.SERVICES);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

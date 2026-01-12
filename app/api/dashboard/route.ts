@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     const bookingsCollection = await getCollection<BookingInterface>(
       "bookings"
     );
+    const ordersCollection = await getCollection("orders");
     const usersCollection = await getCollection<UserInterface>("users");
 
     const now = new Date();
@@ -89,27 +90,63 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Calculate total revenue (only paid bookings)
-    const currentRevenue = currentBookings
+    const currentBookingRevenue = currentBookings
       .filter((booking) => booking.payment?.status === "paid")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
-    const previousRevenue = previousBookings
+    const previousBookingRevenue = previousBookings
       .filter((booking) => booking.payment?.status === "paid")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
+    // Get product orders revenue (only paid orders)
+    const currentOrders = await ordersCollection
+      .find({
+        createdAt: { $gte: startDate, $lte: now },
+      })
+      .toArray();
+
+    const previousOrders = await ordersCollection
+      .find({
+        createdAt: { $gte: previousPeriodStart, $lte: startDate },
+      })
+      .toArray();
+
+    const currentOrderRevenue = currentOrders
+      .filter((order) => order.payment?.status === "success")
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+    const previousOrderRevenue = previousOrders
+      .filter((order) => order.payment?.status === "success")
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+    // Combine bookings and orders revenue
+    const currentRevenue = currentBookingRevenue + currentOrderRevenue;
+    const previousRevenue = previousBookingRevenue + previousOrderRevenue;
 
     const revenueChange =
       previousRevenue > 0
         ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
         : 0;
 
-    // Calculate pending payments
-    const currentPending = currentBookings
+    // Calculate pending payments (bookings + orders)
+    const currentBookingPending = currentBookings
       .filter((booking) => booking.payment?.status === "pending")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
-    const previousPending = previousBookings
+    const previousBookingPending = previousBookings
       .filter((booking) => booking.payment?.status === "pending")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
+
+    const currentOrderPending = currentOrders
+      .filter((order) => order.payment?.status === "pending")
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+    const previousOrderPending = previousOrders
+      .filter((order) => order.payment?.status === "pending")
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+    const currentPending = currentBookingPending + currentOrderPending;
+    const previousPending = previousBookingPending + previousOrderPending;
 
     const pendingChange =
       previousPending > 0
@@ -167,7 +204,7 @@ export async function GET(request: NextRequest) {
           {
             $match: {
               createdAt: { $gte: startDate, $lte: now },
-              status: { $in: ["confirmed", "completed", "in-progress"] },
+              "payment.status": "paid",
             },
           },
           {
@@ -208,7 +245,7 @@ export async function GET(request: NextRequest) {
           {
             $match: {
               createdAt: { $gte: startDate, $lte: now },
-              status: { $in: ["confirmed", "completed", "in-progress"] },
+              "payment.status": "paid",
             },
           },
           {
@@ -253,7 +290,7 @@ export async function GET(request: NextRequest) {
           {
             $match: {
               createdAt: { $gte: yearStart, $lte: yearEnd },
-              status: { $in: ["confirmed", "completed", "in-progress"] },
+              "payment.status": "paid",
             },
           },
           {
@@ -297,9 +334,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get recent bookings
+    // Get recent bookings (only paid/confirmed)
     const recentBookingsData = await bookingsCollection
-      .find({})
+      .find({
+        "payment.status": "paid",
+        status: { $in: ["confirmed", "completed", "in-progress"] },
+      })
       .sort({ createdAt: -1 })
       .limit(5)
       .toArray();

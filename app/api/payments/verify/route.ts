@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { PaymentInterface } from "@/models/Payment";
 import { BookingInterface } from "@/models/Booking";
 import { UserInterface } from "@/models/User";
 import { getCollection } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function POST(req: NextRequest) {
   const payment = await getCollection<PaymentInterface>("payments");
@@ -139,6 +141,12 @@ export async function POST(req: NextRequest) {
       }
     }
   }
+
+  // Invalidate relevant caches immediately
+  revalidateTag(CACHE_TAGS.PAYMENTS);
+  revalidateTag(CACHE_TAGS.BOOKINGS);
+  revalidateTag(CACHE_TAGS.DASHBOARD);
+  revalidateTag(CACHE_TAGS.ANALYTICS);
 
   return NextResponse.json({
     success: paystackData.status,

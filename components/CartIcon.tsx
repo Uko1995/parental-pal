@@ -1,0 +1,75 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { ShoppingCartIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+
+export default function CartIcon() {
+  const { data: session, status } = useSession();
+  const [itemCount, setItemCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCartCount = useCallback(async () => {
+    if (status !== "authenticated" || !session?.user) {
+      setItemCount(0);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/cart");
+      const data = await response.json();
+
+      if (data.success && data.data?.items) {
+        const count = data.data.items.reduce(
+          (sum: number, item: { quantity: number }) => sum + item.quantity,
+          0
+        );
+        setItemCount(count);
+      }
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user, status]);
+
+  useEffect(() => {
+    fetchCartCount();
+  }, [fetchCartCount]);
+
+  // Listen for cart updates from other components
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdate);
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate);
+    };
+  }, [fetchCartCount]);
+
+  // Don't show cart icon if not logged in
+  if (status !== "authenticated") {
+    return null;
+  }
+
+  return (
+    <Link
+      href="/cart"
+      className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      aria-label={`Shopping cart${
+        itemCount > 0 ? ` with ${itemCount} items` : ""
+      }`}
+    >
+      <ShoppingCartIcon className="w-6 h-6 text-gray-700" />
+      {!loading && itemCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-[#90AC19] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          {itemCount > 99 ? "99+" : itemCount}
+        </span>
+      )}
+    </Link>
+  );
+}

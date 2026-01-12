@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
 import { BookingRepository } from "@/lib/BookingRepository";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET() {
   try {
@@ -165,6 +167,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Invalidate children cache immediately
+    revalidateTag(CACHE_TAGS.CHILDREN);
+    revalidateTag(CACHE_TAGS.USERS);
 
     return NextResponse.json({
       message: "Child added successfully",

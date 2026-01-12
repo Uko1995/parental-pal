@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import OrderRepository from "@/lib/OrderRepository";
 import ProductRepository from "@/lib/ProductRepository";
 import { sendEmail, emailTemplates } from "@/lib/email-service";
+import { CACHE_TAGS } from "@/lib/cache-config";
+import { createPayment, findPaymentByReference } from "@/lib/PaymentRepository";
+import { ObjectId } from "mongodb";
 
 // GET /api/orders/verify-payment - Verify Paystack payment
 export async function GET(request: NextRequest) {
@@ -77,6 +81,23 @@ export async function GET(request: NextRequest) {
     // Update order status
     await OrderRepository.updateOrderStatus(orderId, "paid");
 
+    // Save payment to payments collection
+    const existingPayment = await findPaymentByReference(reference);
+    if (!existingPayment) {
+      await createPayment({
+        bookingId: new ObjectId(orderId),
+        userId: order.userId || new ObjectId(),
+        amount: paystackData.data.amount / 100, // Convert from kobo to naira
+        currency: paystackData.data.currency,
+        status: "success",
+        reference: reference,
+        channel: paystackData.data.channel,
+        gatewayResponse: "Payment successful",
+        paystackResponse: paystackData,
+        idempotencyKey: `${reference}-${orderId}`,
+      });
+    }
+
     // Update product sales metrics
     await ProductRepository.updateSalesMetrics(
       order.productId,
@@ -124,6 +145,12 @@ export async function GET(request: NextRequest) {
       // Mark download email as sent
       await OrderRepository.updateEmailTracking(orderId, "downloadLink");
 
+      // Invalidate relevant caches immediately
+      revalidateTag(CACHE_TAGS.ORDERS);
+      revalidateTag(CACHE_TAGS.PRODUCTS);
+      revalidateTag(CACHE_TAGS.PAYMENTS);
+      revalidateTag(CACHE_TAGS.DASHBOARD);
+
       return NextResponse.json({
         success: true,
         order: {
@@ -134,6 +161,12 @@ export async function GET(request: NextRequest) {
         downloadUrl,
       });
     }
+
+    // Invalidate relevant caches immediately
+    revalidateTag(CACHE_TAGS.ORDERS);
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.PAYMENTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

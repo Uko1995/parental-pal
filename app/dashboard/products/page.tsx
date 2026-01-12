@@ -20,17 +20,13 @@ interface Product {
   category: "storybook" | "educational" | "activity-book" | "coloring-book";
   ageRange: string;
   description: string;
-  thumbnail: {
-    url: string;
+  thumbnail: string; // Cloudinary URL
+  images: string[]; // Array of Cloudinary URLs
+  pdfFile?: {
     cloudinaryId: string;
-  };
-  images: Array<{
-    url: string;
-    cloudinaryId: string;
-  }>;
-  pdfFile: {
-    cloudinaryId: string;
-    url: string;
+    cloudinaryUrl: string;
+    fileName?: string;
+    fileSize?: number;
   };
   pricing: {
     softcopy: {
@@ -52,10 +48,10 @@ interface Product {
   features: string[];
   status: "active" | "draft" | "archived";
   featured: boolean;
-  metrics: {
-    views: number;
-    salesCount: number;
-    revenue: number;
+  metrics?: {
+    viewCount?: number;
+    totalSales?: number;
+    totalRevenue?: number;
     lastSaleDate?: Date;
   };
   createdAt: Date;
@@ -116,11 +112,11 @@ export default function ProductsPage() {
 
   const calculateStats = (productsData: Product[]) => {
     const totalRevenue = productsData.reduce(
-      (sum, product) => sum + product.metrics.revenue,
+      (sum, product) => sum + (product.metrics?.totalRevenue || 0),
       0
     );
     const totalSales = productsData.reduce(
-      (sum, product) => sum + product.metrics.salesCount,
+      (sum, product) => sum + (product.metrics?.totalSales || 0),
       0
     );
     const activeProducts = productsData.filter(
@@ -143,7 +139,7 @@ export default function ProductsPage() {
       };
       categoryMap.set(product.category, {
         count: existing.count + 1,
-        revenue: existing.revenue + product.metrics.revenue,
+        revenue: existing.revenue + (product.metrics?.totalRevenue || 0),
       });
     });
 

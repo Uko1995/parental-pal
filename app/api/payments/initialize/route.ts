@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { PaymentInterface } from "@/models/Payment";
 import { getCollection } from "@/lib/mongodb";
 import { v4 as uuidv4 } from "uuid";
@@ -8,6 +9,7 @@ import { BookingRepository } from "@/lib/BookingRepository";
 import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { ObjectId } from "mongodb";
 import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -158,6 +160,9 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    // Invalidate payments cache immediately
+    revalidateTag(CACHE_TAGS.PAYMENTS);
 
     return NextResponse.json({
       success: true,

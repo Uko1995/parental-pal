@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function PATCH(
   request: NextRequest,
@@ -52,6 +54,11 @@ export async function PATCH(
         { status: 500 }
       );
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.CHILDREN);
+    revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       message: "Child updated successfully",
@@ -107,6 +114,11 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.CHILDREN);
+    revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       message: "Child deleted successfully",

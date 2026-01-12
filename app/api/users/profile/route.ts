@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
 import {
@@ -12,6 +13,7 @@ import {
   logDataEvent,
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET(request: NextRequest) {
   try {
@@ -153,6 +155,9 @@ export async function PATCH(request: NextRequest) {
       true,
       { updatedFields: Object.keys(updateData) }
     );
+
+    // Invalidate users cache immediately
+    revalidateTag(CACHE_TAGS.USERS);
 
     return NextResponse.json({
       message: "Profile updated successfully",

@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import CartIcon from "./CartIcon";
+import WishlistIcon from "./WishlistIcon";
 
 export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,7 +70,7 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="shrink-0 w-[200px] h-[50px]">
+          <div className="shrink-0 w-50 h-12.5">
             <Link
               href="/"
               className="flex items-center transition-all duration-300"
@@ -78,7 +80,7 @@ export default function NavBar() {
                 alt="PARENTALPAL logo"
                 width={200}
                 height={50}
-                className="h-[50px] w-[200px] object-contain"
+                className="h-12.5 w-50 object-contain"
                 priority
               />
             </Link>
@@ -156,6 +158,12 @@ export default function NavBar() {
                       ? "Tutor"
                       : "Parent"}
                   </span>
+                </div>
+
+                {/* Cart & Wishlist Icons */}
+                <div className="flex items-center gap-1">
+                  <WishlistIcon />
+                  <CartIcon />
                 </div>
 
                 {/* Sign Out Button */}
@@ -304,6 +312,30 @@ export default function NavBar() {
                     }`}
                   >
                     Profile
+                  </Link>
+
+                  {/* Cart & Wishlist Links - Mobile */}
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      isTransparent
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
+                    }`}
+                  >
+                    ♥ Wishlist
+                  </Link>
+                  <Link
+                    href="/cart"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                      isTransparent
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                    }`}
+                  >
+                    🛒 Cart
                   </Link>
 
                   {/* Sign Out Button */}

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import ProductRepository from "@/lib/ProductRepository";
 import { ProductInterface } from "@/models/Product";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 // GET /api/products - Get all products (with optional filters)
 export async function GET(request: NextRequest) {
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
       ageRange: body.ageRange,
       thumbnail: body.thumbnail,
       images: body.images || [],
-      pricing: {
+      pricing: body.pricing || {
         softcopy: {
           price: body.softcopyPrice || 3000,
           currency: "NGN",
@@ -110,15 +112,15 @@ export async function POST(request: NextRequest) {
         },
       },
       pdfFile: body.pdfFile,
-      pageCount: body.pageCount,
+      pageCount: body.pageCount || body.pages || 0,
       isbn: body.isbn,
       publishedDate: body.publishedDate
         ? new Date(body.publishedDate)
         : undefined,
       language: body.language || "English",
-      stock: {
-        softcopy: 999999, // Unlimited for digital
-        paperback: body.paperbackStock || 0,
+      stock: body.stock || {
+        paperback: body.paperbackStock || 50,
+        lowStockThreshold: body.lowStockThreshold || 10,
       },
       features: body.features || [],
       tags: body.tags || [],
@@ -130,6 +132,10 @@ export async function POST(request: NextRequest) {
     };
 
     const newProduct = await ProductRepository.createProduct(productData);
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json(
       {

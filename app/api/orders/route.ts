@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import OrderRepository from "@/lib/OrderRepository";
 import ProductRepository from "@/lib/ProductRepository";
 import { OrderInterface } from "@/models/Order";
 import { v4 as uuidv4 } from "uuid";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 // GET /api/orders - Get all orders
 export async function GET(request: NextRequest) {
@@ -33,12 +35,30 @@ export async function GET(request: NextRequest) {
 
     const orders = await OrderRepository.getAllOrders(filters);
 
-    // Convert ObjectIds to strings
+    // Transform orders to match dashboard expectations
     const serializedOrders = orders.map((order) => ({
       ...order,
       _id: order._id?.toString(),
       userId: order.userId?.toString(),
       productId: order.productId.toString(),
+      // Map orderType to type for dashboard compatibility
+      type: order.orderType,
+      // Create customerInfo object from flat fields
+      customerInfo: {
+        name: order.customerName,
+        email: order.customerEmail,
+        phone: order.customerPhone,
+      },
+      // Map payment.status "success" to "paid" for dashboard
+      payment: {
+        ...order.payment,
+        status:
+          order.payment.status === "success" ? "paid" : order.payment.status,
+        paidAt: order.payment.paidAt?.toISOString(),
+        amount: order.payment.amount,
+        reference: order.payment.reference,
+        provider: order.payment.method || "paystack",
+      },
       delivery: order.delivery
         ? {
             ...order.delivery,
@@ -48,17 +68,21 @@ export async function GET(request: NextRequest) {
               order.delivery.actualDeliveryDate?.toISOString(),
           }
         : undefined,
-      payment: {
-        ...order.payment,
-        paidAt: order.payment.paidAt?.toISOString(),
-      },
       download: order.download
         ? {
             ...order.download,
+            expiresAt: order.download.tokenExpiry,
+            token: order.download.downloadToken,
+            downloadCount: order.download.downloadCount,
+            maxDownloads: order.download.maxDownloads,
             tokenExpiry: order.download.tokenExpiry.toISOString(),
             lastDownloadAt: order.download.lastDownloadAt?.toISOString(),
           }
         : undefined,
+      emailsSent: {
+        orderConfirmation: order.emailsSent?.confirmation || false,
+        downloadLink: order.emailsSent?.downloadLink || false,
+      },
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
       paidAt: order.paidAt?.toISOString(),
@@ -69,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: serializedOrders,
+      orders: serializedOrders,
     });
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -211,6 +235,12 @@ export async function POST(request: NextRequest) {
     }
 
     const newOrder = await OrderRepository.createOrder(orderData);
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.ORDERS);
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidateTag(CACHE_TAGS.ANALYTICS);
 
     return NextResponse.json(
       {

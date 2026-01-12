@@ -56,6 +56,9 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     pricing?: {
       totalAmount?: number;
     };
+    payment?: {
+      status?: string;
+    };
     serviceType?: string;
     parentName?: string;
     createdAt?: Date;
@@ -64,16 +67,15 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
   }
 
   const typedBookings = allBookings as BookingDoc[];
-  const totalRevenue = typedBookings.reduce(
-    (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
-    0
-  );
+  // Only count PAID bookings for total revenue
+  const totalRevenue = typedBookings
+    .filter((booking) => booking.payment?.status === "paid")
+    .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
-  // Calculate monthly revenue
-  const monthlyRevenue = (monthlyBookings as BookingDoc[]).reduce(
-    (sum, booking) => sum + (booking.pricing?.totalAmount || 0),
-    0
-  );
+  // Calculate monthly revenue - only PAID bookings
+  const monthlyRevenue = (monthlyBookings as BookingDoc[])
+    .filter((booking) => booking.payment?.status === "paid")
+    .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
   // Service breakdown
   const serviceBreakdown: Record<string, number> = {};
@@ -209,7 +211,7 @@ export const getMonthlyRevenueData = unstable_cache(
               $gte: new Date(currentYear, 0, 1),
               $lte: new Date(currentYear, 11, 31, 23, 59, 59),
             },
-            status: { $in: ["confirmed", "completed", "in-progress"] },
+            "payment.status": "paid",
           },
         },
         {
@@ -274,7 +276,7 @@ export const getServicePerformanceData = unstable_cache(
       .aggregate([
         {
           $match: {
-            status: { $in: ["confirmed", "completed", "in-progress"] },
+            "payment.status": "paid",
           },
         },
         {

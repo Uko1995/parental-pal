@@ -9,6 +9,7 @@ import ProfileDetails from "./ProfileDetails";
 import ChildrenSection from "./ChildrenSection";
 import BookingsSection from "./BookingsSection";
 import PaymentsSection from "./PaymentsSection";
+import OrdersSection from "./OrdersSection";
 import Link from "next/link";
 import {
   UserCircleIcon,
@@ -30,6 +31,7 @@ type TabType =
   | "children"
   | "bookings"
   | "payments"
+  | "orders"
   | "availability"
   | "reviews";
 
@@ -203,6 +205,20 @@ export default function ProfilePage() {
                     <span className="sm:hidden">Pay</span>
                   </span>
                 </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "orders"
+                      ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
+                      : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("orders")}
+                >
+                  <ShieldCheckIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">My Orders</span>
+                    <span className="sm:hidden">Orders</span>
+                  </span>
+                </button>
               </>
             )}
 
@@ -269,6 +285,7 @@ export default function ProfilePage() {
               {activeTab === "children" && <ChildrenSection />}
               {activeTab === "bookings" && <BookingsSection />}
               {activeTab === "payments" && <PaymentsSection />}
+              {activeTab === "orders" && <OrdersSection />}
             </>
           )}
 

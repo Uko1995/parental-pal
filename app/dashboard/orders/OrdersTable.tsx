@@ -68,7 +68,7 @@ export default function OrdersTable({
   const itemsPerPage = 10;
 
   // Filter orders
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = orders?.filter((order) => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerInfo.name
@@ -81,10 +81,10 @@ export default function OrdersTable({
   });
 
   // Pagination
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredOrders?.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentOrders = filteredOrders.slice(startIndex, endIndex);
+  const currentOrders = filteredOrders?.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -139,7 +139,7 @@ export default function OrdersTable({
       <div className="card-body">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h2 className="card-title text-2xl">
-            Orders ({filteredOrders.length})
+            Orders ({filteredOrders?.length})
           </h2>
           <button
             className="btn btn-ghost btn-sm"
@@ -232,14 +232,14 @@ export default function OrdersTable({
               </tr>
             </thead>
             <tbody>
-              {currentOrders.length === 0 ? (
+              {currentOrders?.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-8">
                     <p className="text-base-content/70">No orders found</p>
                   </td>
                 </tr>
               ) : (
-                currentOrders.map((order) => (
+                currentOrders?.map((order) => (
                   <tr key={order._id} className="hover:bg-base-200">
                     <td>
                       <div className="font-bold">{order.orderNumber}</div>
@@ -262,6 +262,9 @@ export default function OrdersTable({
                               src={order.productThumbnail}
                               alt={order.productTitle}
                               loading="lazy"
+                              width={48}
+                              height={48}
+                              className="object-cntain"
                             />
                           </div>
                         </div>

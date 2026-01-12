@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
 import { ServiceInterface } from "@/models/Service";
 import { auth } from "@/auth";
@@ -9,6 +10,7 @@ import {
   logAuthEvent,
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET() {
   try {
@@ -100,6 +102,10 @@ export async function POST(request: NextRequest) {
       true,
       { serviceId: result.insertedId }
     );
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.SERVICES);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

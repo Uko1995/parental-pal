@@ -9,6 +9,49 @@ import {
   logSecurityEvent,
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
+import { uploadToCloudinary, CLOUDINARY_FOLDERS } from "@/lib/cloudinary";
+
+// Upload types and their configurations
+type UploadType = "thumbnail" | "pdf" | "service" | "profile";
+
+interface UploadConfig {
+  folder: string;
+  resourceType: "image" | "raw" | "auto";
+  useCloudinary: boolean;
+  allowedMimeTypes: string[];
+  maxSize: number; // in bytes
+}
+
+const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
+  thumbnail: {
+    folder: CLOUDINARY_FOLDERS.PRODUCT_THUMBNAILS,
+    resourceType: "image",
+    useCloudinary: true,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxSize: 5 * 1024 * 1024, // 5MB
+  },
+  pdf: {
+    folder: CLOUDINARY_FOLDERS.PRODUCT_PDFS,
+    resourceType: "raw",
+    useCloudinary: true,
+    allowedMimeTypes: ["application/pdf"],
+    maxSize: 50 * 1024 * 1024, // 50MB
+  },
+  service: {
+    folder: "services",
+    resourceType: "image",
+    useCloudinary: false, // Keep local for backward compatibility
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+    maxSize: 5 * 1024 * 1024, // 5MB
+  },
+  profile: {
+    folder: CLOUDINARY_FOLDERS.TUTOR_PROFILES,
+    resourceType: "image",
+    useCloudinary: true,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxSize: 5 * 1024 * 1024, // 5MB
+  },
+};
 
 // Magic number validation for file types
 const FILE_SIGNATURES: { [key: string]: number[][] } = {
@@ -16,6 +59,7 @@ const FILE_SIGNATURES: { [key: string]: number[][] } = {
   "image/png": [[0x89, 0x50, 0x4e, 0x47]],
   "image/gif": [[0x47, 0x49, 0x46, 0x38]],
   "image/webp": [[0x52, 0x49, 0x46, 0x46]],
+  "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
 };
 
 function validateMagicNumbers(buffer: Buffer, mimeType: string): boolean {
@@ -70,6 +114,7 @@ export async function POST(request: NextRequest) {
 
     const data = await request.formData();
     const file: File | null = data.get("file") as unknown as File;
+    const uploadType = (data.get("type") as UploadType) || "service";
 
     if (!file) {
       return NextResponse.json(
@@ -78,7 +123,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate with security utility
+    // Get upload configuration
+    const config = UPLOAD_CONFIGS[uploadType] || UPLOAD_CONFIGS.service;
+
+    // Validate file size
+    if (file.size > config.maxSize) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `File too large. Maximum size is ${
+            config.maxSize / (1024 * 1024)
+          }MB`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    if (!config.allowedMimeTypes.includes(file.type)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Invalid file type. Allowed types: ${config.allowedMimeTypes.join(
+            ", "
+          )}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate with security utility (for general validation)
     const validation = validateFileUpload(file);
     if (!validation.valid) {
       logSecurityEvent(
@@ -114,30 +188,65 @@ export async function POST(request: NextRequest) {
     const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
     const timestamp = Date.now();
     const fileExtension = safeFilename.split(".").pop()?.toLowerCase();
-    const filename = `service-${timestamp}-${currentUser._id}.${fileExtension}`;
-    const filepath = join(process.cwd(), "public/images/services", filename);
 
-    // Write file to public/images/services directory
-    await writeFile(filepath, buffer);
+    // Upload to Cloudinary or local storage based on config
+    if (config.useCloudinary) {
+      const publicId = `${uploadType}-${timestamp}-${currentUser._id}`;
 
-    logDataEvent(
-      AuditEventType.FILE_UPLOADED,
-      currentUser._id!.toString(),
-      "file",
-      "create",
-      true,
-      {
+      const result = await uploadToCloudinary(buffer, {
+        folder: config.folder,
+        publicId,
+        resourceType: config.resourceType,
+      });
+
+      logDataEvent(
+        AuditEventType.FILE_UPLOADED,
+        currentUser._id!.toString(),
+        "file",
+        "create",
+        true,
+        {
+          publicId: result.publicId,
+          size: file.size,
+          type: file.type,
+          folder: config.folder,
+          storage: "cloudinary",
+        }
+      );
+
+      return NextResponse.json({
+        success: true,
+        url: result.secureUrl,
+        public_id: result.publicId,
+        secure_url: result.secureUrl,
+      });
+    } else {
+      // Local storage (backward compatibility for service images)
+      const filename = `service-${timestamp}-${currentUser._id}.${fileExtension}`;
+      const filepath = join(process.cwd(), "public/images/services", filename);
+
+      await writeFile(filepath, buffer);
+
+      logDataEvent(
+        AuditEventType.FILE_UPLOADED,
+        currentUser._id!.toString(),
+        "file",
+        "create",
+        true,
+        {
+          filename,
+          size: file.size,
+          type: file.type,
+          storage: "local",
+        }
+      );
+
+      return NextResponse.json({
+        success: true,
         filename,
-        size: file.size,
-        type: file.type,
-      }
-    );
-
-    return NextResponse.json({
-      success: true,
-      filename,
-      url: `/images/services/${filename}`,
-    });
+        url: `/images/services/${filename}`,
+      });
+    }
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

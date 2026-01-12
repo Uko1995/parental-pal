@@ -78,16 +78,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Generate Cloudinary signed URL (expires in 1 hour)
+    // Generate Cloudinary signed URL (expires in 2 hours)
     const timestamp = Math.round(new Date().getTime() / 1000);
+
+    // Sanitize product title for filename
+    const sanitizedTitle = product.title
+      .replace(/[^a-zA-Z0-9\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .toLowerCase();
+
     const signedUrl = cloudinary.url(product.pdfFile.cloudinaryId, {
       resource_type: "raw",
-      type: "private",
+      type: "authenticated", // Changed from "private" to match upload type
       sign_url: true,
       secure: true,
       expires_at: timestamp + 3600 * 2, // 2 hours expiry
       flags: "attachment",
-      attachment: `${product.slug}.pdf`,
+      attachment: `${sanitizedTitle}.pdf`,
     });
 
     // Track download
@@ -97,14 +104,13 @@ export async function GET(request: NextRequest) {
       "unknown";
     await OrderRepository.incrementDownloadCount(orderId, clientIp);
 
-    // Return the signed URL
-    return NextResponse.json({
-      success: true,
-      downloadUrl: signedUrl,
-      fileName: product.pdfFile.fileName,
-      remainingDownloads:
-        order.download!.maxDownloads - order.download!.downloadCount - 1,
-    });
+    // Redirect to the signed URL with proper filename
+    const response = NextResponse.redirect(signedUrl);
+    response.headers.set(
+      "Content-Disposition",
+      `attachment; filename="${sanitizedTitle}.pdf"`
+    );
+    return response;
   } catch (error) {
     console.error("Error generating download:", error);
     return NextResponse.json(

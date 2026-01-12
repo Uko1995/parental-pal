@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { PostRepository } from "@/lib/PostRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 // Get individual blog post
 export async function GET(
@@ -125,7 +127,9 @@ export async function PATCH(
     if (!updatedPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
-
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BLOG);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
     return NextResponse.json({
       success: true,
       post: {
@@ -206,6 +210,10 @@ export async function DELETE(
     if (!deleted) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BLOG);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

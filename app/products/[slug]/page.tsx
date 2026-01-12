@@ -1,9 +1,11 @@
 import ProductRepository from "@/lib/ProductRepository";
 import { notFound } from "next/navigation";
 import ProductPurchaseClient from "./ProductPurchaseClient";
+import ProductReviews from "./ProductReviews";
 import Image from "next/image";
 import { Metadata } from "next";
 import Link from "next/link";
+import { ClientProduct } from "@/types/product";
 
 export async function generateMetadata({
   params,
@@ -38,10 +40,32 @@ export default async function ProductDetailPage({
     notFound();
   }
 
-  const serializedProduct = {
-    ...product,
+  const serializedProduct: ClientProduct = {
     _id: product._id?.toString() || "",
+    title: product.title,
+    slug: product.slug,
+    description: product.description || "",
+    shortDescription: product.shortDescription || "",
+    author: product.author,
+    category: product.category,
+    ageRange: product.ageRange || "",
+    thumbnail: product.thumbnail,
+    images: product.images,
+    pricing: product.pricing,
+    pdfFile: product.pdfFile,
+    pageCount: product.pageCount,
+    isbn: product.isbn,
     publishedDate: product.publishedDate?.toISOString(),
+    language: product.language,
+    stock: product.stock,
+    features: product.features,
+    tags: product.tags,
+    metaTitle: product.metaTitle,
+    metaDescription: product.metaDescription,
+    keywords: product.keywords,
+    status: product.status,
+    featured: product.featured,
+    metrics: product.metrics,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
     publishedAt: product.publishedAt?.toISOString(),
@@ -74,7 +98,7 @@ export default async function ProductDetailPage({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Book Cover */}
           <div className="space-y-6">
-            <div className="relative h-[600px] bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="relative h-150 bg-white rounded-xl shadow-lg overflow-hidden">
               <Image
                 src={product.thumbnail}
                 alt={product.title}
@@ -214,6 +238,12 @@ export default async function ProductDetailPage({
               )}
           </div>
         </div>
+
+        {/* Product Reviews */}
+        <ProductReviews
+          productId={serializedProduct._id}
+          productSlug={product.slug}
+        />
       </div>
     </div>
   );

@@ -109,29 +109,29 @@ export default function OrdersPage() {
 
   const calculateStats = (ordersData: Order[]) => {
     const totalRevenue = ordersData
-      .filter((o) => o.payment.status === "paid")
+      ?.filter((o) => o.payment.status === "paid")
       .reduce((sum, order) => sum + order.payment.amount, 0);
 
-    const pendingOrders = ordersData.filter(
+    const pendingOrders = ordersData?.filter(
       (o) => o.status === "pending"
     ).length;
-    const completedOrders = ordersData.filter(
+    const completedOrders = ordersData?.filter(
       (o) =>
         o.status === "delivered" ||
         (o.type === "softcopy" && o.status === "paid")
     ).length;
-    const softcopyOrders = ordersData.filter(
+    const softcopyOrders = ordersData?.filter(
       (o) => o.type === "softcopy"
     ).length;
-    const paperbackOrders = ordersData.filter(
+    const paperbackOrders = ordersData?.filter(
       (o) => o.type === "paperback"
     ).length;
     const averageOrderValue =
-      ordersData.length > 0 ? totalRevenue / ordersData.length : 0;
+      ordersData?.length > 0 ? totalRevenue / ordersData.length : 0;
 
     // Type breakdown
     const typeMap = new Map<string, { count: number; revenue: number }>();
-    ordersData.forEach((order) => {
+    ordersData?.forEach((order) => {
       const existing = typeMap.get(order.type) || { count: 0, revenue: 0 };
       typeMap.set(order.type, {
         count: existing.count + 1,
@@ -148,7 +148,7 @@ export default function OrdersPage() {
 
     // Status breakdown
     const statusMap = new Map<string, number>();
-    ordersData.forEach((order) => {
+    ordersData?.forEach((order) => {
       statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1);
     });
 
@@ -160,7 +160,7 @@ export default function OrdersPage() {
     );
 
     setStats({
-      totalOrders: ordersData.length,
+      totalOrders: ordersData?.length,
       pendingOrders,
       completedOrders,
       totalRevenue,
@@ -262,9 +262,11 @@ export default function OrdersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-base-content/70 text-sm">Total Orders</p>
-                <h3 className="text-3xl font-bold mt-1">{stats.totalOrders}</h3>
+                <h3 className="text-3xl font-bold mt-1">
+                  {stats?.totalOrders || 0}
+                </h3>
                 <p className="text-sm text-base-content/70 mt-1">
-                  {stats.completedOrders} completed
+                  {stats?.completedOrders || 0} completed
                 </p>
               </div>
               <ShoppingBagIcon className="w-12 h-12 text-primary" />
@@ -278,10 +280,12 @@ export default function OrdersPage() {
               <div>
                 <p className="text-base-content/70 text-sm">Total Revenue</p>
                 <h3 className="text-3xl font-bold mt-1">
-                  ₦{stats.totalRevenue.toLocaleString()}
+                  ₦{stats?.totalRevenue?.toLocaleString() || "0"}
                 </h3>
                 <p className="text-sm text-base-content/70 mt-1">
-                  ₦{Math.round(stats.averageOrderValue).toLocaleString()} avg
+                  ₦
+                  {Math.round(stats?.averageOrderValue).toLocaleString() || "0"}{" "}
+                  avg
                 </p>
               </div>
               <CheckCircleIcon className="w-12 h-12 text-success" />
@@ -295,7 +299,7 @@ export default function OrdersPage() {
               <div>
                 <p className="text-base-content/70 text-sm">Pending</p>
                 <h3 className="text-3xl font-bold mt-1">
-                  {stats.pendingOrders}
+                  {stats?.pendingOrders || 0}
                 </h3>
                 <p className="text-sm text-warning mt-1">Awaiting payment</p>
               </div>
@@ -310,7 +314,7 @@ export default function OrdersPage() {
               <div>
                 <p className="text-base-content/70 text-sm">Order Types</p>
                 <h3 className="text-3xl font-bold mt-1">
-                  {stats.softcopyOrders}/{stats.paperbackOrders}
+                  {stats?.softcopyOrders || 0}/{stats?.paperbackOrders || 0}
                 </h3>
                 <p className="text-sm text-base-content/70 mt-1">
                   PDF / Paperback

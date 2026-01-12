@@ -10,9 +10,7 @@ interface Product {
   category: string;
   ageRange: string;
   description: string;
-  thumbnail: {
-    url: string;
-  };
+  thumbnail: string; // Cloudinary URL stored as string
   pricing: {
     softcopy: {
       price: number;
@@ -33,10 +31,10 @@ interface Product {
   features: string[];
   status: string;
   featured: boolean;
-  metrics: {
-    views: number;
-    salesCount: number;
-    revenue: number;
+  metrics?: {
+    viewCount?: number;
+    totalSales?: number;
+    totalRevenue?: number;
   };
   createdAt: Date;
 }
@@ -78,12 +76,20 @@ export default function ViewProductModal({
         <div className="space-y-6">
           {/* Product Image */}
           <div className="flex justify-center">
-            <Image
-              src={product.thumbnail.url}
-              alt={product.title}
-              className="w-64 h-80 object-cover rounded-lg shadow-lg"
-              loading="lazy"
-            />
+            {product.thumbnail ? (
+              <Image
+                src={product.thumbnail}
+                alt={product.title}
+                className="w-64 h-80 object-contain rounded-lg shadow-lg"
+                loading="lazy"
+                width={256}
+                height={320}
+              />
+            ) : (
+              <div className="w-64 h-80 bg-base-200 rounded-lg flex items-center justify-center">
+                <span className="text-base-content/50">No image</span>
+              </div>
+            )}
           </div>
 
           {/* Basic Info */}
@@ -157,7 +163,7 @@ export default function ViewProductModal({
                 <div>
                   <p className="text-sm text-base-content/70">Softcopy (PDF)</p>
                   <p className="font-medium text-lg">
-                    ₦{product.pricing.softcopy.price.toLocaleString()}
+                    ₦{product.pricing.softcopy.price.toLocaleString() || 0}
                   </p>
                   <div
                     className={`badge ${
@@ -227,16 +233,16 @@ export default function ViewProductModal({
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70">Views</p>
-                  <p className="font-medium">{product.metrics.views}</p>
+                  <p className="font-medium">{product.metrics?.viewCount || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70">Total Sales</p>
-                  <p className="font-medium">{product.metrics.salesCount}</p>
+                  <p className="font-medium">{product.metrics?.totalSales || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70">Total Revenue</p>
                   <p className="font-medium">
-                    ₦{product.metrics.revenue.toLocaleString()}
+                    ₦{(product.metrics?.totalRevenue || 0).toLocaleString()}
                   </p>
                 </div>
                 <div>

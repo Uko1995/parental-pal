@@ -112,15 +112,32 @@ export default function PaymentsPage() {
 
       // Calculate analytics
       const totalPayments = transformedPayments.length;
-      const totalRevenue = transformedPayments.reduce(
-        (sum, p) => sum + (p.amountPaid || 0),
-        0
-      );
-      const pendingAmount = transformedPayments
-        .filter(
-          (p) => p.paymentStatus === "pending" || p.paymentStatus === "partial"
-        )
-        .reduce((sum, p) => sum + (p.amount - (p.amountPaid || 0)), 0);
+      // Total revenue = only count bookings with payment.status === 'paid'
+      const totalRevenue =
+        paymentsData.bookings
+          ?.filter(
+            (booking: Record<string, unknown>) =>
+              (booking.payment as { status?: string })?.status === "paid"
+          )
+          .reduce(
+            (sum: number, booking: Record<string, unknown>) =>
+              sum +
+              ((booking.pricing as { totalAmount?: number })?.totalAmount || 0),
+            0
+          ) || 0;
+      // Pending amount = only count bookings with payment.status === 'pending'
+      const pendingAmount =
+        paymentsData.bookings
+          ?.filter(
+            (booking: Record<string, unknown>) =>
+              (booking.payment as { status?: string })?.status === "pending"
+          )
+          .reduce(
+            (sum: number, booking: Record<string, unknown>) =>
+              sum +
+              ((booking.pricing as { totalAmount?: number })?.totalAmount || 0),
+            0
+          ) || 0;
       const completedPayments = transformedPayments.filter(
         (p) => p.paymentStatus === "completed"
       ).length;

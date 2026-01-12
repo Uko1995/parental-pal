@@ -21,17 +21,13 @@ interface Product {
   category: "storybook" | "educational" | "activity-book" | "coloring-book";
   ageRange: string;
   description: string;
-  thumbnail: {
-    url: string;
+  thumbnail: string; // Cloudinary URL
+  images: string[]; // Array of Cloudinary URLs
+  pdfFile?: {
     cloudinaryId: string;
-  };
-  images: Array<{
-    url: string;
-    cloudinaryId: string;
-  }>;
-  pdfFile: {
-    cloudinaryId: string;
-    url: string;
+    cloudinaryUrl: string;
+    fileName?: string;
+    fileSize?: number;
   };
   pricing: {
     softcopy: {
@@ -53,10 +49,10 @@ interface Product {
   features: string[];
   status: "active" | "draft" | "archived";
   featured: boolean;
-  metrics: {
-    views: number;
-    salesCount: number;
-    revenue: number;
+  metrics?: {
+    viewCount?: number;
+    totalSales?: number;
+    totalRevenue?: number;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -279,11 +275,21 @@ export default function ProductsTable({
                       <div className="flex items-center space-x-3">
                         <div className="avatar">
                           <div className="mask mask-squircle w-12 h-12">
-                            <Image
-                              src={product.thumbnail.url}
-                              alt={product.title}
-                              loading="lazy"
-                            />
+                            {product?.thumbnail ? (
+                              <Image
+                                src={product.thumbnail}
+                                alt={product.title}
+                                width={48}
+                                height={48}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-base-300 flex items-center justify-center">
+                                <span className="text-xs text-base-content/50">
+                                  No img
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div>
@@ -339,8 +345,10 @@ export default function ProductsTable({
                         )}
                       </div>
                     </td>
-                    <td>{product.metrics.salesCount}</td>
-                    <td>₦{product.metrics.revenue.toLocaleString()}</td>
+                    <td>{product.metrics?.totalSales || 0}</td>
+                    <td>
+                      ₦{(product.metrics?.totalRevenue || 0).toLocaleString()}
+                    </td>
                     <td>
                       <div className="dropdown dropdown-end">
                         <label tabIndex={0} className="btn btn-ghost btn-sm">

@@ -32,6 +32,27 @@ export const invalidateCache = {
     revalidateTag(CACHE_TAGS.DASHBOARD);
   },
 
+  // When product is created, updated, or deleted
+  productUpdate: () => {
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidateTag(CACHE_TAGS.ANALYTICS);
+  },
+
+  // When tutor is updated
+  tutorUpdate: () => {
+    revalidateTag(CACHE_TAGS.TUTORS);
+    revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+  },
+
+  // When child is updated
+  childUpdate: () => {
+    revalidateTag(CACHE_TAGS.CHILDREN);
+    revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+  },
+
   // Full dashboard refresh
   fullRefresh: () => {
     revalidateTag(CACHE_TAGS.DASHBOARD);
@@ -39,5 +60,9 @@ export const invalidateCache = {
     revalidateTag(CACHE_TAGS.BOOKINGS);
     revalidateTag(CACHE_TAGS.CHILDREN);
     revalidateTag(CACHE_TAGS.USERS);
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.TUTORS);
+    revalidateTag(CACHE_TAGS.SERVICES);
+    revalidateTag(CACHE_TAGS.PAYMENTS);
   },
 };

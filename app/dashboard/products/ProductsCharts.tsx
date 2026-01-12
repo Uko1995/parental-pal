@@ -24,9 +24,9 @@ ChartJS.register(
 
 interface Product {
   category: string;
-  metrics: {
-    revenue: number;
-    salesCount: number;
+  metrics?: {
+    totalRevenue?: number;
+    totalSales?: number;
   };
 }
 

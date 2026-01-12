@@ -69,7 +69,7 @@ export default function MiniProducts() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Featured Children&apos;s Books
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Discover our collection of carefully curated story books,
             educational materials, and activity books to inspire young minds
           </p>
@@ -107,8 +107,10 @@ export default function MiniProducts() {
                   <Image
                     src={product.thumbnail.url}
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    className="w-3/4 h-full object-contain"
                     loading="lazy"
+                    width={100}
+                    height={100}
                   />
                   <div className="absolute top-4 right-4 badge badge-primary badge-lg">
                     Featured

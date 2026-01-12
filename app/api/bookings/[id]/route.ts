@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET(
   request: NextRequest,
@@ -95,6 +97,11 @@ export async function PATCH(
       );
     }
 
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BOOKINGS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidateTag(CACHE_TAGS.ANALYTICS);
+
     return NextResponse.json({
       message: "Booking updated successfully",
       booking: updatedBooking,
@@ -165,6 +172,11 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BOOKINGS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidateTag(CACHE_TAGS.ANALYTICS);
 
     return NextResponse.json({
       message: "Booking cancelled and deleted successfully",

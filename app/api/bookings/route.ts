@@ -1,9 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { auth } from "@/auth";
 import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function GET() {
   try {
@@ -51,12 +53,14 @@ export async function GET() {
     }));
 
     // Calculate analytics manually to ensure correct values
+    // Total revenue = sum of all bookings with PAID payment status
     const totalRevenue = normalizedBookings
-      .filter((booking) => booking.status === "confirmed")
+      .filter((booking) => booking.payment?.status === "paid")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
+    // Pending revenue = sum of all bookings with PENDING payment status
     const pendingRevenue = normalizedBookings
-      .filter((booking) => booking.status === "pending")
+      .filter((booking) => booking.payment?.status === "pending")
       .reduce((sum, booking) => sum + (booking.pricing?.totalAmount || 0), 0);
 
     // Service distribution
@@ -88,7 +92,7 @@ export async function GET() {
         month,
         bookings: monthBookings.length,
         revenue: monthBookings
-          .filter((b) => b.status === "confirmed")
+          .filter((b) => b.payment?.status === "paid")
           .reduce((sum, b) => sum + (b.pricing?.totalAmount || 0), 0),
       });
     }
@@ -185,6 +189,11 @@ export async function POST(request: NextRequest) {
     // Create new booking using the correct method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const booking = await BookingRepository.createBooking(bookingData as any);
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BOOKINGS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidateTag(CACHE_TAGS.ANALYTICS);
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import ProductRepository from "@/lib/ProductRepository";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 // GET /api/products/[id] - Get a single product
 export async function GET(
@@ -72,7 +74,9 @@ export async function PATCH(
     if (body.thumbnail) updateData.thumbnail = body.thumbnail;
     if (body.images) updateData.images = body.images;
     if (body.pdfFile) updateData.pdfFile = body.pdfFile;
-    if (body.pageCount !== undefined) updateData.pageCount = body.pageCount;
+    if (body.pageCount !== undefined || body.pages !== undefined) {
+      updateData.pageCount = body.pageCount ?? body.pages;
+    }
     if (body.isbn) updateData.isbn = body.isbn;
     if (body.publishedDate)
       updateData.publishedDate = new Date(body.publishedDate);
@@ -85,29 +89,64 @@ export async function PATCH(
     if (body.status) updateData.status = body.status;
     if (body.featured !== undefined) updateData.featured = body.featured;
 
-    // Update pricing if provided
-    if (
-      body.softcopyPrice !== undefined ||
-      body.softcopyAvailable !== undefined
-    ) {
-      updateData["pricing.softcopy.price"] = body.softcopyPrice ?? 3000;
-      updateData["pricing.softcopy.available"] = body.softcopyAvailable ?? true;
+    // Update pricing - handle both nested and flat formats
+    if (body.pricing) {
+      // Nested format from frontend
+      if (body.pricing.softcopy) {
+        if (body.pricing.softcopy.price !== undefined)
+          updateData["pricing.softcopy.price"] = body.pricing.softcopy.price;
+        if (body.pricing.softcopy.available !== undefined)
+          updateData["pricing.softcopy.available"] =
+            body.pricing.softcopy.available;
+      }
+      if (body.pricing.paperback) {
+        if (body.pricing.paperback.price !== undefined)
+          updateData["pricing.paperback.price"] = body.pricing.paperback.price;
+        if (body.pricing.paperback.available !== undefined)
+          updateData["pricing.paperback.available"] =
+            body.pricing.paperback.available;
+        if (body.pricing.paperback.deliveryDays !== undefined)
+          updateData["pricing.paperback.deliveryDays"] =
+            body.pricing.paperback.deliveryDays;
+      }
+    } else {
+      // Flat format fallback
+      if (
+        body.softcopyPrice !== undefined ||
+        body.softcopyAvailable !== undefined
+      ) {
+        if (body.softcopyPrice !== undefined)
+          updateData["pricing.softcopy.price"] = body.softcopyPrice;
+        if (body.softcopyAvailable !== undefined)
+          updateData["pricing.softcopy.available"] = body.softcopyAvailable;
+      }
+
+      if (
+        body.paperbackPrice !== undefined ||
+        body.paperbackAvailable !== undefined ||
+        body.paperbackDeliveryDays !== undefined
+      ) {
+        if (body.paperbackPrice !== undefined)
+          updateData["pricing.paperback.price"] = body.paperbackPrice;
+        if (body.paperbackAvailable !== undefined)
+          updateData["pricing.paperback.available"] = body.paperbackAvailable;
+        if (body.paperbackDeliveryDays !== undefined)
+          updateData["pricing.paperback.deliveryDays"] =
+            body.paperbackDeliveryDays;
+      }
     }
 
-    if (
-      body.paperbackPrice !== undefined ||
-      body.paperbackAvailable !== undefined ||
-      body.paperbackDeliveryDays !== undefined
-    ) {
-      updateData["pricing.paperback.price"] = body.paperbackPrice ?? 5000;
-      updateData["pricing.paperback.available"] =
-        body.paperbackAvailable ?? true;
-      updateData["pricing.paperback.deliveryDays"] =
-        body.paperbackDeliveryDays ?? 2;
-    }
-
-    // Update stock if provided
-    if (body.paperbackStock !== undefined) {
+    // Update stock - handle both nested and flat formats
+    if (body.stock) {
+      // Nested format from frontend
+      if (body.stock.paperback !== undefined) {
+        updateData["stock.paperback"] = body.stock.paperback;
+      }
+      if (body.stock.lowStockThreshold !== undefined) {
+        updateData["stock.lowStockThreshold"] = body.stock.lowStockThreshold;
+      }
+    } else if (body.paperbackStock !== undefined) {
+      // Flat format fallback
       updateData["stock.paperback"] = body.paperbackStock;
     }
 
@@ -122,6 +161,10 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,
@@ -166,6 +209,10 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.PRODUCTS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

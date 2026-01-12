@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { PostRepository } from "@/lib/PostRepository";
 import { PostInterface } from "@/models/Post";
+import { CACHE_TAGS } from "@/lib/cache-config";
 
 // Get all blog posts with analytics
 export async function GET() {
@@ -107,6 +109,10 @@ export async function POST(request: NextRequest) {
 
     const postRepository = new PostRepository();
     const result = await postRepository.create(newPost);
+
+    // Invalidate cache immediately
+    revalidateTag(CACHE_TAGS.BLOG);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
 
     return NextResponse.json({
       success: true,

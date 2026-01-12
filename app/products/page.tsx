@@ -1,6 +1,5 @@
 import ProductRepository from "@/lib/ProductRepository";
-import Image from "next/image";
-import Link from "next/link";
+import ProductListing from "./ProductListing";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,146 +13,47 @@ export default async function ProductsPage() {
     status: "active",
   });
 
-  const categories = [
-    { value: "all", label: "All Books" },
-    { value: "storybook", label: "Story Books" },
-    { value: "educational", label: "Educational" },
-    { value: "activity-book", label: "Activity Books" },
-    { value: "coloring-book", label: "Coloring Books" },
-  ];
+  // Serialize products for client component
+  const serializedProducts = products.map((product) => ({
+    _id: product._id?.toString() || "",
+    title: product.title,
+    slug: product.slug,
+    author: product.author,
+    shortDescription: product.shortDescription || "",
+    thumbnail: product.thumbnail || "",
+    category: product.category,
+    ageRange: product.ageRange || "",
+    featured: product.featured,
+    averageRating: product.averageRating || 0,
+    reviewCount: product.reviewCount || 0,
+    pricing: {
+      softcopy: {
+        available: product.pricing.softcopy.available,
+        price: product.pricing.softcopy.price,
+      },
+      paperback: {
+        available: product.pricing.paperback.available,
+        price: product.pricing.paperback.price,
+      },
+    },
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Children&apos;s Story Books
+            Children&apos;s Books
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover amazing stories that inspire, educate, and entertain your
+          <p className="text-lg text-gray-600 max-w-4xl mx-auto">
+            Discover amazing books that inspire, educate, and entertain your
             children. Available in digital PDF and physical paperback formats.
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-3 justify-center mb-12">
-          {categories.map((category) => (
-            <Link
-              key={category.value}
-              href={
-                category.value === "all"
-                  ? "/products"
-                  : `/products?category=${category.value}`
-              }
-              className="px-6 py-2 rounded-full border-2 border-[#90AC19] text-[#90AC19] hover:bg-[#90AC19] hover:text-white transition-colors font-medium"
-            >
-              {category.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Products Grid */}
-        {products.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="mb-4">
-              <svg
-                className="mx-auto h-24 w-24 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No books available yet
-            </h3>
-            <p className="text-gray-600">
-              Check back soon for exciting new children&apos;s books!
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <Link
-                key={product._id?.toString()}
-                href={`/products/${product.slug}`}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group"
-              >
-                {/* Book Cover */}
-                <div className="relative h-72 bg-gray-200">
-                  <Image
-                    src={product.thumbnail}
-                    alt={product.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {product.featured && (
-                    <div className="absolute top-3 right-3 bg-[#E8931A] text-white text-xs font-bold px-3 py-1 rounded-full">
-                      Featured
-                    </div>
-                  )}
-                </div>
-
-                {/* Book Details */}
-                <div className="p-5">
-                  <div className="mb-2">
-                    <span className="inline-block bg-[#90AC19]/10 text-[#90AC19] text-xs font-semibold px-3 py-1 rounded-full">
-                      {product.ageRange}
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-[#90AC19] transition-colors">
-                    {product.title}
-                  </h3>
-
-                  <p className="text-sm text-gray-600 mb-3">
-                    by {product.author}
-                  </p>
-
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                    {product.shortDescription}
-                  </p>
-
-                  {/* Pricing */}
-                  <div className="border-t pt-4 space-y-2">
-                    {product.pricing.softcopy.available && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">PDF:</span>
-                        <span className="text-lg font-bold text-[#90AC19]">
-                          ₦{product.pricing.softcopy.price.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    {product.pricing.paperback.available && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          Paperback:
-                        </span>
-                        <span className="text-lg font-bold text-[#E8931A]">
-                          ₦{product.pricing.paperback.price.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* View Button */}
-                  <div className="mt-4">
-                    <span className="block w-full bg-[#90AC19] group-hover:bg-[#7A9216] text-white text-center font-semibold py-2 px-4 rounded-lg transition-colors">
-                      View Details
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Products Listing with Filters */}
+        <ProductListing products={serializedProducts} />
 
         {/* Info Section */}
         <div className="mt-16 bg-white rounded-xl shadow-md p-8">
