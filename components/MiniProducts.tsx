@@ -104,14 +104,16 @@ export default function MiniProducts() {
                 className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
               >
                 <figure className="relative h-80">
-                  <Image
-                    src={product.thumbnail.url}
-                    alt={product.title}
-                    className="w-3/4 h-full object-contain"
-                    loading="lazy"
-                    width={100}
-                    height={100}
-                  />
+                  {product.thumbnail?.url && (
+                    <Image
+                      src={product.thumbnail.url}
+                      alt={product.title}
+                      className="w-3/4 h-full object-contain"
+                      loading="lazy"
+                      width={100}
+                      height={100}
+                    />
+                  )}
                   <div className="absolute top-4 right-4 badge badge-primary badge-lg">
                     Featured
                   </div>

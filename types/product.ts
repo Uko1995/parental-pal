@@ -24,8 +24,8 @@ export interface ProductPricing {
 }
 
 export interface ProductStock {
-  softcopy: number;
   paperback: number;
+  lowStockThreshold: number;
 }
 
 export interface PDFFile {
@@ -114,7 +114,6 @@ export interface ClientProduct {
   isbn?: string;
   publishedDate?: string;
   language: string;
-  stock: ProductStock;
   features?: string[];
   tags?: string[];
   metaTitle?: string;
