@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     // For guest users, return success (client handles localStorage)
     if (!session?.user?.id) {
-      const body = await request.json();
       return NextResponse.json({
         success: true,
         data: { items: [], total: 0 },

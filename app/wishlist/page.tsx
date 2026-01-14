@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
+import { CartItem } from "../cart/page";
 
 interface WishlistItem {
   productId: string;
@@ -143,13 +144,13 @@ export default function WishlistPage() {
             }
 
             // Add to cart
-            let cart = guestCart
+            const cart = guestCart
               ? JSON.parse(guestCart)
               : { items: [], subtotal: 0, discount: 0, total: 0 };
 
             // Check if item already exists in cart
             const existingItemIndex = cart.items.findIndex(
-              (cartItem: any) =>
+              (cartItem: CartItem) =>
                 cartItem.productId === productId &&
                 cartItem.orderType === orderType
             );
@@ -172,7 +173,8 @@ export default function WishlistPage() {
 
             // Recalculate cart totals
             cart.subtotal = cart.items.reduce(
-              (sum: number, item: any) => sum + item.unitPrice * item.quantity,
+              (sum: number, item: CartItem) =>
+                sum + item.unitPrice * item.quantity,
               0
             );
             cart.total = cart.subtotal - (cart.discount || 0);
