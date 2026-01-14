@@ -162,8 +162,8 @@ export default function NavBar() {
 
                 {/* Cart & Wishlist Icons */}
                 <div className="flex items-center gap-1">
-                  <WishlistIcon />
-                  <CartIcon />
+                  <WishlistIcon isTransparent={isTransparent} />
+                  <CartIcon isTransparent={isTransparent} />
                 </div>
 
                 {/* Sign Out Button */}
@@ -175,9 +175,15 @@ export default function NavBar() {
                 </button>
               </div>
             ) : (
-              <div className="ml-4 flex items-center md:ml-6">
+              <div className="ml-4 flex items-center gap-2 md:ml-6">
+                {/* Cart & Wishlist Icons for Guest Users */}
+                <div className="flex items-center gap-1">
+                  <WishlistIcon isTransparent={isTransparent} />
+                  <CartIcon isTransparent={isTransparent} />
+                </div>
+
                 <Link
-                  href={"/auth/signin"}
+                  href="/auth/signin"
                   className={`bg-[#90AC19] hover:bg-[#7A9216] ${
                     status === "loading" ? "cursor-progress" : "cursor-pointer"
                   }  text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300`}
@@ -254,6 +260,32 @@ export default function NavBar() {
               );
             })}
 
+            {/* Cart & Wishlist Links - Mobile (Always visible) */}
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              <Link
+                href="/wishlist"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                  isTransparent
+                    ? "text-white/90 hover:text-white hover:bg-white/10"
+                    : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
+                }`}
+              >
+                <WishlistIcon isTransparent={isTransparent} /> Wishlist
+              </Link>
+              <Link
+                href="/cart"
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                  isTransparent
+                    ? "text-white/90 hover:text-white hover:bg-white/10"
+                    : "text-gray-900 hover:text-[#90AC19] hover:bg-gray-50"
+                }`}
+              >
+                <CartIcon isTransparent={isTransparent} /> Cart
+              </Link>
+            </div>
+
             {/* Mobile Authentication Section */}
             <div className="border-t border-gray-200 pt-3 mt-3">
               {session?.user ? (
@@ -312,30 +344,6 @@ export default function NavBar() {
                     }`}
                   >
                     Profile
-                  </Link>
-
-                  {/* Cart & Wishlist Links - Mobile */}
-                  <Link
-                    href="/wishlist"
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                      isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
-                    }`}
-                  >
-                    ♥ Wishlist
-                  </Link>
-                  <Link
-                    href="/cart"
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                      isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
-                    }`}
-                  >
-                    🛒 Cart
                   </Link>
 
                   {/* Sign Out Button */}

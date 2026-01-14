@@ -14,7 +14,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-interface CartItem {
+export interface CartItem {
   productId: string;
   productTitle: string;
   productSlug: string;
@@ -46,6 +46,7 @@ export default function CartPage() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -65,7 +66,21 @@ export default function CartPage() {
       const data = await response.json();
 
       if (data.success) {
-        setCart(data.data);
+        // Check if user is guest
+        if (data.isGuest) {
+          setIsGuest(true);
+          // Load cart from localStorage for guest users
+          const guestCart = localStorage.getItem("guest_cart");
+          if (guestCart) {
+            const parsedCart = JSON.parse(guestCart);
+            setCart(parsedCart);
+          } else {
+            setCart(null);
+          }
+        } else {
+          setIsGuest(false);
+          setCart(data.data);
+        }
       } else if (response.status === 401) {
         router.push("/auth/signin?callbackUrl=/cart");
       }
@@ -88,17 +103,43 @@ export default function CartPage() {
   ) => {
     setUpdating(true);
     try {
-      const response = await fetch("/api/cart", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, orderType, quantity: newQuantity }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setCart(data.data);
+      if (isGuest) {
+        // Update guest cart in localStorage
+        const guestCart = localStorage.getItem("guest_cart");
+        if (guestCart) {
+          const parsedCart = JSON.parse(guestCart);
+          const itemIndex = parsedCart.items.findIndex(
+            (item: CartItem) =>
+              item.productId === productId && item.orderType === orderType
+          );
+          if (itemIndex !== -1) {
+            parsedCart.items[itemIndex].quantity = newQuantity;
+            // Recalculate totals
+            const subtotal = parsedCart.items.reduce(
+              (sum: number, item: CartItem) =>
+                sum + item.unitPrice * item.quantity,
+              0
+            );
+            parsedCart.subtotal = subtotal;
+            parsedCart.total = subtotal - (parsedCart.discount || 0);
+            localStorage.setItem("guest_cart", JSON.stringify(parsedCart));
+            setCart(parsedCart);
+            window.dispatchEvent(new Event("cart-updated"));
+          }
+        }
       } else {
-        toast.error(data.error || "Failed to update quantity");
+        const response = await fetch("/api/cart", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, orderType, quantity: newQuantity }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setCart(data.data);
+        } else {
+          toast.error(data.error || "Failed to update quantity");
+        }
       }
     } catch {
       toast.error("Failed to update quantity");
@@ -113,18 +154,42 @@ export default function CartPage() {
   ) => {
     setUpdating(true);
     try {
-      const response = await fetch("/api/cart", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, orderType }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setCart(data.data);
-        toast.success("Item removed from cart");
+      if (isGuest) {
+        // Remove from guest cart in localStorage
+        const guestCart = localStorage.getItem("guest_cart");
+        if (guestCart) {
+          const parsedCart = JSON.parse(guestCart);
+          parsedCart.items = parsedCart.items.filter(
+            (item: CartItem) =>
+              !(item.productId === productId && item.orderType === orderType)
+          );
+          // Recalculate totals
+          const subtotal = parsedCart.items.reduce(
+            (sum: number, item: CartItem) =>
+              sum + item.unitPrice * item.quantity,
+            0
+          );
+          parsedCart.subtotal = subtotal;
+          parsedCart.total = subtotal - (parsedCart.discount || 0);
+          localStorage.setItem("guest_cart", JSON.stringify(parsedCart));
+          setCart(parsedCart.items.length > 0 ? parsedCart : null);
+          window.dispatchEvent(new Event("cart-updated"));
+          toast.success("Item removed from cart");
+        }
       } else {
-        toast.error(data.error || "Failed to remove item");
+        const response = await fetch("/api/cart", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, orderType }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setCart(data.data);
+          toast.success("Item removed from cart");
+        } else {
+          toast.error(data.error || "Failed to remove item");
+        }
       }
     } catch {
       toast.error("Failed to remove item");
@@ -278,16 +343,18 @@ export default function CartPage() {
             {cart.items.map((item, index) => (
               <div
                 key={`${item.productId}-${item.orderType}-${index}`}
-                className="bg-white rounded-xl shadow-md p-6 flex gap-4"
+                className="bg-white rounded-sm shadow-sm p-6 flex gap-4"
               >
                 {/* Product Image */}
                 <div className="relative w-20 h-28 shrink-0">
-                  <Image
-                    src={item.productThumbnail}
-                    alt={item.productTitle}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
+                  {item?.productThumbnail && (
+                    <Image
+                      src={item.productThumbnail}
+                      alt={item.productTitle}
+                      fill
+                      className="object-contain"
+                    />
+                  )}
                 </div>
 
                 {/* Product Details */}
@@ -358,11 +425,11 @@ export default function CartPage() {
                 {/* Price */}
                 <div className="text-right">
                   <p className="text-lg font-bold text-[#90AC19]">
-                    ₦{(item.unitPrice * item.quantity).toLocaleString()}
+                    ₦{(item.unitPrice * item.quantity)?.toLocaleString()}
                   </p>
                   {item.quantity > 1 && (
                     <p className="text-sm text-gray-500">
-                      ₦{item.unitPrice.toLocaleString()} each
+                      ₦{item.unitPrice?.toLocaleString()} each
                     </p>
                   )}
                 </div>
@@ -431,17 +498,17 @@ export default function CartPage() {
               <div className="space-y-3 border-t pt-4">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>₦{cart.subtotal.toLocaleString()}</span>
+                  <span>₦{cart.subtotal?.toLocaleString()}</span>
                 </div>
                 {cart.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-₦{cart.discount.toLocaleString()}</span>
+                    <span>-₦{cart.discount?.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t">
                   <span>Total</span>
-                  <span>₦{cart.total.toLocaleString()}</span>
+                  <span>₦{cart.total?.toLocaleString()}</span>
                 </div>
               </div>
 
