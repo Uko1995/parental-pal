@@ -6,15 +6,24 @@ import ProductRepository from "@/lib/ProductRepository";
 import { ObjectId } from "mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
-// GET /api/cart - Get user's cart
+// GET /api/cart - Get user's cart (supports guest users via localStorage on client)
 export async function GET() {
   try {
     const session = await auth();
+    
+    // For guest users, return empty cart (client handles localStorage)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Please login to view your cart" },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: {
+          items: [],
+          subtotal: 0,
+          discount: 0,
+          total: 0,
+          itemCount: 0,
+        },
+        isGuest: true,
+      });
     }
 
     const cart = await CartRepository.getOrCreateCart(session.user.id);
@@ -54,11 +63,16 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
+    
+    // For guest users, return success (client handles localStorage)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Please login to add items to cart" },
-        { status: 401 }
-      );
+      const body = await request.json();
+      return NextResponse.json({
+        success: true,
+        data: { items: [], total: 0 },
+        isGuest: true,
+        message: "Item added to cart",
+      });
     }
 
     const body = await request.json();

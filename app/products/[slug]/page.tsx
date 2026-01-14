@@ -58,6 +58,7 @@ export default async function ProductDetailPage({
     publishedDate: product.publishedDate?.toISOString(),
     language: product.language,
     features: product.features,
+    stock: product.stock,
     tags: product.tags,
     metaTitle: product.metaTitle,
     metaDescription: product.metaDescription,

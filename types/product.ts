@@ -25,7 +25,7 @@ export interface ProductPricing {
 
 export interface ProductStock {
   paperback: number;
-  lowStockThreshold: number;
+  lowStockThreshold?: number;
 }
 
 export interface PDFFile {
@@ -115,6 +115,7 @@ export interface ClientProduct {
   publishedDate?: string;
   language: string;
   features?: string[];
+  stock: ProductStock;
   tags?: string[];
   metaTitle?: string;
   metaDescription?: string;

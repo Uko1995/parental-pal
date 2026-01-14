@@ -6,15 +6,18 @@ import ProductRepository from "@/lib/ProductRepository";
 import { ObjectId } from "mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
-// GET /api/wishlist - Get user's wishlist
+// GET /api/wishlist - Get user's wishlist (supports guest users via localStorage on client)
 export async function GET() {
   try {
     const session = await auth();
+    
+    // For guest users, return empty wishlist (client handles localStorage)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Please login to view your wishlist" },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: { items: [] },
+        isGuest: true,
+      });
     }
 
     const wishlist = await WishlistRepository.getOrCreateWishlist(
@@ -61,11 +64,15 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
+    
+    // For guest users, return success (client handles localStorage)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Please login to add items to wishlist" },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: { items: [] },
+        isGuest: true,
+        message: "Item added to wishlist",
+      });
     }
 
     const body = await request.json();

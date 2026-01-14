@@ -11,13 +11,26 @@ export default function CartIcon() {
   const [loading, setLoading] = useState(false);
 
   const fetchCartCount = useCallback(async () => {
-    if (status !== "authenticated" || !session?.user) {
-      setItemCount(0);
-      return;
-    }
-
     setLoading(true);
     try {
+      // Check localStorage for guest users
+      if (status !== "authenticated" || !session?.user) {
+        const guestCart = localStorage.getItem("guest_cart");
+        if (guestCart) {
+          const cart = JSON.parse(guestCart);
+          const count = cart.items?.reduce(
+            (sum: number, item: { quantity: number }) => sum + item.quantity,
+            0
+          ) || 0;
+          setItemCount(count);
+        } else {
+          setItemCount(0);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fetch from API for authenticated users
       const response = await fetch("/api/cart");
       const data = await response.json();
 
@@ -50,11 +63,6 @@ export default function CartIcon() {
       window.removeEventListener("cart-updated", handleCartUpdate);
     };
   }, [fetchCartCount]);
-
-  // Don't show cart icon if not logged in
-  if (status !== "authenticated") {
-    return null;
-  }
 
   return (
     <Link

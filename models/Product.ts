@@ -50,6 +50,7 @@ export interface ProductInterface {
 
   // Inventory
   stock: {
+    softcopy: number; // unlimited
     paperback: number; // unlimited too since print-on-demand
     lowStockThreshold?: number; // e.g., 10 copies
   };

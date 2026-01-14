@@ -12,13 +12,22 @@ export default function WishlistIcon() {
   const [loading, setLoading] = useState(false);
 
   const fetchWishlistCount = useCallback(async () => {
-    if (status !== "authenticated" || !session?.user) {
-      setItemCount(0);
-      return;
-    }
-
     setLoading(true);
     try {
+      // Check localStorage for guest users
+      if (status !== "authenticated" || !session?.user) {
+        const guestWishlist = localStorage.getItem("guest_wishlist");
+        if (guestWishlist) {
+          const wishlist = JSON.parse(guestWishlist);
+          setItemCount(wishlist.items?.length || 0);
+        } else {
+          setItemCount(0);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fetch from API for authenticated users
       const response = await fetch("/api/wishlist");
       const data = await response.json();
 
@@ -47,11 +56,6 @@ export default function WishlistIcon() {
       window.removeEventListener("wishlist-updated", handleWishlistUpdate);
     };
   }, [fetchWishlistCount]);
-
-  // Don't show wishlist icon if not logged in
-  if (status !== "authenticated") {
-    return null;
-  }
 
   return (
     <Link

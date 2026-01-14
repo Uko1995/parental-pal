@@ -121,21 +121,21 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 40px 20px; text-align: center; }
+          .header { padding: 40px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 28px; }
           .content { padding: 40px 20px; }
           .welcome-text { font-size: 18px; color: #333; margin-bottom: 20px; }
           .features { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
           .feature-item { margin: 15px 0; padding-left: 20px; position: relative; }
           .feature-item:before { content: "✓"; position: absolute; left: 0; color: #90AC19; font-weight: bold; }
-          .cta-button { display: inline-block; background: linear-gradient(135deg, #90AC19, #E8931A); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; margin: 20px 0; font-weight: bold; }
+          .cta-button { display: inline-block; background: #90AC19; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; margin: 20px 0; font-weight: bold; }
           .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Welcome to ParentalPal!</h1>
+            <h1>Welcome to ParentalPal!</h1>
           </div>
           <div class="content">
             <p class="welcome-text">Hello ${userName},</p>
@@ -184,7 +184,7 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header {  padding: 30px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 24px; }
           .content { padding: 30px 20px; }
           .booking-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -278,7 +278,7 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header {  padding: 30px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 24px; }
           .content { padding: 30px 20px; }
           .payment-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -292,7 +292,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>💳 Payment Received!</h1>
+            <h1>Payment Received!</h1>
           </div>
           <div class="content">
             <p>Hello ${userName},</p>
@@ -380,7 +380,7 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header { ; padding: 30px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 24px; }
           .content { padding: 30px 20px; }
           .order-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -397,7 +397,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>✅ Order Confirmed!</h1>
+            <h1>Order Confirmed!</h1>
           </div>
           <div class="content">
             <p style="font-size: 18px; color: #333;">Hello ${customerName},</p>
@@ -522,10 +522,10 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; text-align: center; }
+          .header { ; padding: 30px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 24px; }
           .content { padding: 30px 20px; }
-          .download-box { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px; border-radius: 12px; text-align: center; margin: 20px 0; }
+          .download-box { background: #90AC19; padding: 30px; border-radius: 12px; text-align: center; margin: 20px 0; }
           .download-button { display: inline-block; background: white; color: #90AC19; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 18px; margin: 10px 0; }
           .info-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
           .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
@@ -534,7 +534,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📚 Your Book is Ready!</h1>
+            <h1>Your Book is Ready!</h1>
           </div>
           <div class="content">
             <p style="font-size: 18px; color: #333;">Hello ${customerName},</p>
@@ -550,7 +550,7 @@ export const emailTemplates = {
             </div>
 
             <div class="info-box">
-              <strong>⚠️ Important Information:</strong>
+              <strong>Important Information:</strong>
               <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>This link will expire on ${productDetails.expiryDate.toLocaleDateString(
                   "en-US",
@@ -612,7 +612,7 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 40px 20px; text-align: center; }
+          .header {  padding: 40px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 28px; }
           .header p { color: white; margin: 10px 0 0 0; font-size: 16px; }
           .content { padding: 40px 20px; }
@@ -640,7 +640,6 @@ export const emailTemplates = {
             <p>Your tutor registration is complete</p>
           </div>
           <div class="content">
-            <div class="success-icon">✅</div>
             <p style="font-size: 18px; color: #333; text-align: center; margin-bottom: 30px;">
               Congratulations, <strong>${userName}</strong>! You're now registered as a tutor on ParentalPal.
             </p>
@@ -768,7 +767,7 @@ export const emailTemplates = {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 700px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #90AC19, #E8931A); padding: 30px 20px; color: white; }
+          .header {  padding: 30px 20px; color: white; }
           .header h1 { margin: 0; font-size: 28px; }
           .header .invoice-number { font-size: 18px; margin-top: 10px; opacity: 0.95; }
           .content { padding: 30px 20px; }
@@ -791,7 +790,7 @@ export const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📋 INVOICE</h1>
+            <h1>INVOICE</h1>
             <div class="invoice-number">Invoice #${
               invoiceDetails.invoiceNumber
             }</div>
@@ -964,13 +963,13 @@ export const emailTemplates = {
               invoiceDetails.paymentInstructions
                 ? `
             <div class="payment-section">
-              <strong style="color: #856404;">💳 Payment Instructions:</strong>
+              <strong style="color: #856404;">Payment Instructions:</strong>
               <p style="margin: 10px 0 0 0; color: #856404;">${invoiceDetails.paymentInstructions}</p>
             </div>
             `
                 : `
             <div class="payment-section">
-              <strong style="color: #856404;">💳 Payment Instructions:</strong>
+              <strong style="color: #856404;">Payment Instructions:</strong>
               <p style="margin: 10px 0 0 0; color: #856404;">
                 Please log in to your ParentalPal account to make payment for this invoice. 
                 Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
@@ -1101,7 +1100,7 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
           .container { max-width: 700px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #22c55e, #16a34a); padding: 30px 20px; color: white; }
+          .header { ; padding: 30px 20px; color: white; }
           .header h1 { margin: 0; font-size: 28px; }
           .header .receipt-number { font-size: 18px; margin-top: 10px; opacity: 0.95; }
           .paid-badge { background-color: #22c55e; color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; font-weight: bold; margin-top: 10px; }
@@ -1125,7 +1124,7 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
       <body>
         <div class="container">
           <div class="header">
-            <h1>✅ PAYMENT RECEIPT</h1>
+            <h1>PAYMENT RECEIPT</h1>
             <div class="receipt-number">Receipt #${
               receiptDetails.receiptNumber
             }</div>
@@ -1325,7 +1324,7 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
             </div>
 
             <div class="payment-section">
-              <strong style="color: #166534;">✅ Payment Confirmed</strong>
+              <strong style="color: #166534;">Payment Confirmed</strong>
               <p style="margin: 10px 0 0 0; color: #166534;">
                 Thank you for your payment! This receipt confirms that we have received your full payment for the services listed above. 
                 You can access this receipt anytime from your ParentalPal account dashboard.

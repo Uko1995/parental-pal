@@ -215,26 +215,40 @@ export default function ProductListing({ products }: ProductListingProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!session) {
-      toast.error("Please login to add items to cart");
-      router.push("/auth/signin?callbackUrl=/products");
-      return;
-    }
-
     setLoadingCart(productId);
     try {
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, orderType, quantity: 1 }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      // Handle guest users with localStorage
+      if (!session) {
+        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || '{"items":[]}');
+        const existingItem = guestCart.items.find(
+          (item: { productId: string; orderType: string }) => 
+            item.productId === productId && item.orderType === orderType
+        );
+        
+        if (existingItem) {
+          existingItem.quantity += 1;
+        } else {
+          guestCart.items.push({ productId, orderType, quantity: 1 });
+        }
+        
+        localStorage.setItem("guest_cart", JSON.stringify(guestCart));
         toast.success("Added to cart!");
         window.dispatchEvent(new Event("cart-updated"));
       } else {
-        toast.error(data.error || "Failed to add to cart");
+        // Handle authenticated users with API
+        const response = await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, orderType, quantity: 1 }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          toast.success("Added to cart!");
+          window.dispatchEvent(new Event("cart-updated"));
+        } else {
+          toast.error(data.error || "Failed to add to cart");
+        }
       }
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -251,41 +265,58 @@ export default function ProductListing({ products }: ProductListingProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!session) {
-      toast.error("Please login to add items to wishlist");
-      router.push("/auth/signin?callbackUrl=/products");
-      return;
-    }
-
     setLoadingWishlist(productId);
     const isInWishlist = wishlistItems.has(productId);
 
     try {
-      if (isInWishlist) {
-        const response = await fetch(`/api/wishlist?productId=${productId}`, {
-          method: "DELETE",
-        });
-        const data = await response.json();
-        if (data.success) {
+      // Handle guest users with localStorage
+      if (!session) {
+        const guestWishlist = JSON.parse(localStorage.getItem("guest_wishlist") || '{"items":[]}');
+        
+        if (isInWishlist) {
+          guestWishlist.items = guestWishlist.items.filter((id: string) => id !== productId);
+          localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => {
             const newSet = new Set(prev);
             newSet.delete(productId);
             return newSet;
           });
           toast.success("Removed from wishlist");
-          window.dispatchEvent(new Event("wishlist-updated"));
-        }
-      } else {
-        const response = await fetch("/api/wishlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId }),
-        });
-        const data = await response.json();
-        if (data.success) {
+        } else {
+          guestWishlist.items.push(productId);
+          localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => new Set(prev).add(productId));
           toast.success("Added to wishlist!");
-          window.dispatchEvent(new Event("wishlist-updated"));
+        }
+        window.dispatchEvent(new Event("wishlist-updated"));
+      } else {
+        // Handle authenticated users with API
+        if (isInWishlist) {
+          const response = await fetch(`/api/wishlist?productId=${productId}`, {
+            method: "DELETE",
+          });
+          const data = await response.json();
+          if (data.success) {
+            setWishlistItems((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(productId);
+              return newSet;
+            });
+            toast.success("Removed from wishlist");
+            window.dispatchEvent(new Event("wishlist-updated"));
+          }
+        } else {
+          const response = await fetch("/api/wishlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            setWishlistItems((prev) => new Set(prev).add(productId));
+            toast.success("Added to wishlist!");
+            window.dispatchEvent(new Event("wishlist-updated"));
+          }
         }
       }
     } catch (error) {
