@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   MagnifyingGlassIcon,
@@ -16,6 +15,7 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
+import { CartItem } from "../cart/page";
 
 interface Product {
   _id: string;
@@ -74,7 +74,6 @@ const sortOptions = [
 
 export default function ProductListing({ products }: ProductListingProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
@@ -219,19 +218,49 @@ export default function ProductListing({ products }: ProductListingProps) {
     try {
       // Handle guest users with localStorage
       if (!session) {
+        // Find the product to get all details
+        const product = products.find((p) => p._id === productId);
+        if (!product) {
+          toast.error("Product not found");
+          return;
+        }
+
+        const unitPrice =
+          orderType === "softcopy"
+            ? product.pricing.softcopy.price
+            : product.pricing.paperback.price;
+
         const guestCart = JSON.parse(
-          localStorage.getItem("guest_cart") || '{"items":[]}'
+          localStorage.getItem("guest_cart") ||
+            '{"items":[], "subtotal": 0, "discount": 0, "total": 0}'
         );
-        const existingItem = guestCart.items.find(
+        const existingItemIndex = guestCart.items.findIndex(
           (item: { productId: string; orderType: string }) =>
             item.productId === productId && item.orderType === orderType
         );
 
-        if (existingItem) {
-          existingItem.quantity += 1;
+        if (existingItemIndex !== -1) {
+          guestCart.items[existingItemIndex].quantity += 1;
         } else {
-          guestCart.items.push({ productId, orderType, quantity: 1 });
+          guestCart.items.push({
+            productId,
+            productTitle: product.title,
+            productSlug: product.slug,
+            productThumbnail: product.thumbnail,
+            author: product.author,
+            orderType,
+            unitPrice,
+            quantity: 1,
+            addedAt: new Date().toISOString(),
+          });
         }
+
+        // Recalculate totals
+        guestCart.subtotal = guestCart.items.reduce(
+          (sum: number, item: CartItem) => sum + item.unitPrice * item.quantity,
+          0
+        );
+        guestCart.total = guestCart.subtotal - (guestCart.discount || 0);
 
         localStorage.setItem("guest_cart", JSON.stringify(guestCart));
         toast.success("Added to cart!");
@@ -279,7 +308,7 @@ export default function ProductListing({ products }: ProductListingProps) {
 
         if (isInWishlist) {
           guestWishlist.items = guestWishlist.items.filter(
-            (id: string) => id !== productId
+            (item: CartItem) => item.productId !== productId
           );
           localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => {
@@ -289,7 +318,27 @@ export default function ProductListing({ products }: ProductListingProps) {
           });
           toast.success("Removed from wishlist");
         } else {
-          guestWishlist.items.push(productId);
+          // Find the product to get all details
+          const product = products.find((p) => p._id === productId);
+          if (!product) {
+            toast.error("Product not found");
+            return;
+          }
+
+          guestWishlist.items.push({
+            productId,
+            productTitle: product.title,
+            productSlug: product.slug,
+            productThumbnail: product.thumbnail,
+            author: product.author,
+            softcopyPrice: product.pricing.softcopy.available
+              ? product.pricing.softcopy.price
+              : undefined,
+            paperbackPrice: product.pricing.paperback.available
+              ? product.pricing.paperback.price
+              : undefined,
+            addedAt: new Date().toISOString(),
+          });
           localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => new Set(prev).add(productId));
           toast.success("Added to wishlist!");
@@ -629,7 +678,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                     {product.pricing.softcopy.available && (
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">PDF:</span>
-                        <span className="text-lg font-bold text-[#90AC19]">
+                        <span className="text-lg font-bold text-black">
                           ₦{product.pricing.softcopy.price.toLocaleString()}
                         </span>
                       </div>
@@ -639,7 +688,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                         <span className="text-sm text-gray-600">
                           Paperback:
                         </span>
-                        <span className="text-lg font-bold text-[#E8931A]">
+                        <span className="text-lg font-bold text-black">
                           ₦{product.pricing.paperback.price.toLocaleString()}
                         </span>
                       </div>
@@ -656,7 +705,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                   <div className="dropdown dropdown-top flex-1">
                     <button
                       tabIndex={0}
-                      className="btn btn-sm btn-primary w-full gap-2"
+                      className="btn btn-sm btn-neutral w-full gap-2"
                       disabled={loadingCart === product._id}
                     >
                       {loadingCart === product._id ? (

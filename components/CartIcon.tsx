@@ -5,7 +5,11 @@ import Link from "next/link";
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 
-export default function CartIcon() {
+interface CartIconProps {
+  isTransparent?: boolean;
+}
+
+export default function CartIcon({ isTransparent = false }: CartIconProps) {
   const { data: session, status } = useSession();
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -68,12 +72,16 @@ export default function CartIcon() {
   return (
     <Link
       href="/cart"
-      className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      className={`relative p-2 rounded-lg transition-colors ${
+        isTransparent ? "hover:bg-white/10" : "hover:bg-gray-100"
+      }`}
       aria-label={`Shopping cart${
         itemCount > 0 ? ` with ${itemCount} items` : ""
       }`}
     >
-      <ShoppingCartIcon className="w-6 h-6 text-gray-700" />
+      <ShoppingCartIcon
+        className={`w-6 h-6 ${isTransparent ? "text-white" : "text-gray-700"}`}
+      />
       {!loading && itemCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-[#90AC19] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
           {itemCount > 99 ? "99+" : itemCount}

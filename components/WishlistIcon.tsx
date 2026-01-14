@@ -6,7 +6,13 @@ import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import { useSession } from "next-auth/react";
 
-export default function WishlistIcon() {
+interface WishlistIconProps {
+  isTransparent?: boolean;
+}
+
+export default function WishlistIcon({
+  isTransparent = false,
+}: WishlistIconProps) {
   const { data: session, status } = useSession();
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -60,13 +66,23 @@ export default function WishlistIcon() {
   return (
     <Link
       href="/wishlist"
-      className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      className={`relative p-2 rounded-lg transition-colors ${
+        isTransparent ? "hover:bg-white/10" : "hover:bg-gray-100"
+      }`}
       aria-label={`Wishlist${itemCount > 0 ? ` with ${itemCount} items` : ""}`}
     >
       {itemCount > 0 ? (
-        <HeartSolidIcon className="w-6 h-6 text-[#A25F97]" />
+        <HeartSolidIcon
+          className={`w-6 h-6 ${
+            isTransparent ? "text-white" : "text-[#A25F97]"
+          }`}
+        />
       ) : (
-        <HeartIcon className="w-6 h-6 text-gray-700" />
+        <HeartIcon
+          className={`w-6 h-6 ${
+            isTransparent ? "text-white" : "text-gray-700"
+          }`}
+        />
       )}
       {!loading && itemCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-[#A25F97] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">

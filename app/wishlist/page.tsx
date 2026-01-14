@@ -33,6 +33,7 @@ export default function WishlistPage() {
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   const fetchWishlist = useCallback(async () => {
     try {
@@ -40,7 +41,21 @@ export default function WishlistPage() {
       const data = await response.json();
 
       if (data.success) {
-        setWishlist(data.data);
+        // Check if user is guest
+        if (data.isGuest) {
+          setIsGuest(true);
+          // Load wishlist from localStorage for guest users
+          const guestWishlist = localStorage.getItem("guest_wishlist");
+          if (guestWishlist) {
+            const parsedWishlist = JSON.parse(guestWishlist);
+            setWishlist(parsedWishlist);
+          } else {
+            setWishlist(null);
+          }
+        } else {
+          setIsGuest(false);
+          setWishlist(data.data);
+        }
       } else if (response.status === 401) {
         router.push("/auth/signin?callbackUrl=/wishlist");
       }
@@ -59,18 +74,36 @@ export default function WishlistPage() {
   const removeFromWishlist = async (productId: string) => {
     setActionLoading(productId);
     try {
-      const response = await fetch("/api/wishlist", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setWishlist(data.data);
-        toast.success("Removed from wishlist");
+      if (isGuest) {
+        // Remove from guest wishlist in localStorage
+        const guestWishlist = localStorage.getItem("guest_wishlist");
+        if (guestWishlist) {
+          const parsedWishlist = JSON.parse(guestWishlist);
+          parsedWishlist.items = parsedWishlist.items.filter(
+            (item: WishlistItem) => item.productId !== productId
+          );
+          localStorage.setItem(
+            "guest_wishlist",
+            JSON.stringify(parsedWishlist)
+          );
+          setWishlist(parsedWishlist.items.length > 0 ? parsedWishlist : null);
+          window.dispatchEvent(new Event("wishlist-updated"));
+          toast.success("Removed from wishlist");
+        }
       } else {
-        toast.error(data.error || "Failed to remove item");
+        const response = await fetch("/api/wishlist", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setWishlist(data.data);
+          toast.success("Removed from wishlist");
+        } else {
+          toast.error(data.error || "Failed to remove item");
+        }
       }
     } catch {
       toast.error("Failed to remove item");
@@ -85,19 +118,99 @@ export default function WishlistPage() {
   ) => {
     setActionLoading(`${productId}-${orderType}`);
     try {
-      const response = await fetch("/api/wishlist/move-to-cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, orderType }),
-      });
+      if (isGuest) {
+        // Move from guest wishlist to guest cart in localStorage
+        const guestWishlist = localStorage.getItem("guest_wishlist");
+        const guestCart = localStorage.getItem("guest_cart");
 
-      const data = await response.json();
-      if (data.success) {
-        setWishlist(data.data.wishlist);
-        toast.success("Added to cart!");
-        router.refresh();
+        if (guestWishlist) {
+          const parsedWishlist = JSON.parse(guestWishlist);
+          const item = parsedWishlist.items.find(
+            (item: WishlistItem) => item.productId === productId
+          );
+
+          if (item) {
+            // Get the price based on order type
+            const unitPrice =
+              orderType === "softcopy"
+                ? item.softcopyPrice
+                : item.paperbackPrice;
+
+            if (!unitPrice) {
+              toast.error("Price not available for this format");
+              setActionLoading(null);
+              return;
+            }
+
+            // Add to cart
+            let cart = guestCart
+              ? JSON.parse(guestCart)
+              : { items: [], subtotal: 0, discount: 0, total: 0 };
+
+            // Check if item already exists in cart
+            const existingItemIndex = cart.items.findIndex(
+              (cartItem: any) =>
+                cartItem.productId === productId &&
+                cartItem.orderType === orderType
+            );
+
+            if (existingItemIndex !== -1) {
+              cart.items[existingItemIndex].quantity += 1;
+            } else {
+              cart.items.push({
+                productId: item.productId,
+                productTitle: item.productTitle,
+                productSlug: item.productSlug,
+                productThumbnail: item.productThumbnail,
+                author: item.author,
+                orderType,
+                unitPrice,
+                quantity: 1,
+                addedAt: new Date().toISOString(),
+              });
+            }
+
+            // Recalculate cart totals
+            cart.subtotal = cart.items.reduce(
+              (sum: number, item: any) => sum + item.unitPrice * item.quantity,
+              0
+            );
+            cart.total = cart.subtotal - (cart.discount || 0);
+
+            localStorage.setItem("guest_cart", JSON.stringify(cart));
+            window.dispatchEvent(new Event("cart-updated"));
+
+            // Remove from wishlist
+            parsedWishlist.items = parsedWishlist.items.filter(
+              (item: WishlistItem) => item.productId !== productId
+            );
+            localStorage.setItem(
+              "guest_wishlist",
+              JSON.stringify(parsedWishlist)
+            );
+            setWishlist(
+              parsedWishlist.items.length > 0 ? parsedWishlist : null
+            );
+            window.dispatchEvent(new Event("wishlist-updated"));
+
+            toast.success("Added to cart!");
+          }
+        }
       } else {
-        toast.error(data.error || "Failed to add to cart");
+        const response = await fetch("/api/wishlist/move-to-cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, orderType }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setWishlist(data.data.wishlist);
+          toast.success("Added to cart!");
+          router.refresh();
+        } else {
+          toast.error(data.error || "Failed to add to cart");
+        }
       }
     } catch {
       toast.error("Failed to add to cart");
