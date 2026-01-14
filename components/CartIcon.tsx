@@ -18,10 +18,11 @@ export default function CartIcon() {
         const guestCart = localStorage.getItem("guest_cart");
         if (guestCart) {
           const cart = JSON.parse(guestCart);
-          const count = cart.items?.reduce(
-            (sum: number, item: { quantity: number }) => sum + item.quantity,
-            0
-          ) || 0;
+          const count =
+            cart.items?.reduce(
+              (sum: number, item: { quantity: number }) => sum + item.quantity,
+              0
+            ) || 0;
           setItemCount(count);
         } else {
           setItemCount(0);

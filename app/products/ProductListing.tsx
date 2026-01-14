@@ -219,18 +219,20 @@ export default function ProductListing({ products }: ProductListingProps) {
     try {
       // Handle guest users with localStorage
       if (!session) {
-        const guestCart = JSON.parse(localStorage.getItem("guest_cart") || '{"items":[]}');
+        const guestCart = JSON.parse(
+          localStorage.getItem("guest_cart") || '{"items":[]}'
+        );
         const existingItem = guestCart.items.find(
-          (item: { productId: string; orderType: string }) => 
+          (item: { productId: string; orderType: string }) =>
             item.productId === productId && item.orderType === orderType
         );
-        
+
         if (existingItem) {
           existingItem.quantity += 1;
         } else {
           guestCart.items.push({ productId, orderType, quantity: 1 });
         }
-        
+
         localStorage.setItem("guest_cart", JSON.stringify(guestCart));
         toast.success("Added to cart!");
         window.dispatchEvent(new Event("cart-updated"));
@@ -271,10 +273,14 @@ export default function ProductListing({ products }: ProductListingProps) {
     try {
       // Handle guest users with localStorage
       if (!session) {
-        const guestWishlist = JSON.parse(localStorage.getItem("guest_wishlist") || '{"items":[]}');
-        
+        const guestWishlist = JSON.parse(
+          localStorage.getItem("guest_wishlist") || '{"items":[]}'
+        );
+
         if (isInWishlist) {
-          guestWishlist.items = guestWishlist.items.filter((id: string) => id !== productId);
+          guestWishlist.items = guestWishlist.items.filter(
+            (id: string) => id !== productId
+          );
           localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => {
             const newSet = new Set(prev);

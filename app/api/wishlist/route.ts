@@ -10,7 +10,7 @@ import { CACHE_TAGS } from "@/lib/cache-config";
 export async function GET() {
   try {
     const session = await auth();
-    
+
     // For guest users, return empty wishlist (client handles localStorage)
     if (!session?.user?.id) {
       return NextResponse.json({
@@ -64,7 +64,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     // For guest users, return success (client handles localStorage)
     if (!session?.user?.id) {
       return NextResponse.json({
