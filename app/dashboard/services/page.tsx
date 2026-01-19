@@ -7,6 +7,9 @@ import {
 import { getServices } from "./action";
 import ServicesWrapper from "./ServicesWrapper";
 
+// Revalidate on every request to ensure fresh data
+export const revalidate = 0;
+
 export default async function ServicesPage() {
   // Fetch services data
   const servicesData = await getServices();
