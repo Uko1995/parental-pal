@@ -8,6 +8,9 @@ export const metadata: Metadata = {
     "Browse our collection of engaging children's story books. Available in PDF and paperback formats.",
 };
 
+// Revalidate on every request to ensure fresh data
+export const revalidate = 0;
+
 export default async function ProductsPage() {
   const products = await ProductRepository.getAllProducts({
     status: "active",
