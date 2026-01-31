@@ -316,7 +316,7 @@ export default function WeekendEnrichmentPage() {
       </section>
 
       {/* Emotional hook */}
-      <section className="border-t border-gray-100 bg-linear-to-b flex sm:flex-col  md:flex-row items-center justify-center from-white to-[#90AC19]/5 py-16 md:py-20">
+      <section className="bg-linear-to-b flex flex-col lg:flex-row items-center gap-5 justify-center from-white to-[#90AC19]/5 py-16 md:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <AnimateOnScroll>
             <div className="mx-auto max-w-3xl text-center">
@@ -358,9 +358,8 @@ export default function WeekendEnrichmentPage() {
           alt="ParentalPal Weekend Enrichment"
           width={1000}
           height={1000}
-          className="object-contain w-3/5 rounded-xl"
-          sizes="(max-width: 600px) 100vw, 50vw"
-          priority
+          className="object-contain w-full lg:w-3/5 rounded-xl"
+          sizes="(max-width: 1024px) 70vw, 30vw"
         />
       </section>
 
