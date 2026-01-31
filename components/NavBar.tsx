@@ -41,7 +41,8 @@ export default function NavBar() {
   const navItems: NavItem[] = [
     { name: "Home", href: "/" },
     { name: "About Us", href: "/about" },
-    { name: "Blog", href: "/blog" },
+    // { name: "Weekend Enrichment", href: "/weekend-enrichment" },
+    // { name: "Blog", href: "/blog" },
     { name: "Services", href: "/services" },
     { name: "Products", href: "/products" },
     { name: "Contact", href: "/contact" },
@@ -95,7 +96,7 @@ export default function NavBar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    className={`px-5 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                       isActive
                         ? isTransparent
                           ? "bg-white/20 text-white"

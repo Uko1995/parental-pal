@@ -11,22 +11,27 @@ interface Product {
   slug: string;
   author: string;
   category: string;
-  ageRange: string;
-  description: string;
-  thumbnail: {
-    url: string;
-  };
-  pricing: {
-    softcopy: {
+  ageRange?: string;
+  description?: string;
+  shortDescription?: string;
+  /** API returns string (Cloudinary URL); some code may use { url: string } */
+  thumbnail: string | { url: string };
+  pricing?: {
+    softcopy?: {
       price: number;
       available: boolean;
     };
-    paperback: {
+    paperback?: {
       price: number;
       available: boolean;
     };
   };
-  featured: boolean;
+  featured?: boolean;
+}
+
+function getThumbnailUrl(thumbnail: Product["thumbnail"]): string | null {
+  if (!thumbnail) return null;
+  return typeof thumbnail === "string" ? thumbnail : thumbnail.url || null;
 }
 
 export default function MiniProducts() {
@@ -36,11 +41,18 @@ export default function MiniProducts() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/api/products?featured=true&limit=4");
-        if (response.ok) {
-          const data = await response.json();
-          setProducts(data.products);
+        let response = await fetch("/api/products?featured=true&limit=4");
+        let data = response.ok ? await response.json() : null;
+        let list = data?.products ?? [];
+
+        // If no featured products, show latest active products so section is never empty
+        if (list.length === 0) {
+          response = await fetch("/api/products?status=active&limit=4");
+          data = response.ok ? await response.json() : null;
+          list = data?.products ?? [];
         }
+
+        setProducts(Array.isArray(list) ? list : []);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -62,7 +74,7 @@ export default function MiniProducts() {
   };
 
   return (
-    <section className="py-16 px-4 bg-linear-to-b from-white to-[#FFEACF]/20">
+    <section className="py-16 px-4 bg-gradient-to-b from-white to-[#FFEACF]/20">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
@@ -97,67 +109,96 @@ export default function MiniProducts() {
               <p className="text-gray-600">No featured products available</p>
             </div>
           ) : (
-            products.map((product) => (
-              <Link
-                key={product._id}
-                href={`/products/${product.slug}`}
-                className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-              >
-                <figure className="relative h-80">
-                  {product.thumbnail?.url && (
-                    <Image
-                      src={product.thumbnail.url}
-                      alt={product.title}
-                      className="w-3/4 h-full object-contain"
-                      loading="lazy"
-                      width={100}
-                      height={100}
-                    />
-                  )}
-                  <div className="absolute top-4 right-4 badge badge-primary badge-lg">
-                    Featured
-                  </div>
-                  <div className="absolute top-4 left-4 badge badge-accent badge-lg">
-                    {product.ageRange} yrs
-                  </div>
-                </figure>
-                <div className="card-body">
-                  <div className="badge badge-ghost badge-sm">
-                    {getCategoryLabel(product.category)}
-                  </div>
-                  <h3 className="card-title text-lg">{product.title}</h3>
-                  <p className="text-sm text-base-content/70">
-                    by {product.author}
-                  </p>
-                  <p className="text-sm line-clamp-2 mt-2">
-                    {product.description}
-                  </p>
-                  <div className="card-actions justify-between items-center mt-4">
-                    <div className="flex flex-col gap-1">
-                      {product.pricing.softcopy.available && (
-                        <div className="text-sm">
-                          <span className="font-medium">PDF:</span>{" "}
-                          <span className="text-[#90AC19] font-bold">
-                            ₦{product.pricing.softcopy.price.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                      {product.pricing.paperback.available && (
-                        <div className="text-sm">
-                          <span className="font-medium">Print:</span>{" "}
-                          <span className="text-[#E8931A] font-bold">
-                            ₦{product.pricing.paperback.price.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
+            products.map((product) => {
+              const thumbUrl = getThumbnailUrl(product.thumbnail);
+              const description =
+                product.description ||
+                product.shortDescription ||
+                "";
+              return (
+                <Link
+                  key={product._id}
+                  href={`/products/${product.slug}`}
+                  className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                >
+                  <figure className="relative h-80 w-full bg-gray-100">
+                    {thumbUrl ? (
+                      <Image
+                        src={thumbUrl}
+                        alt={product.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-contain p-2"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-gray-400">
+                        No image
+                      </div>
+                    )}
+                    {product.featured && (
+                      <div className="absolute top-4 right-4 badge badge-primary badge-lg">
+                        Featured
+                      </div>
+                    )}
+                    {product.ageRange && (
+                      <div className="absolute top-4 left-4 badge badge-accent badge-lg">
+                        {product.ageRange}
+                      </div>
+                    )}
+                  </figure>
+                  <div className="card-body">
+                    <div className="badge badge-ghost badge-sm">
+                      {getCategoryLabel(product.category)}
                     </div>
-                    <button className="btn btn-primary btn-sm">
-                      View Details
-                    </button>
+                    <h3 className="card-title text-lg">{product.title}</h3>
+                    <p className="text-sm text-base-content/70">
+                      by {product.author}
+                    </p>
+                    {description && (
+                      <p className="text-sm line-clamp-2 mt-2">
+                        {description}
+                      </p>
+                    )}
+                    <div className="card-actions justify-between items-center mt-4">
+                      <div className="flex flex-col gap-1">
+                        {product.pricing?.softcopy?.available && (
+                          <div className="text-sm">
+                            <span className="font-medium">PDF:</span>{" "}
+                            <span className="text-[#90AC19] font-bold">
+                              ₦
+                              {Number(
+                                product.pricing.softcopy.price
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {product.pricing?.paperback?.available && (
+                          <div className="text-sm">
+                            <span className="font-medium">Print:</span>{" "}
+                            <span className="text-[#E8931A] font-bold">
+                              ₦
+                              {Number(
+                                product.pricing.paperback.price
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {!product.pricing?.softcopy?.available &&
+                          !product.pricing?.paperback?.available && (
+                            <div className="text-sm text-base-content/60">
+                              View price
+                            </div>
+                          )}
+                      </div>
+                      <span className="btn btn-primary btn-sm">
+                        View Details
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           )}
         </div>
 

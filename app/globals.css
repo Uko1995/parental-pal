@@ -57,6 +57,26 @@ body {
   }
 }
 
+/* Weekend Enrichment banner: single item, enters from right, exits left, then re-enters */
+@keyframes marquee-banner {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-banner {
+  animation: marquee-banner 25s linear infinite;
+}
+
+.animate-marquee-banner:hover {
+  animation-play-state: paused;
+}
+
+
+
 /* Custom DaisyUI theme overrides */
 [data-theme="light"] {
   --p: var(--brand-primary);

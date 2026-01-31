@@ -179,7 +179,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="py-16 px-4 bg-linear-to-br from-[#90AC19]/10 to-[#E8931A]/10">
+      <section className="py-16 px-4 bg-gradient-to-br from-[#90AC19]/10 to-[#E8931A]/10">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
