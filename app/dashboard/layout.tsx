@@ -19,6 +19,7 @@ import {
   UserIcon,
   BookOpenIcon,
   ShoppingBagIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -46,6 +47,7 @@ const navigation: NavigationItem[] = [
   { name: "Services", href: "/dashboard/services", icon: BuildingOfficeIcon },
   { name: "Products", href: "/dashboard/products", icon: BookOpenIcon },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBagIcon },
+  { name: "Weekend Enrichment", href: "/dashboard/weekend-enrichment", icon: SparklesIcon },
   { name: "Blog", href: "/dashboard/blog", icon: DocumentTextIcon },
   { name: "Settings", href: "/dashboard/settings", icon: Cog6ToothIcon },
 ];
@@ -133,7 +135,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = isActivePath(item.href);
               return (
@@ -141,7 +143,7 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   className={`
-                    group flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
+                    group flex items-center justify-between px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
                     ${
                       isActive
                         ? "bg-[#90AC19] text-white shadow-lg"

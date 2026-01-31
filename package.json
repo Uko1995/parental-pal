@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "init-db": "npx tsx lib/init-db.ts",
+    "init-db": "npx tsx lib/initialize-db.ts",
     "convert:webp": "imagemin 'public/**/*.{jpg,png}' --plugin=@vheemstra/imagemin-plugin-webp --out-dir=public"
   },
   "dependencies": {

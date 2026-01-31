@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Parental Pal
+
+A Next.js platform for parents to discover and book childcare services (tutoring, childcare, homeschooling, holiday camps, kiddies enrichment, events), shop products, and manage bookings and orders.
+
+## Tech Stack
+
+- **Framework:** Next.js 15 (App Router) with TypeScript
+- **Auth:** NextAuth v5 (Credentials + Google)
+- **Database:** MongoDB
+- **Styling:** Tailwind CSS, DaisyUI, Framer Motion
+- **Media:** Cloudinary
+- **Payments:** Paystack
+- **Email:** Nodemailer (SMTP or app password)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- MongoDB
+- (Optional) Google OAuth, Cloudinary, Paystack, and SMTP for full features
+
+### Install & Run
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in your values
+npm run init-db              # seed/init MongoDB collections
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` with at least:
 
-## Learn More
+| Variable | Description |
+|----------|-------------|
+| `MONGODB_URI` | MongoDB connection string |
+| `AUTH_SECRET` | NextAuth secret (e.g. `openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | App URL (e.g. `http://localhost:3000`) |
 
-To learn more about Next.js, take a look at the following resources:
+For full functionality add: `GOOGLE_ID`, `GOOGLE_SECRET`, Cloudinary (`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`), `PAYSTACK_SECRET_KEY`, and email (`EMAIL_USER`/`EMAIL_PASSWORD` or `SMTP_*`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (Turbo) |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run init-db` | Initialize/seed database |
+| `npm run convert:webp` | Convert public images to WebP |
 
-## Deploy on Vercel
+## Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Public:** Services listing, product shop, blog, tutor directory, contact
+- **Auth:** Sign in (credentials/Google), email verification, password reset
+- **User:** Profile, children, bookings, orders, wishlist, cart
+- **Admin dashboard:** Services, products, bookings, orders, parents, tutors, children, coupons, analytics, payments, stock alerts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+
+Configured for Vercel (`vercel.json`). Set the same env vars in your project and deploy.
