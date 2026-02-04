@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView, Variants } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import SaveSlotModal from "@/components/SaveSlotModal";
 import {
   PaintBrushIcon,
@@ -40,6 +40,21 @@ const staggerParent: Variants = {
     transition: { staggerChildren: 0.1 },
   },
 };
+
+// Track ViewContent on page load
+function usePageViewTracking() {
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).fbq("track", "ViewContent", {
+        content_name: "Weekend Enrichment Programs",
+        content_category: "Education",
+        content_type: "product_group",
+      });
+    }
+  }, []);
+}
 
 function AnimateOnScroll({
   children,
@@ -257,6 +272,10 @@ const faqs = [
 // bg-linear-to-br from-[#90AC19]/20 via-[#bde022]/10 to-[#E8931A]/20
 export default function WeekendEnrichmentPage() {
   const [saveSlotOpen, setSaveSlotOpen] = useState(false);
+
+  // Track page view
+  usePageViewTracking();
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}

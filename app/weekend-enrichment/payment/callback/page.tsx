@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -10,7 +11,7 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
   const [status, setStatus] = useState<"pending" | "success" | "failed" | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +32,17 @@ function CallbackContent() {
         if (data.success && data.paymentStatus === "paid") {
           setStatus("success");
           toast.success("Payment verified! Your slot is confirmed.");
+
+          // Track Purchase event
+          if (typeof window !== "undefined" && (window as any).fbq) {
+            (window as any).fbq("track", "Purchase", {
+              value: data.amount || 0,
+              currency: "NGN",
+              content_name: data.programName || "Weekend Enrichment Program",
+              content_type: "product",
+              transaction_id: reference,
+            });
+          }
         } else {
           setStatus("failed");
           toast.error("Payment verification failed.");
@@ -46,7 +58,7 @@ function CallbackContent() {
   }, [reference]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFEACF]/30 via-white to-[#FFEACF]/20 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-linear-to-b from-[#FFEACF]/30 via-white to-[#FFEACF]/20 flex items-center justify-center px-4 py-8">
       <div className="max-w-2xl w-full">
         <div className="flex justify-center mb-8">
           <Link href="/" className="transition-transform hover:scale-105">
