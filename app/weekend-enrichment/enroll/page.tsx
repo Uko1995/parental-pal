@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useMemo } from "react";
@@ -11,7 +12,9 @@ import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 /** Generate next N Saturdays as YYYY-MM-DD for the date picker */
-function getUpcomingSaturdays(count: number): { value: string; label: string }[] {
+function getUpcomingSaturdays(
+  count: number,
+): { value: string; label: string }[] {
   const out: { value: string; label: string }[] = [];
   const d = new Date();
   while (out.length < count) {
@@ -21,7 +24,12 @@ function getUpcomingSaturdays(count: number): { value: string; label: string }[]
       const day = String(d.getDate()).padStart(2, "0");
       out.push({
         value: `${y}-${m}-${day}`,
-        label: d.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short", year: "numeric" }),
+        label: d.toLocaleDateString("en-NG", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
       });
     }
     d.setDate(d.getDate() + 1);
@@ -43,7 +51,8 @@ export default function WeekendEnrichmentEnrollPage() {
   const saturdays = useMemo(() => getUpcomingSaturdays(52), []);
 
   const program = programId ? getProgramById(programId) : null;
-  const childCount = children.filter((c) => c.name.trim() || c.age.trim()).length || 1;
+  const childCount =
+    children.filter((c) => c.name.trim() || c.age.trim()).length || 1;
   const total = program ? calculateTotal(programId, childCount) : 0;
 
   const addChild = () => {
@@ -57,7 +66,7 @@ export default function WeekendEnrichmentEnrollPage() {
 
   const updateChild = (index: number, field: "name" | "age", value: string) => {
     setChildren((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
     );
   };
 
@@ -108,6 +117,19 @@ export default function WeekendEnrichmentEnrollPage() {
         return;
       }
 
+      // Track InitiateCheckout event
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "InitiateCheckout", {
+          value: total,
+          currency: "NGN",
+          content_name: program.name,
+          content_category: "Weekend Enrichment",
+          content_ids: [programId],
+          content_type: "product",
+          num_items: validChildren.length,
+        });
+      }
+
       const payRes = await fetch("/api/weekend-enrichment/initialize-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,7 +155,7 @@ export default function WeekendEnrichmentEnrollPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#90AC19]/5 to-white py-12 px-4">
+    <div className="min-h-screen bg-linear-to-b from-[#90AC19]/5 to-white py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <Link
@@ -150,10 +172,15 @@ export default function WeekendEnrichmentEnrollPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8"
+        >
           {/* Parent details */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Parent / Guardian</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Parent / Guardian
+            </h2>
             <div className="grid gap-4 sm:grid-cols-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -203,7 +230,9 @@ export default function WeekendEnrichmentEnrollPage() {
           {/* Children */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Child/Children</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Child/Children
+              </h2>
               <button
                 type="button"
                 onClick={addChild}
@@ -227,8 +256,12 @@ export default function WeekendEnrichmentEnrollPage() {
                       <input
                         type="text"
                         value={child.name}
-                        onChange={(e) => updateChild(index, "name", e.target.value)}
-                        onBlur={(e) => updateChild(index, "name", e.target.value.trim())}
+                        onChange={(e) =>
+                          updateChild(index, "name", e.target.value)
+                        }
+                        onBlur={(e) =>
+                          updateChild(index, "name", e.target.value.trim())
+                        }
                         className="input input-bordered w-full input-sm"
                         placeholder="Name"
                       />
@@ -240,8 +273,12 @@ export default function WeekendEnrichmentEnrollPage() {
                       <input
                         type="text"
                         value={child.age}
-                        onChange={(e) => updateChild(index, "age", e.target.value)}
-                        onBlur={(e) => updateChild(index, "age", e.target.value.trim())}
+                        onChange={(e) =>
+                          updateChild(index, "age", e.target.value)
+                        }
+                        onBlur={(e) =>
+                          updateChild(index, "age", e.target.value.trim())
+                        }
                         className="input input-bordered w-full input-sm"
                         placeholder="e.g. 5"
                       />
@@ -263,7 +300,9 @@ export default function WeekendEnrichmentEnrollPage() {
 
           {/* Program & date */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Program & Date</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Program & Date
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -278,7 +317,8 @@ export default function WeekendEnrichmentEnrollPage() {
                   <option value="">Select a program</option>
                   {WEEKEND_ENRICHMENT_PROGRAMS.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} — {p.time} — ₦{p.pricePerChildPerMonth.toLocaleString()}/month
+                      {p.name} — {p.time} — ₦
+                      {p.pricePerChildPerMonth.toLocaleString()}/month
                     </option>
                   ))}
                 </select>
@@ -314,7 +354,10 @@ export default function WeekendEnrichmentEnrollPage() {
                 × {childCount} child{childCount !== 1 ? "ren" : ""}
               </p>
               <p className="text-2xl font-bold text-[#90AC19] mt-1">
-                ₦{total.toLocaleString()} <span className="text-base font-normal text-gray-600">/ month</span>
+                ₦{total.toLocaleString()}{" "}
+                <span className="text-base font-normal text-gray-600">
+                  / month
+                </span>
               </p>
             </div>
           )}
@@ -325,7 +368,9 @@ export default function WeekendEnrichmentEnrollPage() {
               disabled={submitting || !program || total <= 0}
               className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none flex-1"
             >
-              {submitting ? "Redirecting to payment…" : "Proceed to Paystack Checkout"}
+              {submitting
+                ? "Redirecting to payment…"
+                : "Proceed to Paystack Checkout"}
             </button>
             <Link
               href="/weekend-enrichment"

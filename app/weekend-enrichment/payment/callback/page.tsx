@@ -10,7 +10,7 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
   const [status, setStatus] = useState<"pending" | "success" | "failed" | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +31,17 @@ function CallbackContent() {
         if (data.success && data.paymentStatus === "paid") {
           setStatus("success");
           toast.success("Payment verified! Your slot is confirmed.");
+
+          // Track Purchase event
+          if (typeof window !== "undefined" && (window as any).fbq) {
+            (window as any).fbq("track", "Purchase", {
+              value: data.amount || 0,
+              currency: "NGN",
+              content_name: data.programName || "Weekend Enrichment Program",
+              content_type: "product",
+              transaction_id: reference,
+            });
+          }
         } else {
           setStatus("failed");
           toast.error("Payment verification failed.");
