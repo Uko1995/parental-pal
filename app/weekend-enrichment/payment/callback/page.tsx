@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -57,7 +58,7 @@ function CallbackContent() {
   }, [reference]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFEACF]/30 via-white to-[#FFEACF]/20 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-linear-to-b from-[#FFEACF]/30 via-white to-[#FFEACF]/20 flex items-center justify-center px-4 py-8">
       <div className="max-w-2xl w-full">
         <div className="flex justify-center mb-8">
           <Link href="/" className="transition-transform hover:scale-105">
