@@ -18,7 +18,12 @@ export default function SaveSlotModal({ open, onClose }: SaveSlotModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!parentName.trim() || !parentEmail.trim() || !childName.trim() || !childAge.trim()) {
+    if (
+      !parentName.trim() ||
+      !parentEmail.trim() ||
+      !childName.trim() ||
+      !childAge.trim()
+    ) {
       toast.error("Please fill all fields.");
       return;
     }
@@ -65,10 +70,13 @@ export default function SaveSlotModal({ open, onClose }: SaveSlotModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="save-slot-title"
-        className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-6"
+        className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="save-slot-title" className="text-xl font-bold text-gray-900">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2
+            id="save-slot-title"
+            className="text-lg sm:text-xl font-bold text-gray-900"
+          >
             Save a slot
           </h2>
           <button
@@ -140,18 +148,18 @@ export default function SaveSlotModal({ open, onClose }: SaveSlotModalProps) {
               placeholder="e.g. 5"
             />
           </div>
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               type="submit"
               disabled={submitting}
-              className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none flex-1"
+              className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none flex-1 w-full sm:w-auto"
             >
               {submitting ? "Saving…" : "Save slot"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-outline border-gray-300 flex-1"
+              className="btn btn-outline border-gray-300 flex-1 w-full sm:w-auto"
             >
               Cancel
             </button>

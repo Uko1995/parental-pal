@@ -181,7 +181,7 @@ export default function WeekendEnrichmentEnrollPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Parent / Guardian
             </h2>
-            <div className="grid gap-4 sm:grid-cols-1">
+            <div className="grid gap-4 grid-cols-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full name *
@@ -246,9 +246,9 @@ export default function WeekendEnrichmentEnrollPage() {
               {children.map((child, index) => (
                 <div
                   key={index}
-                  className="flex gap-3 items-start p-4 rounded-xl bg-gray-50 border border-gray-100"
+                  className="flex flex-col sm:flex-row gap-3 items-start p-4 rounded-xl bg-gray-50 border border-gray-100"
                 >
-                  <div className="flex-1 grid gap-3 sm:grid-cols-2">
+                  <div className="flex-1 grid gap-3 grid-cols-1 sm:grid-cols-2 w-full">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">
                         Child name
@@ -288,7 +288,7 @@ export default function WeekendEnrichmentEnrollPage() {
                     type="button"
                     onClick={() => removeChild(index)}
                     disabled={children.length <= 1}
-                    className="btn btn-ghost btn-sm text-error mt-6"
+                    className="btn btn-ghost btn-sm text-error sm:mt-6 self-end sm:self-start"
                     aria-label="Remove child"
                   >
                     <TrashIcon className="w-5 h-5" />
@@ -366,15 +366,13 @@ export default function WeekendEnrichmentEnrollPage() {
             <button
               type="submit"
               disabled={submitting || !program || total <= 0}
-              className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none flex-1"
+              className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white border-none flex-1 w-full sm:w-auto text-lg sm:text-base py-4 sm:py-3 min-h-[56px] sm:min-h-0"
             >
-              {submitting
-                ? "Redirecting to payment…"
-                : "Proceed to Paystack Checkout"}
+              {submitting ? "Redirecting to payment…" : "Make Payment"}
             </button>
             <Link
               href="/weekend-enrichment"
-              className="btn btn-outline border-gray-300 flex-1 text-center"
+              className="btn btn-outline border-gray-300 flex-1 text-center w-full sm:w-auto"
             >
               Cancel
             </Link>
