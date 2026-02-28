@@ -19,7 +19,6 @@ import {
   UserIcon,
   BookOpenIcon,
   ShoppingBagIcon,
-  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
