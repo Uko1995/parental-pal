@@ -67,41 +67,6 @@ export default async function Services() {
           </p>
         </div>
 
-        {/* Weekend Enrichment Section - Anchor for CTAs */}
-        <div
-          id="weekend-enrichment"
-          className="scroll-mt-24 mb-16 rounded-3xl border-2 border-[#90AC19]/30 bg-gradient-to-br from-[#90AC19]/10 to-[#E8931A]/10 p-8 md:p-10 shadow-lg"
-        >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Weekend Enrichment
-              </h2>
-              <p className="mt-2 text-gray-700">
-                Fine Art · STEM · Performing Arts for ages 2–15. Saturdays from 7th February at ParentalPal Hub, Gbagada.
-              </p>
-              <p className="mt-1 text-sm text-gray-600">
-                Give your child a creative, smart & confidence-boosting Saturday every week.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 shrink-0">
-              <Link
-                href="/weekend-enrichment"
-                className="inline-flex items-center justify-center gap-2 bg-[#90AC19] hover:bg-[#7A9216] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
-              >
-                <BookmarkIcon className="w-5 h-5" />
-                Full Details & Register
-              </Link>
-              <Link
-                href="/booking"
-                className="inline-flex items-center justify-center gap-2 border-2 border-[#90AC19] text-[#90AC19] hover:bg-[#90AC19] hover:text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300"
-              >
-                Book a Slot
-              </Link>
-            </div>
-          </div>
-        </div>
-
         {/* Services Grid - Modern Card Design */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {services.map((service) => (

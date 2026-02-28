@@ -5,7 +5,6 @@
 
 import { initializeLoginAttemptsIndexes } from "./account-lockout-mongodb";
 import { initializeAuditLogsIndexes } from "./audit-logger-mongodb";
-import { WeekendEnrichmentRepository } from "./WeekendEnrichmentRepository";
 
 export async function initializeDatabase(): Promise<void> {
   console.log("Initializing database...");
@@ -18,12 +17,6 @@ export async function initializeDatabase(): Promise<void> {
     // Initialize audit logs collection indexes
     await initializeAuditLogsIndexes();
     console.log("✓ Audit logs indexes created");
-
-    // Weekend Enrichment collections (enrollments + save slots)
-    await WeekendEnrichmentRepository.initializeEnrollments();
-    console.log("✓ Weekend enrollments collection created");
-    await WeekendEnrichmentRepository.initializeSaveSlots();
-    console.log("✓ Weekend save slots collection created");
 
     console.log("Database initialization complete");
   } catch (error) {

@@ -1,7 +1,6 @@
 "use client";
 
 import Hero from "../components/Hero";
-import WeekendEnrichmentBanner from "../components/WeekendEnrichmentBanner";
 import { useEffect, Suspense, lazy } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -56,24 +55,17 @@ export default function Page() {
         }}
       />
       <div className="relative">
-        <WeekendEnrichmentBanner />
         <Hero />
       </div>
       <Suspense fallback={<div className="h-96" />}>
         <Vision />
       </Suspense>
-      <div className="w-full">
-        <WeekendEnrichmentBanner inline />
-      </div>
       <Suspense fallback={<div className="h-96" />}>
         <MiniServices />
       </Suspense>
       <Suspense fallback={<div className="h-96" />}>
         <MiniProducts />
       </Suspense>
-      <div className="w-full">
-        <WeekendEnrichmentBanner inline />
-      </div>
       <Suspense fallback={<div className="h-96" />}>
         <MiniBlog />
       </Suspense>
@@ -83,9 +75,6 @@ export default function Page() {
       <Suspense fallback={<div className="h-96" />}>
         <Testimonials />
       </Suspense>
-      <div className="w-full">
-        <WeekendEnrichmentBanner inline />
-      </div>
       <Suspense fallback={<div className="h-64" />}>
         <Contact />
       </Suspense>

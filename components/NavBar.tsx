@@ -41,7 +41,6 @@ export default function NavBar() {
   const navItems: NavItem[] = [
     { name: "Home", href: "/" },
     { name: "About Us", href: "/about" },
-    // { name: "Weekend Enrichment", href: "/weekend-enrichment" },
     // { name: "Blog", href: "/blog" },
     { name: "Services", href: "/services" },
     { name: "Products", href: "/products" },

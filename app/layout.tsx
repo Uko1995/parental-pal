@@ -7,7 +7,6 @@ import Script from "next/script";
 import ConditionalLayout from "../components/ConditionalLayout";
 import AnalyticsProvider from "../components/AnalyticsProvider";
 import { baseMetadata } from "../lib/metadata";
-import Image from "next/image";
 
 const manRope = Manrope({
   subsets: ["latin"],
@@ -54,7 +53,7 @@ export default function RootLayout({
           }}
         />
         <noscript>
-          <Image
+          <img
             height="1"
             width="1"
             style={{ display: "none" }}
