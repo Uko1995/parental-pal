@@ -47,7 +47,6 @@ const navigation: NavigationItem[] = [
   { name: "Services", href: "/dashboard/services", icon: BuildingOfficeIcon },
   { name: "Products", href: "/dashboard/products", icon: BookOpenIcon },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBagIcon },
-  { name: "Weekend Enrichment", href: "/dashboard/weekend-enrichment", icon: SparklesIcon },
   { name: "Blog", href: "/dashboard/blog", icon: DocumentTextIcon },
   { name: "Settings", href: "/dashboard/settings", icon: Cog6ToothIcon },
 ];
