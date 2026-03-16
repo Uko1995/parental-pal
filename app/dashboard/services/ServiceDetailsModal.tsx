@@ -11,6 +11,7 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { formatBillingSuffix } from "@/lib/service-utils";
 
 interface ServiceDetailsModalProps {
   service: ClientServiceInterface | null;
@@ -81,8 +82,8 @@ export default function ServiceDetailsModal({
                       service.status === "active"
                         ? "badge-success"
                         : service.status === "inactive"
-                        ? "badge-error"
-                        : "badge-warning"
+                          ? "badge-error"
+                          : "badge-warning"
                     }`}
                   >
                     {service.status.charAt(0).toUpperCase() +
@@ -146,7 +147,10 @@ export default function ServiceDetailsModal({
               {formatCurrency(Number(service.pricing.baseRate))}
             </div>
             <div className="stat-desc text-green-700">
-              per {service.pricing.billingType}
+              {formatBillingSuffix(service.pricing.billingType).replace(
+                "/",
+                "",
+              )}
             </div>
           </div>
 
@@ -160,7 +164,7 @@ export default function ServiceDetailsModal({
                 <div className="stat-title text-indigo-800">Virtual Rate</div>
                 <div className="stat-value text-indigo-900 text-xl">
                   {formatCurrency(
-                    Number(service.pricing.locationRates.virtual)
+                    Number(service.pricing.locationRates.virtual),
                   )}
                 </div>
                 <div className="stat-desc text-indigo-700">
@@ -175,7 +179,7 @@ export default function ServiceDetailsModal({
                 <div className="stat-title text-teal-800">Physical Rate</div>
                 <div className="stat-value text-teal-900 text-xl">
                   {formatCurrency(
-                    Number(service.pricing.locationRates.physical)
+                    Number(service.pricing.locationRates.physical),
                   )}
                 </div>
                 <div className="stat-desc text-teal-700">
@@ -242,7 +246,10 @@ export default function ServiceDetailsModal({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Billing Type:</span>
                   <span className="badge badge-outline">
-                    {service.pricing.billingType}
+                    {formatBillingSuffix(service.pricing.billingType).replace(
+                      "/",
+                      "",
+                    ) || service.pricing.billingType}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -320,7 +327,7 @@ export default function ServiceDetailsModal({
                               <span key={idx} className="badge badge-primary">
                                 {equipment}
                               </span>
-                            )
+                            ),
                           )}
                         </div>
                       </div>

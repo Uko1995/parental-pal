@@ -11,6 +11,7 @@ export const metadata: Metadata = genMeta({
     "tutoring services",
     "childcare services",
     "holiday camps Nigeria",
+    "Alive in me Camp",
     "homeschooling",
     "enrichment programs",
     "after school programs",

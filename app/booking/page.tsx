@@ -1,8 +1,31 @@
 import { registerChild } from "./action";
 import BookingForm from "./BookingForm";
 import { Suspense } from "react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-export default function Page() {
+interface BookingPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function Page({ searchParams }: BookingPageProps) {
+  const session = await auth();
+  const params = await searchParams;
+
+  // Require authentication before users see the booking form
+  // This prevents users from filling out long forms and only finding out they must log in at checkout.
+  if (!session?.user) {
+    const serviceParam = Array.isArray(params?.service)
+      ? params.service[0]
+      : params?.service;
+
+    const callbackUrl = serviceParam
+      ? `/booking?service=${encodeURIComponent(serviceParam)}`
+      : "/booking";
+
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+
   return (
     <section className="min-h-screen  py-8 px-4">
       <div className="max-w-6xl mx-auto">

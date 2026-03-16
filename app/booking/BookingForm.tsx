@@ -24,6 +24,7 @@ import {
   getPersistedValueWithFallback,
   restoreFormDataToElements,
 } from "@/lib/form-persistence";
+import Link from "next/link";
 
 interface AboutUs {
   label: string;
@@ -66,6 +67,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   >("normal");
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [isRepeatedCustomer, setIsRepeatedCustomer] = useState(false);
+  const [totalAmount, setTotalAmount] = useState(0);
 
   // Load persisted data on client side and scroll to top on initial load
   useEffect(() => {
@@ -76,21 +78,21 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
     setSelectedService(getPersistedValueWithFallback("selectedService", ""));
     setSelectedHearAboutUs(
-      getPersistedValueWithFallback("selectedHearAboutUs", "")
+      getPersistedValueWithFallback("selectedHearAboutUs", ""),
     );
     setOtherHearAboutUsText(
-      getPersistedValueWithFallback("otherHearAboutUsText", "")
+      getPersistedValueWithFallback("otherHearAboutUsText", ""),
     );
     setSocialMediaPlatform(
-      getPersistedValueWithFallback("socialMediaPlatform", "")
+      getPersistedValueWithFallback("socialMediaPlatform", ""),
     );
     setReferralName(getPersistedValueWithFallback("referralName", ""));
     setPriority(getPersistedValueWithFallback("priority", "normal"));
     setFollowUpRequired(
-      getPersistedValueWithFallback("followUpRequired", false)
+      getPersistedValueWithFallback("followUpRequired", false),
     );
     setIsRepeatedCustomer(
-      getPersistedValueWithFallback("isRepeatedCustomer", false)
+      getPersistedValueWithFallback("isRepeatedCustomer", false),
     );
   }, [actionParam]);
 
@@ -328,7 +330,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         // Show success toast to inform user their data was preserved
         toast.success(
           "Your form data has been restored. Please review and submit.",
-          { duration: 5000 }
+          { duration: 5000 },
         );
 
         // First scroll to top, then scroll to submit button after delay
@@ -393,7 +395,12 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     } else if (selectedService === "childcare") {
       return <ChildCareSpecificBookingForm ref={childCareFormRef} />;
     } else if (selectedService === "holiday-camps") {
-      return <HolidayCampForm ref={holidayCampFormRef} />;
+      return (
+        <HolidayCampForm
+          ref={holidayCampFormRef}
+          onTotalChange={setTotalAmount}
+        />
+      );
     } else if (selectedService === "homeschooling") {
       return <HomeschoolingForm ref={homeschoolingFormRef} />;
     } else if (selectedService === "kiddies-enrichment") {
@@ -547,7 +554,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                     value={priority}
                     onChange={(e) => {
                       setPriority(
-                        e.target.value as "low" | "normal" | "high" | "urgent"
+                        e.target.value as "low" | "normal" | "high" | "urgent",
                       );
                       saveCurrentFormData();
                     }}
@@ -725,13 +732,27 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
             <button
               ref={submitButtonRef}
               type="submit"
-              className="w-full bg-[#90AC19] hover:bg-[#7a9315] text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-base sm:text-lg"
+              className="w-full bg-[#90AC19] hover:bg-[#7a9315] tracking-wider text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-base sm:text-lg"
             >
-              Complete Registration & Continue to Payment
+              {totalAmount > 0
+                ? `Pay ${" "} ₦${totalAmount.toLocaleString()}`
+                : "Complete Booking & Continue to Payment"}
             </button>
             <p className="text-xs sm:text-sm text-gray-500 text-center mt-4">
-              By registering, you agree to our Terms of Service and Privacy
-              Policy
+              By registering, you agree to our{" "}
+              <Link
+                href="/terms"
+                className="text-[#90AC19] font-semibold hover:underline"
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="text-[#90AC19] font-semibold hover:underline"
+              >
+                Privacy Policy
+              </Link>
             </p>
           </div>
         </Form>

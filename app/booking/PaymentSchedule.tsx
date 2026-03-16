@@ -10,6 +10,8 @@ interface PaymentScheduleProps {
   selectedServices?: Array<string | { service: string; quantity: number }>;
   holidayCamp?: boolean;
   totalWeeks?: number;
+  discountAmount?: number;
+  discountLabel?: string;
 }
 
 function PaymentSchedule({
@@ -24,19 +26,23 @@ function PaymentSchedule({
   holidayCamp,
   eventMode,
   selectedServices,
+  discountAmount = 0,
+  discountLabel,
 }: PaymentScheduleProps) {
   const totalTime =
     holidayCamp === true
       ? totalWeeks
       : childcare === true
-      ? totalDays
-      : totalHours;
+        ? totalDays
+        : totalHours;
 
   // Use monthly rate if month is selected, otherwise use regular calculation
-  const totalCost =
+  const preDiscountTotalCost =
     isMonthSelected && monthlyChildcareRate
       ? monthlyChildcareRate
       : (totalTime || 0) * serviceCost;
+
+  const totalCost = Math.max(0, preDiscountTotalCost - (discountAmount || 0));
 
   // Event mode pricing
   const getEventModeCost = () => {
@@ -109,17 +115,28 @@ function PaymentSchedule({
             )}
           </span>
           <span>
-            {event
-              ? `Event Package • Cost: ₦${totalEventCost.toLocaleString()}`
-              : holidayCamp
-              ? `${totalDays} week${
-                  totalDays !== 1 ? "s" : ""
-                } • Cost: ₦${totalCost.toLocaleString()}`
-              : isMonthSelected
-              ? "Full Month"
-              : `${totalTime}${childcare ? " day" : " hour"}${
-                  totalTime !== 1 ? "s" : ""
-                }`}
+            {event ? (
+              `Event Package • Cost: ₦${totalEventCost.toLocaleString()}`
+            ) : holidayCamp ? (
+              <>
+                {`${totalDays} week${totalDays !== 1 ? "s" : ""} • Cost: ₦${preDiscountTotalCost.toLocaleString()}`}
+                {discountAmount > 0 && (
+                  <span className="block text-sm text-green-700 mt-1">
+                    {discountLabel || "Discount"}: -₦
+                    {discountAmount.toLocaleString()}
+                  </span>
+                )}
+                <span className="block font-semibold mt-1">
+                  Total: ₦{totalCost.toLocaleString()}
+                </span>
+              </>
+            ) : isMonthSelected ? (
+              "Full Month"
+            ) : (
+              `${totalTime}${childcare ? " day" : " hour"}${
+                totalTime !== 1 ? "s" : ""
+              }`
+            )}
             {!event && !holidayCamp && (
               <>
                 {"   "}
@@ -131,13 +148,7 @@ function PaymentSchedule({
           <input
             type="hidden"
             name="totalCost"
-            value={
-              event
-                ? totalEventCost
-                : holidayCamp
-                ? (totalDays || 0) * serviceCost
-                : totalCost
-            }
+            value={event ? totalEventCost : totalCost}
           />
         </div>
       )}
@@ -157,8 +168,8 @@ function PaymentSchedule({
                   {eventMode === "indoor"
                     ? "Indoor Event"
                     : eventMode === "outdoor"
-                    ? "Outdoor Event"
-                    : "Indoor & Outdoor Event"}
+                      ? "Outdoor Event"
+                      : "Indoor & Outdoor Event"}
                 </span>
                 <span>{formatCurrency(getEventModeCost())}</span>
               </div>
@@ -173,12 +184,12 @@ function PaymentSchedule({
                     service === "dj"
                       ? "DJ"
                       : service === "mc"
-                      ? "MC (Master of Ceremonies)"
-                      : service === "event-planning"
-                      ? "Event Planning"
-                      : service === "extra-carers"
-                      ? "Extra Carers"
-                      : service;
+                        ? "MC (Master of Ceremonies)"
+                        : service === "event-planning"
+                          ? "Event Planning"
+                          : service === "extra-carers"
+                            ? "Extra Carers"
+                            : service;
                   return (
                     <div
                       key={index}
@@ -194,12 +205,12 @@ function PaymentSchedule({
                     service.service === "dj"
                       ? "DJ"
                       : service.service === "mc"
-                      ? "MC (Master of Ceremonies)"
-                      : service.service === "event-planning"
-                      ? "Event Planning"
-                      : service.service === "extra-carers"
-                      ? `Extra Carers (x${service.quantity || 1})`
-                      : service.service;
+                        ? "MC (Master of Ceremonies)"
+                        : service.service === "event-planning"
+                          ? "Event Planning"
+                          : service.service === "extra-carers"
+                            ? `Extra Carers (x${service.quantity || 1})`
+                            : service.service;
                   const serviceRate = servicesPricing[service.service] || 0;
                   const cost = serviceRate * (service.quantity || 1);
                   return (

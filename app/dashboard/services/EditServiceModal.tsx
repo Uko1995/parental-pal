@@ -29,11 +29,13 @@ const serviceTypes = [
 ] as const;
 
 const billingTypes = [
-  { value: "hourly", label: "Per Hour" },
-  { value: "daily", label: "Per Day" },
-  { value: "weekly", label: "Per Week" },
-  { value: "monthly", label: "Per Month" },
-  { value: "per-event", label: "Per Event" },
+  { value: "hour", label: "Per Hour" },
+  { value: "day", label: "Per Day" },
+  { value: "week", label: "Per Week" },
+  { value: "month", label: "Per Month" },
+  { value: "term", label: "Per Term" },
+  { value: "session", label: "Per Session" },
+  { value: "event", label: "Per Event" },
   { value: "custom", label: "Custom" },
 ] as const;
 
@@ -69,7 +71,7 @@ export default function EditServiceModal({
     virtualRate: "11000",
     physicalRate: "12000",
     currency: "NGN",
-    billingType: "hourly" as ServiceInterface["pricing"]["billingType"],
+    billingType: "hour" as ServiceInterface["pricing"]["billingType"],
     status: "active" as ServiceInterface["status"],
     keyFeatures: [] as string[],
     availability: "",
@@ -99,7 +101,7 @@ export default function EditServiceModal({
         physicalRate:
           service.pricing?.locationRates?.physical?.toString() || "12000",
         currency: service.pricing?.currency || "NGN",
-        billingType: service.pricing?.billingType || "hourly",
+        billingType: service.pricing?.billingType || "hour",
         status: service.status || "active",
         keyFeatures: service.keyFeatures || [],
         availability: service.availability || "",
@@ -113,7 +115,7 @@ export default function EditServiceModal({
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -221,12 +223,12 @@ export default function EditServiceModal({
   const updatePackage = (
     index: number,
     field: string,
-    value: string | number
+    value: string | number,
   ) => {
     setFormData((prev) => ({
       ...prev,
       packages: prev.packages.map((pkg, i) =>
-        i === index ? { ...pkg, [field]: value } : pkg
+        i === index ? { ...pkg, [field]: value } : pkg,
       ),
     }));
   };
@@ -783,14 +785,14 @@ export default function EditServiceModal({
                         updatePackage(
                           index,
                           "discountPercentage",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       onBlur={(e) =>
                         updatePackage(
                           index,
                           "discountPercentage",
-                          parseFloat(e.target.value) || 0
+                          parseFloat(e.target.value) || 0,
                         )
                       }
                       min={0}
@@ -811,7 +813,7 @@ export default function EditServiceModal({
                         updatePackage(
                           index,
                           "minimumSessions",
-                          parseInt(e.target.value) || 1
+                          parseInt(e.target.value) || 1,
                         )
                       }
                       min="1"
