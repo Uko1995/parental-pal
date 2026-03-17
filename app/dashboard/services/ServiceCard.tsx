@@ -9,6 +9,7 @@ import {
 import { ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { formatBillingSuffix } from "@/lib/service-utils";
 
 interface ServiceCardProps {
   service: ClientServiceInterface;
@@ -121,8 +122,8 @@ export default function ServiceCard({
               <div>
                 <p className="text-xs text-gray-500">Rate</p>
                 <p className="font-semibold text-sm">
-                  {formatCurrency(Number(service.pricing.baseRate))}/
-                  {service.pricing.billingType}
+                  {formatCurrency(Number(service.pricing.baseRate))}
+                  {formatBillingSuffix(service.pricing.billingType)}
                 </p>
               </div>
             </div>

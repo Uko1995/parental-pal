@@ -35,7 +35,7 @@ export async function registerChild(formData: FormData) {
     user = await UserRepository.createUser({
       userData: {
         expiresAt: new Date(
-          Date.now() + 365 * 24 * 60 * 60 * 1000
+          Date.now() + 365 * 24 * 60 * 60 * 1000,
         ).toISOString(), // 1 year
         user: {
           name: session.user.name || "",
@@ -79,7 +79,7 @@ export async function registerChild(formData: FormData) {
   const bookingData = await parseFormDataToBooking(
     formEntries,
     user._id!,
-    session.user
+    session.user,
   );
 
   // Validate required fields before saving
@@ -88,7 +88,7 @@ export async function registerChild(formData: FormData) {
       "Parent name is missing. Session name: " +
         session.user.name +
         ", Form parentName: " +
-        formEntries.parentName
+        formEntries.parentName,
     );
   }
   if (!bookingData.parentEmail) {
@@ -96,7 +96,7 @@ export async function registerChild(formData: FormData) {
       "Parent email is missing. Session email: " +
         session.user.email +
         ", Form parentEmail: " +
-        formEntries.parentEmail
+        formEntries.parentEmail,
     );
   }
   if (!bookingData.serviceType) {
@@ -104,7 +104,7 @@ export async function registerChild(formData: FormData) {
       "Service type is missing. Form selectedService: " +
         formEntries.selectedService +
         ", Form serviceType: " +
-        formEntries.serviceType
+        formEntries.serviceType,
     );
   }
 
@@ -218,7 +218,7 @@ type FormDataEntries = Record<string, string>;
 // Helper function to sync children from booking to user profile
 async function syncChildrenFromBooking(
   userId: ObjectId,
-  bookingData: BookingInterface
+  bookingData: BookingInterface,
 ): Promise<void> {
   // Get the user to check existing children
   const user = await UserRepository.findById(userId);
@@ -232,7 +232,7 @@ async function syncChildrenFromBooking(
     const exists = existingChildren.some(
       (existingChild) =>
         existingChild.name.toLowerCase() === newChild.name.toLowerCase() &&
-        existingChild.age === newChild.age
+        existingChild.age === newChild.age,
     );
 
     if (!exists) {
@@ -257,7 +257,7 @@ async function parseFormDataToBooking(
     name?: string | null;
     email?: string | null;
     image?: string | null;
-  }
+  },
 ): Promise<BookingInterface> {
   // Parse children data - NEW per-child architecture
   const children: Array<{
@@ -378,7 +378,7 @@ async function parseFormDataToBooking(
                 dates: schedule.dates || undefined,
               });
             }
-          }
+          },
         );
       }
     } catch (error) {
@@ -393,7 +393,7 @@ async function parseFormDataToBooking(
   if (!serviceType) {
     throw new Error(
       "No service type selected in form data. Available fields: " +
-        Object.keys(cleanedData).join(", ")
+        Object.keys(cleanedData).join(", "),
     );
   }
 
@@ -409,8 +409,8 @@ async function parseFormDataToBooking(
   if (!validServiceTypes.includes(serviceType)) {
     throw new Error(
       `Invalid service type: ${serviceType}. Must be one of: ${validServiceTypes.join(
-        ", "
-      )}`
+        ", ",
+      )}`,
     );
   }
 
@@ -467,7 +467,7 @@ async function parseFormDataToBooking(
           } catch (error) {
             console.warn(
               `Failed to parse schedule for child ${childId}:`,
-              error
+              error,
             );
           }
         }
@@ -539,7 +539,7 @@ async function parseFormDataToBooking(
         } catch (error) {
           console.warn(
             `Failed to parse campWeeks for child ${childId}:`,
-            error
+            error,
           );
         }
       }
@@ -547,6 +547,11 @@ async function parseFormDataToBooking(
 
     serviceData.childrenData = childrenCampData;
     serviceData.weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
+
+    // Promo/discount support
+    serviceData.promoCode = (cleanedData.promoCode || "").toString();
+    serviceData.promoDiscount =
+      parseInt(cleanedData.promoDiscount as string) || 0;
   } else if (serviceType === "homeschooling") {
     // NEW: Parse per-child homeschooling data
     const childrenHomeschoolData: Array<{
@@ -633,6 +638,9 @@ async function parseFormDataToBooking(
 
   // Calculate total amount - NEW per-child calculations
   let totalAmount = 0;
+  let pricingBaseAmount = 0;
+  let pricingDiscount = 0;
+  let pricingDiscountReason: string | undefined;
 
   if (serviceType === "tutoring") {
     // Sum up hours from all children
@@ -641,7 +649,7 @@ async function parseFormDataToBooking(
     }>;
     const totalHours = childrenData.reduce(
       (sum, child) => sum + child.totalHours,
-      0
+      0,
     );
     const hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
     totalAmount = totalHours * hourlyRate;
@@ -657,7 +665,7 @@ async function parseFormDataToBooking(
     }>;
     const totalHours = childrenData.reduce(
       (sum, child) => sum + child.hours,
-      0
+      0,
     );
     const hourlyRate = parseInt(cleanedData.hourlyRate) || 8000;
     totalAmount = totalHours * hourlyRate;
@@ -688,10 +696,22 @@ async function parseFormDataToBooking(
       }>;
     }>;
     const weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
+    const promoDiscount = parseInt(cleanedData.promoDiscount as string) || 0;
+    const promoCode = (cleanedData.promoCode || "").toString().trim();
 
-    totalAmount = childrenData.reduce((sum, child) => {
+    const baseAmount = childrenData.reduce((sum, child) => {
       return sum + child.campWeeks.length * weeklyRate;
     }, 0);
+
+    pricingBaseAmount = baseAmount;
+    pricingDiscount = Math.max(0, promoDiscount);
+    pricingDiscountReason = pricingDiscount
+      ? promoCode
+        ? `Promo code: ${promoCode}`
+        : "Early bird discount"
+      : undefined;
+
+    totalAmount = Math.max(0, baseAmount - pricingDiscount);
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);
@@ -720,12 +740,12 @@ async function parseFormDataToBooking(
   // Validate required fields before creating booking object
   if (!parentName) {
     throw new Error(
-      "Parent name is required but not found in form data or session"
+      "Parent name is required but not found in form data or session",
     );
   }
   if (!parentEmail) {
     throw new Error(
-      "Parent email is required but not found in form data or session"
+      "Parent email is required but not found in form data or session",
     );
   }
 
@@ -751,9 +771,17 @@ async function parseFormDataToBooking(
         (cleanedData.frequency as "daily" | "weekly" | "monthly") || "weekly",
     },
     pricing: {
-      baseAmount: totalAmount,
+      baseAmount: pricingBaseAmount || totalAmount,
       extraServicesAmount: 0,
       cautionFee: (serviceData.cautionFee as number) || 0,
+      discount:
+        pricingDiscount > 0
+          ? {
+              type: "fixed",
+              value: pricingDiscount,
+              reason: pricingDiscountReason,
+            }
+          : undefined,
       totalAmount,
       currency: "NGN",
     },

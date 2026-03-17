@@ -1,6 +1,6 @@
 interface PaymentScheduleProps {
   totalHours?: number;
-  serviceCost: number;
+  serviceCost?: number;
   totalDays?: number;
   childcare?: boolean;
   isMonthSelected?: boolean;
@@ -8,35 +8,83 @@ interface PaymentScheduleProps {
   event?: boolean;
   eventMode?: string;
   selectedServices?: Array<string | { service: string; quantity: number }>;
+  // Holiday camp — new flat-fee props
   holidayCamp?: boolean;
+  numberOfChildren?: number; // number of children registered
+  campFee?: number; // flat fee per child
+  // Legacy weekly props (kept for backwards compat but unused for holiday camp)
   totalWeeks?: number;
+  // Shared discount
+  discountAmount?: number;
+  discountLabel?: string;
 }
+
+// Fixed camp dates shown in summary
+const CAMP_LABEL = "April 7 – April 25, 2026";
 
 function PaymentSchedule({
   totalHours,
-  totalWeeks,
   childcare,
-  serviceCost,
+  serviceCost = 0,
   totalDays,
   isMonthSelected,
   monthlyChildcareRate,
   event,
   holidayCamp,
+  numberOfChildren = 1,
+  campFee = 0,
   eventMode,
   selectedServices,
+  discountAmount = 0,
+  discountLabel,
 }: PaymentScheduleProps) {
-  const totalTime =
-    holidayCamp === true
-      ? totalWeeks
-      : childcare === true
-      ? totalDays
-      : totalHours;
+  // Helper to format currency
+  const formatCurrency = (amount: number) => `₦${amount.toLocaleString()}`;
 
-  // Use monthly rate if month is selected, otherwise use regular calculation
-  const totalCost =
+  // ─── Holiday Camp: flat one-time calculation ───────────────────────────────
+  if (holidayCamp) {
+    const subtotal = numberOfChildren * campFee;
+    const totalCost = Math.max(0, subtotal - (discountAmount || 0));
+
+    return (
+      <div className="mt-4 space-y-2">
+        <div className="text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
+          <span className="font-bold">
+            Easter Camp
+            <br />
+            <span className="text-xs text-gray-500 font-normal">
+              {CAMP_LABEL}
+            </span>
+          </span>
+          <span className="text-right">
+            <span className="block">
+              {numberOfChildren} {numberOfChildren === 1 ? "child" : "children"}{" "}
+              × {formatCurrency(campFee)}
+            </span>
+            {discountAmount > 0 && (
+              <span className="block text-sm text-green-700 mt-1">
+                {discountLabel || "Discount"}: -{formatCurrency(discountAmount)}
+              </span>
+            )}
+            <span className="block font-semibold mt-1">
+              Total: {formatCurrency(totalCost)}
+            </span>
+          </span>
+        </div>
+        <input type="hidden" name="totalCost" value={totalCost} />
+      </div>
+    );
+  }
+
+  // ─── All other service types (unchanged logic) ─────────────────────────────
+  const totalTime = childcare ? totalDays : totalHours;
+
+  const preDiscountTotalCost =
     isMonthSelected && monthlyChildcareRate
       ? monthlyChildcareRate
       : (totalTime || 0) * serviceCost;
+
+  const totalCost = Math.max(0, preDiscountTotalCost - (discountAmount || 0));
 
   // Event mode pricing
   const getEventModeCost = () => {
@@ -60,9 +108,6 @@ function PaymentSchedule({
     "extra-carers": 8000,
   };
 
-  // Helper to format currency
-  const formatCurrency = (amount: number) => `₦${amount.toLocaleString()}`;
-
   const calculateExtraServicesCost = () => {
     if (!selectedServices) return 0;
 
@@ -70,7 +115,6 @@ function PaymentSchedule({
       if (typeof service === "string") {
         return total + (servicesPricing[service] || 0);
       } else {
-        // Handle object format with service and quantity
         const serviceName = service.service;
         const serviceRate = servicesPricing[serviceName] || 0;
         const quantity = service.quantity || 1;
@@ -88,39 +132,23 @@ function PaymentSchedule({
       {(totalHours || totalDays || event) && (
         <div className="mt-4 text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
           <span className="font-bold">
-            {event ? (
-              "Event Services"
-            ) : holidayCamp ? (
-              <div>
-                Holiday Camp (₦{serviceCost.toLocaleString()}/week)
-                <br />
-                <span className="text-xs text-gray-500 font-normal">
-                  Exclusive of other activity costs
-                </span>
-              </div>
-            ) : childcare ? (
-              isMonthSelected ? (
-                ` Childcare (₦${serviceCost.toLocaleString()}/day) 15% discount per month`
-              ) : (
-                ` Childcare (₦${serviceCost.toLocaleString()}/day)`
-              )
-            ) : (
-              ` Academic tutoring (₦${serviceCost.toLocaleString()}/hour)`
-            )}
+            {event
+              ? "Event Services"
+              : childcare
+                ? isMonthSelected
+                  ? ` Childcare (₦${serviceCost.toLocaleString()}/day) 15% discount per month`
+                  : ` Childcare (₦${serviceCost.toLocaleString()}/day)`
+                : ` Academic tutoring (₦${serviceCost.toLocaleString()}/hour)`}
           </span>
           <span>
             {event
               ? `Event Package • Cost: ₦${totalEventCost.toLocaleString()}`
-              : holidayCamp
-              ? `${totalDays} week${
-                  totalDays !== 1 ? "s" : ""
-                } • Cost: ₦${totalCost.toLocaleString()}`
               : isMonthSelected
-              ? "Full Month"
-              : `${totalTime}${childcare ? " day" : " hour"}${
-                  totalTime !== 1 ? "s" : ""
-                }`}
-            {!event && !holidayCamp && (
+                ? "Full Month"
+                : `${totalTime}${childcare ? " day" : " hour"}${
+                    totalTime !== 1 ? "s" : ""
+                  }`}
+            {!event && (
               <>
                 {"   "}
                 {"   "}
@@ -131,13 +159,7 @@ function PaymentSchedule({
           <input
             type="hidden"
             name="totalCost"
-            value={
-              event
-                ? totalEventCost
-                : holidayCamp
-                ? (totalDays || 0) * serviceCost
-                : totalCost
-            }
+            value={event ? totalEventCost : totalCost}
           />
         </div>
       )}
@@ -150,21 +172,19 @@ function PaymentSchedule({
               Service Breakdown:
             </h4>
 
-            {/* Event Mode Cost */}
             {eventMode && (
               <div className="flex justify-between text-sm text-gray-700 mb-2">
                 <span>
                   {eventMode === "indoor"
                     ? "Indoor Event"
                     : eventMode === "outdoor"
-                    ? "Outdoor Event"
-                    : "Indoor & Outdoor Event"}
+                      ? "Outdoor Event"
+                      : "Indoor & Outdoor Event"}
                 </span>
                 <span>{formatCurrency(getEventModeCost())}</span>
               </div>
             )}
 
-            {/* Extra Services */}
             {selectedServices &&
               selectedServices.map((service, index) => {
                 if (typeof service === "string") {
@@ -173,12 +193,12 @@ function PaymentSchedule({
                     service === "dj"
                       ? "DJ"
                       : service === "mc"
-                      ? "MC (Master of Ceremonies)"
-                      : service === "event-planning"
-                      ? "Event Planning"
-                      : service === "extra-carers"
-                      ? "Extra Carers"
-                      : service;
+                        ? "MC (Master of Ceremonies)"
+                        : service === "event-planning"
+                          ? "Event Planning"
+                          : service === "extra-carers"
+                            ? "Extra Carers"
+                            : service;
                   return (
                     <div
                       key={index}
@@ -189,17 +209,16 @@ function PaymentSchedule({
                     </div>
                   );
                 } else {
-                  // Handle object format
                   const serviceName =
                     service.service === "dj"
                       ? "DJ"
                       : service.service === "mc"
-                      ? "MC (Master of Ceremonies)"
-                      : service.service === "event-planning"
-                      ? "Event Planning"
-                      : service.service === "extra-carers"
-                      ? `Extra Carers (x${service.quantity || 1})`
-                      : service.service;
+                        ? "MC (Master of Ceremonies)"
+                        : service.service === "event-planning"
+                          ? "Event Planning"
+                          : service.service === "extra-carers"
+                            ? `Extra Carers (x${service.quantity || 1})`
+                            : service.service;
                   const serviceRate = servicesPricing[service.service] || 0;
                   const cost = serviceRate * (service.quantity || 1);
                   return (
@@ -214,7 +233,6 @@ function PaymentSchedule({
                 }
               })}
 
-            {/* Refundable Caution Fee */}
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between text-sm text-orange-600 font-medium">
                 <span>Refundable Caution Fee</span>

@@ -5,7 +5,7 @@ interface Window {
   fbq: (
     action: string,
     eventName: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
   ) => void;
-  _fbq: any;
+  _fbq: unknown;
 }
