@@ -60,20 +60,20 @@ export default async function Services() {
         </div>
 
         {/* Services Grid - Modern Card Design */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
           {services.map((service) => (
             <div
               key={service._id}
-              className="bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-[#90AC19]/30 group"
+              className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-[#90AC19]/30 group flex flex-col h-full"
             >
               {/* Service Header with Image */}
-              <div className="relative h-56 overflow-hidden bg-gray-100">
+              <div className="relative h-52 md:h-56 overflow-hidden bg-gray-100 shrink-0">
                 <Image
                   src={service.image || "/default-service.jpg"}
                   alt={service.name}
                   width={640}
                   height={360}
-                  className="h-full w-full"
+                  className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-linesr-to-t from-black/70 via-black/30 to-transparent"></div>
 
@@ -87,17 +87,17 @@ export default async function Services() {
               </div>
 
               {/* Service Content */}
-              <div className="p-6 md:p-8">
+              <div className="p-6 md:p-7 flex flex-col flex-1 min-h-0">
                 <h1 className="inline-flex items-center text-xl font-bold text-gray-900">
                   {service.name}
                 </h1>
 
-                <p className="text-gray-600 mb-6 leading-relaxed line-clamp-3">
+                <p className="text-gray-600 mb-5 leading-relaxed line-clamp-3">
                   {service.description}
                 </p>
 
                 {/* Quick Info Pills */}
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-2 mb-5">
                   {service?.requirements?.ageGroup && (
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm">
                       <UserGroupIcon className="w-4 h-4" />
@@ -119,7 +119,7 @@ export default async function Services() {
                 {/* Package Discounts */}
                 {service.pricing?.packages &&
                   service.pricing.packages.length > 0 && (
-                    <div className="mb-6 p-4 bg-[#FFEACF]/30 rounded-xl border border-[#E8931A]/20">
+                    <div className="mb-5 p-4 bg-[#FFEACF]/30 rounded-xl border border-[#E8931A]/20">
                       <div className="flex items-center gap-2 mb-3">
                         <h4 className="font-semibold text-gray-900">
                           Package Deals
@@ -179,7 +179,7 @@ export default async function Services() {
 
                 {/* Features List */}
                 {service.keyFeatures && service.keyFeatures.length > 0 && (
-                  <div className="mb-6">
+                  <div className="mb-5">
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <CheckCircleIcon className="w-5 h-5 text-[#90AC19]" />
                       Key Features
@@ -203,7 +203,7 @@ export default async function Services() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100 mt-auto">
                   <Link
                     href={`/booking?service=${service.type}`}
                     className="flex-1 flex items-center justify-center gap-2 bg-[#90AC19] hover:bg-[#7A9216] text-white text-center py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"

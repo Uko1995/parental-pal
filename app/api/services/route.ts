@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
 import { ServiceInterface } from "@/models/Service";
 import { auth } from "@/auth";
@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidatePath("/services");
+    revalidatePath("/");
 
     return NextResponse.json({
       success: true,
@@ -146,6 +148,12 @@ export async function PUT(request: NextRequest) {
     );
 
     if (result.matchedCount > 0) {
+      revalidateTag(CACHE_TAGS.SERVICES);
+      revalidateTag(CACHE_TAGS.DASHBOARD);
+      revalidatePath("/services");
+      revalidatePath("/");
+      revalidatePath("/dashboard/services");
+
       return NextResponse.json({ success: true });
     }
 

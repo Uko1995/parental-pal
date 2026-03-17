@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { auth } from "@/auth";
@@ -137,6 +137,9 @@ export async function PATCH(
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidatePath("/services");
+    revalidatePath("/");
+    revalidatePath("/dashboard/services");
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
@@ -223,6 +226,9 @@ export async function DELETE(
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
+    revalidatePath("/services");
+    revalidatePath("/");
+    revalidatePath("/dashboard/services");
 
     return NextResponse.json({
       success: true,
