@@ -356,7 +356,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                       Child #{index + 1}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Holiday Camp — {CAMP_LABEL}
+                      Easter Camp — {CAMP_LABEL}
                     </p>
                   </div>
                   <p className="text-xl font-bold text-gray-800">

@@ -517,7 +517,6 @@ async function parseFormDataToBooking(
     serviceData.dailyRate = parseInt(cleanedData.dailyRate) || 5000;
     serviceData.monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
   } else if (serviceType === "holiday-camps") {
-    // NEW: Parse per-child holiday camp data
     const childrenCampData: Array<{
       childId: string;
       campWeeks: Array<{
@@ -527,15 +526,16 @@ async function parseFormDataToBooking(
       }>;
     }> = [];
 
-    Array.from(childIds).forEach((childId) => {
-      const campWeeks = cleanedData[`campWeeks_${childId}`];
+    const campStartDate = (cleanedData.campStartDate as string) || "2026-04-07";
+    const campEndDate = (cleanedData.campEndDate as string) || "2026-04-25";
 
-      if (campWeeks) {
+    Array.from(childIds).forEach((childId) => {
+      const campWeeksRaw = cleanedData[`campWeeks_${childId}`];
+      let parsedCampWeeks;
+
+      if (campWeeksRaw) {
         try {
-          childrenCampData.push({
-            childId,
-            campWeeks: JSON.parse(campWeeks),
-          });
+          parsedCampWeeks = JSON.parse(campWeeksRaw);
         } catch (error) {
           console.warn(
             `Failed to parse campWeeks for child ${childId}:`,
@@ -543,12 +543,26 @@ async function parseFormDataToBooking(
           );
         }
       }
+
+      childrenCampData.push({
+        childId,
+        campWeeks:
+          parsedCampWeeks && parsedCampWeeks.length > 0
+            ? parsedCampWeeks
+            : [
+                {
+                  startDate: campStartDate,
+                  endDate: campEndDate,
+                  weekNumber: 1,
+                },
+              ],
+      });
     });
 
     serviceData.childrenData = childrenCampData;
-    serviceData.weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
-
-    // Promo/discount support
+    serviceData.weeklyRate =
+      parseInt((cleanedData.campFee as string) || "") || 0;
+    serviceData.campFee = serviceData.weeklyRate;
     serviceData.promoCode = (cleanedData.promoCode || "").toString();
     serviceData.promoDiscount =
       parseInt(cleanedData.promoDiscount as string) || 0;
@@ -687,31 +701,26 @@ async function parseFormDataToBooking(
       }
     }, 0);
   } else if (serviceType === "holiday-camps") {
-    // Sum up weeks from all children
-    const childrenData = serviceData.childrenData as Array<{
-      campWeeks: Array<{
-        startDate: string;
-        endDate: string;
-        weekNumber: number;
-      }>;
-    }>;
-    const weeklyRate = parseInt(cleanedData.weeklyRate) || 30000;
+    const earlyBirdCutoff = new Date("2026-04-01T00:00:00Z").getTime();
+    const isEarlyBird = Date.now() < earlyBirdCutoff;
+    const campFeeFromForm = parseInt(cleanedData.campFee as string);
+    const effectiveCampFee = campFeeFromForm || (isEarlyBird ? 25000 : 30000);
+
     const promoDiscount = parseInt(cleanedData.promoDiscount as string) || 0;
     const promoCode = (cleanedData.promoCode || "").toString().trim();
 
-    const baseAmount = childrenData.reduce((sum, child) => {
-      return sum + child.campWeeks.length * weeklyRate;
-    }, 0);
-
-    pricingBaseAmount = baseAmount;
+    pricingBaseAmount = children.length * effectiveCampFee;
     pricingDiscount = Math.max(0, promoDiscount);
     pricingDiscountReason = pricingDiscount
       ? promoCode
         ? `Promo code: ${promoCode}`
         : "Early bird discount"
-      : undefined;
+      : isEarlyBird
+        ? "Early bird rate applied"
+        : undefined;
 
-    totalAmount = Math.max(0, baseAmount - pricingDiscount);
+    totalAmount = Math.max(0, pricingBaseAmount - pricingDiscount);
+    serviceData.weeklyRate = effectiveCampFee;
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);
