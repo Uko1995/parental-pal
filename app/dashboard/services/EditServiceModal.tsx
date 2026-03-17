@@ -146,6 +146,8 @@ export default function EditServiceModal({
       const formData = new FormData();
       formData.append("file", file);
 
+      formData.append("type", "service");
+
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,

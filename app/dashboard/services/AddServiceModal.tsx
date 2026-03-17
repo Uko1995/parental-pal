@@ -79,7 +79,7 @@ export default function AddServiceModal({
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -103,6 +103,8 @@ export default function AddServiceModal({
     try {
       const formData = new FormData();
       formData.append("file", file);
+
+      formData.append("type", "service");
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -154,12 +156,12 @@ export default function AddServiceModal({
   const updatePackage = (
     index: number,
     field: string,
-    value: string | number
+    value: string | number,
   ) => {
     setFormData((prev) => ({
       ...prev,
       packages: prev.packages.map((pkg, i) =>
-        i === index ? { ...pkg, [field]: value } : pkg
+        i === index ? { ...pkg, [field]: value } : pkg,
       ),
     }));
   };
@@ -182,7 +184,7 @@ export default function AddServiceModal({
     setFormData((prev) => ({
       ...prev,
       keyFeatures: prev.keyFeatures.map((feature, i) =>
-        i === index ? value : feature
+        i === index ? value : feature,
       ),
     }));
   };
@@ -202,7 +204,7 @@ export default function AddServiceModal({
         shortDescription: formData.shortDescription,
         image: formData.image,
         keyFeatures: formData.keyFeatures.filter(
-          (feature) => feature.trim() !== ""
+          (feature) => feature.trim() !== "",
         ),
         pricing: {
           baseRate: formData.baseRate,
@@ -667,7 +669,7 @@ export default function AddServiceModal({
                         updatePackage(
                           index,
                           "discountPercentage",
-                          parseFloat(e.target.value) || 0
+                          parseFloat(e.target.value) || 0,
                         )
                       }
                       className="input input-bordered input-sm"
@@ -686,7 +688,7 @@ export default function AddServiceModal({
                         updatePackage(
                           index,
                           "minimumSessions",
-                          parseInt(e.target.value) || 0
+                          parseInt(e.target.value) || 0,
                         )
                       }
                       className="input input-bordered input-sm"

@@ -38,9 +38,9 @@ const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
     maxSize: 50 * 1024 * 1024, // 50MB
   },
   service: {
-    folder: "services",
+    folder: CLOUDINARY_FOLDERS.SERVICES,
     resourceType: "image",
-    useCloudinary: false, // Keep local for backward compatibility
+    useCloudinary: true,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
     maxSize: 5 * 1024 * 1024, // 5MB
   },
