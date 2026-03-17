@@ -11,8 +11,8 @@ interface PaymentScheduleProps {
   // Holiday camp — new flat-fee props
   holidayCamp?: boolean;
   numberOfChildren?: number; // number of children registered
-  campFee?: number; // flat fee per child
-  // Legacy weekly props (kept for backwards compat but unused for holiday camp)
+  campFee?: number;
+  weeklyRate?: number;
   totalWeeks?: number;
   // Shared discount
   discountAmount?: number;
@@ -33,6 +33,8 @@ function PaymentSchedule({
   holidayCamp,
   numberOfChildren = 1,
   campFee = 0,
+  weeklyRate,
+  totalWeeks = 0,
   eventMode,
   selectedServices,
   discountAmount = 0,
@@ -43,7 +45,8 @@ function PaymentSchedule({
 
   // ─── Holiday Camp: flat one-time calculation ───────────────────────────────
   if (holidayCamp) {
-    const subtotal = numberOfChildren * campFee;
+    const effectiveWeeklyRate = weeklyRate || campFee;
+    const subtotal = totalWeeks * effectiveWeeklyRate;
     const totalCost = Math.max(0, subtotal - (discountAmount || 0));
 
     return (
@@ -58,8 +61,12 @@ function PaymentSchedule({
           </span>
           <span className="text-right">
             <span className="block">
-              {numberOfChildren} {numberOfChildren === 1 ? "child" : "children"}{" "}
-              × {formatCurrency(campFee)}
+              {numberOfChildren}{" "}
+              {numberOfChildren === 1 ? "child" : "children"} • {totalWeeks}{" "}
+              {totalWeeks === 1 ? "week" : "weeks"}
+            </span>
+            <span className="block">
+              {totalWeeks} × {formatCurrency(effectiveWeeklyRate)}
             </span>
             {discountAmount > 0 && (
               <span className="block text-sm text-green-700 mt-1">
