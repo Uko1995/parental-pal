@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: "Too many payment requests" },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         AuditEventType.UNAUTHORIZED_ACCESS,
         undefined,
         ip,
-        "Unauthenticated payment attempt"
+        "Unauthenticated payment attempt",
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -41,37 +41,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const payment = await getCollection<PaymentInterface>("payments");
-    const rawBody = await req.json();
-    const body = sanitizeObject(rawBody);
-    const { bookingId, userId, amount, currency, email } = body as {
-      bookingId: string;
-      userId: string;
-      amount: number;
-      currency?: string;
-      email: string;
-    };
-
-    // Validation
-    if (!bookingId || !userId || !amount || !email) {
+    const payerEmail = currentUser.userData?.user?.email;
+    if (!payerEmail) {
       return NextResponse.json(
-        { success: false, error: "Missing required payment fields" },
-        { status: 400 }
+        { error: "User email not available" },
+        { status: 400 },
       );
     }
 
-    // Authorization: Verify userId matches current user or is admin
-    if (
-      userId !== currentUser._id?.toString() &&
-      currentUser.role !== "admin"
-    ) {
-      logSecurityEvent(
-        AuditEventType.SUSPICIOUS_ACTIVITY,
-        currentUser._id?.toString(),
-        ip,
-        "User attempted payment for another user"
+    const payment = await getCollection<PaymentInterface>("payments");
+    const rawBody = await req.json();
+    const body = sanitizeObject(rawBody);
+    console.log("Received payment initialization request:", {
+      ip,
+      userId: currentUser._id?.toString(),
+      body,
+    });
+    const { bookingId, amount, currency } = body as {
+      bookingId: string;
+      amount: number;
+      currency?: string;
+    };
+
+    // Validation
+    if (!bookingId || amount == null) {
+      return NextResponse.json(
+        { success: false, error: "Missing required payment fields" },
+        { status: 400 },
       );
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify booking exists and matches amount
@@ -81,9 +78,29 @@ export async function POST(req: NextRequest) {
         AuditEventType.SUSPICIOUS_ACTIVITY,
         currentUser._id?.toString(),
         ip,
-        "Payment for non-existent booking"
+        "Payment for non-existent booking",
       );
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    if (!booking.userId) {
+      return NextResponse.json(
+        { error: "Booking has no owner" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      booking.userId.toString() !== currentUser._id?.toString() &&
+      currentUser.role !== "admin"
+    ) {
+      logSecurityEvent(
+        AuditEventType.SUSPICIOUS_ACTIVITY,
+        currentUser._id?.toString(),
+        ip,
+        "User attempted payment for another user",
+      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Amount validation: prevent tampering
@@ -93,11 +110,11 @@ export async function POST(req: NextRequest) {
         AuditEventType.SUSPICIOUS_ACTIVITY,
         currentUser._id?.toString(),
         ip,
-        `Payment amount mismatch: ${amount} vs ${expectedAmount}`
+        `Payment amount mismatch: ${amount} vs ${expectedAmount}`,
       );
       return NextResponse.json(
         { error: "Invalid payment amount" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -115,6 +132,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Call Paystack initialize endpoint
+    const bookingOwnerId = booking.userId;
+    const bookingOwnerObjectId =
+      typeof bookingOwnerId === "string"
+        ? new ObjectId(bookingOwnerId)
+        : bookingOwnerId;
+    const bookingOwnerString = bookingOwnerObjectId?.toString();
+
     const paystackRes = await fetch(
       "https://api.paystack.co/transaction/initialize",
       {
@@ -124,16 +148,16 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
+          email: payerEmail,
           amount: Math.round(amount * 100), // Paystack expects kobo
           currency: currency || "NGN",
-          metadata: { bookingId, userId },
+          metadata: { bookingId, userId: bookingOwnerString },
           reference: idempotencyKey,
           callback_url: `${
             process.env.NEXTAUTH_URL || "http://localhost:3000"
           }/payment/callback`,
         }),
-      }
+      },
     );
 
     const paystackData = await paystackRes.json();
@@ -141,14 +165,14 @@ export async function POST(req: NextRequest) {
     if (!paystackData.status) {
       return NextResponse.json(
         { success: false, error: paystackData.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Save payment record
     const savedPayment = await payment.insertOne({
       bookingId: new ObjectId(bookingId),
-      userId: new ObjectId(userId),
+      userId: bookingOwnerObjectId,
       amount,
       currency: currency || "NGN",
       status: "pending",
@@ -174,7 +198,7 @@ export async function POST(req: NextRequest) {
     console.error("Payment initialization error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to initialize payment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
