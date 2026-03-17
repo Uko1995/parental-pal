@@ -28,6 +28,7 @@ export default function SimpleCloudinaryImage({
   height = 100,
   className = "",
   name,
+  imgClassName = "",
 }: SimpleCloudinaryImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,8 +40,8 @@ export default function SimpleCloudinaryImage({
   const imageSrc = hasError
     ? fallbackSrc
     : isCloudinaryUrl(src)
-    ? optimizeCloudinaryUrl(src, width, height)
-    : src;
+      ? optimizeCloudinaryUrl(src, width, height)
+      : src;
 
   const handleError = () => {
     setHasError(true);

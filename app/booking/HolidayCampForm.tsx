@@ -150,8 +150,8 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       validate,
     }));
 
-    // const subtotal = childrenData.length * campFee;
-    // const totalAfterDiscount = Math.max(0, subtotal - promoDiscount);
+    const subtotal = childrenData.length * campFee;
+    const totalAfterDiscount = Math.max(0, subtotal - promoDiscount);
 
     return (
       <div className="space-y-6">

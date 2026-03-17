@@ -8,7 +8,7 @@ import {
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { normalizeBillingType, formatBillingSuffix } from "@/lib/service-utils";
-import SimpleCloudinaryImage from "@/components/SimpleCloudinaryImage";
+import Image from "next/image";
 
 // Helper function to format pricing
 const formatPricing = (service: ClientServiceForDisplay) => {
@@ -68,13 +68,12 @@ export default async function Services() {
             >
               {/* Service Header with Image */}
               <div className="relative h-56 overflow-hidden bg-gray-100">
-                <SimpleCloudinaryImage
+                <Image
                   src={service.image || "/default-service.jpg"}
                   alt={service.name}
                   width={640}
                   height={360}
                   className="h-full w-full"
-                  imgClassName="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-linesr-to-t from-black/70 via-black/30 to-transparent"></div>
 

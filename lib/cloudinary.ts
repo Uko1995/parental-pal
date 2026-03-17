@@ -15,6 +15,7 @@ export const CLOUDINARY_FOLDERS = {
   TUTOR_DOCUMENTS: "tutor-documents",
   PRODUCT_THUMBNAILS: "product-thumbnails",
   PRODUCT_PDFS: "product-pdfs",
+  SERVICES: "services",
 };
 
 // Helper function to generate signed upload parameters
