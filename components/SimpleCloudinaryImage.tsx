@@ -14,6 +14,7 @@ interface SimpleCloudinaryImageProps {
   height?: number;
   className?: string;
   name?: string; // For generating placeholder initials
+  imgClassName?: string;
 }
 
 /**
@@ -68,7 +69,7 @@ export default function SimpleCloudinaryImage({
         height={height}
         className={`${
           isLoading ? "opacity-0" : "opacity-100"
-        } transition-opacity duration-200`}
+        } transition-opacity duration-200 ${imgClassName}`}
         onError={handleError}
         onLoad={handleLoad}
         loading="lazy"
