@@ -64,10 +64,10 @@ export default function MiniServices() {
             services.map((service) => (
               <div
                 key={service._id}
-                className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden"
+                className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden flex flex-col h-full"
               >
                 {/* Service Image */}
-                <div className="w-full h-48 relative overflow-hidden">
+                <div className="w-full h-48 md:h-52 relative overflow-hidden shrink-0">
                   <Image
                     src={service.image || "/default-service.jpg"}
                     alt={service.name}
@@ -77,7 +77,7 @@ export default function MiniServices() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-6 flex flex-col flex-1 min-h-0">
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">
                     {service.name}
                   </h3>
@@ -86,7 +86,7 @@ export default function MiniServices() {
                   </p>
 
                   {/* CTA Link */}
-                  <Link href="/services" passHref>
+                  <Link href="/services" passHref className="mt-auto">
                     <button className="text-[#90AC19] cursor-pointer font-medium hover:text-[#7A9216] transition-colors duration-300 flex items-center group">
                       Learn More
                       <svg
