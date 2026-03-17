@@ -264,6 +264,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setPriority("normal");
       setFollowUpRequired(false);
       setIsRepeatedCustomer(false);
+      setTotalAmount(0);
 
       toast.dismiss("booking-submit");
       toast.success("Redirecting to secure payment...", { duration: 500 });
@@ -351,7 +352,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   }, [urlService, actionParam]);
 
   const handleServiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedService(e.target.value);
+    const nextService = e.target.value;
+    setSelectedService(nextService);
+    if (nextService !== "holiday-camps") {
+      setTotalAmount(0);
+    }
     saveCurrentFormData();
   };
 
@@ -472,7 +477,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                 name="serviceType"
                 value={selectedService}
                 onChange={(e) => {
-                  setSelectedService(e.target.value);
+                  const nextService = e.target.value;
+                  setSelectedService(nextService);
+                  if (nextService !== "holiday-camps") {
+                    setTotalAmount(0);
+                  }
                   saveCurrentFormData();
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
@@ -732,7 +741,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
             <button
               ref={submitButtonRef}
               type="submit"
-              className="w-full bg-[#90AC19] hover:bg-[#7a9315] tracking-wider text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-base sm:text-lg"
+              className="w-full bg-[#90AC19] hover:bg-[#7a9315] tracking-wider text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-xl md:text-2xl"
             >
               {totalAmount > 0
                 ? `Pay ${" "} ₦${totalAmount.toLocaleString()}`

@@ -561,8 +561,14 @@ async function parseFormDataToBooking(
 
     serviceData.childrenData = childrenCampData;
     serviceData.weeklyRate =
-      parseInt((cleanedData.campFee as string) || "") || 0;
+      parseInt((cleanedData.weeklyRate as string) || "") ||
+      parseInt((cleanedData.campFee as string) || "") ||
+      0;
     serviceData.campFee = serviceData.weeklyRate;
+    serviceData.totalWeeks = childrenCampData.reduce(
+      (sum, child) => sum + child.campWeeks.length,
+      0,
+    );
     serviceData.promoCode = (cleanedData.promoCode || "").toString();
     serviceData.promoDiscount =
       parseInt(cleanedData.promoDiscount as string) || 0;
@@ -703,13 +709,26 @@ async function parseFormDataToBooking(
   } else if (serviceType === "holiday-camps") {
     const earlyBirdCutoff = new Date("2026-04-01T00:00:00Z").getTime();
     const isEarlyBird = Date.now() < earlyBirdCutoff;
-    const campFeeFromForm = parseInt(cleanedData.campFee as string);
-    const effectiveCampFee = campFeeFromForm || (isEarlyBird ? 25000 : 30000);
+    const weeklyRateFromForm =
+      parseInt(cleanedData.weeklyRate as string) ||
+      parseInt(cleanedData.campFee as string);
+    const effectiveWeeklyRate =
+      weeklyRateFromForm || (isEarlyBird ? 25000 : 30000);
 
     const promoDiscount = parseInt(cleanedData.promoDiscount as string) || 0;
     const promoCode = (cleanedData.promoCode || "").toString().trim();
+    const childrenData = serviceData.childrenData as Array<{
+      campWeeks?: Array<{
+        startDate: string;
+        endDate: string;
+        weekNumber: number;
+      }>;
+    }>;
+    const totalSelectedWeeks = childrenData.reduce((sum, child) => {
+      return sum + (child.campWeeks?.length || 0);
+    }, 0);
 
-    pricingBaseAmount = children.length * effectiveCampFee;
+    pricingBaseAmount = totalSelectedWeeks * effectiveWeeklyRate;
     pricingDiscount = Math.max(0, promoDiscount);
     pricingDiscountReason = pricingDiscount
       ? promoCode
@@ -720,7 +739,8 @@ async function parseFormDataToBooking(
         : undefined;
 
     totalAmount = Math.max(0, pricingBaseAmount - pricingDiscount);
-    serviceData.weeklyRate = effectiveCampFee;
+    serviceData.weeklyRate = effectiveWeeklyRate;
+    serviceData.totalWeeks = totalSelectedWeeks;
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);

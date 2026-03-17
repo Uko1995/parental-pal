@@ -18,24 +18,45 @@ export interface HolidayCampFormRef {
   validate: () => { isValid: boolean; errors: string[] };
 }
 
-// Fixed camp dates
 const CAMP_START_DATE = "2026-04-07";
 const CAMP_END_DATE = "2026-04-25";
-const CAMP_LABEL = "April 7 – April 25, 2026";
-
+const CAMP_LABEL = "April 7 - April 25, 2026";
 const EARLY_BIRD_END_ISO = "2026-04-01T00:00:00";
 const EARLY_BIRD_RATE = 25000;
-const REGULAR_CAMP_RATE = 30000;
+const REGULAR_WEEKLY_RATE = 30000;
+
+const CAMP_WEEKS = [
+  {
+    weekNumber: 1,
+    startDate: "2026-04-07",
+    endDate: "2026-04-11",
+    label: "Week 1",
+    dateLabel: "April 7 - April 11",
+  },
+  {
+    weekNumber: 2,
+    startDate: "2026-04-13",
+    endDate: "2026-04-18",
+    label: "Week 2",
+    dateLabel: "April 13 - April 18",
+  },
+  {
+    weekNumber: 3,
+    startDate: "2026-04-20",
+    endDate: "2026-04-25",
+    label: "Week 3",
+    dateLabel: "April 20 - April 25",
+  },
+] as const;
 
 const isEarlyBirdRateActive = () =>
   Date.now() < new Date(EARLY_BIRD_END_ISO).getTime();
 
-const getEffectiveCampRate = (baseRate: number) =>
+const getEffectiveWeeklyRate = (baseRate: number) =>
   isEarlyBirdRateActive() ? EARLY_BIRD_RATE : baseRate;
 
 interface ChildCampData {
   id: string;
-  index: number;
 }
 
 interface HolidayCampFormProps {
@@ -47,24 +68,16 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
-
     const [childrenData, setChildrenData] = useState<ChildCampData[]>([
-      { id: uuidv4(), index: 0 },
+      { id: uuidv4() },
     ]);
+    const [baseWeeklyRate, setBaseWeeklyRate] = useState(REGULAR_WEEKLY_RATE);
+    const [selectedWeeksByChild, setSelectedWeeksByChild] = useState<
+      Record<string, number[]>
+    >({});
 
-    // Flat per-child camp fee
-    const [baseCampFee, setBaseCampFee] = useState(REGULAR_CAMP_RATE);
-    const campFee = getEffectiveCampRate(baseCampFee);
+    const weeklyRate = getEffectiveWeeklyRate(baseWeeklyRate);
 
-    // Promo code states
-    const [promoCode, setPromoCode] = useState("");
-    const [promoDiscount, setPromoDiscount] = useState(0);
-    const [promoMessage, setPromoMessage] = useState<string | null>(null);
-
-    const EARLY_BIRD_CODE = "parentalpal-346267946393";
-    const EARLY_BIRD_DISCOUNT_PER_CHILD = 5000;
-
-    // Autofill parent info from session
     useEffect(() => {
       if (session?.user) {
         if (session.user.name) setParentName(session.user.name);
@@ -72,7 +85,6 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       }
     }, [session]);
 
-    // Fetch pricing from database
     useEffect(() => {
       const fetchPricing = async () => {
         try {
@@ -80,7 +92,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           if (response.ok) {
             const { data } = await response.json();
             if (data["holiday-camps"]?.baseRate) {
-              setBaseCampFee(data["holiday-camps"].baseRate);
+              setBaseWeeklyRate(data["holiday-camps"].baseRate);
             }
           }
         } catch (error) {
@@ -90,58 +102,81 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       fetchPricing();
     }, []);
 
-    // Update total whenever children count or fee changes
     useEffect(() => {
-      const subtotal = childrenData.length * campFee;
-      const total = Math.max(0, subtotal - promoDiscount);
-      props.onTotalChange?.(total);
-    }, [childrenData.length, campFee, promoDiscount, props.onTotalChange]);
+      setSelectedWeeksByChild((prev) => {
+        const next: Record<string, number[]> = {};
 
-    const applyPromoCode = () => {
-      const code = promoCode.trim().toUpperCase();
+        childrenData.forEach((child) => {
+          next[child.id] =
+            prev[child.id] || CAMP_WEEKS.map((week) => week.weekNumber);
+        });
 
-      if (!code) {
-        setPromoDiscount(0);
-        setPromoMessage("Please enter a promo code.");
-        return;
-      }
+        return next;
+      });
+    }, [childrenData]);
 
-      if (code === EARLY_BIRD_CODE.toUpperCase()) {
-        const totalDiscount =
-          childrenData.length * EARLY_BIRD_DISCOUNT_PER_CHILD;
-        setPromoDiscount(totalDiscount);
-        setPromoMessage(
-          `Early bird discount applied: ₦${totalDiscount.toLocaleString()} (${childrenData.length} × ₦${EARLY_BIRD_DISCOUNT_PER_CHILD.toLocaleString()})`,
-        );
-        return;
-      }
+    const totalSelectedWeeks = childrenData.reduce((sum, child) => {
+      return sum + (selectedWeeksByChild[child.id]?.length || 0);
+    }, 0);
 
-      setPromoDiscount(0);
-      setPromoMessage("Invalid promo code. Please check and try again.");
+    const totalAmount = totalSelectedWeeks * weeklyRate;
+
+    useEffect(() => {
+      props.onTotalChange?.(totalAmount);
+    }, [props.onTotalChange, totalAmount]);
+
+    const toggleWeekSelection = (childId: string, weekNumber: number) => {
+      setSelectedWeeksByChild((prev) => {
+        const currentSelection = prev[childId] || [];
+        const isSelected = currentSelection.includes(weekNumber);
+
+        const nextSelection = isSelected
+          ? currentSelection.filter((week) => week !== weekNumber)
+          : [...currentSelection, weekNumber].sort((a, b) => a - b);
+
+        return {
+          ...prev,
+          [childId]: nextSelection,
+        };
+      });
     };
 
     const addChild = () => {
-      setChildrenData((prev) => [
-        ...prev,
-        { id: uuidv4(), index: prev.length },
-      ]);
+      setChildrenData((prev) => [...prev, { id: uuidv4() }]);
     };
 
     const removeChild = (id: string) => {
-      if (childrenData.length > 1) {
-        setChildrenData((prev) => prev.filter((child) => child.id !== id));
-      }
+      if (childrenData.length <= 1) return;
+
+      setChildrenData((prev) => prev.filter((child) => child.id !== id));
+      setSelectedWeeksByChild((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
     };
 
     const resetForm = () => {
-      setChildrenData([{ id: uuidv4(), index: 0 }]);
-      setPromoCode("");
-      setPromoDiscount(0);
-      setPromoMessage(null);
+      const firstChildId = uuidv4();
+      setChildrenData([{ id: firstChildId }]);
+      setSelectedWeeksByChild({
+        [firstChildId]: CAMP_WEEKS.map((week) => week.weekNumber),
+      });
     };
 
     const validate = (): { isValid: boolean; errors: string[] } => {
-      // No week selection needed; just ensure at least one child is registered
+      for (const [index, child] of childrenData.entries()) {
+        if (
+          !selectedWeeksByChild[child.id] ||
+          selectedWeeksByChild[child.id].length === 0
+        ) {
+          return {
+            isValid: false,
+            errors: [`Select at least one camp week for Child #${index + 1}.`],
+          };
+        }
+      }
+
       return { isValid: true, errors: [] };
     };
 
@@ -150,12 +185,8 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       validate,
     }));
 
-    const subtotal = childrenData.length * campFee;
-    const totalAfterDiscount = Math.max(0, subtotal - promoDiscount);
-
     return (
       <div className="space-y-6">
-        {/* Parent Information Section */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
           <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-6 text-gray-900">
             <UserIcon className="w-6 h-6 mr-2 text-gray-700" />
@@ -221,25 +252,22 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           </div>
         </div>
 
-        {/* Camp Dates Banner */}
         <div className="bg-[#90AC19]/10 border-2 border-[#90AC19]/40 rounded-lg p-5 flex items-center gap-4">
           <CalendarIcon className="w-8 h-8 text-[#90AC19] shrink-0" />
           <div>
             <p className="text-base font-bold text-gray-900">
-              Alive in Me Easter Camp Date
+              Alive in Me Easter Camp
             </p>
             <p className="text-sm text-gray-700 mt-0.5">
-              {CAMP_LABEL}... This is a fixed 3-week programme. Registration
-              covers the full duration.
+              Easter camp runs from {CAMP_LABEL}. Select from the 3 available
+              weeks below for each child.
             </p>
           </div>
         </div>
 
-        {/* Hidden fields for camp dates */}
         <input type="hidden" name="campStartDate" value={CAMP_START_DATE} />
         <input type="hidden" name="campEndDate" value={CAMP_END_DATE} />
 
-        {/* Header for Children Sections */}
         <div className="flex items-center justify-between py-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             Children Registered for Camp
@@ -250,74 +278,127 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           </div>
         </div>
 
-        {/* Map through children */}
-        {childrenData.map((child, index) => (
-          <div
-            key={child.id}
-            className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8 space-y-6"
-          >
-            {/* Child Header with Remove Button */}
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <CalendarIcon className="w-6 h-6 text-gray-700" />
-                Child #{index + 1} — Easter Camp Registration
-              </h3>
-              {childrenData.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeChild(child.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-400 transition-colors text-sm font-medium"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                  Remove Child
-                </button>
-              )}
-            </div>
+        {childrenData.map((child, index) => {
+          const selectedWeekNumbers = selectedWeeksByChild[child.id] || [];
+          const selectedWeeks = CAMP_WEEKS.filter((week) =>
+            selectedWeekNumbers.includes(week.weekNumber),
+          );
+          const childSubtotal = selectedWeeks.length * weeklyRate;
 
-            {/* Basic Child Info */}
-            <ChildInfoForm
-              childIndex={index}
-              childId={child.id}
-              onRemove={() => removeChild(child.id)}
-              showRemoveButton={false}
-            />
+          return (
+            <div
+              key={child.id}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8 space-y-6"
+            >
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <CalendarIcon className="w-6 h-6 text-gray-700" />
+                  Child #{index + 1} - Easter Camp Registration
+                </h3>
+                {childrenData.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeChild(child.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-400 transition-colors text-sm font-medium"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    Remove Child
+                  </button>
+                )}
+              </div>
 
-            {/* Camp Registration Confirmation */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-[#90AC19]" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">
-                    Registered for Easter Camp
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{CAMP_LABEL}</p>
+              <ChildInfoForm
+                childIndex={index}
+                childId={child.id}
+                onRemove={() => removeChild(child.id)}
+                showRemoveButton={false}
+              />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-base font-semibold text-gray-900">
+                      Select Camp Weeks
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Weekly rate: ₦{weeklyRate.toLocaleString()} per week
+                    </p>
+                  </div>
+                  <div className="text-sm font-medium text-gray-700">
+                    {selectedWeeks.length}{" "}
+                    {selectedWeeks.length === 1 ? "week" : "weeks"} selected
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {CAMP_WEEKS.map((week) => {
+                    const isSelected = selectedWeekNumbers.includes(
+                      week.weekNumber,
+                    );
+
+                    return (
+                      <label
+                        key={week.weekNumber}
+                        className={`cursor-pointer rounded-lg border p-4 transition-all ${
+                          isSelected
+                            ? "border-[#90AC19] bg-[#90AC19]/5 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() =>
+                            toggleWeekSelection(child.id, week.weekNumber)
+                          }
+                          className="sr-only"
+                        />
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-semibold text-gray-900">
+                              {week.label}
+                            </span>
+                            <span className="text-sm font-medium text-gray-700">
+                              ₦{weeklyRate.toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {week.dateLabel}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
-              <p className="text-base font-bold text-gray-800">
-                ₦{campFee.toLocaleString()}
-              </p>
-            </div>
 
-            {/* Per-child subtotal */}
-            <div className="bg-gray-200 border-2 border-gray-400 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">
-                    Subtotal for Child #{index + 1}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    One-time camp fee
+              <input
+                type="hidden"
+                name={`campWeeks_${child.id}`}
+                value={JSON.stringify(selectedWeeks)}
+              />
+
+              <div className="bg-gray-200 border-2 border-gray-400 rounded-lg p-4">
+                <div className="flex justify-between items-center gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      Subtotal for Child #{index + 1}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedWeeks.length}{" "}
+                      {selectedWeeks.length === 1 ? "week" : "weeks"} x ₦
+                      {weeklyRate.toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-800">
+                    ₦{childSubtotal.toLocaleString()}
                   </p>
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
-                  ₦{campFee.toLocaleString()}
-                </p>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
-        {/* Add Another Child Button */}
         <button
           type="button"
           onClick={addChild}
@@ -327,104 +408,67 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           Add Another Child
         </button>
 
-        {/* Hidden fields */}
         <input type="hidden" name="childrenCount" value={childrenData.length} />
+        <input type="hidden" name="weeklyRate" value={weeklyRate} />
+        <input type="hidden" name="campFee" value={weeklyRate} />
+        <input type="hidden" name="totalWeeks" value={totalSelectedWeeks} />
+        <input type="hidden" name="promoCode" value="" />
+        <input type="hidden" name="promoDiscount" value={0} />
 
-        {/* Final Payment Summary */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
           <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-gray-900 mb-6">
             <CurrencyDollarIcon className="w-6 h-6 mr-2 text-gray-700" />
             Final Payment Summary
           </h3>
-          {isEarlyBirdRateActive() && (
-            <p className="text-sm text-green-700 mb-4">
-              Early bird rate of ₦25,000 per child is available through March
-              31, 2026 and reverts to ₦30,000 from April 1.
-            </p>
-          )}
 
-          {/* Individual child costs */}
+          <p className="text-sm text-gray-700 mb-4">
+            Standard pricing is ₦30,000 per week. Early bird pricing is ₦25,000
+            per week until March 31, 2026.
+          </p>
+
           <div className="space-y-3 mb-6">
-            {childrenData.map((child, index) => (
-              <div
-                key={child.id}
-                className="bg-white p-4 rounded-lg border-2 border-gray-300"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-gray-800">
-                      Child #{index + 1}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Easter Camp — {CAMP_LABEL}
+            {childrenData.map((child, index) => {
+              const selectedWeekCount =
+                selectedWeeksByChild[child.id]?.length || 0;
+              const childTotal = selectedWeekCount * weeklyRate;
+
+              return (
+                <div
+                  key={child.id}
+                  className="bg-white p-4 rounded-lg border-2 border-gray-300"
+                >
+                  <div className="flex justify-between items-center gap-4">
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        Child #{index + 1}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {selectedWeekCount}{" "}
+                        {selectedWeekCount === 1 ? "week" : "weeks"} selected
+                      </p>
+                    </div>
+                    <p className="text-xl font-bold text-gray-800">
+                      ₦{childTotal.toLocaleString()}
                     </p>
                   </div>
-                  <p className="text-xl font-bold text-gray-800">
-                    ₦{campFee.toLocaleString()}
-                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Promo Code Section */}
-          {/* <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between items-end gap-4">
-              <div className="flex-1">
-                <label className="block mb-2 text-sm font-medium text-gray-900">
-                  Promo Code
-                </label>
-                <input
-                  type="text"
-                  name="promoCode"
-                  value={promoCode}
-                  onChange={(e) => {
-                    setPromoCode(e.target.value);
-                    setPromoMessage(null);
-                    setPromoDiscount(0);
-                  }}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
-                  placeholder="Enter promo code"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={applyPromoCode}
-                className="btn btn-neutral h-12 self-end rounded-lg"
-              >
-                Apply
-              </button>
-            </div>
-            {promoMessage && (
-              <p
-                className={`mt-3 text-sm ${
-                  promoDiscount > 0 ? "text-green-700" : "text-red-600"
-                }`}
-              >
-                {promoMessage}
-              </p>
-            )}
-          </div> */}
-
-          {/* PaymentSchedule Component */}
           <PaymentSchedule
             holidayCamp={true}
             numberOfChildren={childrenData.length}
-            campFee={campFee}
-            discountAmount={promoDiscount}
-            discountLabel="Early bird discount"
+            weeklyRate={weeklyRate}
+            totalWeeks={totalSelectedWeeks}
           />
-
-          <input type="hidden" name="campFee" value={campFee} />
-          <input type="hidden" name="promoCode" value={promoCode} />
-          <input type="hidden" name="promoDiscount" value={promoDiscount} />
 
           <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
             <InformationCircleIcon className="w-5 h-5 text-blue-600 inline mr-2" />
             <span className="text-sm text-gray-700">
-              Fun, educational holiday camp with supervised activities, meals,
-              and excursions included. This is a one-time payment for the full
-              camp programme.
+              Camp pricing is based on the number of weeks selected for each
+              child. Only the 3 Easter camp weeks from April 7 to April 25, 2026
+              are available.
             </span>
           </div>
         </div>
