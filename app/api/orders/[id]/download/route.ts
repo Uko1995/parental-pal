@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Find order
@@ -139,7 +139,7 @@ export async function POST(
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Find and verify order

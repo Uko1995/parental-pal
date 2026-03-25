@@ -15,7 +15,7 @@ export async function GET() {
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Get low stock threshold from settings or use default
@@ -101,7 +101,7 @@ export async function POST() {
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Get low stock threshold

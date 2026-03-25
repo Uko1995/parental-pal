@@ -21,7 +21,7 @@ export async function POST(
 
     const { id: orderId } = await context.params;
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Find order

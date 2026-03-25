@@ -1,6 +1,7 @@
 "use client";
 
 import Hero from "../components/Hero";
+import AliveInMeBanner from "../components/AliveInMeBanner";
 import { useEffect, Suspense, lazy } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -55,6 +56,7 @@ export default function Page() {
         }}
       />
       <div className="relative">
+        <AliveInMeBanner />
         <Hero />
       </div>
       <Suspense fallback={<div className="h-96" />}>

@@ -15,10 +15,6 @@ declare global {
 
 const uri = process.env.MONGODB_URI as string;
 
-if (!uri) {
-  throw new Error("Please add your MONGODB_URI to .env.local");
-}
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const options = {
   serverApi: {
@@ -28,20 +24,32 @@ const options = {
   },
 };
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let clientPromise: Promise<MongoClient> | null = null;
 
-if (process.env.NODE_ENV === "development") {
-  // In development mode, use a global variable to preserve the connection
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+function getClientPromise(): Promise<MongoClient> {
+  // IMPORTANT: avoid connecting at module import time.
+  // Next.js build can import route/model modules during "Collecting page data".
+  if (!uri) {
+    return Promise.reject(
+      new Error("Please add your MONGODB_URI to .env.local"),
+    );
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  // In production mode, create a new client
-  client = new MongoClient(uri, options);
+
+  if (clientPromise) return clientPromise;
+
+  if (process.env.NODE_ENV === "development") {
+    // In development mode, use a global variable to preserve the connection
+    if (!global._mongoClientPromise) {
+      const client = new MongoClient(uri, options);
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
+    return clientPromise;
+  }
+
+  const client = new MongoClient(uri, options);
   clientPromise = client.connect();
+  return clientPromise;
 }
 
 // Database name extracted from URI or default
@@ -49,7 +57,7 @@ const dbName = "parental-pal";
 
 // Helper function to get database
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
+  const client = await getClientPromise();
   return client.db(dbName);
 }
 
@@ -61,4 +69,6 @@ export async function getCollection<T extends Document = Document>(
   return db.collection<T>(collectionName);
 }
 
-export default clientPromise;
+// Default export is kept for backwards-compatibility with existing imports.
+// Export the function (do not eagerly call) to avoid connecting during module import.
+export default getClientPromise;

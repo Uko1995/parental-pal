@@ -7,7 +7,7 @@ import {
   BookmarkIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
-import { normalizeBillingType, formatBillingSuffix } from "@/lib/service-utils";
+import { formatBillingSuffix } from "@/lib/service-utils";
 import Image from "next/image";
 
 // Helper function to format pricing
@@ -40,7 +40,7 @@ export default async function Services() {
   // WhatsApp consultation link
   const whatsappNumber = "+2348065394795";
   const whatsappMessage = encodeURIComponent(
-    "Hello! I'd like to schedule a consultation about your services.",
+    "Hello! I'd like to schedule a consultation about your services."
   );
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
@@ -136,10 +136,10 @@ export default async function Services() {
                                 26 *
                                 (1 - pkg.discountPercentage / 100)
                               : service?.type === "space-rental"
-                                ? basePrice *
-                                  2 *
-                                  (1 - pkg.discountPercentage / 100)
-                                : basePrice;
+                              ? basePrice *
+                                2 *
+                                (1 - pkg.discountPercentage / 100)
+                              : basePrice;
                           return (
                             <div
                               key={idx}
@@ -163,7 +163,7 @@ export default async function Services() {
                                 <span className="text-[#90AC19] text-base font-bold">
                                   {formatCurrency(
                                     discountedPrice,
-                                    service.pricing.currency,
+                                    service.pricing.currency
                                   )}
                                 </span>
                                 {/* <span className="text-xs bg-[#E8931A] text-white px-2 py-0.5 rounded-full font-semibold">

@@ -14,7 +14,7 @@ export async function GET() {
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Get date ranges
