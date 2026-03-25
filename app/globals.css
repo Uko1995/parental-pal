@@ -222,3 +222,29 @@ body {
     linear-gradient(45deg, #90ac19, #e8931a) border-box;
   border: 2px solid transparent;
 }
+
+/* Moving promo banner (marquee-style) */
+@keyframes moving-promo-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.moving-promo-marquee {
+  display: flex;
+  width: max-content;
+  animation: moving-promo-marquee var(--marquee-duration, 18s) linear infinite;
+}
+
+.moving-promo-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moving-promo-marquee {
+    animation: none;
+  }
+}
