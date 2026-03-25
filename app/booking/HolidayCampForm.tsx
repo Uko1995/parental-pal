@@ -123,7 +123,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
 
     useEffect(() => {
       props.onTotalChange?.(totalAmount);
-    }, [props.onTotalChange, totalAmount]);
+    }, [props, totalAmount]);
 
     const toggleWeekSelection = (childId: string, weekNumber: number) => {
       setSelectedWeeksByChild((prev) => {
@@ -281,7 +281,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
         {childrenData.map((child, index) => {
           const selectedWeekNumbers = selectedWeeksByChild[child.id] || [];
           const selectedWeeks = CAMP_WEEKS.filter((week) =>
-            selectedWeekNumbers.includes(week.weekNumber),
+            selectedWeekNumbers.includes(week.weekNumber)
           );
           const childSubtotal = selectedWeeks.length * weeklyRate;
 
@@ -333,7 +333,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {CAMP_WEEKS.map((week) => {
                     const isSelected = selectedWeekNumbers.includes(
-                      week.weekNumber,
+                      week.weekNumber
                     );
 
                     return (
@@ -474,7 +474,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 HolidayCampForm.displayName = "HolidayCampForm";

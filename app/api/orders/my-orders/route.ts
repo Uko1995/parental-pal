@@ -15,7 +15,7 @@ export async function GET() {
       );
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise();
     const db = client.db();
 
     // Fetch user's orders - match by userId OR customerEmail
