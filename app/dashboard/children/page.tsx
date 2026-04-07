@@ -59,6 +59,140 @@ interface ChildrenStats {
   serviceStats: ServiceStat[];
 }
 
+function unwrapValue(value: unknown): unknown {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "value" in value &&
+    Object.keys(value as Record<string, unknown>).length === 1
+  ) {
+    return unwrapValue((value as { value: unknown }).value);
+  }
+
+  return value;
+}
+
+function getText(value: unknown, fallback = ""): string {
+  const normalized = unwrapValue(value);
+
+  if (normalized == null) {
+    return fallback;
+  }
+
+  return String(normalized);
+}
+
+function getOptionalText(value: unknown): string | undefined {
+  const normalized = getText(value).trim();
+  return normalized || undefined;
+}
+
+function getNumber(value: unknown, fallback = 0): number {
+  const normalized = unwrapValue(value);
+
+  if (typeof normalized === "number") {
+    return normalized;
+  }
+
+  if (typeof normalized === "string") {
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
+function getStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((item) => getText(item)).filter(Boolean);
+}
+
+function normalizeChild(child: unknown): Child {
+  const childData = child as Partial<Child> & {
+    services?: Array<{
+      serviceType?: unknown;
+      status?: unknown;
+      bookingId?: unknown;
+      createdAt?: string | Date;
+    }>;
+  };
+
+  return {
+    childId: getOptionalText(childData.childId),
+    name: getText(childData.name, "Unknown Child"),
+    age: getNumber(childData.age),
+    gender:
+      getText(childData.gender).toLowerCase() === "female" ? "female" : "male",
+    class: getOptionalText(childData.class),
+    schoolName: getOptionalText(childData.schoolName),
+    subjects: getStringArray(childData.subjects),
+    parentId: getText(childData.parentId),
+    parentName: getOptionalText(childData.parentName) ?? null,
+    parentEmail: getOptionalText(childData.parentEmail) ?? null,
+    services: Array.isArray(childData.services)
+      ? childData.services.map((service) => ({
+          serviceType: getText(service.serviceType, "unknown"),
+          status: getText(service.status, "unknown"),
+          bookingId: getText(service.bookingId, "unknown"),
+          createdAt: service.createdAt
+            ? new Date(service.createdAt)
+            : new Date(),
+        }))
+      : [],
+  };
+}
+
+function normalizeServiceStat(stat: unknown): ServiceStat {
+  const serviceStat = stat as Partial<ServiceStat>;
+
+  return {
+    serviceType: getText(serviceStat.serviceType, "unknown"),
+    childrenCount: getNumber(serviceStat.childrenCount),
+    totalBookings: getNumber(serviceStat.totalBookings),
+  };
+}
+
+function normalizeChildrenStats(stats: unknown): ChildrenStats {
+  const childrenStats = stats as Partial<ChildrenStats>;
+
+  return {
+    totalChildren: getNumber(childrenStats.totalChildren),
+    averageAge: getNumber(childrenStats.averageAge),
+    ageRange: {
+      youngest: getNumber(childrenStats.ageRange?.youngest),
+      oldest: getNumber(childrenStats.ageRange?.oldest),
+    },
+    ageGroups:
+      childrenStats.ageGroups &&
+      typeof childrenStats.ageGroups === "object" &&
+      !Array.isArray(childrenStats.ageGroups)
+        ? Object.fromEntries(
+            Object.entries(childrenStats.ageGroups).map(([key, value]) => [
+              key,
+              getNumber(value),
+            ])
+          )
+        : {},
+    schoolDistribution:
+      childrenStats.schoolDistribution &&
+      typeof childrenStats.schoolDistribution === "object" &&
+      !Array.isArray(childrenStats.schoolDistribution)
+        ? Object.fromEntries(
+            Object.entries(childrenStats.schoolDistribution).map(
+              ([key, value]) => [key, getNumber(value)]
+            )
+          )
+        : {},
+    serviceStats: Array.isArray(childrenStats.serviceStats)
+      ? childrenStats.serviceStats.map(normalizeServiceStat)
+      : [],
+  };
+}
+
 export default function ChildrenPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
@@ -79,9 +213,15 @@ export default function ChildrenPage() {
       const childrenResponse = await fetch("/api/children-data");
       if (childrenResponse.ok) {
         const data = await childrenResponse.json();
-        setChildren(data.children);
-        setServiceStats(data.serviceStats);
-        setChildrenStats(data.childrenStats);
+        setChildren(
+          Array.isArray(data.children) ? data.children.map(normalizeChild) : []
+        );
+        setServiceStats(
+          Array.isArray(data.serviceStats)
+            ? data.serviceStats.map(normalizeServiceStat)
+            : []
+        );
+        setChildrenStats(normalizeChildrenStats(data.childrenStats));
       }
 
       // Fetch parents for the add modal
@@ -99,9 +239,9 @@ export default function ChildrenPage() {
               };
             };
           }) => ({
-            _id: parent._id,
-            name: parent.userData?.user?.name || "Unknown",
-            email: parent.userData?.user?.email || "Unknown",
+            _id: getText(parent._id),
+            name: getText(parent.userData?.user?.name, "Unknown"),
+            email: getText(parent.userData?.user?.email, "Unknown"),
           })
         );
         setParents(simpleParents);

@@ -177,17 +177,17 @@ export default function DashboardLayout({
           </nav>
 
           {/* User Profile Section */}
-          <div className="p-4 border-t border-base-200">
+          {/* <div className="p-4 border-t border-base-200">
             <div className="flex items-center space-x-3 p-3 bg-base-50 rounded-lg">
               <div className="w-8 h-8 bg-linear-to-r from-[#A25F97] to-[#E8931A] rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-sm">AD</span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Admin User</p>
-                <p className="text-xs text-gray-500">admin@parentalpal.com</p>
+                <p className="text-sm font-medium text-gray-900">{Name}</p>
+                <p className="text-xs text-gray-500">{session?.user?.email}</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 

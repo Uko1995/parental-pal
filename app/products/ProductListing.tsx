@@ -97,7 +97,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         (p) =>
           p.title.toLowerCase().includes(query) ||
           p.author.toLowerCase().includes(query) ||
-          p.shortDescription.toLowerCase().includes(query)
+          p.shortDescription.toLowerCase().includes(query),
       );
     }
 
@@ -116,7 +116,7 @@ export default function ProductListing({ products }: ProductListingProps) {
       result = result.filter((p) => {
         const minPrice = Math.min(
           p.pricing.softcopy.available ? p.pricing.softcopy.price : Infinity,
-          p.pricing.paperback.available ? p.pricing.paperback.price : Infinity
+          p.pricing.paperback.available ? p.pricing.paperback.price : Infinity,
         );
 
         switch (priceFilter) {
@@ -139,7 +139,7 @@ export default function ProductListing({ products }: ProductListingProps) {
       result = result.filter((p) =>
         formatFilter === "softcopy"
           ? p.pricing.softcopy.available
-          : p.pricing.paperback.available
+          : p.pricing.paperback.available,
       );
     }
 
@@ -156,11 +156,15 @@ export default function ProductListing({ products }: ProductListingProps) {
         result.sort((a, b) => {
           const aPrice = Math.min(
             a.pricing.softcopy.available ? a.pricing.softcopy.price : Infinity,
-            a.pricing.paperback.available ? a.pricing.paperback.price : Infinity
+            a.pricing.paperback.available
+              ? a.pricing.paperback.price
+              : Infinity,
           );
           const bPrice = Math.min(
             b.pricing.softcopy.available ? b.pricing.softcopy.price : Infinity,
-            b.pricing.paperback.available ? b.pricing.paperback.price : Infinity
+            b.pricing.paperback.available
+              ? b.pricing.paperback.price
+              : Infinity,
           );
           return aPrice - bPrice;
         });
@@ -169,11 +173,11 @@ export default function ProductListing({ products }: ProductListingProps) {
         result.sort((a, b) => {
           const aPrice = Math.max(
             a.pricing.softcopy.available ? a.pricing.softcopy.price : 0,
-            a.pricing.paperback.available ? a.pricing.paperback.price : 0
+            a.pricing.paperback.available ? a.pricing.paperback.price : 0,
           );
           const bPrice = Math.max(
             b.pricing.softcopy.available ? b.pricing.softcopy.price : 0,
-            b.pricing.paperback.available ? b.pricing.paperback.price : 0
+            b.pricing.paperback.available ? b.pricing.paperback.price : 0,
           );
           return bPrice - aPrice;
         });
@@ -209,7 +213,7 @@ export default function ProductListing({ products }: ProductListingProps) {
   const handleAddToCart = async (
     e: React.MouseEvent,
     productId: string,
-    orderType: "softcopy" | "paperback"
+    orderType: "softcopy" | "paperback",
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -232,11 +236,11 @@ export default function ProductListing({ products }: ProductListingProps) {
 
         const guestCart = JSON.parse(
           localStorage.getItem("guest_cart") ||
-            '{"items":[], "subtotal": 0, "discount": 0, "total": 0}'
+            '{"items":[], "subtotal": 0, "discount": 0, "total": 0}',
         );
         const existingItemIndex = guestCart.items.findIndex(
           (item: { productId: string; orderType: string }) =>
-            item.productId === productId && item.orderType === orderType
+            item.productId === productId && item.orderType === orderType,
         );
 
         if (existingItemIndex !== -1) {
@@ -258,7 +262,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         // Recalculate totals
         guestCart.subtotal = guestCart.items.reduce(
           (sum: number, item: CartItem) => sum + item.unitPrice * item.quantity,
-          0
+          0,
         );
         guestCart.total = guestCart.subtotal - (guestCart.discount || 0);
 
@@ -291,7 +295,7 @@ export default function ProductListing({ products }: ProductListingProps) {
 
   const handleToggleWishlist = async (
     e: React.MouseEvent,
-    productId: string
+    productId: string,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -303,12 +307,12 @@ export default function ProductListing({ products }: ProductListingProps) {
       // Handle guest users with localStorage
       if (!session) {
         const guestWishlist = JSON.parse(
-          localStorage.getItem("guest_wishlist") || '{"items":[]}'
+          localStorage.getItem("guest_wishlist") || '{"items":[]}',
         );
 
         if (isInWishlist) {
           guestWishlist.items = guestWishlist.items.filter(
-            (item: CartItem) => item.productId !== productId
+            (item: CartItem) => item.productId !== productId,
           );
           localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => {
@@ -392,17 +396,17 @@ export default function ProductListing({ products }: ProductListingProps) {
   return (
     <div>
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-xl shadow-md p-4 mb-8">
+      <div className=" p-4 mb-8">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
-          <div className="relative flex-1">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="relative flex-1 ">
+            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 " />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by title, author..."
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19]"
+              className="w-full pl-10 pr-4 py-3 border rounded-full text-sm"
             />
           </div>
 
@@ -411,7 +415,7 @@ export default function ProductListing({ products }: ProductListingProps) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="appearance-none w-full lg:w-48 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] pr-10"
+              className="appearance-none w-full lg:w-48 px-4 py-3 border rounded-full pr-10 text-sm"
             >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -419,13 +423,13 @@ export default function ProductListing({ products }: ProductListingProps) {
                 </option>
               ))}
             </select>
-            <ChevronDownIcon className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <ChevronDownIcon className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2  pointer-events-none" />
           </div>
 
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center justify-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
+            className={`flex items-center justify-center gap-2 px-4 py-3 border rounded-full text-sm transition-colors ${
               showFilters
                 ? "bg-[#90AC19] text-white border-[#90AC19]"
                 : "hover:bg-gray-50"
@@ -633,7 +637,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                     </div>
                   )}
                   {/* Format badges */}
-                  <div className="absolute bottom-3 left-3 flex gap-1">
+                  {/* <div className="absolute bottom-3 left-3 flex gap-1">
                     {product.pricing.softcopy.available && (
                       <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
                         PDF
@@ -644,7 +648,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                         HardCover
                       </span>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Book Details */}
@@ -653,12 +657,12 @@ export default function ProductListing({ products }: ProductListingProps) {
                     <span className="inline-block bg-[#90AC19]/10 text-[#90AC19] text-xs font-semibold px-3 py-1 rounded-full">
                       {product.ageRange}
                     </span>
-                    {product.averageRating && product.averageRating > 0 && (
+                    {/* {product?.averageRating && product?.averageRating > 0 && (
                       <span className="flex items-center gap-1 text-sm text-gray-600">
-                        <StarIcon className="w-4 h-4 text-yellow-400 fill-current" />
+                        <StarIcon className="w-4 h-4 text-black " />
                         {product.averageRating.toFixed(1)}
                       </span>
-                    )}
+                    )} */}
                   </div>
 
                   <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-[#90AC19] transition-colors">
@@ -674,21 +678,21 @@ export default function ProductListing({ products }: ProductListingProps) {
                   </p>
 
                   {/* Pricing */}
-                  <div className="border-t pt-2 space-y-2">
+                  <div className="border-t border-gray-300 pt-2 space-y-2">
                     {product.pricing.softcopy.available && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">PDF:</span>
-                        <span className="text-lg font-bold text-black">
+                        <span className="text-xs text-gray-600">PDF:</span>
+                        <span className="text-base font-bold text-black">
                           ₦{product.pricing.softcopy.price.toLocaleString()}
                         </span>
                       </div>
                     )}
                     {product.pricing.paperback.available && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
+                        <span className="text-xs text-gray-600">
                           Paperback:
                         </span>
-                        <span className="text-lg font-bold text-black">
+                        <span className="text-base font-semibold text-black">
                           ₦{product.pricing.paperback.price.toLocaleString()}
                         </span>
                       </div>

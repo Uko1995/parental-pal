@@ -59,7 +59,7 @@ interface ParentsTableProps {
 
 export default function ParentsTable({ initialParents }: ParentsTableProps) {
   const [parents, setParents] = useState<SerializedParentWithStats[]>(
-    initialParents || []
+    initialParents || [],
   );
   const [selectedParent, setSelectedParent] =
     useState<SerializedParentWithStats | null>(null);
@@ -88,7 +88,18 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
   const [nameFilter, setNameFilter] = useState("");
   const [membershipFilter, setMembershipFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showFilters, setShowFilters] = useState(true);
+  const hasModifiedSort = sortOrder !== "most-recent";
+
+  const getParentTimestamp = (parent: SerializedParentWithStats) => {
+    const timestamp = parent.createdAt
+      ? new Date(parent.createdAt).getTime()
+      : 0;
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
 
   // Handle page change with scroll
   const handlePageChange = (page: number) => {
@@ -114,13 +125,14 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
     setNameFilter("");
     setMembershipFilter("");
     setStatusFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
   // Filter parents based on current filters
   const filteredParents = useMemo(() => {
     if (!Array.isArray(parents)) return [];
-    return parents.filter((parent) => {
+    const filtered = parents.filter((parent) => {
       // Name filter
       if (
         nameFilter &&
@@ -151,7 +163,12 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
 
       return true;
     });
-  }, [parents, nameFilter, membershipFilter, statusFilter]);
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getParentTimestamp(b) - getParentTimestamp(a)
+        : getParentTimestamp(a) - getParentTimestamp(b),
+    );
+  }, [parents, nameFilter, membershipFilter, statusFilter, sortOrder]);
 
   // Client-side pagination (matching ChildrenTable)
   const clientPagination = useMemo(() => {
@@ -176,12 +193,13 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
   const paginatedParents = useMemo(() => {
     return filteredParents.slice(
       clientPagination.startIndex,
-      clientPagination.endIndex
+      clientPagination.endIndex,
     );
   }, [filteredParents, clientPagination.startIndex, clientPagination.endIndex]);
 
   // Check if filters are active
-  const hasActiveFilters = nameFilter || membershipFilter || statusFilter;
+  const hasActiveFilters =
+    nameFilter || membershipFilter || statusFilter || hasModifiedSort;
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -216,7 +234,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
         setParents(
           Array.isArray(parents)
             ? parents.filter((p) => p._id !== parentToDelete._id)
-            : []
+            : [],
         );
         toast.success("Parent deleted successfully");
       } else {
@@ -242,9 +260,9 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
     setParents((prev) =>
       Array.isArray(prev)
         ? prev.map((parent) =>
-            parent._id === updatedParent._id ? updatedParent : parent
+            parent._id === updatedParent._id ? updatedParent : parent,
           )
-        : []
+        : [],
     );
   };
 
@@ -284,7 +302,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
           {/* Filters Section */}
           {showFilters && (
             <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Name Filter */}
                 <div className="form-control">
                   <label className="label">
@@ -312,7 +330,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                     </span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-bordered w-full p-2"
                     value={membershipFilter}
                     onChange={(e) => setMembershipFilter(e.target.value)}
                   >
@@ -331,13 +349,29 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                     <span className="label-text font-medium">Status</span>
                   </label>
                   <select
-                    className="select select-bordered w-full"
+                    className="select select-bordered w-full p-2"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
                     <option value="">All Status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Sort</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full p-2"
+                    value={sortOrder}
+                    onChange={(e) =>
+                      setSortOrder(e.target.value as "most-recent" | "oldest")
+                    }
+                  >
+                    <option value="most-recent">Most Recent</option>
+                    <option value="oldest">Oldest First</option>
                   </select>
                 </div>
               </div>
@@ -502,7 +536,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                   {Math.min(
                     clientPagination.currentPage *
                       clientPagination.itemsPerPage,
-                    clientPagination.totalItems
+                    clientPagination.totalItems,
                   )}
                 </span>{" "}
                 of{" "}
@@ -533,7 +567,7 @@ export default function ParentsTable({ initialParents }: ParentsTableProps) {
                 <div className="flex space-x-1">
                   {Array.from(
                     { length: clientPagination.totalPages },
-                    (_, i) => i + 1
+                    (_, i) => i + 1,
                   )
                     .filter((page) => {
                       // Show current page, previous page, next page, first page, and last page

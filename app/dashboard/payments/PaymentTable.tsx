@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   MagnifyingGlassIcon,
   EyeIcon,
@@ -24,6 +24,9 @@ export default function PaymentTable({
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [amountFilter, setAmountFilter] = useState({ min: "", max: "" });
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paymentToDelete, setPaymentToDelete] =
     useState<PaymentInterface | null>(null);
@@ -32,29 +35,55 @@ export default function PaymentTable({
 
   const tableRef = useRef<HTMLDivElement>(null);
   const itemsPerPage = 10;
+  const hasModifiedSort = sortOrder !== "most-recent";
+
+  const getPaymentTimestamp = (payment: PaymentInterface) => {
+    const timestamp = new Date(
+      payment.paymentDate || payment.createdAt,
+    ).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
 
   // Get unique services and statuses for filters
   const uniqueServices = [...new Set(payments.map((p) => p.service))];
   const uniqueStatuses = [...new Set(payments.map((p) => p.paymentStatus))];
 
   // Filter payments based on search criteria
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch =
-      payment.parentName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      payment.childName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      payment.parentEmail.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      payment.bookingId.toLowerCase().includes(searchFilter.toLowerCase());
+  const filteredPayments = useMemo(() => {
+    const filtered = payments.filter((payment) => {
+      const matchesSearch =
+        payment.parentName.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        payment.childName.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        payment.parentEmail
+          .toLowerCase()
+          .includes(searchFilter.toLowerCase()) ||
+        payment.bookingId.toLowerCase().includes(searchFilter.toLowerCase());
 
-    const matchesStatus =
-      !statusFilter || payment.paymentStatus === statusFilter;
-    const matchesService = !serviceFilter || payment.service === serviceFilter;
+      const matchesStatus =
+        !statusFilter || payment.paymentStatus === statusFilter;
+      const matchesService =
+        !serviceFilter || payment.service === serviceFilter;
 
-    const matchesAmount =
-      (!amountFilter.min || payment.amount >= parseFloat(amountFilter.min)) &&
-      (!amountFilter.max || payment.amount <= parseFloat(amountFilter.max));
+      const matchesAmount =
+        (!amountFilter.min || payment.amount >= parseFloat(amountFilter.min)) &&
+        (!amountFilter.max || payment.amount <= parseFloat(amountFilter.max));
 
-    return matchesSearch && matchesStatus && matchesService && matchesAmount;
-  });
+      return matchesSearch && matchesStatus && matchesService && matchesAmount;
+    });
+
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getPaymentTimestamp(b) - getPaymentTimestamp(a)
+        : getPaymentTimestamp(a) - getPaymentTimestamp(b),
+    );
+  }, [
+    payments,
+    searchFilter,
+    statusFilter,
+    serviceFilter,
+    amountFilter,
+    sortOrder,
+  ]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
@@ -81,6 +110,7 @@ export default function PaymentTable({
     setStatusFilter("");
     setServiceFilter("");
     setAmountFilter({ min: "", max: "" });
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
@@ -172,6 +202,7 @@ export default function PaymentTable({
               {(searchFilter ||
                 statusFilter ||
                 serviceFilter ||
+                hasModifiedSort ||
                 amountFilter.min ||
                 amountFilter.max) &&
                 " (filtered)"}
@@ -189,6 +220,7 @@ export default function PaymentTable({
             {(searchFilter ||
               statusFilter ||
               serviceFilter ||
+              hasModifiedSort ||
               amountFilter.min ||
               amountFilter.max) && (
               <button className="btn btn-outline btn-sm" onClick={clearFilters}>
@@ -201,7 +233,7 @@ export default function PaymentTable({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Search Filter */}
               <div className="form-control">
                 <label className="label">
@@ -225,7 +257,7 @@ export default function PaymentTable({
                   <span className="label-text font-medium">Payment Status</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -244,7 +276,7 @@ export default function PaymentTable({
                   <span className="label-text font-medium">Service Type</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={serviceFilter}
                   onChange={(e) => setServiceFilter(e.target.value)}
                 >
@@ -268,7 +300,7 @@ export default function PaymentTable({
                   <input
                     type="number"
                     placeholder="Min"
-                    className="input input-bordered w-full"
+                    className="input input-bordered w-full p-2"
                     value={amountFilter.min}
                     onChange={(e) =>
                       setAmountFilter((prev) => ({
@@ -280,7 +312,7 @@ export default function PaymentTable({
                   <input
                     type="number"
                     placeholder="Max"
-                    className="input input-bordered w-full"
+                    className="input input-bordered w-full p-2"
                     value={amountFilter.max}
                     onChange={(e) =>
                       setAmountFilter((prev) => ({
@@ -290,6 +322,22 @@ export default function PaymentTable({
                     }
                   />
                 </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Sort</span>
+                </label>
+                <select
+                  className="select select-bordered w-full p-2"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
               </div>
             </div>
           </div>
@@ -319,6 +367,7 @@ export default function PaymentTable({
                       {(searchFilter ||
                         statusFilter ||
                         serviceFilter ||
+                        hasModifiedSort ||
                         amountFilter.min ||
                         amountFilter.max) && (
                         <button
@@ -434,7 +483,7 @@ export default function PaymentTable({
                   >
                     {page}
                   </button>
-                )
+                ),
               )}
               <button
                 className="btn btn-sm"
@@ -512,7 +561,7 @@ export default function PaymentTable({
                   <div>
                     {getStatusBadge(
                       viewPayment.paymentStatus,
-                      viewPayment.dueDate
+                      viewPayment.dueDate,
                     )}
                   </div>
                 </div>
@@ -592,8 +641,8 @@ export default function PaymentTable({
                                 installment.status === "paid"
                                   ? "badge-success"
                                   : installment.status === "overdue"
-                                  ? "badge-error"
-                                  : "badge-warning"
+                                    ? "badge-error"
+                                    : "badge-warning"
                               }`}
                             >
                               {installment.status}

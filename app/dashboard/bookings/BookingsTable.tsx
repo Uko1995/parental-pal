@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -77,6 +77,9 @@ export default function BookingsTable({
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [deleteModal, setDeleteModal] = useState<{
@@ -90,29 +93,43 @@ export default function BookingsTable({
 
   const itemsPerPage = 10;
   const tableRef = useRef<HTMLDivElement>(null);
+  const hasModifiedSort = sortOrder !== "most-recent";
+
+  const getBookingTimestamp = (booking: Booking) => {
+    const timestamp = new Date(booking.createdAt).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
 
   // Get unique services and statuses for filters
   const uniqueServices = [...new Set(bookings.map((b) => b.serviceType))];
   const uniqueStatuses = [...new Set(bookings.map((b) => b.status))];
 
   // Apply filters
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesName = booking.parentName
-      .toLowerCase()
-      .includes(nameFilter.toLowerCase());
-    const matchesStatus = !statusFilter || booking.status === statusFilter;
-    const matchesService =
-      !serviceFilter || booking.serviceType === serviceFilter;
+  const filteredBookings = useMemo(() => {
+    const filtered = bookings.filter((booking) => {
+      const matchesName = booking.parentName
+        .toLowerCase()
+        .includes(nameFilter.toLowerCase());
+      const matchesStatus = !statusFilter || booking.status === statusFilter;
+      const matchesService =
+        !serviceFilter || booking.serviceType === serviceFilter;
 
-    return matchesName && matchesStatus && matchesService;
-  });
+      return matchesName && matchesStatus && matchesService;
+    });
+
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getBookingTimestamp(b) - getBookingTimestamp(a)
+        : getBookingTimestamp(a) - getBookingTimestamp(b),
+    );
+  }, [bookings, nameFilter, statusFilter, serviceFilter, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedBookings = filteredBookings.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const scrollToTable = () => {
@@ -133,6 +150,7 @@ export default function BookingsTable({
     setNameFilter("");
     setStatusFilter("");
     setServiceFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
@@ -174,7 +192,7 @@ export default function BookingsTable({
     // Prevent deletion of non-pending bookings
     if (booking.status !== "pending") {
       toast.error(
-        `Cannot delete ${booking.status} booking. Only pending bookings can be deleted.`
+        `Cannot delete ${booking.status} booking. Only pending bookings can be deleted.`,
       );
       return;
     }
@@ -240,7 +258,10 @@ export default function BookingsTable({
               <FunnelIcon className="w-4 h-4 mr-1" />
               Filters
             </button>
-            {(nameFilter || statusFilter || serviceFilter) && (
+            {(nameFilter ||
+              statusFilter ||
+              serviceFilter ||
+              hasModifiedSort) && (
               <button className="btn btn-outline btn-sm" onClick={clearFilters}>
                 Clear Filters
               </button>
@@ -251,7 +272,7 @@ export default function BookingsTable({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Name Filter */}
               <div className="form-control">
                 <label className="label">
@@ -277,7 +298,7 @@ export default function BookingsTable({
                   <span className="label-text font-medium">Status</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -296,7 +317,7 @@ export default function BookingsTable({
                   <span className="label-text font-medium">Service Type</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={serviceFilter}
                   onChange={(e) => setServiceFilter(e.target.value)}
                 >
@@ -306,6 +327,22 @@ export default function BookingsTable({
                       {service}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Sort</span>
+                </label>
+                <select
+                  className="select select-bordered w-full p-2"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
                 </select>
               </div>
             </div>
@@ -333,10 +370,10 @@ export default function BookingsTable({
                     booking.status === "pending"
                       ? "border-l-4 border-l-warning"
                       : booking.status === "confirmed"
-                      ? "border-l-4 border-l-success"
-                      : booking.status === "cancelled"
-                      ? "border-l-4 border-l-error"
-                      : "border-l-4 border-l-info"
+                        ? "border-l-4 border-l-success"
+                        : booking.status === "cancelled"
+                          ? "border-l-4 border-l-error"
+                          : "border-l-4 border-l-info"
                   }`}
                 >
                   <td>

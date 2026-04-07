@@ -7,6 +7,7 @@ interface ChildrenData {
     childId?: string;
     name: string;
     age: number;
+    gender: "male" | "female";
     class?: string;
     schoolName?: string;
     subjects?: string[];

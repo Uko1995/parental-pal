@@ -67,7 +67,7 @@ export default function NavBar() {
           : "bg-white backdrop-blur-md shadow-md border-b border-gray-200"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="shrink-0 w-50 h-12.5">
@@ -101,8 +101,8 @@ export default function NavBar() {
                           ? "bg-white/20 text-white"
                           : "bg-[#90AC19]/10 text-[#90AC19]"
                         : isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                          ? "text-white/90 hover:text-white hover:bg-white/10"
+                          : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
                     }`}
                   >
                     {item.name}
@@ -155,8 +155,8 @@ export default function NavBar() {
                     {session.user.role === "admin"
                       ? "Administrator"
                       : session.user.role === "tutor"
-                      ? "Tutor"
-                      : "Parent"}
+                        ? "Tutor"
+                        : "Parent"}
                   </span>
                 </div>
 
@@ -251,8 +251,8 @@ export default function NavBar() {
                         ? "bg-white/20 text-white"
                         : "bg-[#90AC19]/10 text-[#90AC19]"
                       : isTransparent
-                      ? "text-white/90 hover:text-white hover:bg-white/10"
-                      : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
                   }`}
                 >
                   {item.name}

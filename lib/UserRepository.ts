@@ -2,6 +2,65 @@ import { ObjectId } from "mongodb";
 import { getCollection, getDb } from "../lib/mongodb";
 import { UserInterface, UserSchema } from "../models/User";
 
+function unwrapBsonValue(value: unknown): unknown {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    !(value instanceof Date) &&
+    "value" in value &&
+    Object.keys(value as Record<string, unknown>).length === 1
+  ) {
+    return unwrapBsonValue((value as { value: unknown }).value);
+  }
+
+  return value;
+}
+
+function normalizeString(value: unknown): string {
+  const normalized = unwrapBsonValue(value);
+
+  if (normalized == null) {
+    return "";
+  }
+
+  return String(normalized);
+}
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  const normalized = normalizeString(value).trim();
+  return normalized || undefined;
+}
+
+function normalizeNumber(value: unknown): number {
+  const normalized = unwrapBsonValue(value);
+
+  if (typeof normalized === "number") {
+    return normalized;
+  }
+
+  if (typeof normalized === "string") {
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function normalizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value
+    .map((item) => normalizeString(item).trim())
+    .filter(Boolean);
+}
+
+function normalizeGender(value: unknown): "male" | "female" {
+  return normalizeString(value).toLowerCase() === "female" ? "female" : "male";
+}
+
 export class UserRepository {
   private static collectionName = "users";
 
@@ -333,6 +392,7 @@ export class UserRepository {
       childId?: string;
       name: string;
       age: number;
+      gender: "male" | "female";
       class?: string;
       schoolName?: string;
       subjects?: string[];
@@ -374,6 +434,7 @@ export class UserRepository {
       children?: Array<{
         name: string;
         age: number;
+        gender?: "male" | "female";
         class?: string;
         schoolName?: string;
       }>;
@@ -388,6 +449,7 @@ export class UserRepository {
       childId?: string;
       name: string;
       age: number;
+      gender: "male" | "female";
       class?: string;
       schoolName?: string;
       subjects?: string[];
@@ -412,6 +474,8 @@ export class UserRepository {
       if (parent.children && parent.children.length > 0) {
         parent.children.forEach((child, index) => {
           const childId = `${parent._id}_${index}`;
+          const childName = normalizeString(child.name);
+          const childAge = normalizeNumber(child.age);
 
           // Find bookings for this parent that might include this child
           const parentBookings = bookings.filter(
@@ -426,15 +490,17 @@ export class UserRepository {
               // Check if this child is in the booking's children array
               return booking.children?.some(
                 (bookingChild) =>
-                  bookingChild.name === child.name &&
-                  Math.abs(bookingChild.age - child.age) <= 1 // Allow for age differences due to time passage
+                  normalizeString(bookingChild.name) === childName &&
+                  Math.abs(normalizeNumber(bookingChild.age) - childAge) <= 1 // Allow for age differences due to time passage
               );
             })
             .map((booking: BookingData) => ({
-              serviceType: booking.serviceType || "unknown",
-              status: booking.status || "unknown",
+              serviceType: normalizeString(booking.serviceType) || "unknown",
+              status: normalizeString(booking.status) || "unknown",
               bookingId:
-                booking.bookingId || booking._id?.toString() || "unknown",
+                normalizeString(booking.bookingId) ||
+                booking._id?.toString() ||
+                "unknown",
               createdAt: booking.createdAt || new Date(),
             }));
 
@@ -454,14 +520,19 @@ export class UserRepository {
 
           allChildren.push({
             childId,
-            name: child.name,
-            age: child.age,
-            class: child.class,
-            schoolName: child.schoolName,
-            subjects: child.subjects,
+            name: childName,
+            age: childAge,
+            gender: normalizeGender(child.gender),
+            class: normalizeOptionalString(child.class),
+            schoolName: normalizeOptionalString(child.schoolName),
+            subjects: normalizeStringArray(child.subjects),
             parentId: parent._id!,
-            parentName: parent?.userData?.user?.name,
-            parentEmail: parent?.userData?.user?.email,
+            parentName: normalizeOptionalString(parent?.userData?.user?.name)
+              ? normalizeString(parent?.userData?.user?.name)
+              : null,
+            parentEmail: normalizeOptionalString(parent?.userData?.user?.email)
+              ? normalizeString(parent?.userData?.user?.email)
+              : null,
             services: childServices,
           });
         });
@@ -494,6 +565,7 @@ export class UserRepository {
       childId?: string;
       name: string;
       age: number;
+      gender: "male" | "female";
       class?: string;
       schoolName?: string;
       subjects?: string[];
