@@ -28,22 +28,31 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showFilters, setShowFilters] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedTutor, setSelectedTutor] = useState<UserInterface | null>(
-    null
+    null,
   );
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [tutorToDelete, setTutorToDelete] = useState<UserInterface | null>(
-    null
+    null,
   );
   const [tutorToEdit, setTutorToEdit] = useState<UserInterface | null>(null);
   const [loading, setLoading] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const hasModifiedSort = sortOrder !== "most-recent";
+
+  const getTutorTimestamp = (tutor: UserInterface) => {
+    const timestamp = tutor.createdAt ? new Date(tutor.createdAt).getTime() : 0;
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
 
   // Function to scroll to top of table
   const scrollToTable = () => {
@@ -57,7 +66,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
 
   // Filter tutors based on the search criteria
   const filteredTutors = useMemo(() => {
-    return tutors.filter((tutor) => {
+    const filtered = tutors.filter((tutor) => {
       const nameMatch = nameFilter
         ? tutor.userData?.user?.name
             ?.toLowerCase()
@@ -72,8 +81,8 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
         ? statusFilter === "all"
           ? true
           : statusFilter === "active"
-          ? tutor.isActive
-          : !tutor.isActive
+            ? tutor.isActive
+            : !tutor.isActive
         : true;
 
       // Date filtering
@@ -96,6 +105,11 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
 
       return nameMatch && phoneMatch && statusMatch && dateMatch;
     });
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getTutorTimestamp(b) - getTutorTimestamp(a)
+        : getTutorTimestamp(a) - getTutorTimestamp(b),
+    );
   }, [
     tutors,
     nameFilter,
@@ -103,6 +117,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     statusFilter,
     dateFromFilter,
     dateToFilter,
+    sortOrder,
   ]); // Client-side pagination
   const clientPagination = useMemo(() => {
     const totalItems = filteredTutors.length;
@@ -124,7 +139,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
   const paginatedTutors = useMemo(() => {
     return filteredTutors.slice(
       clientPagination.startIndex,
-      clientPagination.endIndex
+      clientPagination.endIndex,
     );
   }, [filteredTutors, clientPagination.startIndex, clientPagination.endIndex]);
 
@@ -141,6 +156,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     setStatusFilter("");
     setDateFromFilter("");
     setDateToFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
@@ -175,19 +191,19 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
         `/api/tutors/${tutorToDelete._id?.toString()}`,
         {
           method: "DELETE",
-        }
+        },
       );
       const data = await response.json();
 
       if (data.success) {
         // Remove tutor from local state to rerender table
         setTutors((prevTutors) =>
-          prevTutors.filter((tutor) => tutor._id !== tutorToDelete._id)
+          prevTutors.filter((tutor) => tutor._id !== tutorToDelete._id),
         );
         toast.success("Tutor deleted successfully");
       } else {
         toast.error(
-          "Failed to delete tutor: " + (data.error || "Unknown error")
+          "Failed to delete tutor: " + (data.error || "Unknown error"),
         );
       }
     } catch (error) {
@@ -209,8 +225,8 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
     // Update tutor in local state instead of page reload
     setTutors((prev) =>
       prev.map((tutor) =>
-        tutor._id === updatedTutor._id ? updatedTutor : tutor
-      )
+        tutor._id === updatedTutor._id ? updatedTutor : tutor,
+      ),
     );
   };
 
@@ -238,7 +254,12 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
               <MagnifyingGlassIcon className="w-4 h-4" />
               {showFilters ? "Hide Filters" : "Show Filters"}
             </button>
-            {(nameFilter || phoneFilter || statusFilter) && (
+            {(nameFilter ||
+              phoneFilter ||
+              statusFilter ||
+              dateFromFilter ||
+              dateToFilter ||
+              hasModifiedSort) && (
               <button className="btn btn-outline btn-sm" onClick={clearFilters}>
                 Clear Filters
               </button>
@@ -249,7 +270,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Name Filter */}
               <div className="form-control">
                 <label className="label">
@@ -292,13 +313,29 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
                   <span className="label-text font-medium">Status</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="">All Status</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Sort</span>
+                </label>
+                <select
+                  className="select select-bordered w-full p-2"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
                 </select>
               </div>
             </div>
@@ -314,7 +351,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
                 </label>
                 <input
                   type="date"
-                  className="input input-bordered w-full"
+                  className="input input-bordered w-full p-2"
                   value={dateFromFilter}
                   onChange={(e) => setDateFromFilter(e.target.value)}
                 />
@@ -347,7 +384,8 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
               phoneFilter ||
               statusFilter ||
               dateFromFilter ||
-              dateToFilter) &&
+              dateToFilter ||
+              hasModifiedSort) &&
               " (filtered)"}
           </p>
         </div>
@@ -515,7 +553,7 @@ export default function TutorTable({ tutors: initialTutors }: TutorTableProps) {
                         {page}
                       </button>
                     );
-                  }
+                  },
                 )}
                 {clientPagination.totalPages > 5 && (
                   <>

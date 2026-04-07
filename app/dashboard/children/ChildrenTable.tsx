@@ -43,8 +43,12 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
   const [ageFilter, setAgeFilter] = useState({ min: "", max: "" });
   const [genderFilter, setGenderFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showFilters, setShowFilters] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
+  const hasModifiedSort = sortOrder !== "most-recent";
 
   // Function to scroll to top of table
   const scrollToTable = () => {
@@ -65,8 +69,8 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     // Update child in local state instead of page reload
     setChildren((prev) =>
       prev.map((child) =>
-        child.childId === updatedChild.childId ? updatedChild : child
-      )
+        child.childId === updatedChild.childId ? updatedChild : child,
+      ),
     );
   };
 
@@ -83,7 +87,26 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
 
   // Filter children based on current filters
   const filteredChildren = useMemo(() => {
-    return children.filter((child) => {
+    const getObjectIdTimestamp = (id: string) => {
+      if (!/^[a-f\d]{24}$/i.test(id)) {
+        return 0;
+      }
+
+      return parseInt(id.slice(0, 8), 16) * 1000;
+    };
+
+    const getChildTimestamp = (child: Child) => {
+      const latestServiceTimestamp = child.services.reduce((latest, service) => {
+        const timestamp = new Date(service.createdAt).getTime();
+        return Number.isFinite(timestamp)
+          ? Math.max(latest, timestamp)
+          : latest;
+      }, 0);
+
+      return latestServiceTimestamp || getObjectIdTimestamp(child.parentId);
+    };
+
+    const filtered = children.filter((child) => {
       // Name filter
       if (
         nameFilter &&
@@ -115,7 +138,19 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
 
       return true;
     });
-  }, [children, nameFilter, ageFilter, genderFilter, serviceFilter]);
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getChildTimestamp(b) - getChildTimestamp(a)
+        : getChildTimestamp(a) - getChildTimestamp(b),
+    );
+  }, [
+    children,
+    nameFilter,
+    ageFilter,
+    genderFilter,
+    serviceFilter,
+    sortOrder,
+  ]);
 
   // Client-side pagination
   const paginatedChildren = useMemo(() => {
@@ -144,6 +179,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     setAgeFilter({ min: "", max: "" });
     setGenderFilter("");
     setServiceFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1); // Reset to first page when clearing filters
   };
 
@@ -161,7 +197,8 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     ageFilter.min ||
     ageFilter.max ||
     genderFilter ||
-    serviceFilter;
+    serviceFilter ||
+    hasModifiedSort;
 
   return (
     <div ref={tableRef} className="card bg-base-100 shadow-lg scroll-smooth">
@@ -205,7 +242,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {/* Name Filter */}
               <div>
                 <label className="label">
@@ -289,6 +326,22 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="label">
+                  <span className="label-text text-sm">Sort</span>
+                </label>
+                <select
+                  className="select select-sm select-bordered w-full"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+              </div>
             </div>
 
             {/* Active Filters Display */}
@@ -341,6 +394,14 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                   <div className="badge badge-primary badge-sm gap-1">
                     Service: {serviceFilter}
                     <button onClick={() => setServiceFilter("")}>
+                      <XMarkIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                {hasModifiedSort && (
+                  <div className="badge badge-primary badge-sm gap-1">
+                    Sort: Oldest First
+                    <button onClick={() => setSortOrder("most-recent")}>
                       <XMarkIcon className="w-3 h-3" />
                     </button>
                   </div>
@@ -466,7 +527,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                 {Math.min(
                   clientPagination.currentPage *
                     clientPagination.childrenPerPage,
-                  clientPagination.totalChildren
+                  clientPagination.totalChildren,
                 )}
               </span>{" "}
               of{" "}
@@ -497,7 +558,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
               <div className="flex space-x-1">
                 {Array.from(
                   { length: clientPagination.totalPages },
-                  (_, i) => i + 1
+                  (_, i) => i + 1,
                 )
                   .filter((page) => {
                     // Show current page, previous page, next page, first page, and last page

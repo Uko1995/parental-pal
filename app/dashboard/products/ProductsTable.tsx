@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   PencilIcon,
   TrashIcon,
@@ -73,6 +73,9 @@ export default function ProductsTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -81,17 +84,32 @@ export default function ProductsTable({
 
   const itemsPerPage = 10;
 
+  const getProductTimestamp = (product: Product) => {
+    const timestamp = new Date(product.createdAt).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
+
   // Filter products
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter
-      ? product.category === categoryFilter
-      : true;
-    const matchesStatus = statusFilter ? product.status === statusFilter : true;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const filteredProducts = useMemo(() => {
+    const filtered = products.filter((product) => {
+      const matchesSearch =
+        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.author.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter
+        ? product.category === categoryFilter
+        : true;
+      const matchesStatus = statusFilter
+        ? product.status === statusFilter
+        : true;
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    return filtered.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getProductTimestamp(b) - getProductTimestamp(a)
+        : getProductTimestamp(a) - getProductTimestamp(b),
+    );
+  }, [products, searchTerm, categoryFilter, statusFilter, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -117,6 +135,7 @@ export default function ProductsTable({
     setSearchTerm("");
     setCategoryFilter("");
     setStatusFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
@@ -181,7 +200,7 @@ export default function ProductsTable({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search Filter */}
               <div className="form-control">
                 <label className="label">
@@ -207,7 +226,7 @@ export default function ProductsTable({
                   <span className="label-text font-medium">Category</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
@@ -225,7 +244,7 @@ export default function ProductsTable({
                   <span className="label-text font-medium">Status</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -235,14 +254,38 @@ export default function ProductsTable({
                   <option value="archived">Archived</option>
                 </select>
               </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Sort</span>
+                </label>
+                <select
+                  className="select select-bordered w-full p-2"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+              </div>
             </div>
 
-            <div className="flex justify-end">
-              <button className="btn btn-outline btn-sm" onClick={clearFilters}>
-                <XMarkIcon className="w-4 h-4" />
-                Clear Filters
-              </button>
-            </div>
+            {(searchTerm ||
+              categoryFilter ||
+              statusFilter ||
+              sortOrder !== "most-recent") && (
+              <div className="flex justify-end">
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={clearFilters}
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -332,8 +375,8 @@ export default function ProductsTable({
                             product.status === "active"
                               ? "badge-success"
                               : product.status === "draft"
-                              ? "badge-warning"
-                              : "badge-ghost"
+                                ? "badge-warning"
+                                : "badge-ghost"
                           }`}
                         >
                           {product.status}

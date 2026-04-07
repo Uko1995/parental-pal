@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   EyeIcon,
   MagnifyingGlassIcon,
@@ -60,25 +60,44 @@ export default function OrdersTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent",
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const itemsPerPage = 10;
+  const hasModifiedSort = sortOrder !== "most-recent";
+
+  const getOrderTimestamp = (order: Order) => {
+    const timestamp = new Date(order.createdAt).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
 
   // Filter orders
-  const filteredOrders = orders?.filter((order) => {
-    const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerInfo.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      order.customerInfo.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter ? order.type === typeFilter : true;
-    const matchesStatus = statusFilter ? order.status === statusFilter : true;
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  const filteredOrders = useMemo(() => {
+    const filtered = orders?.filter((order) => {
+      const matchesSearch =
+        order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customerInfo.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        order.customerInfo.email
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      const matchesType = typeFilter ? order.type === typeFilter : true;
+      const matchesStatus = statusFilter ? order.status === statusFilter : true;
+      return matchesSearch && matchesType && matchesStatus;
+    });
+
+    return filtered?.sort((a, b) =>
+      sortOrder === "most-recent"
+        ? getOrderTimestamp(b) - getOrderTimestamp(a)
+        : getOrderTimestamp(a) - getOrderTimestamp(b),
+    );
+  }, [orders, searchTerm, typeFilter, statusFilter, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredOrders?.length / itemsPerPage);
@@ -104,6 +123,7 @@ export default function OrdersTable({
     setSearchTerm("");
     setTypeFilter("");
     setStatusFilter("");
+    setSortOrder("most-recent");
     setCurrentPage(1);
   };
 
@@ -153,7 +173,7 @@ export default function OrdersTable({
         {/* Filters Section */}
         {showFilters && (
           <div className="bg-base-200 p-4 rounded-lg mb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search Filter */}
               <div className="form-control">
                 <label className="label">
@@ -177,7 +197,7 @@ export default function OrdersTable({
                   <span className="label-text font-medium">Type</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                 >
@@ -193,7 +213,7 @@ export default function OrdersTable({
                   <span className="label-text font-medium">Status</span>
                 </label>
                 <select
-                  className="select select-bordered w-full"
+                  className="select select-bordered w-full p-2"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -205,14 +225,35 @@ export default function OrdersTable({
                   <option value="failed">Failed</option>
                 </select>
               </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Sort</span>
+                </label>
+                <select
+                  className="select select-bordered w-full p-2"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
+                  }
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+              </div>
             </div>
 
-            <div className="flex justify-end">
-              <button className="btn btn-outline btn-sm" onClick={clearFilters}>
-                <XMarkIcon className="w-4 h-4" />
-                Clear Filters
-              </button>
-            </div>
+            {(searchTerm || typeFilter || statusFilter || hasModifiedSort) && (
+              <div className="flex justify-end">
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={clearFilters}
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
         )}
 

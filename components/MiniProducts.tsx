@@ -112,9 +112,7 @@ export default function MiniProducts() {
             products.map((product) => {
               const thumbUrl = getThumbnailUrl(product.thumbnail);
               const description =
-                product.description ||
-                product.shortDescription ||
-                "";
+                product.description || product.shortDescription || "";
               return (
                 <Link
                   key={product._id}
@@ -133,16 +131,16 @@ export default function MiniProducts() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-gray-400">
-                        No image
+                        Children&apos;s Book
                       </div>
                     )}
                     {product.featured && (
-                      <div className="absolute top-4 right-4 badge badge-primary badge-lg">
+                      <div className="absolute top-4 right-4 badge badge-primary badge-sm">
                         Featured
                       </div>
                     )}
                     {product.ageRange && (
-                      <div className="absolute top-4 left-4 badge badge-accent badge-lg">
+                      <div className="absolute top-4 left-4 badge badge-accent badge-sm">
                         {product.ageRange}
                       </div>
                     )}
@@ -156,9 +154,7 @@ export default function MiniProducts() {
                       by {product.author}
                     </p>
                     {description && (
-                      <p className="text-sm line-clamp-2 mt-2">
-                        {description}
-                      </p>
+                      <p className="text-sm line-clamp-2 mt-2">{description}</p>
                     )}
                     <div className="card-actions justify-between items-center mt-4">
                       <div className="flex flex-col gap-1">
@@ -168,7 +164,7 @@ export default function MiniProducts() {
                             <span className="text-[#90AC19] font-bold">
                               ₦
                               {Number(
-                                product.pricing.softcopy.price
+                                product.pricing.softcopy.price,
                               ).toLocaleString()}
                             </span>
                           </div>
@@ -179,7 +175,7 @@ export default function MiniProducts() {
                             <span className="text-[#E8931A] font-bold">
                               ₦
                               {Number(
-                                product.pricing.paperback.price
+                                product.pricing.paperback.price,
                               ).toLocaleString()}
                             </span>
                           </div>

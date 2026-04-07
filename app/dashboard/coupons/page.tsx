@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   PlusIcon,
@@ -62,6 +62,9 @@ export default function CouponManagementPage() {
     "all" | "active" | "inactive"
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
+    "most-recent"
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -229,18 +232,29 @@ export default function CouponManagementPage() {
   };
 
   // Filter coupons
-  const filteredCoupons = coupons.filter((coupon) => {
-    if (statusFilter === "active" && !coupon.isActive) return false;
-    if (statusFilter === "inactive" && coupon.isActive) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        coupon.code.toLowerCase().includes(query) ||
-        coupon.description?.toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
+  const filteredCoupons = useMemo(() => {
+    const filtered = coupons.filter((coupon) => {
+      if (statusFilter === "active" && !coupon.isActive) return false;
+      if (statusFilter === "inactive" && coupon.isActive) return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          coupon.code.toLowerCase().includes(query) ||
+          coupon.description?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      const aTimestamp = new Date(a.createdAt).getTime();
+      const bTimestamp = new Date(b.createdAt).getTime();
+      const first = Number.isFinite(aTimestamp) ? aTimestamp : 0;
+      const second = Number.isFinite(bTimestamp) ? bTimestamp : 0;
+
+      return sortOrder === "most-recent" ? second - first : first - second;
+    });
+  }, [coupons, statusFilter, searchQuery, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
@@ -389,6 +403,24 @@ export default function CouponManagementPage() {
                   <option value="all">All</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sort
+                </label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(
+                      e.target.value as "most-recent" | "oldest"
+                    )
+                  }
+                  className="select select-bordered select-sm"
+                >
+                  <option value="most-recent">Most Recent</option>
+                  <option value="oldest">Oldest First</option>
                 </select>
               </div>
             </div>
