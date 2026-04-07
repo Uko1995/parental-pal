@@ -44,28 +44,11 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
   const [genderFilter, setGenderFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [sortOrder, setSortOrder] = useState<"most-recent" | "oldest">(
-    "most-recent"
+    "most-recent",
   );
   const [showFilters, setShowFilters] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
   const hasModifiedSort = sortOrder !== "most-recent";
-
-  const getObjectIdTimestamp = (id: string) => {
-    if (!/^[a-f\d]{24}$/i.test(id)) {
-      return 0;
-    }
-
-    return parseInt(id.slice(0, 8), 16) * 1000;
-  };
-
-  const getChildTimestamp = (child: Child) => {
-    const latestServiceTimestamp = child.services.reduce((latest, service) => {
-      const timestamp = new Date(service.createdAt).getTime();
-      return Number.isFinite(timestamp) ? Math.max(latest, timestamp) : latest;
-    }, 0);
-
-    return latestServiceTimestamp || getObjectIdTimestamp(child.parentId);
-  };
 
   // Function to scroll to top of table
   const scrollToTable = () => {
@@ -86,8 +69,8 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     // Update child in local state instead of page reload
     setChildren((prev) =>
       prev.map((child) =>
-        child.childId === updatedChild.childId ? updatedChild : child
-      )
+        child.childId === updatedChild.childId ? updatedChild : child,
+      ),
     );
   };
 
@@ -104,6 +87,25 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
 
   // Filter children based on current filters
   const filteredChildren = useMemo(() => {
+    const getObjectIdTimestamp = (id: string) => {
+      if (!/^[a-f\d]{24}$/i.test(id)) {
+        return 0;
+      }
+
+      return parseInt(id.slice(0, 8), 16) * 1000;
+    };
+
+    const getChildTimestamp = (child: Child) => {
+      const latestServiceTimestamp = child.services.reduce((latest, service) => {
+        const timestamp = new Date(service.createdAt).getTime();
+        return Number.isFinite(timestamp)
+          ? Math.max(latest, timestamp)
+          : latest;
+      }, 0);
+
+      return latestServiceTimestamp || getObjectIdTimestamp(child.parentId);
+    };
+
     const filtered = children.filter((child) => {
       // Name filter
       if (
@@ -139,9 +141,16 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
     return filtered.sort((a, b) =>
       sortOrder === "most-recent"
         ? getChildTimestamp(b) - getChildTimestamp(a)
-        : getChildTimestamp(a) - getChildTimestamp(b)
+        : getChildTimestamp(a) - getChildTimestamp(b),
     );
-  }, [children, nameFilter, ageFilter, genderFilter, serviceFilter, sortOrder]);
+  }, [
+    children,
+    nameFilter,
+    ageFilter,
+    genderFilter,
+    serviceFilter,
+    sortOrder,
+  ]);
 
   // Client-side pagination
   const paginatedChildren = useMemo(() => {
@@ -326,9 +335,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                   className="select select-sm select-bordered w-full"
                   value={sortOrder}
                   onChange={(e) =>
-                    setSortOrder(
-                      e.target.value as "most-recent" | "oldest"
-                    )
+                    setSortOrder(e.target.value as "most-recent" | "oldest")
                   }
                 >
                   <option value="most-recent">Most Recent</option>
@@ -393,10 +400,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                 )}
                 {hasModifiedSort && (
                   <div className="badge badge-primary badge-sm gap-1">
-                    Sort:{" "}
-                    {sortOrder === "most-recent"
-                      ? "Most Recent"
-                      : "Oldest First"}
+                    Sort: Oldest First
                     <button onClick={() => setSortOrder("most-recent")}>
                       <XMarkIcon className="w-3 h-3" />
                     </button>
@@ -523,7 +527,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
                 {Math.min(
                   clientPagination.currentPage *
                     clientPagination.childrenPerPage,
-                  clientPagination.totalChildren
+                  clientPagination.totalChildren,
                 )}
               </span>{" "}
               of{" "}
@@ -554,7 +558,7 @@ export default function ChildrenTable({ childrenData }: ChildrenTableProps) {
               <div className="flex space-x-1">
                 {Array.from(
                   { length: clientPagination.totalPages },
-                  (_, i) => i + 1
+                  (_, i) => i + 1,
                 )
                   .filter((page) => {
                     // Show current page, previous page, next page, first page, and last page

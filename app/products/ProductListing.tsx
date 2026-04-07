@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
-  StarIcon,
   XMarkIcon,
   ChevronDownIcon,
   ShoppingCartIcon,
