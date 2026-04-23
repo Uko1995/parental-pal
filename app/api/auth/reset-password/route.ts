@@ -6,8 +6,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import {
+  verifyPasswordResetCode,
   verifyPasswordResetToken,
   markPasswordResetTokenAsUsed,
+  markPasswordResetTokenAsUsedByEmail,
 } from "@/lib/password-reset";
 import { UserRepository } from "@/lib/UserRepository";
 import { logAuthEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
@@ -21,24 +23,27 @@ export async function POST(request: NextRequest) {
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: "Too many password reset attempts" },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
   try {
-    const { token, password } = await request.json();
-
-    if (!token || typeof token !== "string") {
-      return NextResponse.json(
-        { error: "Reset token is required" },
-        { status: 400 }
-      );
-    }
+    const { token, email, otp, password } = await request.json();
 
     if (!password || typeof password !== "string") {
       return NextResponse.json(
         { error: "New password is required" },
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    if (
+      !token &&
+      (!email || typeof email !== "string" || !otp || typeof otp !== "string")
+    ) {
+      return NextResponse.json(
+        { error: "Email and OTP code are required" },
+        { status: 400 },
       );
     }
 
@@ -47,31 +52,36 @@ export async function POST(request: NextRequest) {
     if (!passwordValidation.valid) {
       return NextResponse.json(
         { error: passwordValidation.errors[0] },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Verify the token
-    const email = await verifyPasswordResetToken(token);
+    let resolvedEmail: string | null = null;
 
-    if (!email) {
+    if (token && typeof token === "string") {
+      resolvedEmail = await verifyPasswordResetToken(token);
+    } else if (email && otp) {
+      resolvedEmail = await verifyPasswordResetCode(email, otp);
+    }
+
+    if (!resolvedEmail) {
       await logAuthEvent(
         AuditEventType.SUSPICIOUS_ACTIVITY,
         undefined,
-        undefined,
+        email || undefined,
         ip,
         false,
-        "Invalid or expired password reset token"
+        "Invalid or expired password reset credentials",
       );
 
       return NextResponse.json(
-        { error: "Invalid or expired reset token" },
-        { status: 400 }
+        { error: "Invalid or expired reset token or OTP" },
+        { status: 400 },
       );
     }
 
     // Find user by email
-    const user = await UserRepository.findByEmail(email);
+    const user = await UserRepository.findByEmail(resolvedEmail);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -85,17 +95,21 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
     });
 
-    // Mark token as used
-    await markPasswordResetTokenAsUsed(token);
+    // Mark reset credential as used
+    if (token) {
+      await markPasswordResetTokenAsUsed(token);
+    } else {
+      await markPasswordResetTokenAsUsedByEmail(resolvedEmail);
+    }
 
     // Log successful password reset
     await logAuthEvent(
       AuditEventType.PASSWORD_RESET_SUCCESS,
       user._id!.toString(),
-      email,
+      resolvedEmail,
       ip,
       true,
-      "Password reset successfully"
+      "Password reset successfully",
     );
 
     return NextResponse.json({
@@ -105,7 +119,7 @@ export async function POST(request: NextRequest) {
     console.error("Error resetting password:", error);
     return NextResponse.json(
       { error: "Failed to reset password" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

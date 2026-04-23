@@ -17,7 +17,7 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 export function rateLimit(
   identifier: string,
   limit: number = 5,
-  windowMs: number = 15 * 60 * 1000 // 15 minutes
+  windowMs: number = 15 * 60 * 1000, // 15 minutes
 ): { success: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
   const record = rateLimitStore.get(identifier);
@@ -73,7 +73,7 @@ export function sanitizeString(input: string): string {
  * Sanitize object recursively to prevent NoSQL injection
  */
 export function sanitizeObject(
-  obj: Record<string, unknown>
+  obj: Record<string, unknown>,
 ): Record<string, unknown> {
   if (typeof obj !== "object" || obj === null) {
     return typeof obj === "string" ? { value: sanitizeString(obj) } : obj;
@@ -81,7 +81,7 @@ export function sanitizeObject(
 
   if (Array.isArray(obj)) {
     return obj.map((item) =>
-      sanitizeObject(item as Record<string, unknown>)
+      sanitizeObject(item as Record<string, unknown>),
     ) as unknown as Record<string, unknown>;
   }
 
@@ -94,8 +94,8 @@ export function sanitizeObject(
       typeof value === "object" && value !== null
         ? sanitizeObject(value as Record<string, unknown>)
         : typeof value === "string"
-        ? sanitizeString(value)
-        : value;
+          ? sanitizeString(value)
+          : value;
   }
 
   return sanitized;
@@ -153,7 +153,7 @@ export function validatePhone(phone: string): boolean {
  * Check if user has required role
  */
 export async function checkRole(
-  allowedRoles: ("admin" | "parent" | "tutor")[]
+  allowedRoles: ("admin" | "parent" | "tutor")[],
 ): Promise<{ authorized: boolean; user: unknown; error?: string }> {
   try {
     const session = await auth();
@@ -203,23 +203,28 @@ export function getClientIp(request: NextRequest): string {
 /**
  * Validate file upload
  */
-export function validateFileUpload(file: File): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-  const maxSize = 5 * 1024 * 1024; // 5MB
-  const allowedTypes = [
+export function validateFileUpload(
+  file: File,
+  maxSize: number = 50 * 1024 * 1024,
+  allowedTypes: string[] = [
     "image/jpeg",
     "image/png",
     "image/webp",
     "application/pdf",
+    "application/x-pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
+  ],
+): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
 
   if (file.size > maxSize) {
-    errors.push("File size must be less than 5MB");
+    errors.push(
+      `File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`,
+    );
   }
 
   if (!allowedTypes.includes(file.type)) {
@@ -248,7 +253,7 @@ export function sanitizeFilename(filename: string): string {
  */
 export async function checkOwnership(
   resourceUserId: string,
-  allowAdmin: boolean = true
+  allowAdmin: boolean = true,
 ): Promise<{ authorized: boolean; error?: string }> {
   const session = await auth();
 
