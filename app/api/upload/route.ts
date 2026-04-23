@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: "Too many upload requests" },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         AuditEventType.SUSPICIOUS_ACTIVITY,
         undefined,
         ip,
-        "Unauthenticated upload attempt"
+        "Unauthenticated upload attempt",
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         AuditEventType.SUSPICIOUS_ACTIVITY,
         currentUser._id?.toString(),
         ip,
-        "Unauthorized role attempted upload"
+        "Unauthorized role attempted upload",
       );
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json(
         { success: false, error: "No file received" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
             config.maxSize / (1024 * 1024)
           }MB`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -145,25 +145,29 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: `Invalid file type. Allowed types: ${config.allowedMimeTypes.join(
-            ", "
+            ", ",
           )}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Validate with security utility (for general validation)
-    const validation = validateFileUpload(file);
+    // Validate with security utility using upload-specific rules
+    const validation = validateFileUpload(
+      file,
+      config.maxSize,
+      config.allowedMimeTypes,
+    );
     if (!validation.valid) {
       logSecurityEvent(
         AuditEventType.SUSPICIOUS_ACTIVITY,
         currentUser._id?.toString(),
         ip,
-        `Invalid file upload: ${validation.errors}`
+        `Invalid file upload: ${validation.errors}`,
       );
       return NextResponse.json(
         { success: false, error: validation.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -176,11 +180,11 @@ export async function POST(request: NextRequest) {
         AuditEventType.SUSPICIOUS_ACTIVITY,
         currentUser._id?.toString(),
         ip,
-        "File magic number mismatch - possible MIME spoofing"
+        "File magic number mismatch - possible MIME spoofing",
       );
       return NextResponse.json(
         { success: false, error: "Invalid file format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -211,7 +215,7 @@ export async function POST(request: NextRequest) {
           type: file.type,
           folder: config.folder,
           storage: "cloudinary",
-        }
+        },
       );
 
       return NextResponse.json({
@@ -238,7 +242,7 @@ export async function POST(request: NextRequest) {
           size: file.size,
           type: file.type,
           storage: "local",
-        }
+        },
       );
 
       return NextResponse.json({
@@ -251,7 +255,7 @@ export async function POST(request: NextRequest) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
       { success: false, error: "Failed to upload file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

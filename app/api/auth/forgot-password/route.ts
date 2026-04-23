@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: "Too many password reset requests" },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!email || typeof email !== "string" || !validateEmail(email)) {
       return NextResponse.json(
         { error: "Valid email is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         email,
         ip,
         false,
-        "Password reset requested for non-existent email"
+        "Password reset requested for non-existent email",
       );
 
       return NextResponse.json({
@@ -69,41 +69,47 @@ export async function POST(request: NextRequest) {
           error:
             "Password reset email already sent. Please check your inbox or wait before requesting again.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Create password reset token
-    const token = await createPasswordResetToken(email);
+    // Create password reset token and OTP
+    const otp = await createPasswordResetToken(email);
+    const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const resetPageUrl = `${appUrl}/auth/reset-password?email=${encodeURIComponent(email)}`;
 
-    // Send password reset email
-    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
-
-    await sendEmail({
+    const emailResult = await sendEmail({
       to: email,
-      subject: "Reset your password - PARENTALPAL",
+      subject: "Your ParentalPal OTP code",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #90AC19;">Reset Your Password</h2>
+          <h2 style="color: #90AC19;">Password Reset OTP</h2>
           <p>Hello ${user.userData.user.name || "there"},</p>
-          <p>We received a request to reset your password. Click the button below to create a new password:</p>
+          <p>Use the code below to reset your ParentalPal password. It expires in 1 hour.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #90AC19; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
+            <div style="display: inline-block; background-color: #f4f7f9; padding: 20px 30px; border-radius: 8px; letter-spacing: 6px; font-size: 24px; font-weight: bold;">${otp}</div>
           </div>
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="color: #666; word-break: break-all;">${resetUrl}</p>
-          <p style="margin-top: 30px; color: #666; font-size: 12px;">
-            This link will expire in 1 hour. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+          <p style="margin-top: 20px; color: #666; font-size: 14px;">
+            <a href="${resetPageUrl}" style="color: #90AC19; text-decoration: none;">Click here to go to the password reset page</a>
           </p>
-          <p style="color: #666; font-size: 12px;">
-            For security reasons, this link can only be used once.
+          <p style="margin-top: 20px; color: #666; font-size: 14px;">
+            You can also visit this URL and enter your email, OTP code, and new password:
+          </p>
+          <p style="color: #666; word-break: break-all;">${resetPageUrl}</p>
+          <p style="margin-top: 30px; color: #666; font-size: 12px;">
+            If you didn't request a password reset, please ignore this message.
           </p>
         </div>
       `,
     });
+
+    if (!emailResult.success) {
+      console.error("Failed to send password reset email:", emailResult.error);
+      return NextResponse.json(
+        { error: emailResult.error || "Failed to send password reset email" },
+        { status: 500 },
+      );
+    }
 
     // Log successful request
     await logAuthEvent(
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
       email,
       ip,
       true,
-      "Password reset email sent"
+      "Password reset email sent",
     );
 
     return NextResponse.json({
@@ -122,7 +128,7 @@ export async function POST(request: NextRequest) {
     console.error("Error in forgot password:", error);
     return NextResponse.json(
       { error: "Failed to process password reset request" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

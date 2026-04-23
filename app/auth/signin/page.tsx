@@ -7,6 +7,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 interface Provider {
   id: string;
@@ -39,6 +40,26 @@ function SignInContent() {
   });
   const [isFormValid, setIsFormValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [resetForm, setResetForm] = useState({
+    email: "",
+    otp: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [resetErrors, setResetErrors] = useState({
+    email: "",
+    otp: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [isResetLoading, setIsResetLoading] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] =
+    useState(false);
 
   const redirectTo = searchParams.get("callbackUrl");
   const error = searchParams.get("error");
@@ -72,7 +93,7 @@ function SignInContent() {
         }));
         toast.success(
           "Please create a password for your account to complete registration.",
-          { duration: 5000 }
+          { duration: 5000 },
         );
       }
     }
@@ -135,7 +156,7 @@ function SignInContent() {
 
   const validateConfirmPassword = (
     password: string,
-    confirmPassword: string
+    confirmPassword: string,
   ): string => {
     if (!confirmPassword) return "Please confirm your password";
     if (password !== confirmPassword) return "Passwords do not match";
@@ -160,6 +181,155 @@ function SignInContent() {
     return !hasErrors;
   };
 
+  const validateResetOtp = (otp: string): string => {
+    if (!otp) return "OTP is required";
+    if (!/^\d{6}$/.test(otp)) return "Enter a valid 6-digit OTP";
+    return "";
+  };
+
+  const validateResetStep = (step: "request" | "verify") => {
+    const errors = {
+      email: "",
+      otp: "",
+      password: "",
+      confirmPassword: "",
+    };
+
+    errors.email = validateEmail(resetForm.email);
+
+    if (step === "verify") {
+      errors.otp = validateResetOtp(resetForm.otp);
+      errors.password = validatePassword(resetForm.password);
+      errors.confirmPassword = validateConfirmPassword(
+        resetForm.password,
+        resetForm.confirmPassword,
+      );
+    }
+
+    setResetErrors(errors);
+
+    return !Object.values(errors).some((error) => error !== "");
+  };
+
+  const handleResetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setResetForm((prev) => ({ ...prev, [name]: value }));
+
+    let error = "";
+    switch (name) {
+      case "email":
+        error = validateEmail(value);
+        break;
+      case "otp":
+        error = validateResetOtp(value);
+        break;
+      case "password":
+        error = validatePassword(value);
+        if (resetForm.confirmPassword) {
+          setResetErrors((prev) => ({
+            ...prev,
+            confirmPassword: validateConfirmPassword(
+              value,
+              resetForm.confirmPassword,
+            ),
+          }));
+        }
+        break;
+      case "confirmPassword":
+        error = validateConfirmPassword(resetForm.password, value);
+        break;
+    }
+
+    setResetErrors((prev) => ({ ...prev, [name]: error }));
+  };
+
+  const resetPasswordForm = () => {
+    setResetForm({ email: "", otp: "", password: "", confirmPassword: "" });
+    setResetErrors({ email: "", otp: "", password: "", confirmPassword: "" });
+    setOtpRequested(false);
+    setShowResetPassword(false);
+    setShowResetConfirmPassword(false);
+  };
+
+  const handleForgotPasswordRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateResetStep("request")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsResetLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: resetForm.email }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send OTP");
+      }
+
+      toast.success(
+        data.message || "A password reset OTP has been sent to your email.",
+      );
+      setOtpRequested(true);
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send OTP",
+      );
+    } finally {
+      setIsResetLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateResetStep("verify")) {
+      toast.error("Please check the form and try again");
+      return;
+    }
+
+    setIsResetLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: resetForm.email,
+          otp: resetForm.otp,
+          password: resetForm.password,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      toast.success("Your password has been reset successfully.");
+      setForgotPasswordMode(false);
+      resetPasswordForm();
+    } catch (error) {
+      console.error("Reset password error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset password",
+      );
+    } finally {
+      setIsResetLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     toast.promise(
@@ -171,7 +341,7 @@ function SignInContent() {
         loading: "Redirecting to Google...",
         success: "Redirect successfull!",
         error: "Google sign-in failed. Please try again.",
-      }
+      },
     );
     setGoogleLoading(false);
   };
@@ -288,7 +458,7 @@ function SignInContent() {
         if (formData.confirmPassword && isRegisterMode) {
           const confirmError = validateConfirmPassword(
             value,
-            formData.confirmPassword
+            formData.confirmPassword,
           );
           setValidationErrors((prev) => ({
             ...prev,
@@ -410,13 +580,15 @@ function SignInContent() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-4"
           >
-            <form
-              onSubmit={
-                isRegisterMode ? handleRegister : handleCredentialsSignIn
-              }
-              className="space-y-4"
-            >
-              {isRegisterMode && (
+            {forgotPasswordMode ? (
+              <form
+                onSubmit={
+                  otpRequested
+                    ? handleResetPasswordSubmit
+                    : handleForgotPasswordRequest
+                }
+                className="space-y-4"
+              >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -425,22 +597,22 @@ function SignInContent() {
                 >
                   <label className="label">
                     <span className="label-text text-gray-800 font-medium">
-                      Full Name
+                      Email
                     </span>
                   </label>
                   <motion.input
                     whileFocus={{ scale: 1.02 }}
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
+                    type="email"
+                    name="email"
+                    value={resetForm.email}
+                    onChange={handleResetInputChange}
                     className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
-                      validationErrors.name ? "input-error" : ""
+                      resetErrors.email ? "input-error" : ""
                     }`}
-                    placeholder="Enter your full name"
+                    placeholder="Enter your account email"
                     required
                   />
-                  {validationErrors.name && (
+                  {resetErrors.email && (
                     <motion.label
                       initial={{ x: -10 }}
                       animate={{ x: [0, -10, 10, -10, 10, 0] }}
@@ -448,219 +620,448 @@ function SignInContent() {
                       className="label"
                     >
                       <span className="label-text-alt text-error">
-                        {validationErrors.name}
+                        {resetErrors.email}
                       </span>
                     </motion.label>
                   )}
                 </motion.div>
-              )}
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
-                className="form-control w-full"
-              >
-                <label className="label">
-                  <span className="label-text text-gray-800 font-medium">
-                    Email
-                  </span>
-                </label>
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
-                    validationErrors.email ? "input-error" : ""
-                  }`}
-                  placeholder="Enter your email"
-                  required
-                />
-                {validationErrors.email && (
-                  <motion.label
-                    initial={{ x: -10 }}
-                    animate={{ x: [0, -10, 10, -10, 10, 0] }}
-                    transition={{ duration: 0.5 }}
-                    className="label"
-                  >
-                    <span className="label-text-alt text-error">
-                      {validationErrors.email}
-                    </span>
-                  </motion.label>
-                )}
-              </motion.div>
+                {otpRequested && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.6 }}
+                      className="form-control w-full"
+                    >
+                      <label className="label">
+                        <span className="label-text text-gray-800 font-medium">
+                          6-digit OTP Code
+                        </span>
+                      </label>
+                      <motion.input
+                        whileFocus={{ scale: 1.02 }}
+                        type="text"
+                        name="otp"
+                        value={resetForm.otp}
+                        onChange={handleResetInputChange}
+                        className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
+                          resetErrors.otp ? "input-error" : ""
+                        }`}
+                        placeholder="Enter the code from email"
+                        maxLength={6}
+                        required
+                      />
+                      {resetErrors.otp && (
+                        <motion.label
+                          initial={{ x: -10 }}
+                          animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                          className="label"
+                        >
+                          <span className="label-text-alt text-error">
+                            {resetErrors.otp}
+                          </span>
+                        </motion.label>
+                      )}
+                    </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 }}
-                className="form-control w-full"
-              >
-                <label className="label">
-                  <span className="label-text text-gray-800 font-medium">
-                    Password
-                  </span>
-                </label>
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
-                    validationErrors.password ? "input-error" : ""
-                  }`}
-                  placeholder="Enter your password"
-                  required
-                />
-                {/* Password strength indicator */}
-                {isRegisterMode && formData.password && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-2 mb-1"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-600">
-                        Password strength:
-                      </span>
-                      <div className="flex gap-1 flex-1 max-w-20">
-                        {[1, 2, 3, 4, 5].map((level) => (
-                          <div
-                            key={level}
-                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                              level <= passwordStrength
-                                ? passwordStrength <= 2
-                                  ? "bg-red-400"
-                                  : passwordStrength <= 3
-                                  ? "bg-yellow-400"
-                                  : passwordStrength <= 4
-                                  ? "bg-blue-400"
-                                  : "bg-green-400"
-                                : "bg-gray-200"
-                            }`}
-                          />
-                        ))}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.7 }}
+                      className="form-control w-full"
+                    >
+                      <label className="label">
+                        <span className="label-text text-gray-800 font-medium">
+                          New Password
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ scale: 1.02 }}
+                          type={showResetPassword ? "text" : "password"}
+                          name="password"
+                          value={resetForm.password}
+                          onChange={handleResetInputChange}
+                          className={`input input-bordered w-full pr-10 transition-shadow duration-300 focus:shadow-lg ${
+                            resetErrors.password ? "input-error" : ""
+                          }`}
+                          placeholder="Enter a new password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowResetPassword(!showResetPassword)
+                          }
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showResetPassword ? (
+                            <EyeSlashIcon className="h-5 w-5" />
+                          ) : (
+                            <EyeIcon className="h-5 w-5" />
+                          )}
+                        </button>
                       </div>
-                      <span className="text-xs font-medium">
-                        {passwordStrength <= 2
-                          ? "Weak"
-                          : passwordStrength <= 3
-                          ? "Fair"
-                          : passwordStrength <= 4
-                          ? "Good"
-                          : "Strong"}
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
+                      {resetErrors.password && (
+                        <motion.label
+                          initial={{ x: -10 }}
+                          animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                          className="label"
+                        >
+                          <span className="label-text-alt text-error text-xs">
+                            {resetErrors.password}
+                          </span>
+                        </motion.label>
+                      )}
+                    </motion.div>
 
-                {validationErrors.password && (
-                  <motion.label
-                    initial={{ x: -10 }}
-                    animate={{ x: [0, -10, 10, -10, 10, 0] }}
-                    transition={{ duration: 0.5 }}
-                    className="label"
-                  >
-                    <span className="label-text-alt text-error text-xs">
-                      {validationErrors.password}
-                    </span>
-                  </motion.label>
-                )}
-
-                {/* Password requirements hint */}
-                <label className="label">
-                  <span className="label-text-alt text-xs text-gray-500">
-                    must have uppercase, lowercase, number & special character
-                  </span>
-                </label>
-              </motion.div>
-
-              {isRegisterMode && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.8 }}
-                  className="form-control w-full"
-                >
-                  <label className="label">
-                    <span className="label-text text-gray-800 font-medium">
-                      Confirm Password
-                    </span>
-                  </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.02 }}
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
-                      validationErrors.confirmPassword ? "input-error" : ""
-                    }`}
-                    placeholder="Confirm your password"
-                    required
-                  />
-                  {validationErrors.confirmPassword && (
-                    <motion.label
-                      initial={{ x: -10 }}
-                      animate={{ x: [0, -10, 10, -10, 10, 0] }}
-                      transition={{ duration: 0.5 }}
-                      className="label"
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.8 }}
+                      className="form-control w-full"
                     >
-                      <span className="label-text-alt text-error">
-                        {validationErrors.confirmPassword}
-                      </span>
-                    </motion.label>
-                  )}
-                </motion.div>
-              )}
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={
-                  credentialsLoading ||
-                  (!isFormValid &&
-                    (isRegisterMode || !!formData.email || !!formData.password))
-                }
-                className={`btn bg-[#90AC19] hover:bg-[#7A9216] text-white w-full transition-colors duration-300 ${
-                  !isFormValid &&
-                  (isRegisterMode || !!formData.email || !!formData.password)
-                    ? "btn-disabled"
-                    : ""
-                }`}
-              >
-                {credentialsLoading ? (
-                  <span className="loading loading-spinner loading-sm"></span>
-                ) : isRegisterMode ? (
-                  "Create Account"
-                ) : (
-                  "Sign In"
+                      <label className="label">
+                        <span className="label-text text-gray-800 font-medium">
+                          Confirm New Password
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ scale: 1.02 }}
+                          type={showResetConfirmPassword ? "text" : "password"}
+                          name="confirmPassword"
+                          value={resetForm.confirmPassword}
+                          onChange={handleResetInputChange}
+                          className={`input input-bordered w-full pr-10 transition-shadow duration-300 focus:shadow-lg ${
+                            resetErrors.confirmPassword ? "input-error" : ""
+                          }`}
+                          placeholder="Confirm your new password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowResetConfirmPassword(
+                              !showResetConfirmPassword,
+                            )
+                          }
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showResetConfirmPassword ? (
+                            <EyeSlashIcon className="h-5 w-5" />
+                          ) : (
+                            <EyeIcon className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                      {resetErrors.confirmPassword && (
+                        <motion.label
+                          initial={{ x: -10 }}
+                          animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                          className="label"
+                        >
+                          <span className="label-text-alt text-error text-xs">
+                            {resetErrors.confirmPassword}
+                          </span>
+                        </motion.label>
+                      )}
+                    </motion.div>
+                  </>
                 )}
-              </motion.button>
-            </form>
 
-            {/* Toggle between signin/register */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.9 }}
-              className="text-center"
-            >
-              <button
-                onClick={() => setIsRegisterMode(!isRegisterMode)}
-                className="link text-[#90AC19] hover:text-[#7A9216] text-sm transition-colors duration-300"
-              >
-                {isRegisterMode
-                  ? "Already have an account? Sign in"
-                  : "Don't have an account? Create one"}
-              </button>
-            </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={isResetLoading}
+                  className="btn bg-[#90AC19] hover:bg-[#7A9216] text-white w-full transition-colors duration-300"
+                >
+                  {isResetLoading ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : otpRequested ? (
+                    "Reset Password"
+                  ) : (
+                    "Send OTP"
+                  )}
+                </motion.button>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.9 }}
+                  className="text-center"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordMode(false);
+                      resetPasswordForm();
+                    }}
+                    className="link text-[#90AC19] hover:text-[#7A9216] text-sm transition-colors duration-300"
+                  >
+                    Back to sign in
+                  </button>
+                </motion.div>
+              </form>
+            ) : (
+              <>
+                <form
+                  onSubmit={
+                    isRegisterMode ? handleRegister : handleCredentialsSignIn
+                  }
+                  className="space-y-4"
+                >
+                  {isRegisterMode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.5 }}
+                      className="form-control w-full"
+                    >
+                      <label className="label">
+                        <span className="label-text text-gray-800 font-medium">
+                          Full Name
+                        </span>
+                      </label>
+                      <motion.input
+                        whileFocus={{ scale: 1.02 }}
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
+                          validationErrors.name ? "input-error" : ""
+                        }`}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                      {validationErrors.name && (
+                        <motion.label
+                          initial={{ x: -10 }}
+                          animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                          className="label"
+                        >
+                          <span className="label-text-alt text-error">
+                            {validationErrors.name}
+                          </span>
+                        </motion.label>
+                      )}
+                    </motion.div>
+                  )}
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.6 }}
+                    className="form-control w-full"
+                  >
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium">
+                        Email
+                      </span>
+                    </label>
+                    <motion.input
+                      whileFocus={{ scale: 1.02 }}
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={`input input-bordered w-full transition-shadow duration-300 focus:shadow-lg ${
+                        validationErrors.email ? "input-error" : ""
+                      }`}
+                      placeholder="Enter your email"
+                      required
+                    />
+                    {validationErrors.email && (
+                      <motion.label
+                        initial={{ x: -10 }}
+                        animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                        transition={{ duration: 0.5 }}
+                        className="label"
+                      >
+                        <span className="label-text-alt text-error">
+                          {validationErrors.email}
+                        </span>
+                      </motion.label>
+                    )}
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.7 }}
+                    className="form-control w-full"
+                  >
+                    <label className="label">
+                      <span className="label-text text-gray-800 font-medium">
+                        Password
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <motion.input
+                        whileFocus={{ scale: 1.02 }}
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`input input-bordered w-full pr-10 transition-shadow duration-300 focus:shadow-lg ${
+                          validationErrors.password ? "input-error" : ""
+                        }`}
+                        placeholder="Enter your password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeSlashIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                    {validationErrors.password && (
+                      <motion.label
+                        initial={{ x: -10 }}
+                        animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                        transition={{ duration: 0.5 }}
+                        className="label"
+                      >
+                        <span className="label-text-alt text-error text-xs">
+                          {validationErrors.password}
+                        </span>
+                      </motion.label>
+                    )}
+                    <label className="label">
+                      <span className="label-text-alt text-xs text-gray-500">
+                        must have uppercase, lowercase, number & special
+                        character
+                      </span>
+                    </label>
+                  </motion.div>
+
+                  {isRegisterMode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.8 }}
+                      className="form-control w-full"
+                    >
+                      <label className="label">
+                        <span className="label-text text-gray-800 font-medium">
+                          Confirm Password
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ scale: 1.02 }}
+                          type={showConfirmPassword ? "text" : "password"}
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          className={`input input-bordered w-full pr-10 transition-shadow duration-300 focus:shadow-lg ${
+                            validationErrors.confirmPassword
+                              ? "input-error"
+                              : ""
+                          }`}
+                          placeholder="Confirm your password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeSlashIcon className="h-5 w-5" />
+                          ) : (
+                            <EyeIcon className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                      {validationErrors.confirmPassword && (
+                        <motion.label
+                          initial={{ x: -10 }}
+                          animate={{ x: [0, -10, 10, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                          className="label"
+                        >
+                          <span className="label-text-alt text-error">
+                            {validationErrors.confirmPassword}
+                          </span>
+                        </motion.label>
+                      )}
+                    </motion.div>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={
+                      credentialsLoading ||
+                      (!isFormValid &&
+                        (isRegisterMode ||
+                          !!formData.email ||
+                          !!formData.password))
+                    }
+                    className={`btn bg-[#90AC19] hover:bg-[#7A9216] text-white w-full transition-colors duration-300 ${
+                      !isFormValid &&
+                      (isRegisterMode ||
+                        !!formData.email ||
+                        !!formData.password)
+                        ? "btn-disabled"
+                        : ""
+                    }`}
+                  >
+                    {credentialsLoading ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : isRegisterMode ? (
+                      "Create Account"
+                    ) : (
+                      "Sign In"
+                    )}
+                  </motion.button>
+
+                  {!isRegisterMode && (
+                    <div className="text-right">
+                      <Link
+                        href="/auth/reset-password"
+                        className="link text-[#90AC19] hover:text-[#7A9216] text-sm transition-colors duration-300"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                  )}
+                </form>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.9 }}
+                  className="text-center"
+                >
+                  <button
+                    onClick={() => setIsRegisterMode(!isRegisterMode)}
+                    className="link text-[#90AC19] hover:text-[#7A9216] text-sm transition-colors duration-300"
+                  >
+                    {isRegisterMode
+                      ? "Already have an account? Sign in"
+                      : "Don't have an account? Create one"}
+                  </button>
+                </motion.div>
+              </>
+            )}
 
             {/* Divider */}
             <motion.div

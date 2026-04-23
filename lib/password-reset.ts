@@ -1,6 +1,6 @@
 /**
  * Password reset utility
- * Stores tokens in user document
+ * Stores OTP tokens in user document
  */
 
 import { UserRepository } from "./UserRepository";
@@ -14,7 +14,14 @@ export function generatePasswordResetToken(): string {
 }
 
 /**
- * Create a password reset token for an email
+ * Generate a 6-digit OTP code
+ */
+export function generatePasswordResetOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Create a password reset token and OTP for an email
  */
 export async function createPasswordResetToken(email: string): Promise<string> {
   const user = await UserRepository.findByEmail(email);
@@ -23,20 +30,56 @@ export async function createPasswordResetToken(email: string): Promise<string> {
   }
 
   const token = generatePasswordResetToken();
+  const otp = generatePasswordResetOtp();
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
   await UserRepository.updateUser(user._id!.toString(), {
-    passwordResetToken: { token, expiresAt, used: false },
+    passwordResetToken: {
+      token,
+      otp,
+      expiresAt,
+      used: false,
+    },
   });
 
-  return token;
+  return otp;
+}
+
+/**
+ * Verify a reset code by email and return the email if valid
+ */
+export async function verifyPasswordResetCode(
+  email: string,
+  otp: string,
+): Promise<string | null> {
+  const user = await UserRepository.findByEmail(email);
+  if (!user || !user.passwordResetToken) {
+    return null;
+  }
+
+  if (new Date() > user.passwordResetToken.expiresAt) {
+    await UserRepository.updateUser(user._id!.toString(), {
+      passwordResetToken: undefined,
+    });
+    return null;
+  }
+
+  if (user.passwordResetToken.used) {
+    return null;
+  }
+
+  if (user.passwordResetToken.otp !== otp) {
+    return null;
+  }
+
+  return user.userData.user.email;
 }
 
 /**
  * Verify a token and return the email if valid
  */
 export async function verifyPasswordResetToken(
-  token: string
+  token: string,
 ): Promise<string | null> {
   const users = await UserRepository.getUsersWithTokens();
   const user = users.find((u) => u.passwordResetToken?.token === token);
@@ -60,14 +103,28 @@ export async function verifyPasswordResetToken(
 }
 
 /**
- * Mark a token as used
+ * Mark a token or email reset record as used
  */
 export async function markPasswordResetTokenAsUsed(
-  token: string
+  token: string,
 ): Promise<void> {
   const users = await UserRepository.getUsersWithTokens();
   const user = users.find((u) => u.passwordResetToken?.token === token);
 
+  if (user && user.passwordResetToken) {
+    await UserRepository.updateUser(user._id!.toString(), {
+      passwordResetToken: { ...user.passwordResetToken, used: true },
+    });
+  }
+}
+
+/**
+ * Mark a reset token as used by email
+ */
+export async function markPasswordResetTokenAsUsedByEmail(
+  email: string,
+): Promise<void> {
+  const user = await UserRepository.findByEmail(email);
   if (user && user.passwordResetToken) {
     await UserRepository.updateUser(user._id!.toString(), {
       passwordResetToken: { ...user.passwordResetToken, used: true },

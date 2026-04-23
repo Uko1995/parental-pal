@@ -29,6 +29,7 @@ export interface UserInterface {
   };
   passwordResetToken?: {
     token: string;
+    otp?: string;
     expiresAt: Date;
     used?: boolean;
   };
