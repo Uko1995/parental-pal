@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Jost } from "next/font/google";
-
-const jost = Jost({ subsets: ["latin"], weight: "900" });
 
 export default function Hero() {
   return (
@@ -36,7 +33,7 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className={`relative text-[#90AC19] text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold ${jost.className}`}
+                className="relative text-[#90AC19] text-6xl sm:text-8xl md:text-7xl lg:text-8xl md:tracking-wide font-extrabold"
                 style={{
                   textShadow: `
                   -2px -2px 0 #bde022,
@@ -46,6 +43,8 @@ export default function Hero() {
                   0 4px 8px rgba(0, 0, 0, 0.6)
                 `,
                   color: "#90AC19",
+                  fontFamily:
+                    '"Jost", "Arial Black", "Segoe UI", "Trebuchet MS", sans-serif',
                   willChange: "opacity",
                 }}
               >

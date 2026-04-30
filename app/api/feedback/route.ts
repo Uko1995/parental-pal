@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const servicesInterested = Array.isArray(body.servicesInterested)
       ? body.servicesInterested
           .filter((item: unknown): item is string => typeof item === "string")
-          .map((item) => item.trim().toLowerCase())
+          .map((item: string) => item.trim().toLowerCase())
       : [];
 
     const interestLevel =
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     allowedServices.add("other");
 
     const invalidService = servicesInterested.some(
-      (service) => !allowedServices.has(service)
+      (service: string) => !allowedServices.has(service)
     );
     if (invalidService) {
       return NextResponse.json(
