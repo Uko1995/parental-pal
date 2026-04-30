@@ -112,7 +112,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const data = await request.formData();
+    let data: FormData;
+    try {
+      data = await request.formData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isBodyTooLargeError =
+        message.includes("Failed to parse body as FormData") ||
+        message.includes("Request body exceeded");
+
+      if (isBodyTooLargeError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Upload payload is too large. Please keep PDF uploads within 50MB.",
+          },
+          { status: 413 }
+        );
+      }
+
+      throw error;
+    }
     const file: File | null = data.get("file") as unknown as File;
     const uploadType = (data.get("type") as UploadType) || "service";
 

@@ -31,7 +31,7 @@ function getClientPromise(): Promise<MongoClient> {
   // Next.js build can import route/model modules during "Collecting page data".
   if (!uri) {
     return Promise.reject(
-      new Error("Please add your MONGODB_URI to .env.local"),
+      new Error("Please add your MONGODB_URI to .env.local")
     );
   }
 

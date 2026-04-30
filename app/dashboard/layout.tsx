@@ -19,6 +19,7 @@ import {
   UserIcon,
   BookOpenIcon,
   ShoppingBagIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -45,6 +46,11 @@ const navigation: NavigationItem[] = [
   { name: "Payments", href: "/dashboard/payments", icon: CreditCardIcon },
   { name: "Services", href: "/dashboard/services", icon: BuildingOfficeIcon },
   { name: "Products", href: "/dashboard/products", icon: BookOpenIcon },
+  {
+    name: "Feedback",
+    href: "/dashboard/feedback",
+    icon: ChatBubbleLeftRightIcon,
+  },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBagIcon },
   { name: "Blog", href: "/dashboard/blog", icon: DocumentTextIcon },
   { name: "Settings", href: "/dashboard/settings", icon: Cog6ToothIcon },

@@ -4,6 +4,9 @@ import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024;
+const PDF_MIME_TYPES = ["application/pdf", "application/x-pdf"];
+
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,6 +42,29 @@ export default function AddProductModal({
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+
+  const handlePdfFileChange = (file: File | null) => {
+    if (!file) {
+      setPdfFile(null);
+      return;
+    }
+
+    const isPdfByMime = PDF_MIME_TYPES.includes(file.type);
+    const isPdfByExtension = file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdfByMime && !isPdfByExtension) {
+      toast.error("Only PDF files are allowed");
+      setPdfFile(null);
+      return;
+    }
+
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      toast.error("PDF must be 50MB or less");
+      setPdfFile(null);
+      return;
+    }
+
+    setPdfFile(file);
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -448,11 +474,14 @@ export default function AddProductModal({
                 </label>
                 <input
                   type="file"
-                  accept=".pdf"
-                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => handlePdfFileChange(e.target.files?.[0] || null)}
                   className="file-input file-input-bordered"
                   required
                 />
+                <span className="label-text-alt mt-1 text-gray-500">
+                  PDF only, maximum 50MB
+                </span>
                 {pdfFile && (
                   <span className="label-text-alt mt-1 text-success">
                     {pdfFile.name}

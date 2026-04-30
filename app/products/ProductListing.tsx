@@ -96,7 +96,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         (p) =>
           p.title.toLowerCase().includes(query) ||
           p.author.toLowerCase().includes(query) ||
-          p.shortDescription.toLowerCase().includes(query),
+          p.shortDescription.toLowerCase().includes(query)
       );
     }
 
@@ -115,7 +115,7 @@ export default function ProductListing({ products }: ProductListingProps) {
       result = result.filter((p) => {
         const minPrice = Math.min(
           p.pricing.softcopy.available ? p.pricing.softcopy.price : Infinity,
-          p.pricing.paperback.available ? p.pricing.paperback.price : Infinity,
+          p.pricing.paperback.available ? p.pricing.paperback.price : Infinity
         );
 
         switch (priceFilter) {
@@ -138,7 +138,7 @@ export default function ProductListing({ products }: ProductListingProps) {
       result = result.filter((p) =>
         formatFilter === "softcopy"
           ? p.pricing.softcopy.available
-          : p.pricing.paperback.available,
+          : p.pricing.paperback.available
       );
     }
 
@@ -155,15 +155,11 @@ export default function ProductListing({ products }: ProductListingProps) {
         result.sort((a, b) => {
           const aPrice = Math.min(
             a.pricing.softcopy.available ? a.pricing.softcopy.price : Infinity,
-            a.pricing.paperback.available
-              ? a.pricing.paperback.price
-              : Infinity,
+            a.pricing.paperback.available ? a.pricing.paperback.price : Infinity
           );
           const bPrice = Math.min(
             b.pricing.softcopy.available ? b.pricing.softcopy.price : Infinity,
-            b.pricing.paperback.available
-              ? b.pricing.paperback.price
-              : Infinity,
+            b.pricing.paperback.available ? b.pricing.paperback.price : Infinity
           );
           return aPrice - bPrice;
         });
@@ -172,11 +168,11 @@ export default function ProductListing({ products }: ProductListingProps) {
         result.sort((a, b) => {
           const aPrice = Math.max(
             a.pricing.softcopy.available ? a.pricing.softcopy.price : 0,
-            a.pricing.paperback.available ? a.pricing.paperback.price : 0,
+            a.pricing.paperback.available ? a.pricing.paperback.price : 0
           );
           const bPrice = Math.max(
             b.pricing.softcopy.available ? b.pricing.softcopy.price : 0,
-            b.pricing.paperback.available ? b.pricing.paperback.price : 0,
+            b.pricing.paperback.available ? b.pricing.paperback.price : 0
           );
           return bPrice - aPrice;
         });
@@ -212,7 +208,7 @@ export default function ProductListing({ products }: ProductListingProps) {
   const handleAddToCart = async (
     e: React.MouseEvent,
     productId: string,
-    orderType: "softcopy" | "paperback",
+    orderType: "softcopy" | "paperback"
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -235,11 +231,11 @@ export default function ProductListing({ products }: ProductListingProps) {
 
         const guestCart = JSON.parse(
           localStorage.getItem("guest_cart") ||
-            '{"items":[], "subtotal": 0, "discount": 0, "total": 0}',
+            '{"items":[], "subtotal": 0, "discount": 0, "total": 0}'
         );
         const existingItemIndex = guestCart.items.findIndex(
           (item: { productId: string; orderType: string }) =>
-            item.productId === productId && item.orderType === orderType,
+            item.productId === productId && item.orderType === orderType
         );
 
         if (existingItemIndex !== -1) {
@@ -261,7 +257,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         // Recalculate totals
         guestCart.subtotal = guestCart.items.reduce(
           (sum: number, item: CartItem) => sum + item.unitPrice * item.quantity,
-          0,
+          0
         );
         guestCart.total = guestCart.subtotal - (guestCart.discount || 0);
 
@@ -294,7 +290,7 @@ export default function ProductListing({ products }: ProductListingProps) {
 
   const handleToggleWishlist = async (
     e: React.MouseEvent,
-    productId: string,
+    productId: string
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -306,12 +302,12 @@ export default function ProductListing({ products }: ProductListingProps) {
       // Handle guest users with localStorage
       if (!session) {
         const guestWishlist = JSON.parse(
-          localStorage.getItem("guest_wishlist") || '{"items":[]}',
+          localStorage.getItem("guest_wishlist") || '{"items":[]}'
         );
 
         if (isInWishlist) {
           guestWishlist.items = guestWishlist.items.filter(
-            (item: CartItem) => item.productId !== productId,
+            (item: CartItem) => item.productId !== productId
           );
           localStorage.setItem("guest_wishlist", JSON.stringify(guestWishlist));
           setWishlistItems((prev) => {
@@ -587,17 +583,20 @@ export default function ProductListing({ products }: ProductListingProps) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 px-4">
           {filteredProducts.map((product) => (
             <div
               key={product._id}
-              className="bg-white shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group relative"
+              className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl"
             >
-              <Link href={`/products/${product.slug}`}>
+              <Link
+                href={`/products/${product.slug}`}
+                className="block lg:flex lg:items-stretch"
+              >
                 {/* Book Cover */}
-                <div className="relative h-72 bg-gray-100 flex items-center justify-center">
+                <div className="relative h-80 border-b border-gray-100 bg-gray-50 lg:h-auto lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r">
                   {product.thumbnail ? (
-                    <div className="relative w-[85%] h-[85%]">
+                    <div className="relative h-full w-full">
                       <Image
                         src={product.thumbnail}
                         alt={product.title}
@@ -631,7 +630,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                     </div>
                   )}
                   {product.featured && (
-                    <div className="absolute top-3 right-3 bg-[#E8931A] text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <div className="absolute right-3 top-3 rounded-full bg-[#E8931A] px-3 py-1 text-xs font-semibold text-white shadow-sm">
                       Featured
                     </div>
                   )}
@@ -651,9 +650,9 @@ export default function ProductListing({ products }: ProductListingProps) {
                 </div>
 
                 {/* Book Details */}
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-block bg-[#90AC19]/10 text-[#90AC19] text-xs font-semibold px-3 py-1 rounded-full">
+                <div className="flex flex-1 flex-col p-4 lg:p-5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="inline-flex rounded-full bg-[#90AC19]/10 px-2.5 py-1 text-xs font-medium text-[#90AC19]">
                       {product.ageRange}
                     </span>
                     {/* {product?.averageRating && product?.averageRating > 0 && (
@@ -664,34 +663,36 @@ export default function ProductListing({ products }: ProductListingProps) {
                     )} */}
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-[#90AC19] transition-colors">
+                  <h3 className="mb-1 line-clamp-2 text-lg font-semibold leading-7 text-gray-900 transition-colors group-hover:text-[#90AC19]">
                     {product.title}
                   </h3>
 
-                  <p className="text-sm text-gray-600 mb-1">
+                  <p className="mb-2 text-sm text-gray-500">
                     by {product.author}
                   </p>
 
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                  <p className="mb-3 line-clamp-3 text-sm text-gray-600">
                     {product.shortDescription}
                   </p>
 
                   {/* Pricing */}
-                  <div className="border-t border-gray-300 pt-2 space-y-2">
+                  <div className="space-y-2 border-t border-gray-100 pt-3 lg:max-w-sm">
                     {product.pricing.softcopy.available && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">PDF:</span>
-                        <span className="text-base font-bold text-black">
+                      <div className="flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5">
+                        <span className="text-xs font-medium text-gray-600">
+                          PDF
+                        </span>
+                        <span className="text-base font-semibold text-gray-900">
                           ₦{product.pricing.softcopy.price.toLocaleString()}
                         </span>
                       </div>
                     )}
                     {product.pricing.paperback.available && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">
+                      <div className="flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5">
+                        <span className="text-xs font-medium text-gray-600">
                           Paperback:
                         </span>
-                        <span className="text-base font-semibold text-black">
+                        <span className="text-base font-semibold text-gray-900">
                           ₦{product.pricing.paperback.price.toLocaleString()}
                         </span>
                       </div>
@@ -701,14 +702,14 @@ export default function ProductListing({ products }: ProductListingProps) {
               </Link>
 
               {/* Action Buttons */}
-              <div className="p-3 pt-0 flex gap-2">
+              <div className="flex gap-2 px-4 pb-4 pt-1">
                 {/* Add to Cart Dropdown */}
                 {(product.pricing.softcopy.available ||
                   product.pricing.paperback.available) && (
                   <div className="dropdown dropdown-top flex-1">
                     <button
                       tabIndex={0}
-                      className="btn btn-sm btn-neutral w-full gap-2"
+                      className="btn btn-sm w-full gap-2 border-none bg-gray-900 text-white hover:bg-gray-800"
                       disabled={loadingCart === product._id}
                     >
                       {loadingCart === product._id ? (
@@ -758,7 +759,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                 <button
                   onClick={(e) => handleToggleWishlist(e, product._id)}
                   disabled={loadingWishlist === product._id}
-                  className="btn btn-sm btn-outline hover:btn-error"
+                  className="btn btn-sm border-gray-200 bg-white text-gray-700 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                   title={
                     wishlistItems.has(product._id)
                       ? "Remove from wishlist"
