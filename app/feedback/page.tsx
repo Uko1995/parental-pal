@@ -97,13 +97,13 @@ export default function FeedbackPage() {
           throw new Error("Unable to load services.");
         }
 
-        const activeServices = result.data
+        const activeServices: string[] = result.data
           .filter((item: { status?: string }) => item?.status === "active")
           .map((item: { name?: string }) => item?.name?.trim())
           .filter((name: string | undefined): name is string => Boolean(name));
 
-        const uniqueServiceNames = Array.from(new Set(activeServices));
-        const mapped = uniqueServiceNames.map((name) => ({
+        const uniqueServiceNames: string[] = Array.from(new Set(activeServices));
+        const mapped = uniqueServiceNames.map((name: string) => ({
           label: name,
           value: name.toLowerCase(),
         }));
