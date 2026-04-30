@@ -44,6 +44,7 @@ export default function NavBar() {
     // { name: "Blog", href: "/blog" },
     { name: "Services", href: "/services" },
     { name: "Products", href: "/products" },
+    { name: "Feedback", href: "/feedback" },
     { name: "Contact", href: "/contact" },
   ];
 
@@ -95,14 +96,14 @@ export default function NavBar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`px-5 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-colors duration-300 ${
                       isActive
                         ? isTransparent
                           ? "bg-white/20 text-white"
                           : "bg-[#90AC19]/10 text-[#90AC19]"
                         : isTransparent
-                          ? "text-white/90 hover:text-white hover:bg-white/10"
-                          : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                        ? "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
                     }`}
                   >
                     {item.name}
@@ -129,7 +130,7 @@ export default function NavBar() {
                     <div className="rounded-full p-2 bg-linear-to-br from-[#90AC19] to-[#7A9216] ring-2 ring-[#90AC19] ring-offset-2">
                       <UserIcon
                         strokeWidth={2}
-                        className="w-5 h-5 text-white"
+                        className="w-4 h-4 text-white"
                       />
                     </div>
                   )}
@@ -143,7 +144,7 @@ export default function NavBar() {
                     href={`/profile`}
                     className={`${
                       isTransparent ? "text-white" : "text-gray-800"
-                    } font-semibold text-sm hover:text-[#90AC19] transition-colors`}
+                    } font-semibold text-xs hover:text-[#90AC19] transition-colors`}
                   >
                     {session.user.name}
                   </Link>
@@ -155,8 +156,8 @@ export default function NavBar() {
                     {session.user.role === "admin"
                       ? "Administrator"
                       : session.user.role === "tutor"
-                        ? "Tutor"
-                        : "Parent"}
+                      ? "Tutor"
+                      : "Parent"}
                   </span>
                 </div>
 
@@ -169,7 +170,7 @@ export default function NavBar() {
                 {/* Sign Out Button */}
                 <button
                   onClick={handleSignOut}
-                  className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="bg-[#90AC19] cursor-pointer hover:bg-[#7A9216] text-white px-4 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   SIGN OUT
                 </button>
@@ -186,7 +187,7 @@ export default function NavBar() {
                   href="/auth/signin"
                   className={`bg-[#90AC19] hover:bg-[#7A9216] ${
                     status === "loading" ? "cursor-progress" : "cursor-pointer"
-                  }  text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300`}
+                  }  text-white px-3 py-2 rounded-md text-xs font-medium transition-colors duration-300`}
                 >
                   {status === "loading" ? "Loading..." : "SIGN IN"}
                 </Link>
@@ -251,8 +252,8 @@ export default function NavBar() {
                         ? "bg-white/20 text-white"
                         : "bg-[#90AC19]/10 text-[#90AC19]"
                       : isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                      ? "text-white/90 hover:text-white hover:bg-white/10"
+                      : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
                   }`}
                 >
                   {item.name}

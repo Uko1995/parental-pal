@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
@@ -8,12 +7,6 @@ import ConditionalLayout from "../components/ConditionalLayout";
 import AnalyticsProvider from "../components/AnalyticsProvider";
 import { baseMetadata } from "../lib/metadata";
 import Image from "next/image";
-
-const manRope = Manrope({
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
 
 export const metadata: Metadata = baseMetadata;
 
@@ -25,15 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body className={`${manRope.className}  antialiased`}>
+      <body className="antialiased font-sans">
         {/* Facebook Pixel */}
         <Script
           id="facebook-pixel"
