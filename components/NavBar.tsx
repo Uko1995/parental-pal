@@ -21,19 +21,10 @@ export default function NavBar() {
     href: string;
   }
 
-  // Define protected routes that require authentication
-  const protectedRoutes = ["/dashboard", "/profile", "/booking", "/payment"];
-
-  // Helper function to check if current route is protected
-  const isProtectedRoute = () => {
-    return protectedRoutes.some((route) => pathname.startsWith(route));
-  };
-
-  // Smart signout handler
+  // Always return users to homepage after sign out
   const handleSignOut = () => {
-    const shouldRedirectHome = isProtectedRoute();
     signOut({
-      callbackUrl: shouldRedirectHome ? "/?signout=success" : pathname,
+      callbackUrl: "/?signout=success",
       redirect: true,
     });
   };
@@ -68,10 +59,10 @@ export default function NavBar() {
           : "bg-white backdrop-blur-md shadow-md border-b border-gray-200"
       }`}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="shrink-0 w-50 h-12.5">
+          <div className="shrink min-w-0 w-36 h-10 sm:w-44 sm:h-11 md:w-50 md:h-12.5">
             <Link
               href="/"
               className="flex items-center transition-all duration-300"
@@ -81,7 +72,7 @@ export default function NavBar() {
                 alt="PARENTALPAL logo"
                 width={200}
                 height={50}
-                className="h-12.5 w-50 object-contain"
+                className="h-10 w-36 sm:h-11 sm:w-44 md:h-12.5 md:w-50 object-contain"
                 priority
               />
             </Link>
@@ -195,8 +186,14 @@ export default function NavBar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile actions */}
+          <div className="md:hidden flex items-center gap-1 pr-2">
+            {session?.user && (
+              <>
+                <WishlistIcon isTransparent={isTransparent} />
+                <CartIcon isTransparent={isTransparent} />
+              </>
+            )}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               type="button"
@@ -261,31 +258,33 @@ export default function NavBar() {
               );
             })}
 
-            {/* Cart & Wishlist Links - Mobile (Always visible) */}
-            <div className="border-t border-gray-200 pt-3 mt-3">
-              <Link
-                href="/wishlist"
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                  isTransparent
-                    ? "text-white/90 hover:text-white hover:bg-white/10"
-                    : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
-                }`}
-              >
-                <WishlistIcon isTransparent={isTransparent} /> Wishlist
-              </Link>
-              <Link
-                href="/cart"
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                  isTransparent
-                    ? "text-white/90 hover:text-white hover:bg-white/10"
-                    : "text-gray-900 hover:text-[#90AC19] hover:bg-gray-50"
-                }`}
-              >
-                <CartIcon isTransparent={isTransparent} /> Cart
-              </Link>
-            </div>
+            {/* Cart & Wishlist Links - Mobile (guest only) */}
+            {!session?.user && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <Link
+                  href="/wishlist"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    isTransparent
+                      ? "text-white/90 hover:text-white hover:bg-white/10"
+                      : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
+                  }`}
+                >
+                  Wishlist
+                </Link>
+                <Link
+                  href="/cart"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                    isTransparent
+                      ? "text-white/90 hover:text-white hover:bg-white/10"
+                      : "text-gray-900 hover:text-[#90AC19] hover:bg-gray-50"
+                  }`}
+                >
+                  Cart
+                </Link>
+              </div>
+            )}
 
             {/* Mobile Authentication Section */}
             <div className="border-t border-gray-200 pt-3 mt-3">

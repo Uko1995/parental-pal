@@ -380,7 +380,7 @@ export default function CartPage() {
 
                   {/* Quantity Controls */}
                   <div className="flex items-center gap-4 mt-4">
-                    <div className="flex items-center border rounded-lg">
+                    <div className="flex items-center border border-gray-300 bg-white rounded-lg overflow-hidden">
                       <button
                         onClick={() =>
                           updateQuantity(
@@ -390,11 +390,11 @@ export default function CartPage() {
                           )
                         }
                         disabled={updating || item.quantity <= 1}
-                        className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                        className="p-2 border-r border-gray-300 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <MinusIcon className="w-4 h-4" />
                       </button>
-                      <span className="px-4 py-2 font-medium">
+                      <span className="px-4 py-2 font-medium text-gray-900 min-w-10 text-center">
                         {item.quantity}
                       </span>
                       <button
@@ -406,7 +406,7 @@ export default function CartPage() {
                           )
                         }
                         disabled={updating}
-                        className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                        className="p-2 border-l border-gray-300 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <PlusIcon className="w-4 h-4" />
                       </button>
@@ -518,7 +518,7 @@ export default function CartPage() {
                   onClick={() => setShowCheckout(true)}
                   className="w-full mt-6 bg-[#90AC19] hover:bg-[#7A9216] text-white font-bold py-4 rounded-lg transition-colors"
                 >
-                  Proceed to Checkout
+                  Proceed to Payment
                 </button>
               ) : (
                 <form onSubmit={handleCheckout} className="mt-6 space-y-4">

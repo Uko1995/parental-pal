@@ -16,6 +16,7 @@ export default function ProductPurchaseClient({
   );
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -33,6 +34,9 @@ export default function ProductPurchaseClient({
     selectedType === "softcopy"
       ? product.pricing.softcopy.price
       : product.pricing.paperback.price;
+  const maxQuantity =
+    selectedType === "paperback" ? Math.max(1, product.stock.paperback) : 50;
+  const totalPrice = currentPrice * quantity;
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -75,7 +79,7 @@ export default function ProductPurchaseClient({
         body: JSON.stringify({
           productId: product._id,
           orderType: selectedType,
-          quantity: 1,
+          quantity,
           ...formData,
         }),
       });
@@ -195,12 +199,48 @@ export default function ProductPurchaseClient({
 
       {/* Checkout Button */}
       {!showCheckoutForm && (
-        <button
-          onClick={() => setShowCheckoutForm(true)}
-          className="w-full bg-[#90AC19] hover:bg-[#7A9216] text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
-        >
-          Proceed to Checkout - ₦{currentPrice.toLocaleString()}
-        </button>
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quantity
+            </label>
+            <div className="inline-flex items-center border border-gray-300 bg-white rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                className="px-3 py-2 border-r border-gray-300 hover:bg-gray-100"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="min-w-12 text-center font-semibold text-gray-900">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setQuantity((prev) => Math.min(maxQuantity, prev + 1))
+                }
+                className="px-3 py-2 border-l border-gray-300 hover:bg-gray-100"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+            {selectedType === "paperback" && (
+              <p className="mt-1 text-xs text-gray-500">
+                Max available: {product.stock.paperback}
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowCheckoutForm(true)}
+            className="w-full bg-[#90AC19] hover:bg-[#7A9216] text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+          >
+            Proceed to Payment - ₦{totalPrice.toLocaleString()}
+          </button>
+        </>
       )}
 
       {/* Checkout Form */}
@@ -343,10 +383,14 @@ export default function ProductPurchaseClient({
                   {selectedType}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Quantity:</span>
+                <span className="font-medium text-gray-900">{quantity}</span>
+              </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Total:</span>
                 <span className="text-[#90AC19]">
-                  ₦{currentPrice.toLocaleString()}
+                  ₦{totalPrice.toLocaleString()}
                 </span>
               </div>
             </div>

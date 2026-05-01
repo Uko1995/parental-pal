@@ -395,13 +395,13 @@ export default function ProductListing({ products }: ProductListingProps) {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1 ">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 " />
+            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by title, author..."
-              className="w-full pl-10 pr-4 py-3 border rounded-full text-sm"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-white rounded-full text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
             />
           </div>
 
@@ -410,7 +410,7 @@ export default function ProductListing({ products }: ProductListingProps) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="appearance-none w-full lg:w-48 px-4 py-3 border rounded-full pr-10 text-sm"
+              className="appearance-none w-full lg:w-48 px-4 py-3 border border-gray-300 bg-white rounded-full pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
             >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -418,7 +418,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                 </option>
               ))}
             </select>
-            <ChevronDownIcon className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2  pointer-events-none" />
+            <ChevronDownIcon className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
           </div>
 
           {/* Filter Toggle */}
@@ -427,7 +427,7 @@ export default function ProductListing({ products }: ProductListingProps) {
             className={`flex items-center justify-center gap-2 px-4 py-3 border rounded-full text-sm transition-colors ${
               showFilters
                 ? "bg-[#90AC19] text-white border-[#90AC19]"
-                : "hover:bg-gray-50"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
             }`}
           >
             <FunnelIcon className="w-5 h-5" />
@@ -445,7 +445,7 @@ export default function ProductListing({ products }: ProductListingProps) {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#90AC19]"
+                className="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
               >
                 {categories.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -462,7 +462,7 @@ export default function ProductListing({ products }: ProductListingProps) {
               <select
                 value={ageFilter}
                 onChange={(e) => setAgeFilter(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#90AC19]"
+                className="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
               >
                 {ageRanges.map((age) => (
                   <option key={age.value} value={age.value}>
@@ -479,7 +479,7 @@ export default function ProductListing({ products }: ProductListingProps) {
               <select
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#90AC19]"
+                className="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
               >
                 {priceRanges.map((price) => (
                   <option key={price.value} value={price.value}>
@@ -498,7 +498,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                 onChange={(e) =>
                   setFormatFilter(e.target.value as typeof formatFilter)
                 }
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#90AC19]"
+                className="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#90AC19]/25 focus:border-[#90AC19]"
               >
                 <option value="all">All Formats</option>
                 <option value="softcopy">PDF Only</option>

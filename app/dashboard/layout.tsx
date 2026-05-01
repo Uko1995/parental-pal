@@ -21,7 +21,7 @@ import {
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 
@@ -65,6 +65,13 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  const handleSignOut = () => {
+    signOut({
+      callbackUrl: "/?signout=success",
+      redirect: true,
+    });
+  };
   const Name =
     session?.user?.name
       ?.split(" ")
@@ -320,7 +327,9 @@ export default function DashboardLayout({
                     <Link href="/dashboard/settings">Settings</Link>
                   </li>
                   <li>
-                    <Link href="/logout">Logout</Link>
+                    <button onClick={handleSignOut} className="text-left w-full">
+                      Logout
+                    </button>
                   </li>
                 </ul>
               </div>

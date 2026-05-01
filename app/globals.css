@@ -5,6 +5,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 :root {
@@ -36,6 +37,24 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Manrope", Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Global form control visibility baseline */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #90ac19;
+  box-shadow: 0 0 0 2px rgba(144, 172, 25, 0.15);
 }
 
 /* Custom gradient utilities for mesh background */
