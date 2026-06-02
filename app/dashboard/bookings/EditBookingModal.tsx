@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import PhoneInput from "@/components/PhoneInput";
 
 interface Child {
   name: string;
@@ -208,18 +209,17 @@ export default function EditBookingModal({
               />
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Parent Phone</span>
-              </label>
-              <input
-                type="tel"
-                name="parentPhone"
-                className="input input-bordered"
-                value={formData.parentPhone || ""}
-                onChange={handleInputChange}
-              />
-            </div>
+            <PhoneInput
+              label="Parent Phone"
+              value={formData.parentPhone || ""}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, parentPhone: value }))
+              }
+              wrapperClassName="form-control"
+              inputClassName="input input-bordered rounded-r-lg rounded-l-none"
+              selectClassName="select select-bordered rounded-r-none border-r-0"
+              showPreview={false}
+            />
 
             <div className="form-control">
               <label className="label">

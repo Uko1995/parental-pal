@@ -7,6 +7,62 @@ import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { ObjectId } from "mongodb";
 import { BookingInterface } from "@/models/Booking";
+import { getDb } from "@/lib/mongodb";
+
+const EDUVANTA_PROMO_CODE = "ONBOARD";
+const EDUVANTA_SERVICE_NAME = "Eduvanta Tutoring and Prep";
+const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
+
+function isServerDateInJune(now: Date): boolean {
+  return now.getMonth() === 5;
+}
+
+async function getTutoringRatesFromService() {
+  const db = await getDb();
+  const servicesCollection = db.collection("services");
+
+  const eduVantaService = await servicesCollection.findOne(
+    {
+      type: "tutoring",
+      name: { $regex: `^${EDUVANTA_SERVICE_NAME}$`, $options: "i" },
+      status: "active",
+    },
+    {
+      projection: {
+        name: 1,
+        pricing: 1,
+      },
+    },
+  );
+
+  const fallbackTutoringService = eduVantaService
+    ? null
+    : await servicesCollection.findOne(
+        { type: "tutoring", status: "active" },
+        {
+          projection: {
+            name: 1,
+            pricing: 1,
+          },
+        },
+      );
+
+  const resolvedService = eduVantaService || fallbackTutoringService;
+  const virtualRate =
+    resolvedService?.pricing?.locationRates?.virtual ||
+    parseInt(String(resolvedService?.pricing?.baseRate || "")) ||
+    13000;
+  const physicalRate =
+    resolvedService?.pricing?.locationRates?.physical ||
+    parseInt(String(resolvedService?.pricing?.baseRate || "")) ||
+    12000;
+
+  return {
+    virtualRate,
+    physicalRate,
+    isEduvantaService: Boolean(eduVantaService),
+  };
+}
 
 export async function registerChild(formData: FormData) {
   // Check authentication status
@@ -480,8 +536,9 @@ async function parseFormDataToBooking(
     serviceData.hourlyRate = parseInt(cleanedData.hourlyRate) || 12000;
     serviceData.tutoringLocation =
       (cleanedData.tutoringLocation as "virtual" | "physical") || "physical";
-    serviceData.virtualRate = parseInt(cleanedData.virtualRate) || 11000;
+    serviceData.virtualRate = parseInt(cleanedData.virtualRate) || 13000;
     serviceData.physicalRate = parseInt(cleanedData.physicalRate) || 12000;
+    serviceData.promoCode = (cleanedData.promoCode || "").toString().trim();
   } else if (serviceType === "childcare") {
     // NEW: Parse per-child childcare data
     const childrenCareData: Array<{
@@ -671,8 +728,37 @@ async function parseFormDataToBooking(
       (sum, child) => sum + child.totalHours,
       0,
     );
-    const hourlyRate = parseInt(cleanedData.hourlyRate) || 15000;
-    totalAmount = totalHours * hourlyRate;
+    const submittedPromoCode = (cleanedData.promoCode || "").toString().trim();
+    const normalizedPromoCode = submittedPromoCode.toUpperCase();
+    const now = new Date();
+    const isJunePromoWindow = isServerDateInJune(now);
+    const tutoringLocation =
+      (cleanedData.tutoringLocation as "virtual" | "physical") || "physical";
+
+    const { virtualRate, physicalRate, isEduvantaService } =
+      await getTutoringRatesFromService();
+    const baseHourlyRate =
+      tutoringLocation === "virtual" ? virtualRate : physicalRate;
+    const hasEduvantaPromo =
+      isEduvantaService &&
+      tutoringLocation === "virtual" &&
+      isJunePromoWindow &&
+      normalizedPromoCode === EDUVANTA_PROMO_CODE;
+    const effectiveHourlyRate = hasEduvantaPromo
+      ? EDUVANTA_PROMO_VIRTUAL_RATE
+      : baseHourlyRate;
+
+    pricingBaseAmount = totalHours * baseHourlyRate;
+    totalAmount = totalHours * effectiveHourlyRate;
+
+    if (hasEduvantaPromo) {
+      pricingDiscount = Math.max(0, pricingBaseAmount - totalAmount);
+      pricingDiscountReason = `Promo code: ${EDUVANTA_PROMO_CODE} (${EDUVANTA_SERVICE_NAME})`;
+    }
+
+    serviceData.virtualRate = virtualRate;
+    serviceData.physicalRate = physicalRate;
+    serviceData.hourlyRate = effectiveHourlyRate;
   } else if (serviceType === "homeschooling") {
     // Each child pays the term rate
     const childrenData = serviceData.childrenData as Array<{ childId: string }>;

@@ -13,6 +13,7 @@ import {
   MapPinIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import PhoneInput from "@/components/PhoneInput";
 
 interface ProfileDetailsProps {
   user: User;
@@ -227,12 +228,14 @@ export default function ProfileDetails({
             Phone Number
           </label>
           {isEditing ? (
-            <input
-              type="tel"
+            <PhoneInput
               value={profile.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#A25F97] focus:ring-2 focus:ring-[#A25F97]/20 transition-all duration-300 outline-none"
-              placeholder="Enter your phone number"
+              onValueChange={(value) => handleInputChange("phone", value)}
+              placeholder="8012345678"
+              wrapperClassName="form-control"
+              inputClassName="w-full px-4 py-3 border-2 border-gray-200 rounded-r-xl focus:border-[#A25F97] focus:ring-2 focus:ring-[#A25F97]/20 transition-all duration-300 outline-none"
+              selectClassName="w-32 rounded-r-none border-2 border-r-0 border-gray-200 bg-white px-2 py-3 text-sm text-gray-800 outline-none transition"
+              showPreview={false}
             />
           ) : (
             <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">

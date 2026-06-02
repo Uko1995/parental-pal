@@ -36,6 +36,7 @@ import {
 } from "next-cloudinary";
 import CloudinaryImage from "@/components/CloudinaryImage";
 import { TutorFormData } from "./TutorRegistrationForm";
+import PhoneInput from "@/components/PhoneInput";
 
 interface PersonalInfoTabProps {
   formData: TutorFormData;
@@ -62,8 +63,7 @@ export default function PersonalInfoTab({
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
-    // Nigerian phone number: 10 digits after +234
-    const phoneRegex = /^\d{10}$/;
+    const phoneRegex = /^\+\d{7,15}$/;
     return phoneRegex.test(phone);
   };
 
@@ -201,42 +201,27 @@ export default function PersonalInfoTab({
               Phone Number *
             </span>
           </label>
-          <div className="flex items-center">
-            <span className="bg-base-200 px-3 py-2 rounded-l-lg border text-sm font-mono">
-              +234
-            </span>
-            <input
-              type="tel"
-              placeholder="8012345678"
-              className={`input input-bordered w-full rounded-l-none font-mono ${
-                validationErrors.phone ? "input-error" : ""
-              }`}
-              value={
-                formData.phone.startsWith("+234")
-                  ? formData.phone.replace("+234", "")
-                  : formData.phone.replace(/\D/g, "")
+          <PhoneInput
+            value={formData.phone}
+            onValueChange={(value) => {
+              handleInputChange("phone", value);
+              const newErrors = { ...validationErrors };
+              if (value === "" || validatePhoneNumber(value)) {
+                delete newErrors.phone;
+              } else {
+                newErrors.phone =
+                  "Please enter a valid phone number with country code";
               }
-              maxLength={10}
-              onChange={(e) => {
-                // Only allow digits, max 10
-                const digitsOnly = e.target.value
-                  .replace(/\D/g, "")
-                  .slice(0, 10);
-                const fullNumber = `+234${digitsOnly}`;
-                handleInputChange("phone", fullNumber);
-
-                // Validate phone
-                const newErrors = { ...validationErrors };
-                if (digitsOnly === "" || validatePhoneNumber(digitsOnly)) {
-                  delete newErrors.phone;
-                } else {
-                  newErrors.phone =
-                    "Please enter a valid 10-digit phone number";
-                }
-                setValidationErrors(newErrors);
-              }}
-            />
-          </div>
+              setValidationErrors(newErrors);
+            }}
+            placeholder="8012345678"
+            wrapperClassName="form-control"
+            inputClassName={`input input-bordered w-full rounded-l-none font-mono ${
+              validationErrors.phone ? "input-error" : ""
+            }`}
+            selectClassName="select select-bordered rounded-r-none border-r-0 font-mono"
+            showPreview={false}
+          />
           {(validationErrors.phone ||
             (!formData.phone.trim() && formData.phone !== "")) && (
             <label className="label">
@@ -248,7 +233,7 @@ export default function PersonalInfoTab({
           )}
           <label className="label mt-1">
             <span className="label-text-alt text-xs text-gray-500">
-              Enter 10 digits phone number
+              Include a country code, e.g. +353 or +234
             </span>
           </label>
         </div>

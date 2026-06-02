@@ -68,9 +68,14 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
   const [tutoringLocation, setTutoringLocation] = useState<
     "virtual" | "physical"
   >("physical");
-  const [virtualRate, setVirtualRate] = useState(11000); // ₦11,000 for virtual
+  const [virtualRate, setVirtualRate] = useState(13000); // ₦13,000 for virtual
   const [physicalRate, setPhysicalRate] = useState(12000); // ₦12,000 for physical
   const [hourlyRate, setHourlyRate] = useState(12000); // Default to physical rate
+  const [promoCode, setPromoCode] = useState("");
+  const [promoStatus, setPromoStatus] = useState<
+    "idle" | "checking" | "applied" | "invalid"
+  >("idle");
+  const [promoMessage, setPromoMessage] = useState("");
   const [startDate, setStartDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   ); // Default to today
@@ -79,6 +84,7 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
   const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
     {}
   );
+  const previousTutoringLocation = useRef<"virtual" | "physical">("physical");
 
   // Autofill parent info from session
   useEffect(() => {
@@ -96,7 +102,7 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         const data = await response.json();
         if (data.success && data.data.tutoring) {
           // Set rates from database or use defaults
-          const vRate = data.data.tutoring.virtualRate || 11000;
+          const vRate = data.data.tutoring.virtualRate || 13000;
           const pRate = data.data.tutoring.physicalRate || 12000;
           setVirtualRate(vRate);
           setPhysicalRate(pRate);
@@ -110,10 +116,65 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
     fetchPricing();
   }, []);
 
-  // Update hourly rate when location changes
+  // Keep hourly rate synced with selected location unless promo is actively applied
   useEffect(() => {
-    setHourlyRate(tutoringLocation === "virtual" ? virtualRate : physicalRate);
-  }, [tutoringLocation, virtualRate, physicalRate]);
+    if (promoStatus !== "applied") {
+      setHourlyRate(tutoringLocation === "virtual" ? virtualRate : physicalRate);
+    }
+  }, [promoStatus, tutoringLocation, virtualRate, physicalRate]);
+
+  // Reset promo only when the user actually changes location
+  useEffect(() => {
+    const locationChanged = previousTutoringLocation.current !== tutoringLocation;
+    if (locationChanged && promoStatus === "applied") {
+      setPromoStatus("idle");
+      setPromoMessage(
+        "Promo reset after location change. Apply again for virtual sessions.",
+      );
+      setHourlyRate(tutoringLocation === "virtual" ? virtualRate : physicalRate);
+    }
+    previousTutoringLocation.current = tutoringLocation;
+  }, [promoStatus, tutoringLocation, virtualRate, physicalRate]);
+
+  const applyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoStatus("invalid");
+      setPromoMessage("Enter a promo code first.");
+      return;
+    }
+
+    setPromoStatus("checking");
+    setPromoMessage("");
+
+    try {
+      const response = await fetch("/api/promotions/eduvanta/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          tutoringLocation,
+        }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result?.success && result?.data?.valid) {
+        setPromoStatus("applied");
+        setPromoMessage(result.data.message || "Promo code applied.");
+        if (typeof result.data.discountedRate === "number") {
+          setHourlyRate(result.data.discountedRate);
+        }
+        return;
+      }
+
+      setPromoStatus("invalid");
+      setPromoMessage(result?.error || "Promo code is not valid.");
+      setHourlyRate(tutoringLocation === "virtual" ? virtualRate : physicalRate);
+    } catch (error) {
+      console.error("Promo validation failed:", error);
+      setPromoStatus("invalid");
+      setPromoMessage("Unable to validate promo code right now.");
+    }
+  };
 
   const subjects = [
     "Mathematics",
@@ -231,6 +292,9 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         schedule: [],
       },
     ]);
+    setPromoCode("");
+    setPromoStatus("idle");
+    setPromoMessage("");
     // Reset all schedule refs
     Object.values(scheduleRefs.current).forEach((scheduleRef) => {
       if (scheduleRef && scheduleRef.resetSchedule) {
@@ -441,6 +505,53 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
         </div>
 
         <input type="hidden" name="tutoringLocation" value={tutoringLocation} />
+        <div className="mt-4">
+          <label className="block mb-2">
+            <span className="text-sm font-medium text-gray-900 block mb-1">
+              Promo Code (Virtual Sessions)
+            </span>
+            <span className="text-xs text-gray-600">
+              Apply your promo code for June virtual session pricing.
+            </span>
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              name="promoCode"
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value.toUpperCase());
+                if (promoStatus !== "checking") {
+                  setPromoStatus("idle");
+                  setPromoMessage("");
+                  setHourlyRate(
+                    tutoringLocation === "virtual" ? virtualRate : physicalRate,
+                  );
+                }
+              }}
+              className="w-full md:w-80 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+              placeholder="Enter promo code"
+              maxLength={30}
+            />
+            <button
+              type="button"
+              onClick={applyPromoCode}
+              disabled={promoStatus === "checking"}
+              className="px-5 py-2.5 rounded-lg bg-[#90AC19] text-white font-medium hover:bg-[#7f9917] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {promoStatus === "checking" ? "Applying..." : "Apply Promo"}
+            </button>
+          </div>
+          {promoMessage && (
+            <p
+              className={`mt-2 text-sm ${
+                promoStatus === "applied" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {promoMessage}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Header for Children Sections */}
@@ -598,9 +709,7 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
           </div>
 
           {/* Subtotal for this child */}
-          {child.selectedSubjects.length > 0 &&
-            child.academicLevel &&
-            child.totalHours > 0 && (
+          {child.totalHours > 0 && (
               <div className="bg-[#90AC19]/5 border border-[#90AC19]/20 rounded-lg p-4 sm:p-6">
                 <div className="flex justify-between items-center">
                   <div>
@@ -636,14 +745,10 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
       <input type="hidden" name="hourlyRate" value={hourlyRate} />
       <input type="hidden" name="virtualRate" value={virtualRate} />
       <input type="hidden" name="physicalRate" value={physicalRate} />
+      <input type="hidden" name="promoCode" value={promoCode} />
 
       {/* Final Payment Summary */}
-      {childrenData.some(
-        (child) =>
-          child.selectedSubjects.length > 0 &&
-          child.academicLevel &&
-          child.totalHours > 0
-      ) && (
+      {childrenData.some((child) => child.totalHours > 0) && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
           <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-gray-900 mb-6">
             <CurrencyDollarIcon className="w-6 h-6 mr-2 text-gray-700" />
@@ -653,11 +758,7 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
           {/* Individual child costs */}
           <div className="space-y-3 mb-6">
             {childrenData.map((child, index) => {
-              if (
-                child.selectedSubjects.length > 0 &&
-                child.academicLevel &&
-                child.totalHours > 0
-              ) {
+              if (child.totalHours > 0) {
                 return (
                   <div
                     key={child.id}

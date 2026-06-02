@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import PhoneInput from "@/components/PhoneInput";
 
 interface AddTutorModalProps {
   isOpen: boolean;
@@ -341,19 +342,17 @@ export default function AddTutorModal({
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Phone Number</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  className="input input-bordered"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Enter phone number"
-                />
-              </div>
+              <PhoneInput
+                label="Phone Number"
+                value={formData.phone}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, phone: value }))
+                }
+                wrapperClassName="form-control"
+                inputClassName="input input-bordered rounded-r-lg rounded-l-none"
+                selectClassName="select select-bordered rounded-r-none border-r-0"
+                showPreview={false}
+              />
 
               <div className="form-control">
                 <label className="label">
