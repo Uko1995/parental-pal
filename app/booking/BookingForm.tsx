@@ -51,6 +51,11 @@ interface BookingFormProps {
   }>;
 }
 
+interface BookingServiceOption {
+  value: string;
+  label: string;
+}
+
 export default function BookingForm({ submitAction }: BookingFormProps) {
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
@@ -68,6 +73,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [isRepeatedCustomer, setIsRepeatedCustomer] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [services, setServices] = useState<BookingServiceOption[]>([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
 
   // Load persisted data on client side and scroll to top on initial load
   useEffect(() => {
@@ -95,6 +102,56 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       getPersistedValueWithFallback("isRepeatedCustomer", false),
     );
   }, [actionParam]);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        setIsLoadingServices(true);
+        const response = await fetch("/api/services");
+        const result = await response.json();
+
+        if (!response.ok || !result?.success || !Array.isArray(result?.data)) {
+          throw new Error("Failed to fetch booking services");
+        }
+
+        const supportedTypes = new Set([
+          "childcare",
+          "tutoring",
+          "space-rental",
+          "holiday-camps",
+          "homeschooling",
+          "kiddies-enrichment",
+        ]);
+
+        const options = result.data
+          .filter(
+            (service: { status?: string; type?: string; name?: string }) =>
+              service.status === "active" &&
+              typeof service.type === "string" &&
+              typeof service.name === "string" &&
+              supportedTypes.has(service.type),
+          )
+          .map((service: { type: string; name: string }) => ({
+            value: service.type,
+            label: service.name,
+          }))
+          .filter(
+            (service: BookingServiceOption, index: number, arr: BookingServiceOption[]) =>
+              arr.findIndex((item) => item.value === service.value) === index,
+          );
+
+        setServices(options);
+      } catch (error) {
+        console.error("Error loading booking services:", error);
+        toast.error("Unable to load services right now");
+        setServices([]);
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
+    loadServices();
+  }, []);
 
   // Refs for form components
   const eventFormRef = useRef<EventBookingFormRef>(null);
@@ -423,33 +480,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     }
   };
 
-  const services = [
-    {
-      value: "childcare",
-      label: "Childcare Services",
-    },
-    {
-      value: "tutoring",
-      label: "Academic Tutoring",
-    },
-    {
-      value: "space-rental",
-      label: "Event Space Rentals",
-    },
-    {
-      value: "holiday-camps",
-      label: "Holiday Camps",
-    },
-    {
-      value: "homeschooling",
-      label: "Homeschooling Program",
-    },
-    {
-      value: "kiddies-enrichment",
-      label: "Kids Enrichment",
-    },
-  ];
-
   return (
     <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -486,8 +516,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
                 required
+                disabled={isLoadingServices}
               >
-                <option value="">Select a service...</option>
+                <option value="">
+                  {isLoadingServices ? "Loading services..." : "Select a service..."}
+                </option>
                 {services.map((service) => (
                   <option key={service.value} value={service.value}>
                     {service.label}
@@ -498,6 +531,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
             {/* Desktop/Tablet Grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {!isLoadingServices && services.length === 0 && (
+                <p className="col-span-full text-sm text-gray-500">
+                  No services are currently available for booking.
+                </p>
+              )}
               {services.map((service) => {
                 return (
                   <label

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { UserInterface } from "@/models/User";
 import toast from "react-hot-toast";
+import PhoneInput from "@/components/PhoneInput";
 
 interface EditTutorModalProps {
   isOpen: boolean;
@@ -358,19 +359,17 @@ export default function EditTutorModal({
                 />
               </div>
 
-              <div className="form-control flex flex-col">
-                <label className="label">
-                  <span className="label-text">Phone Number</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  className="input input-bordered"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Enter phone number"
-                />
-              </div>
+              <PhoneInput
+                label="Phone Number"
+                value={formData.phone}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, phone: value }))
+                }
+                wrapperClassName="form-control flex flex-col"
+                inputClassName="input input-bordered rounded-r-lg rounded-l-none"
+                selectClassName="select select-bordered rounded-r-none border-r-0"
+                showPreview={false}
+              />
 
               <div className="form-control flex flex-col">
                 <label className="label">
@@ -685,19 +684,20 @@ export default function EditTutorModal({
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Phone</span>
-                </label>
-                <input
-                  type="tel"
-                  name="emergencyContactPhone"
-                  className="input input-bordered"
-                  value={formData.emergencyContactPhone}
-                  onChange={handleInputChange}
-                  placeholder="Emergency contact phone"
-                />
-              </div>
+              <PhoneInput
+                label="Phone"
+                value={formData.emergencyContactPhone}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    emergencyContactPhone: value,
+                  }))
+                }
+                wrapperClassName="form-control"
+                inputClassName="input input-bordered rounded-r-lg rounded-l-none"
+                selectClassName="select select-bordered rounded-r-none border-r-0"
+                showPreview={false}
+              />
 
               <div className="form-control">
                 <label className="label">

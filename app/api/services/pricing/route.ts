@@ -42,7 +42,7 @@ export async function GET() {
       // Add location-specific rates for tutoring
       if (service.type === "tutoring" && service.pricing.locationRates) {
         pricingMap[service.type].virtualRate =
-          service.pricing.locationRates.virtual || 11000;
+          service.pricing.locationRates.virtual || 13000;
         pricingMap[service.type].physicalRate =
           service.pricing.locationRates.physical || 12000;
       }

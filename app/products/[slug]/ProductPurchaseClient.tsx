@@ -3,6 +3,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { ClientProduct } from "@/types/product";
+import PhoneInput from "@/components/PhoneInput";
 
 interface ProductPurchaseClientProps {
   product: ClientProduct;
@@ -281,20 +282,19 @@ export default function ProductPurchaseClient({
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
-              </label>
-              <input
-                type="tel"
-                name="customerPhone"
-                value={formData.customerPhone}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19]"
-                placeholder="+234 xxx xxx xxxx"
-              />
-            </div>
+            <PhoneInput
+              label="Phone Number *"
+              required
+              value={formData.customerPhone}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, customerPhone: value }))
+              }
+              showPreview={false}
+              wrapperClassName="form-control"
+              inputClassName="w-full px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19]"
+              selectClassName="select select-bordered rounded-r-none border-r-0 px-2 py-2 bg-white focus:outline-none"
+              placeholder="8012345678"
+            />
 
             {/* Delivery Address (for paperback only) */}
             {selectedType === "paperback" && (

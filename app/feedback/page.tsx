@@ -5,6 +5,7 @@ import FeedbackInput from "@/components/feedback/FeedbackInput";
 import FeedbackSelect from "@/components/feedback/FeedbackSelect";
 import FeedbackCheckboxGroup from "@/components/feedback/FeedbackCheckboxGroup";
 import FeedbackRadioGroup from "@/components/feedback/FeedbackRadioGroup";
+import PhoneInput from "@/components/PhoneInput";
 
 type FeedbackFormState = {
   name: string;
@@ -224,14 +225,15 @@ export default function FeedbackPage() {
               />
             </div>
 
-            <FeedbackInput
-              id="phone"
+            <PhoneInput
               label="Phone"
-              type="tel"
-              value={form.phone}
-              onChange={(value) => updateField("phone", value)}
-              placeholder="Enter your phone number"
               required
+              value={form.phone}
+              onValueChange={(value) => updateField("phone", value)}
+              placeholder="8012345678"
+              wrapperClassName="form-control"
+              inputClassName="w-full rounded-r-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20"
+              selectClassName="w-32 rounded-r-none border border-r-0 border-gray-300 bg-white px-2 py-2.5 text-sm text-gray-800 outline-none transition focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20"
             />
 
             <FeedbackSelect

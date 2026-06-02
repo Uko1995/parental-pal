@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import PhoneInput from "@/components/PhoneInput";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -286,23 +287,18 @@ export default function Contact() {
 
                 {/* Phone and Service Type Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label
-                      htmlFor="phone"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-transparent transition-colors duration-300"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
+                  <PhoneInput
+                    label="Phone Number"
+                    value={formData.phone}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, phone: value }))
+                    }
+                    wrapperClassName="form-control"
+                    inputClassName="w-full px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-[#90AC19] focus:border-transparent transition-colors duration-300"
+                    selectClassName="w-32 rounded-r-none border border-r-0 border-gray-300 bg-white px-2 py-3 text-sm text-gray-800 outline-none transition"
+                    showPreview={false}
+                    placeholder="8012345678"
+                  />
                   <div>
                     <label
                       htmlFor="serviceType"

@@ -14,11 +14,17 @@ import Image from "next/image";
 const formatPricing = (service: ClientServiceForDisplay) => {
   const { baseRate, currency, billingType } = service.pricing;
   const currencySymbol = currency === "NGN" ? "₦" : "$";
+  const isEduvantaTutoring =
+    service.type === "tutoring" &&
+    service.name.trim().toLowerCase() === "eduvanta tutoring and prep";
+  const isJunePromoWindow = new Date().getMonth() === 5;
+  const effectiveRate =
+    isEduvantaTutoring && isJunePromoWindow ? 11000 : Number(baseRate);
 
   const billingSuffix = formatBillingSuffix(billingType);
 
   // Format the number with commas
-  const formattedRate = Number(baseRate).toLocaleString("en-US");
+  const formattedRate = effectiveRate.toLocaleString("en-US");
 
   return `${currencySymbol}${formattedRate}${billingSuffix}`;
 };
