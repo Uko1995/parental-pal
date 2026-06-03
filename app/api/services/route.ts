@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
+import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
 import { ServiceInterface } from "@/models/Service";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
@@ -21,10 +22,12 @@ export async function GET() {
       .toArray()) as ServiceInterface[];
 
     // Convert ObjectIds to strings for client components
-    const serializedServices = services.map((service) => ({
-      ...service,
-      _id: service._id?.toString(),
-    }));
+    const serializedServices = sortServicesWithEduvantaFirst(
+      services.map((service) => ({
+        ...service,
+        _id: service._id?.toString(),
+      })),
+    );
 
     return NextResponse.json({ success: true, data: serializedServices });
   } catch (error) {

@@ -8,9 +8,9 @@ import { UserRepository } from "@/lib/UserRepository";
 import { ObjectId } from "mongodb";
 import { BookingInterface } from "@/models/Booking";
 import { getDb } from "@/lib/mongodb";
+import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
-const EDUVANTA_SERVICE_NAME = "Eduvanta Tutoring and Prep";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
 
 function isServerDateInJune(now: Date): boolean {
