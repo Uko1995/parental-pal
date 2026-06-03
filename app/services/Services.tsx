@@ -7,7 +7,7 @@ import {
   BookmarkIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
-import { formatBillingSuffix } from "@/lib/service-utils";
+import { formatBillingSuffix, isEduvantaService } from "@/lib/service-utils";
 import Image from "next/image";
 
 // Helper function to format pricing
@@ -15,8 +15,7 @@ const formatPricing = (service: ClientServiceForDisplay) => {
   const { baseRate, currency, billingType } = service.pricing;
   const currencySymbol = currency === "NGN" ? "₦" : "$";
   const isEduvantaTutoring =
-    service.type === "tutoring" &&
-    service.name.trim().toLowerCase() === "eduvanta tutoring and prep";
+    service.type === "tutoring" && isEduvantaService(service);
   const isJunePromoWindow = new Date().getMonth() === 5;
   const effectiveRate =
     isEduvantaTutoring && isJunePromoWindow ? 11000 : Number(baseRate);

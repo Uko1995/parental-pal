@@ -3,6 +3,7 @@
 import { unstable_cache } from "next/cache";
 import { CACHE_TIMES, CACHE_TAGS } from "@/lib/cache-config";
 import { getCollection } from "@/lib/mongodb";
+import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
 import { ServiceInterface } from "@/models/Service";
 
 // Client-safe interface with string _id
@@ -28,12 +29,13 @@ const fetchServices = async (): Promise<ServicesData> => {
     .toArray()) as ServiceInterface[];
 
   // Convert ObjectIds to strings for client components
-  const serializedServices: ClientServiceInterface[] = services.map(
-    (service) => ({
-      ...service,
-      _id: service._id?.toString(),
-    })
-  );
+  const serializedServices: ClientServiceInterface[] =
+    sortServicesWithEduvantaFirst(
+      services.map((service) => ({
+        ...service,
+        _id: service._id?.toString(),
+      })),
+    );
 
   const serviceStats = {
     totalServices: services.length,

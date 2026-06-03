@@ -57,3 +57,30 @@ export function formatBillingSuffix(raw?: string | null): string {
   const label = formatBillingTypeLabel(raw);
   return label ? `/${label.replace(/^per\s+/i, "")}` : "";
 }
+
+export const EDUVANTA_SERVICE_NAME = "Eduvanta Tutoring and Prep";
+
+export function isEduvantaService(service: { name?: string | null }): boolean {
+  return (
+    (service.name || "").trim().toLowerCase() ===
+    EDUVANTA_SERVICE_NAME.toLowerCase()
+  );
+}
+
+/** Stable sort: Eduvanta first, preserve relative order of other services. */
+export function sortServicesWithEduvantaFirst<T extends { name?: string | null }>(
+  services: T[],
+): T[] {
+  const eduvanta: T[] = [];
+  const others: T[] = [];
+
+  for (const service of services) {
+    if (isEduvantaService(service)) {
+      eduvanta.push(service);
+    } else {
+      others.push(service);
+    }
+  }
+
+  return [...eduvanta, ...others];
+}

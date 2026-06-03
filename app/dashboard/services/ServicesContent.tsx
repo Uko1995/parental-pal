@@ -10,6 +10,7 @@ import ServiceDetailsModal from "./ServiceDetailsModal";
 import AddServiceModal from "./AddServiceModal";
 import EditServiceModal from "./EditServiceModal";
 import toast from "react-hot-toast";
+import { isEduvantaService } from "@/lib/service-utils";
 
 interface ServicesContentProps {
   services: ClientServiceInterface[];
@@ -86,8 +87,13 @@ export default function ServicesContent({
       );
     });
 
-    // Sort the filtered results
+    // Sort the filtered results (Eduvanta always first)
     filtered.sort((a, b) => {
+      const aEduvanta = isEduvantaService(a);
+      const bEduvanta = isEduvantaService(b);
+      if (aEduvanta && !bEduvanta) return -1;
+      if (!aEduvanta && bEduvanta) return 1;
+
       let aValue: string | number, bValue: string | number;
 
       switch (filters.sortBy) {

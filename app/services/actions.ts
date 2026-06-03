@@ -1,6 +1,7 @@
 "use server";
 
 import { getCollection } from "@/lib/mongodb";
+import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
 import { ServiceInterface } from "@/models/Service";
 
 export interface ClientServiceForDisplay extends Omit<ServiceInterface, "_id"> {
@@ -17,10 +18,12 @@ export async function getPublicServices(): Promise<ClientServiceForDisplay[]> {
       .toArray()) as ServiceInterface[];
 
     // Convert ObjectIds to strings for client components
-    return services.map((service) => ({
+    const serialized = services.map((service) => ({
       ...service,
       _id: service._id?.toString(),
     }));
+
+    return sortServicesWithEduvantaFirst(serialized);
   } catch (error) {
     console.error("Error fetching public services:", error);
     return [];
