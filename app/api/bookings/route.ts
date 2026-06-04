@@ -50,6 +50,8 @@ export async function GET() {
       totalCost: booking.pricing?.totalAmount || 0,
       // Convert ObjectId to string for frontend
       _id: booking._id?.toString() || "",
+      userId: booking.userId?.toString() || "",
+      parentEmail: booking.parentEmail || "",
     }));
 
     // Calculate analytics manually to ensure correct values

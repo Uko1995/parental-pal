@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { v4 as uuidv4 } from "uuid";
 import EventBookingForm, { EventBookingFormRef } from "./EventBookingForm";
 import ChildCareSpecificBookingForm, {
   ChildCareSpecificBookingFormRef,
@@ -24,6 +23,14 @@ import {
   getPersistedValueWithFallback,
   restoreFormDataToElements,
 } from "@/lib/form-persistence";
+import {
+  getRebookTemplate,
+  clearRebookTemplate,
+  saveRebookTemplate,
+} from "@/lib/rebook-persistence";
+import { initializeBookingPayment } from "@/lib/booking-payment";
+import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
 import Link from "next/link";
 
 interface AboutUs {
@@ -59,6 +66,7 @@ interface BookingServiceOption {
 export default function BookingForm({ submitAction }: BookingFormProps) {
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
+  const rebookParam = searchParams.get("rebook");
   const actionParam = searchParams.get("action");
 
   // State management
@@ -75,6 +83,14 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [totalAmount, setTotalAmount] = useState(0);
   const [services, setServices] = useState<BookingServiceOption[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [rebookTemplate, setRebookTemplate] =
+    useState<RebookFormEntries | null>(null);
+  const [rebookSourceId, setRebookSourceId] = useState<string | null>(null);
+  const [rebookMonthLabel, setRebookMonthLabel] = useState("");
+  const [repeatBooking, setRepeatBooking] = useState<{
+    id: string;
+    childrenSummary: string;
+  } | null>(null);
 
   // Load persisted data on client side and scroll to top on initial load
   useEffect(() => {
@@ -274,31 +290,21 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         return;
       }
 
-      //2. Initialize payment with Paystack
-      const idempotencyKey = uuidv4();
-      const paymentRes = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: bookingResult.bookingId,
+      const paid = await initializeBookingPayment(
+        {
+          bookingId: bookingResult.bookingId!,
           userId: bookingResult.userId,
-          amount: bookingResult.amount,
-          currency: bookingResult.currency || "NGN",
+          amount: bookingResult.amount || 0,
+          currency: bookingResult.currency,
           email: bookingResult.email,
-          idempotencyKey,
-        }),
-      });
+        },
+        { toastId: "booking-submit" },
+      );
 
-      const paymentData = await paymentRes.json();
+      if (!paid) return;
 
-      if (!paymentData.success || !paymentData.data?.authorization_url) {
-        toast.dismiss("booking-submit");
-        toast.error(paymentData.error || "Payment initialization failed");
-        return;
-      }
-
-      // Clear persisted data after successful booking
       clearFormData();
+      clearRebookTemplate();
 
       // Reset forms after successful submission
       if (selectedService === "space-rental") {
@@ -323,11 +329,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setIsRepeatedCustomer(false);
       setTotalAmount(0);
 
-      toast.dismiss("booking-submit");
-      toast.success("Redirecting to secure payment...", { duration: 500 });
-
-      // Redirect to Paystack checkout immediately
-      window.location.href = paymentData.data.authorization_url;
     } catch (error: unknown) {
       toast.dismiss("booking-submit");
 
@@ -408,6 +409,149 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     }
   }, [urlService, actionParam]);
 
+  useEffect(() => {
+    const loadRebookTemplate = async () => {
+      const persisted = getRebookTemplate();
+      const sourceId = rebookParam || persisted?.sourceBookingId;
+      if (!sourceId) return;
+
+      try {
+        const response = await fetch(
+          `/api/bookings/${sourceId}/rebook-template`,
+        );
+        const data = await response.json();
+        if (!response.ok) {
+          toast.error(data.error || "Could not load re-book template");
+          return;
+        }
+
+        setRebookTemplate(data.formEntries);
+        setRebookSourceId(sourceId);
+        setRebookMonthLabel(data.targetMonthLabel || "");
+        setSelectedService(data.serviceType || urlService || "");
+        setIsRepeatedCustomer(true);
+
+        if (data.template?.source) {
+          setSelectedHearAboutUs(data.template.source);
+        }
+
+        setTimeout(() => {
+          restoreFormDataToElements({
+            selectedService: data.serviceType,
+            selectedHearAboutUs: data.template?.source || "",
+            otherHearAboutUsText: "",
+            socialMediaPlatform: "",
+            referralName: "",
+            priority: "normal",
+            followUpRequired: false,
+            isRepeatedCustomer: true,
+            timestamp: Date.now(),
+            serviceFormData: data.formEntries,
+          });
+        }, 350);
+
+        toast.success(
+          `Form pre-filled for ${data.targetMonthLabel}. Review and submit when ready.`,
+          { duration: 5000 },
+        );
+      } catch (error) {
+        console.error("Failed to load rebook template:", error);
+        toast.error("Failed to load re-book data");
+      }
+    };
+
+    loadRebookTemplate();
+  }, [rebookParam, urlService]);
+
+  useEffect(() => {
+    if (!selectedService) {
+      setRepeatBooking(null);
+      return;
+    }
+
+    const findRepeatable = async () => {
+      try {
+        const response = await fetch("/api/bookings");
+        if (!response.ok) return;
+        const data = await response.json();
+        const match = (data.bookings || []).find(
+          (b: {
+            _id: string;
+            serviceType: string;
+            children: Array<{ name: string }>;
+            status: string;
+            payment: { status: string };
+          }) =>
+            b.serviceType === selectedService && isRebookEligibleBooking(b),
+        );
+        if (match) {
+          setRepeatBooking({
+            id: match._id,
+            childrenSummary: match.children
+              .map((c: { name: string }) => c.name)
+              .join(", "),
+          });
+        } else {
+          setRepeatBooking(null);
+        }
+      } catch {
+        setRepeatBooking(null);
+      }
+    };
+
+    findRepeatable();
+  }, [selectedService]);
+
+  const openQuickRebook = async (bookingId: string) => {
+    toast.loading("Preparing re-book...", { id: "rebook-quick" });
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/rebook`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      toast.dismiss("rebook-quick");
+      if (!res.ok || !data.success) {
+        toast.error(data.error || "Re-book failed");
+        return;
+      }
+      toast.loading("Initializing payment...", { id: "rebook-quick" });
+      await initializeBookingPayment(
+        {
+          bookingId: data.bookingId,
+          userId: data.userId,
+          amount: data.amount,
+          currency: data.currency,
+          email: data.email,
+        },
+        { toastId: "rebook-quick" },
+      );
+    } catch (error) {
+      console.error(error);
+      toast.dismiss("rebook-quick");
+      toast.error("Re-book failed");
+    }
+  };
+
+  const openEditRebook = async (bookingId: string, serviceType: string) => {
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/rebook-template`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Could not prepare re-book");
+        return;
+      }
+      saveRebookTemplate({
+        sourceBookingId: bookingId,
+        selectedService: serviceType,
+        formEntries: data.formEntries,
+        targetMonthLabel: data.targetMonthLabel,
+      });
+      window.location.href = `/booking?service=${serviceType}&rebook=${bookingId}`;
+    } catch {
+      toast.error("Could not prepare re-book");
+    }
+  };
+
   const handleServiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextService = e.target.value;
     setSelectedService(nextService);
@@ -453,22 +597,48 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
   const renderFormContent = () => {
     if (selectedService === "space-rental") {
-      return <EventBookingForm ref={eventFormRef} />;
+      return (
+        <EventBookingForm
+          ref={eventFormRef}
+          initialTemplate={rebookTemplate}
+        />
+      );
     } else if (selectedService === "childcare") {
-      return <ChildCareSpecificBookingForm ref={childCareFormRef} />;
+      return (
+        <ChildCareSpecificBookingForm
+          ref={childCareFormRef}
+          initialTemplate={rebookTemplate}
+        />
+      );
     } else if (selectedService === "holiday-camps") {
       return (
         <HolidayCampForm
           ref={holidayCampFormRef}
           onTotalChange={setTotalAmount}
+          initialTemplate={rebookTemplate}
         />
       );
     } else if (selectedService === "homeschooling") {
-      return <HomeschoolingForm ref={homeschoolingFormRef} />;
+      return (
+        <HomeschoolingForm
+          ref={homeschoolingFormRef}
+          initialTemplate={rebookTemplate}
+        />
+      );
     } else if (selectedService === "kiddies-enrichment") {
-      return <KiddiesEnrichmentForm ref={kiddiesEnrichmentFormRef} />;
+      return (
+        <KiddiesEnrichmentForm
+          ref={kiddiesEnrichmentFormRef}
+          initialTemplate={rebookTemplate}
+        />
+      );
     } else if (selectedService === "tutoring") {
-      return <TutoringForm ref={tutoringFormRef} />;
+      return (
+        <TutoringForm
+          ref={tutoringFormRef}
+          initialTemplate={rebookTemplate}
+        />
+      );
     } else {
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-12 text-center">
@@ -495,6 +665,43 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         </div>
 
         <Form action={handleFormSubmit} className="space-y-8">
+          {rebookMonthLabel && (
+            <div className="alert alert-info">
+              <span>
+                Re-booking for <strong>{rebookMonthLabel}</strong>. Dates and
+                details are pre-filled — review before paying. Promo codes
+                require applying on this form (not copied from quick re-book).
+              </span>
+            </div>
+          )}
+
+          {repeatBooking && !rebookSourceId && (
+            <div className="bg-[#90AC19]/10 border border-[#90AC19]/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-sm text-gray-800">
+                Repeat your last booking ({repeatBooking.childrenSummary}) for
+                next month.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => openQuickRebook(repeatBooking.id)}
+                >
+                  Re-book next month
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() =>
+                    openEditRebook(repeatBooking.id, selectedService)
+                  }
+                >
+                  Edit &amp; re-book
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Service Selection */}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">

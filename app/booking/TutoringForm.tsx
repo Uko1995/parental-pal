@@ -1,6 +1,8 @@
 import ChildInfoForm from "./ChildInfoForm";
 import PhoneInput from "@/components/PhoneInput";
-import WeekdaysSchedule from "./WeekdaysSchedule";
+import WeekdaysSchedule, {
+  WeekdaysScheduleRef,
+} from "./WeekdaysSchedule";
 import {
   useState,
   useImperativeHandle,
@@ -10,10 +12,11 @@ import {
   useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
-
-export interface WeekdaysScheduleRef {
-  resetSchedule: () => void;
-}
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import {
+  extractChildIdsFromFormEntries,
+  parseJsonField,
+} from "@/lib/rebook-form-utils";
 
 import {
   AcademicCapIcon,
@@ -49,7 +52,12 @@ interface ChildTutoringData {
   }>;
 }
 
-const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
+interface TutoringFormProps {
+  initialTemplate?: RebookFormEntries | null;
+}
+
+const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
+  ({ initialTemplate }, ref) => {
   const { data: session } = useSession();
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -85,6 +93,71 @@ const TutoringForm = forwardRef<TutoringFormRef>((props, ref) => {
     {}
   );
   const previousTutoringLocation = useRef<"virtual" | "physical">("physical");
+  const templateAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialTemplate || templateAppliedRef.current) return;
+    templateAppliedRef.current = true;
+
+    const childIds = extractChildIdsFromFormEntries(initialTemplate);
+    if (childIds.length > 0) {
+      setChildrenData(
+        childIds.map((id, index) => ({
+          id,
+          index,
+          selectedSubjects: parseJsonField<string[]>(
+            initialTemplate[`subjects_${id}`],
+            [],
+          ),
+          academicLevel: initialTemplate[`academicLevel_${id}`] || "",
+          learningGoals: initialTemplate[`learningGoals_${id}`] || "",
+          totalHours:
+            parseInt(initialTemplate[`totalHours_${id}`] || "0", 10) || 0,
+          schedule: parseJsonField<
+            ChildTutoringData["schedule"]
+          >(initialTemplate[`schedule_${id}`], []),
+        })),
+      );
+    }
+
+    if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+    if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    if (initialTemplate.startDate) setStartDate(initialTemplate.startDate);
+    if (initialTemplate.tutoringLocation === "virtual") {
+      setTutoringLocation("virtual");
+      previousTutoringLocation.current = "virtual";
+    }
+    if (initialTemplate.virtualRate) {
+      setVirtualRate(parseInt(initialTemplate.virtualRate, 10) || 13000);
+    }
+    if (initialTemplate.physicalRate) {
+      setPhysicalRate(parseInt(initialTemplate.physicalRate, 10) || 12000);
+    }
+    if (initialTemplate.hourlyRate) {
+      setHourlyRate(parseInt(initialTemplate.hourlyRate, 10) || 12000);
+    }
+
+    const scheduleLoadTimer = window.setTimeout(() => {
+      childIds.forEach((id) => {
+        const schedule = parseJsonField<ChildTutoringData["schedule"]>(
+          initialTemplate[`schedule_${id}`],
+          [],
+        );
+        if (schedule.length > 0) {
+          scheduleRefs.current[id]?.loadSchedule(
+            schedule.map((s) => ({
+              day: s.day,
+              startTime: s.startTime || s.dates?.[0]?.startTime || "",
+              hours: s.hours || 1,
+              dates: s.dates,
+            })),
+          );
+        }
+      });
+    }, 150);
+
+    return () => window.clearTimeout(scheduleLoadTimer);
+  }, [initialTemplate]);
 
   // Autofill parent info from session
   useEffect(() => {

@@ -5,11 +5,14 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useEffect,
+  useRef,
 } from "react";
 import { useSession } from "next-auth/react";
 import PaymentSchedule from "./PaymentSchedule";
 import OptionalChild from "./OptionalChild";
 import PhoneInput from "@/components/PhoneInput";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import { parseJsonField } from "@/lib/rebook-form-utils";
 
 export interface EventBookingFormRef {
   resetForm: () => void;
@@ -22,7 +25,12 @@ interface ExtraService {
   rate?: number;
 }
 
-const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
+interface EventBookingFormProps {
+  initialTemplate?: RebookFormEntries | null;
+}
+
+const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
+  ({ initialTemplate }, ref) => {
   const { data: session } = useSession();
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -36,6 +44,35 @@ const EventBookingForm = forwardRef<EventBookingFormRef>((props, ref) => {
   const [expectedGuests, setExpectedGuests] = useState("");
   const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
   const [carersQuantity, setCarersQuantity] = useState(0);
+  const templateAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialTemplate || templateAppliedRef.current) return;
+    templateAppliedRef.current = true;
+
+    if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+    if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    if (initialTemplate.eventType) setEventType(initialTemplate.eventType);
+    if (initialTemplate.eventDate) setEventDate(initialTemplate.eventDate);
+    if (initialTemplate.eventTime) setEventTime(initialTemplate.eventTime);
+    if (initialTemplate.venueType) {
+      setVenueType(
+        initialTemplate.venueType as "indoor" | "outdoor" | "both" | "",
+      );
+    }
+    if (initialTemplate.expectedGuests) {
+      setExpectedGuests(initialTemplate.expectedGuests);
+    }
+    const extras = parseJsonField<ExtraService[]>(
+      initialTemplate.extraServices,
+      [],
+    );
+    if (extras.length > 0) {
+      setExtraServices(extras);
+      const carers = extras.find((s) => s.service === "extra-carers");
+      if (carers?.quantity) setCarersQuantity(carers.quantity);
+    }
+  }, [initialTemplate]);
 
   // Autofill parent info from session
   useEffect(() => {

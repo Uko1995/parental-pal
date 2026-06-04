@@ -8,6 +8,7 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { useSession } from "next-auth/react";
 import {
@@ -20,6 +21,11 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import {
+  extractChildIdsFromFormEntries,
+  parseJsonField,
+} from "@/lib/rebook-form-utils";
 
 export interface HomeschoolingFormRef {
   resetForm: () => void;
@@ -38,7 +44,12 @@ interface ChildHomeschoolData {
   selectedTerm: "first" | "second" | "third" | "";
 }
 
-const HomeschoolingForm = forwardRef<HomeschoolingFormRef>((props, ref) => {
+interface HomeschoolingFormProps {
+  initialTemplate?: RebookFormEntries | null;
+}
+
+const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProps>(
+  ({ initialTemplate }, ref) => {
   const { data: session } = useSession();
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -59,6 +70,41 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef>((props, ref) => {
 
   // Base rate per term for homeschooling
   const [termRate, setTermRate] = useState(250000); // ₦250,000 per term (default)
+  const templateAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialTemplate || templateAppliedRef.current) return;
+    templateAppliedRef.current = true;
+
+    const childIds = extractChildIdsFromFormEntries(initialTemplate);
+    if (childIds.length > 0) {
+      setChildrenData(
+        childIds.map((id, index) => ({
+          id,
+          index,
+          selectedSubjects: parseJsonField<string[]>(
+            initialTemplate[`subjects_${id}`],
+            [],
+          ),
+          gradeLevel: initialTemplate[`gradeLevel_${id}`] || "",
+          curriculum: initialTemplate[`curriculum_${id}`] || "",
+          learningStyle: initialTemplate[`learningStyle_${id}`] || "",
+          specialNeeds: initialTemplate[`specialNeeds_${id}`] || "",
+          educationalGoals: initialTemplate[`educationalGoals_${id}`] || "",
+          selectedTerm: (initialTemplate[`schoolTerm_${id}`] || "") as
+            | "first"
+            | "second"
+            | "third"
+            | "",
+        })),
+      );
+    }
+    if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+    if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    if (initialTemplate.termRate) {
+      setTermRate(parseInt(initialTemplate.termRate, 10) || 250000);
+    }
+  }, [initialTemplate]);
 
   // Autofill parent info from session
   useEffect(() => {

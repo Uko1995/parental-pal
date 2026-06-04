@@ -24,6 +24,7 @@ interface WeekdaysScheduleProps {
 
 export interface WeekdaysScheduleRef {
   resetSchedule: () => void;
+  loadSchedule: (schedules: DaySchedule[]) => void;
 }
 
 // Helper function to get all dates for a specific weekday in a month
@@ -88,10 +89,6 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
       setDaySchedules([]);
     };
 
-    useImperativeHandle(ref, () => ({
-      resetSchedule,
-    }));
-
     // Calculate dates when a day is selected or time is updated
     const updateDatesForSchedule = (schedule: DaySchedule): DaySchedule => {
       if (!childcare && startDate && schedule.startTime) {
@@ -106,6 +103,20 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
       }
       return schedule;
     };
+
+    const loadSchedule = (schedules: DaySchedule[]) => {
+      setDaySchedules(
+        schedules.map((schedule) => {
+          if (schedule.dates?.length) return schedule;
+          return updateDatesForSchedule(schedule);
+        }),
+      );
+    };
+
+    useImperativeHandle(ref, () => ({
+      resetSchedule,
+      loadSchedule,
+    }));
 
     // Calculate total hours and notify parent
     // Now calculates based on actual dates if available (for tutoring)

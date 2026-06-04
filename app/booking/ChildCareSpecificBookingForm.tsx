@@ -20,6 +20,11 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import {
+  extractChildIdsFromFormEntries,
+  parseJsonField,
+} from "@/lib/rebook-form-utils";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
@@ -37,8 +42,14 @@ interface ChildCareData {
   specialNeeds: string;
 }
 
-const ChildCareSpecificBookingForm =
-  forwardRef<ChildCareSpecificBookingFormRef>((props, ref) => {
+interface ChildCareFormProps {
+  initialTemplate?: RebookFormEntries | null;
+}
+
+const ChildCareSpecificBookingForm = forwardRef<
+  ChildCareSpecificBookingFormRef,
+  ChildCareFormProps
+>(({ initialTemplate }, ref) => {
     const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
@@ -65,6 +76,74 @@ const ChildCareSpecificBookingForm =
     const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
       {}
     );
+    const templateAppliedRef = useRef(false);
+
+    useEffect(() => {
+      if (!initialTemplate || templateAppliedRef.current) return;
+      templateAppliedRef.current = true;
+
+      const childIds = extractChildIdsFromFormEntries(initialTemplate);
+      if (childIds.length > 0) {
+        setChildrenData(
+          childIds.map((id, index) => {
+            const careType = (initialTemplate[`careType_${id}`] || "") as
+              | "daily"
+              | "monthly"
+              | "";
+            return {
+              id,
+              index,
+              careType,
+              totalDays:
+                parseInt(initialTemplate[`totalDays_${id}`] || "0", 10) || 0,
+              isMonthSelected:
+                initialTemplate[`isMonthSelected_${id}`] === "true" ||
+                careType === "monthly",
+              dropoffTime:
+                initialTemplate[`dropoffTime_${id}`] ||
+                initialTemplate.dropoffTime ||
+                "",
+              pickupTime:
+                initialTemplate[`pickupTime_${id}`] ||
+                initialTemplate.pickupTime ||
+                "",
+              specialNeeds: initialTemplate[`specialNeeds_${id}`] || "",
+            };
+          }),
+        );
+      }
+
+      if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+      if (initialTemplate.parentEmail) {
+        setParentEmail(initialTemplate.parentEmail);
+      }
+      if (initialTemplate.startDate) setStartDate(initialTemplate.startDate);
+      if (initialTemplate.dailyRate) {
+        setDailyRate(parseInt(initialTemplate.dailyRate, 10) || 5000);
+      }
+      if (initialTemplate.monthlyRate) {
+        setMonthlyRate(parseInt(initialTemplate.monthlyRate, 10) || 110500);
+      }
+
+      const daySchedules = parseJsonField<
+        Array<{ day: string; hours: number; startTime?: string }>
+      >(initialTemplate.daySchedules, []);
+
+      const scheduleLoadTimer = window.setTimeout(() => {
+        const firstChildId = childIds[0];
+        if (firstChildId && daySchedules.length > 0) {
+          scheduleRefs.current[firstChildId]?.loadSchedule(
+            daySchedules.map((s) => ({
+              day: s.day,
+              startTime: s.startTime || "",
+              hours: s.hours || 1,
+            })),
+          );
+        }
+      }, 150);
+
+      return () => window.clearTimeout(scheduleLoadTimer);
+    }, [initialTemplate]);
 
     // Autofill parent info from session
     useEffect(() => {
