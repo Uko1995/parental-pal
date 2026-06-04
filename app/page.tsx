@@ -16,7 +16,6 @@ const MiniServices = lazy(() => import("../components/MiniServices"));
 const MiniProducts = lazy(() => import("../components/MiniProducts"));
 const MiniBlog = lazy(() => import("../components/MiniBlog"));
 const Statistics = lazy(() => import("../components/Statistics"));
-const Testimonials = lazy(() => import("../components/Testimonials"));
 const Contact = lazy(() => import("../components/Contact"));
 
 function PageContent() {
@@ -71,9 +70,6 @@ export default function Page() {
       </Suspense>
       <Suspense fallback={<div className="h-64" />}>
         <Statistics />
-      </Suspense>
-      <Suspense fallback={<div className="h-96" />}>
-        <Testimonials />
       </Suspense>
       <Suspense fallback={<div className="h-64" />}>
         <Contact />

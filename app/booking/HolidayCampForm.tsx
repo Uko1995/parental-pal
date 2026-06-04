@@ -1,4 +1,10 @@
-import { useState, useImperativeHandle, forwardRef, useEffect } from "react";
+import {
+  useState,
+  useImperativeHandle,
+  forwardRef,
+  useEffect,
+  useRef,
+} from "react";
 import { useSession } from "next-auth/react";
 import ChildInfoForm from "./ChildInfoForm";
 import PaymentSchedule from "./PaymentSchedule";
@@ -12,6 +18,11 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import {
+  extractChildIdsFromFormEntries,
+  parseJsonField,
+} from "@/lib/rebook-form-utils";
 
 export interface HolidayCampFormRef {
   resetForm: () => void;
@@ -61,10 +72,11 @@ interface ChildCampData {
 
 interface HolidayCampFormProps {
   onTotalChange?: (total: number) => void;
+  initialTemplate?: RebookFormEntries | null;
 }
 
 const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
-  (props, ref) => {
+  ({ onTotalChange, initialTemplate }, ref) => {
     const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
@@ -77,6 +89,28 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     >({});
 
     const weeklyRate = getEffectiveWeeklyRate(baseWeeklyRate);
+    const templateAppliedRef = useRef(false);
+
+    useEffect(() => {
+      if (!initialTemplate || templateAppliedRef.current) return;
+      templateAppliedRef.current = true;
+
+      const childIds = extractChildIdsFromFormEntries(initialTemplate);
+      if (childIds.length > 0) {
+        setChildrenData(childIds.map((id) => ({ id })));
+        const weeksByChild: Record<string, number[]> = {};
+        childIds.forEach((id) => {
+          const weeks = parseJsonField<Array<{ weekNumber: number }>>(
+            initialTemplate[`campWeeks_${id}`],
+            [],
+          );
+          weeksByChild[id] = weeks.map((w) => w.weekNumber);
+        });
+        setSelectedWeeksByChild(weeksByChild);
+      }
+      if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+      if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    }, [initialTemplate]);
 
     useEffect(() => {
       if (session?.user) {
@@ -122,8 +156,8 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     const totalAmount = totalSelectedWeeks * weeklyRate;
 
     useEffect(() => {
-      props.onTotalChange?.(totalAmount);
-    }, [props, totalAmount]);
+      onTotalChange?.(totalAmount);
+    }, [onTotalChange, totalAmount]);
 
     const toggleWeekSelection = (childId: string, weekNumber: number) => {
       setSelectedWeeksByChild((prev) => {

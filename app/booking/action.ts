@@ -131,18 +131,55 @@ export async function registerChild(formData: FormData) {
     formEntries[key] = typeof value === "string" ? value : String(value);
   });
 
-  // Parse form data into booking format
+  return createBookingFromFormEntries(formEntries, user, session.user);
+}
+
+export type BookingFormEntries = FormDataEntries;
+
+export async function previewBookingPrice(
+  formEntries: BookingFormEntries,
+): Promise<{ totalAmount: number; currency: string }> {
+  const session = await auth();
+  if (!session?.user?.email) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await UserRepository.findByEmail(session.user.email);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   const bookingData = await parseFormDataToBooking(
     formEntries,
     user._id!,
     session.user,
   );
 
-  // Validate required fields before saving
+  return {
+    totalAmount: bookingData.pricing?.totalAmount || 0,
+    currency: bookingData.pricing?.currency || "NGN",
+  };
+}
+
+export async function createBookingFromFormEntries(
+  formEntries: BookingFormEntries,
+  user: NonNullable<Awaited<ReturnType<typeof UserRepository.findByEmail>>>,
+  sessionUser: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  },
+) {
+  const bookingData = await parseFormDataToBooking(
+    formEntries,
+    user._id!,
+    sessionUser,
+  );
+
   if (!bookingData.parentName) {
     throw new Error(
       "Parent name is missing. Session name: " +
-        session.user.name +
+        sessionUser.name +
         ", Form parentName: " +
         formEntries.parentName,
     );
@@ -150,7 +187,7 @@ export async function registerChild(formData: FormData) {
   if (!bookingData.parentEmail) {
     throw new Error(
       "Parent email is missing. Session email: " +
-        session.user.email +
+        sessionUser.email +
         ", Form parentEmail: " +
         formEntries.parentEmail,
     );
@@ -164,23 +201,14 @@ export async function registerChild(formData: FormData) {
     );
   }
 
-  // Save booking to MongoDB
-  if (!user) {
-    throw new Error("User not found after creation/retrieval");
-  }
-
   const savedBooking = await BookingRepository.createBooking(bookingData);
 
-  // Sync children from booking to user profile
   try {
     await syncChildrenFromBooking(user._id!, bookingData);
   } catch (error) {
     console.error("Failed to sync children to user profile:", error);
-    // Don't block booking if child sync fails
   }
 
-  // Send booking confirmation email (fire-and-forget, non-blocking)
-  // Email is sent asynchronously without blocking the booking response
   fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
     method: "POST",
     headers: {
@@ -201,7 +229,6 @@ export async function registerChild(formData: FormData) {
       },
     }),
   }).catch((error) => {
-    // Log error but don't block booking
     console.error("Background email send failed:", error);
   });
 
@@ -306,7 +333,7 @@ async function syncChildrenFromBooking(
 }
 
 // Helper function to parse form data into BookingInterface format
-async function parseFormDataToBooking(
+export async function parseFormDataToBooking(
   cleanedData: FormDataEntries,
   userId: ObjectId,
   sessionUser: {

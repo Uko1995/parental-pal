@@ -8,6 +8,7 @@ import {
   forwardRef,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useSession } from "next-auth/react";
 import {
@@ -21,6 +22,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
 import PhoneInput from "@/components/PhoneInput";
+import type { RebookFormEntries } from "@/lib/booking-rebook";
+import {
+  extractChildIdsFromFormEntries,
+  parseJsonField,
+} from "@/lib/rebook-form-utils";
 
 export interface KiddiesEnrichmentFormRef {
   resetForm: () => void;
@@ -38,8 +44,14 @@ interface ChildEnrichmentData {
   hours: number; // Duration in hours
 }
 
-const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
-  (props, ref) => {
+interface KiddiesEnrichmentFormProps {
+  initialTemplate?: RebookFormEntries | null;
+}
+
+const KiddiesEnrichmentForm = forwardRef<
+  KiddiesEnrichmentFormRef,
+  KiddiesEnrichmentFormProps
+>(({ initialTemplate }, ref) => {
     const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
@@ -57,6 +69,38 @@ const KiddiesEnrichmentForm = forwardRef<KiddiesEnrichmentFormRef>(
       },
     ]);
     const [hourlyRate, setHourlyRate] = useState(8000); // Default to ₦8,000/hour
+    const templateAppliedRef = useRef(false);
+
+    useEffect(() => {
+      if (!initialTemplate || templateAppliedRef.current) return;
+      templateAppliedRef.current = true;
+
+      const childIds = extractChildIdsFromFormEntries(initialTemplate);
+      if (childIds.length > 0) {
+        setChildrenData(
+          childIds.map((id, index) => ({
+            id,
+            index,
+            selectedPrograms: parseJsonField<string[]>(
+              initialTemplate[`selectedPrograms_${id}`],
+              [],
+            ),
+            interests: initialTemplate[`interests_${id}`] || "",
+            parentGoals: initialTemplate[`parentGoals_${id}`] || "",
+            eventDate: initialTemplate[`eventDate_${id}`] || "",
+            startTime: initialTemplate[`startTime_${id}`] || "",
+            hours: parseInt(initialTemplate[`hours_${id}`] || "1", 10) || 1,
+          })),
+        );
+      }
+      if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
+      if (initialTemplate.parentEmail) {
+        setParentEmail(initialTemplate.parentEmail);
+      }
+      if (initialTemplate.hourlyRate) {
+        setHourlyRate(parseInt(initialTemplate.hourlyRate, 10) || 8000);
+      }
+    }, [initialTemplate]);
 
     // Autofill parent info from session
     useEffect(() => {

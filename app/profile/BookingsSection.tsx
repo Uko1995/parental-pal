@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
+import { bookingBelongsToUser } from "@/lib/booking-ownership";
+import { saveRebookTemplate } from "@/lib/rebook-persistence";
+import RebookSummaryModal from "./RebookSummaryModal";
 
 interface Booking {
   _id: string;
+  userId?: string;
+  parentEmail?: string;
   serviceType: string;
   status:
     | "pending"
@@ -14,15 +22,15 @@ interface Booking {
     | "cancelled"
     | "on-hold";
   createdAt: string;
-  pricing: {
-    totalAmount: number;
-    currency: string;
+  pricing?: {
+    totalAmount?: number;
+    currency?: string;
   };
-  payment: {
-    status: "pending" | "paid" | "refunded";
-    paidAmount: number;
+  payment?: {
+    status?: "pending" | "paid" | "refunded";
+    paidAmount?: number;
   };
-  children: Array<{
+  children?: Array<{
     id?: string;
     name: string;
     age: number;
@@ -30,8 +38,8 @@ interface Booking {
     schoolName?: string;
     specialNeeds?: string;
   }>;
-  schedule: {
-    startDate: string;
+  schedule?: {
+    startDate?: string;
     endDate?: string;
     weekdays?: Array<{
       day: string;
@@ -153,12 +161,25 @@ const STATUS_COLORS = {
   "on-hold": "badge-neutral",
 };
 
+interface RebookModalState {
+  bookingId: string;
+  serviceLabel: string;
+  childrenSummary: string;
+  targetMonthLabel: string;
+  scheduleSummary?: string;
+  pricePreview: { totalAmount: number; currency: string };
+}
+
 export default function BookingsSection() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [rebookModal, setRebookModal] = useState<RebookModalState | null>(null);
+  const [rebookLoadingId, setRebookLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -212,8 +233,11 @@ export default function BookingsSection() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -225,6 +249,94 @@ export default function BookingsSection() {
       return `₦${amount.toLocaleString()}`;
     }
     return `${currency} ${amount.toLocaleString()}`;
+  };
+
+  const getScheduleSummary = (booking: Booking): string | undefined => {
+    const weekdays = booking.schedule?.weekdays;
+    if (!weekdays?.length) return undefined;
+    return weekdays
+      .filter((w) => w.day !== "month")
+      .map((w) => `${w.day} (${w.hours}h)`)
+      .join(", ");
+  };
+
+  const handleQuickRebook = async (booking: Booking) => {
+    setRebookLoadingId(booking._id);
+    try {
+      const res = await fetch(`/api/bookings/${booking._id}/rebook-template`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "This booking cannot be re-booked");
+        return;
+      }
+      setRebookModal({
+        bookingId: booking._id,
+        serviceLabel:
+          SERVICE_TYPE_LABELS[
+            booking.serviceType as keyof typeof SERVICE_TYPE_LABELS
+          ] || booking.serviceType,
+        childrenSummary:
+          data.childrenSummary ||
+          (booking.children ?? []).map((c) => c.name).join(", "),
+        targetMonthLabel: data.targetMonthLabel,
+        scheduleSummary: getScheduleSummary(booking),
+        pricePreview: data.pricePreview,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to prepare re-book");
+    } finally {
+      setRebookLoadingId(null);
+    }
+  };
+
+  const handleEditRebook = async (booking: Booking) => {
+    setRebookLoadingId(booking._id);
+    try {
+      const res = await fetch(`/api/bookings/${booking._id}/rebook-template`);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "This booking cannot be re-booked");
+        return;
+      }
+      saveRebookTemplate({
+        sourceBookingId: booking._id,
+        selectedService: booking.serviceType,
+        formEntries: data.formEntries,
+        targetMonthLabel: data.targetMonthLabel,
+      });
+      router.push(
+        `/booking?service=${booking.serviceType}&rebook=${booking._id}`,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to prepare re-book");
+    } finally {
+      setRebookLoadingId(null);
+    }
+  };
+
+  const canRebook = (booking: Booking) => {
+    if (!isRebookEligibleBooking(booking)) return false;
+
+    // Parents only receive their own bookings from /api/bookings
+    if (session?.user?.role !== "admin") {
+      return true;
+    }
+
+    if (!session?.user) return false;
+
+    return bookingBelongsToUser(
+      {
+        userId: booking.userId,
+        parentEmail: booking.parentEmail,
+      },
+      {
+        _id: session.user.id,
+        userData: { user: { email: session.user.email } },
+      },
+      { id: session.user.id, email: session.user.email },
+    );
   };
 
   if (loading) {
@@ -293,9 +405,9 @@ export default function BookingsSection() {
                         </p>
                         <p>
                           <span className="font-medium">Start Date:</span>{" "}
-                          {formatDate(booking.schedule.startDate)}
+                          {formatDate(booking.schedule?.startDate)}
                         </p>
-                        {booking.schedule.endDate && (
+                        {booking.schedule?.endDate && (
                           <p>
                             <span className="font-medium">End Date:</span>{" "}
                             {formatDate(booking.schedule.endDate)}
@@ -305,33 +417,35 @@ export default function BookingsSection() {
                       <div>
                         <p>
                           <span className="font-medium">Children:</span>{" "}
-                          {booking.children.map((c) => c.name).join(", ")}
+                          {(booking.children ?? [])
+                            .map((c) => c.name)
+                            .join(", ") || "—"}
                         </p>
                         <p>
                           <span className="font-medium">Total Amount:</span>{" "}
                           {formatCurrency(
-                            booking.pricing.totalAmount,
-                            booking.pricing.currency
+                            booking.pricing?.totalAmount ?? 0,
+                            booking.pricing?.currency ?? "NGN",
                           )}
                         </p>
                         <p>
                           <span className="font-medium">Payment Status:</span>
                           <span
                             className={`ml-2 badge badge-sm ${
-                              booking.payment.status === "paid"
+                              booking.payment?.status === "paid"
                                 ? "badge-success"
-                                : booking.payment.status === "pending"
+                                : booking.payment?.status === "pending"
                                 ? "badge-warning"
                                 : "badge-error"
                             }`}
                           >
-                            {booking.payment.status}
+                            {booking.payment?.status ?? "unknown"}
                           </span>
                         </p>
                       </div>
                     </div>
 
-                    {booking.schedule.weekdays &&
+                    {booking.schedule?.weekdays &&
                       booking.schedule.weekdays.length > 0 && (
                         <div className="mt-3">
                           <p className="text-sm font-medium text-base-content/70 mb-1">
@@ -359,6 +473,31 @@ export default function BookingsSection() {
                       View Details
                     </button>
 
+                    {canRebook(booking) && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickRebook(booking)}
+                          className="btn btn-primary btn-sm"
+                          disabled={rebookLoadingId === booking._id}
+                        >
+                          {rebookLoadingId === booking._id ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : (
+                            "Re-book next month"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditRebook(booking)}
+                          className="btn btn-outline btn-sm"
+                          disabled={rebookLoadingId === booking._id}
+                        >
+                          Edit &amp; re-book
+                        </button>
+                      </>
+                    )}
+
                     {booking.status === "pending" && (
                       <button
                         onClick={() => setBookingToCancel(booking)}
@@ -373,6 +512,18 @@ export default function BookingsSection() {
             </div>
           ))}
         </div>
+      )}
+
+      {rebookModal && (
+        <RebookSummaryModal
+          bookingId={rebookModal.bookingId}
+          serviceLabel={rebookModal.serviceLabel}
+          childrenSummary={rebookModal.childrenSummary}
+          targetMonthLabel={rebookModal.targetMonthLabel}
+          scheduleSummary={rebookModal.scheduleSummary}
+          pricePreview={rebookModal.pricePreview}
+          onClose={() => setRebookModal(null)}
+        />
       )}
 
       {/* Booking Details Modal */}
@@ -484,16 +635,18 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
             <div className="space-y-2 text-sm">
               <p>
                 <span className="font-medium">Start Date:</span>{" "}
-                {new Date(booking.schedule.startDate).toLocaleDateString()}
+                {booking.schedule?.startDate
+                  ? new Date(booking.schedule.startDate).toLocaleDateString()
+                  : "—"}
               </p>
-              {booking.schedule.endDate && (
+              {booking.schedule?.endDate && (
                 <p>
                   <span className="font-medium">End Date:</span>{" "}
                   {new Date(booking.schedule.endDate).toLocaleDateString()}
                 </p>
               )}
 
-              {booking.schedule.weekdays &&
+              {booking.schedule?.weekdays &&
                 booking.schedule.weekdays.length > 0 && (
                   <div>
                     <p className="font-medium mb-2">Weekly Schedule:</p>
@@ -543,7 +696,7 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
           <div>
             <h4 className="font-semibold text-lg mb-3">Children</h4>
             <div className="space-y-3">
-              {booking.children.map((child, index) => (
+              {(booking.children ?? []).map((child, index) => (
                 <div key={index} className="p-3 bg-base-200 rounded space-y-2">
                   <p className="font-medium text-base">{child.name}</p>
                   <p className="text-sm text-base-content/70">
@@ -570,30 +723,31 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
             <div className="space-y-2 text-sm">
               <p>
                 <span className="font-medium">Total Amount:</span> ₦
-                {booking.pricing.totalAmount.toLocaleString()}
+                {(booking.pricing?.totalAmount ?? 0).toLocaleString()}
               </p>
               <p>
                 <span className="font-medium">Paid Amount:</span> ₦
-                {booking.payment.paidAmount.toLocaleString()}
+                {(booking.payment?.paidAmount ?? 0).toLocaleString()}
               </p>
               <p>
                 <span className="font-medium">Outstanding:</span> ₦
                 {(
-                  booking.pricing.totalAmount - booking.payment.paidAmount
+                  (booking.pricing?.totalAmount ?? 0) -
+                  (booking.payment?.paidAmount ?? 0)
                 ).toLocaleString()}
               </p>
               <p>
                 <span className="font-medium">Payment Status:</span>
                 <span
                   className={`ml-2 badge badge-sm ${
-                    booking.payment.status === "paid"
+                    booking.payment?.status === "paid"
                       ? "badge-success"
-                      : booking.payment.status === "pending"
+                      : booking.payment?.status === "pending"
                       ? "badge-warning"
                       : "badge-error"
                   }`}
                 >
-                  {booking.payment.status}
+                  {booking.payment?.status ?? "unknown"}
                 </span>
               </p>
             </div>
@@ -613,7 +767,7 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
                       booking.serviceData.childrenData.map(
                         (childData, idx: number) => {
                           // Find the corresponding child info
-                          const childInfo = booking.children[idx];
+                          const childInfo = (booking.children ?? [])[idx];
                           return (
                             <div
                               key={idx}

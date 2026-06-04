@@ -130,8 +130,11 @@ export class BookingRepository {
   ): Promise<BookingInterface[]> {
     const collection = await getCollection(this.collectionName);
     const objectId = typeof userId === "string" ? new ObjectId(userId) : userId;
+    const userIdString = objectId.toHexString();
     return (await collection
-      .find({ userId: objectId })
+      .find({
+        $or: [{ userId: objectId }, { userId: userIdString }],
+      })
       .sort({ createdAt: -1 })
       .toArray()) as BookingInterface[];
   }
