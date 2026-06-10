@@ -431,7 +431,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                   {
                     id: "lekki" as CampLocation,
                     title: "Lekki",
-                    description: "All ages 0–14. Day camp only — no boarding.",
+                    description: "All ages 5–14. Day camp only — no boarding.",
                     from: formatNaira(SUMMER_CAMP_RATES.lekkiWeekly),
                   },
                 ] as const
