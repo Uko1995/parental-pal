@@ -6,7 +6,7 @@ import {
   getCampBookingUrl,
   type CampSeasonId,
 } from "@/lib/camp-seasons";
-import { Calendar, Sparkle } from "@phosphor-icons/react";
+import { Calendar } from "@phosphor-icons/react";
 
 export default function ActiveCampPromo({
   seasonId,
@@ -21,9 +21,7 @@ export default function ActiveCampPromo({
     <div className="mb-12 rounded-2xl overflow-hidden border border-brand-primary/20 shadow-sm">
       <div className="bg-linear-to-r from-brand-primary/10 via-brand-cream to-brand-accent/10 p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-xl bg-brand-primary/15 shrink-0">
-            <Sparkle className="w-7 h-7 text-brand-primary" weight="fill" />
-          </div>
+          
           <div>
             <p className="text-sm font-semibold text-brand-secondary uppercase tracking-wide">
               {isSummer ? "Now registering" : "Holiday camp"}
