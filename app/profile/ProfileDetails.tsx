@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { User } from "next-auth";
+import { useSession } from "next-auth/react";
 import {
   PencilSquareIcon,
   CheckIcon,
@@ -50,6 +51,7 @@ export default function ProfileDetails({
   user,
   userRole = "parent",
 }: ProfileDetailsProps) {
+  const { update: updateSession } = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
@@ -98,10 +100,20 @@ export default function ProfileDetails({
       });
 
       if (response.ok) {
+        const data = await response.json();
+        if (data.emailChanged) {
+          await updateSession({
+            email: profile.email,
+            name: profile.name,
+            id: data.userId,
+          });
+        }
         toast.success("Profile updated successfully!");
         setIsEditing(false);
+        await fetchUserProfile();
       } else {
-        toast.error("Failed to update profile");
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.error || "Failed to update profile");
       }
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -206,17 +218,27 @@ export default function ProfileDetails({
             </div>
             Email Address
           </label>
-          <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 relative">
-            <p className="text-gray-800 font-medium break-all">
-              {profile.email}
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <ShieldCheckIcon className="h-4 w-4 text-[#A25F97]" />
-              <span className="text-xs text-gray-500">
-                Email cannot be changed
-              </span>
+          {isEditing ? (
+            <>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#E8931A] focus:ring-2 focus:ring-[#E8931A]/20 transition-all duration-300 outline-none"
+                placeholder="your.email@example.com"
+                required
+              />
+              <p className="text-xs text-gray-500">
+                You may need to sign in again after changing your email.
+              </p>
+            </>
+          ) : (
+            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
+              <p className="text-gray-800 font-medium break-all">
+                {profile.email || "Not provided"}
+              </p>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Phone Number */}

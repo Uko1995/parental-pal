@@ -6,7 +6,6 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { useSession } from "next-auth/react";
 import ChildInfoForm from "./ChildInfoForm";
 import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
 import PhoneInput from "@/components/PhoneInput";
@@ -25,6 +24,12 @@ import {
   extractChildIdsFromFormEntries,
   parseJsonField,
 } from "@/lib/rebook-form-utils";
+import {
+  applyParentContactPrefill,
+  createPrefilledChildrenFromProfile,
+  type ChildInfoDefaults,
+} from "@/lib/booking-profile-prefill";
+import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
@@ -50,9 +55,13 @@ const ChildCareSpecificBookingForm = forwardRef<
   ChildCareSpecificBookingFormRef,
   ChildCareFormProps
 >(({ initialTemplate }, ref) => {
-    const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
+    const [parentPhone, setParentPhone] = useState("");
+    const [parentAddress, setParentAddress] = useState("");
+    const [childDefaults, setChildDefaults] = useState<
+      Record<string, ChildInfoDefaults>
+    >({});
 
     const [childrenData, setChildrenData] = useState<ChildCareData[]>([
       {
@@ -117,6 +126,12 @@ const ChildCareSpecificBookingForm = forwardRef<
       if (initialTemplate.parentEmail) {
         setParentEmail(initialTemplate.parentEmail);
       }
+      if (initialTemplate.parentPhone) setParentPhone(initialTemplate.parentPhone);
+      if (initialTemplate.parentAddress || initialTemplate.address) {
+        setParentAddress(
+          initialTemplate.parentAddress || initialTemplate.address || "",
+        );
+      }
       if (initialTemplate.startDate) setStartDate(initialTemplate.startDate);
       if (initialTemplate.dailyRate) {
         setDailyRate(parseInt(initialTemplate.dailyRate, 10) || 5000);
@@ -145,13 +160,45 @@ const ChildCareSpecificBookingForm = forwardRef<
       return () => window.clearTimeout(scheduleLoadTimer);
     }, [initialTemplate]);
 
-    // Autofill parent info from session
-    useEffect(() => {
-      if (session?.user) {
-        if (session.user.name) setParentName(session.user.name);
-        if (session.user.email) setParentEmail(session.user.email);
+    const applyProfilePrefill = useCallback((profile: {
+      parentName: string;
+      parentEmail: string;
+      parentPhone: string;
+      parentAddress: string;
+      children: Array<{ name: string; age: number; gender?: string }>;
+    }) => {
+      applyParentContactPrefill(profile, {
+        setParentName,
+        setParentEmail,
+        setParentPhone,
+        setParentAddress,
+      });
+
+      if (profile.children.length > 0) {
+        const { ids, defaults } = createPrefilledChildrenFromProfile(
+          profile.children,
+        );
+        setChildrenData(
+          ids.map((id, index) => ({
+            id,
+            index,
+            careType: "" as "daily" | "monthly" | "",
+            totalDays: 0,
+            isMonthSelected: false,
+            dropoffTime: "",
+            pickupTime: "",
+            specialNeeds: "",
+          })),
+        );
+        setChildDefaults(defaults);
       }
-    }, [session]);
+    }, []);
+
+    useBookingProfilePrefill({
+      initialTemplate,
+      templateAppliedRef,
+      onApply: applyProfilePrefill,
+    });
 
     // Fetch pricing from database
     useEffect(() => {
@@ -373,6 +420,8 @@ const ChildCareSpecificBookingForm = forwardRef<
               label="Phone Number"
               required
               placeholder="Enter phone number"
+              value={parentPhone}
+              onValueChange={setParentPhone}
             />
 
             <div>
@@ -384,6 +433,8 @@ const ChildCareSpecificBookingForm = forwardRef<
               <input
                 type="text"
                 name="address"
+                value={parentAddress}
+                onChange={(e) => setParentAddress(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
                 placeholder="Enter your address"
                 required
@@ -450,10 +501,12 @@ const ChildCareSpecificBookingForm = forwardRef<
 
             {/* Basic Child Info */}
             <ChildInfoForm
+              key={`${child.id}-${childDefaults[child.id]?.name ?? "new"}`}
               childIndex={index}
               childId={child.id}
               onRemove={() => removeChild(child.id)}
               showRemoveButton={false}
+              defaults={childDefaults[child.id]}
             />
 
             {/* Care Type Selection for this child */}

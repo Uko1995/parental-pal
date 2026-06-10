@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import { getSessionUser } from "@/lib/session-user";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
 export async function PATCH(
@@ -14,7 +15,7 @@ export async function PATCH(
 
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,8 +23,7 @@ export async function PATCH(
     const childData = await request.json();
     const childIndex = parseInt(id);
 
-    // Get user
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -83,14 +83,13 @@ export async function DELETE(
 
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const childIndex = parseInt(id);
 
-    // Get user
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

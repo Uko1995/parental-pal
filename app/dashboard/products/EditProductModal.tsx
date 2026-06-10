@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024;
+const PDF_MIME_TYPES = ["application/pdf", "application/x-pdf"];
+
 interface Product {
   _id: string;
   title: string;
@@ -13,6 +16,13 @@ interface Product {
   description: string;
   shortDescription?: string;
   pageCount?: number;
+  pages?: number;
+  pdfFile?: {
+    cloudinaryId: string;
+    cloudinaryUrl: string;
+    fileName?: string;
+    fileSize?: number;
+  };
   pricing: {
     softcopy: {
       price: number;
@@ -45,6 +55,7 @@ export default function EditProductModal({
   onSuccess,
 }: EditProductModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -71,7 +82,7 @@ export default function EditProductModal({
         ageRange: product.ageRange || "",
         description: product.description || "",
         shortDescription: product.shortDescription || "",
-        pages: product.pageCount || 0,
+        pages: product.pageCount || product.pages || 0,
         softcopyPrice: product.pricing?.softcopy?.price || 0,
         softcopyAvailable: product.pricing?.softcopy?.available ?? true,
         paperbackPrice: product.pricing?.paperback?.price || 0,
@@ -80,8 +91,32 @@ export default function EditProductModal({
         status: product.status || "active",
         featured: product.featured || false,
       });
+      setPdfFile(null);
     }
   }, [product]);
+
+  const handlePdfFileChange = (file: File | null) => {
+    if (!file) {
+      setPdfFile(null);
+      return;
+    }
+
+    const isPdfByMime = PDF_MIME_TYPES.includes(file.type);
+    const isPdfByExtension = file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdfByMime && !isPdfByExtension) {
+      toast.error("Only PDF files are allowed");
+      setPdfFile(null);
+      return;
+    }
+
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      toast.error("PDF must be 50MB or less");
+      setPdfFile(null);
+      return;
+    }
+
+    setPdfFile(file);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -106,35 +141,64 @@ export default function EditProductModal({
     e.preventDefault();
     setIsLoading(true);
 
-    const updateData = {
-      title: formData.title,
-      author: formData.author,
-      category: formData.category,
-      ageRange: formData.ageRange,
-      description: formData.description,
-      shortDescription: formData.shortDescription,
-      pages: formData.pages,
-      pricing: {
-        softcopy: {
-          price: formData.softcopyPrice,
-          available: formData.softcopyAvailable,
-          currency: "NGN",
-        },
-        paperback: {
-          price: formData.paperbackPrice,
-          available: formData.paperbackAvailable,
-          currency: "NGN",
-          deliveryDays: 3,
-        },
-      },
-      stock: {
-        paperback: formData.paperbackStock,
-      },
-      status: formData.status,
-      featured: formData.featured,
-    };
-
     try {
+      let pdfFileData = product.pdfFile;
+
+      if (pdfFile) {
+        const pdfFormData = new FormData();
+        pdfFormData.append("file", pdfFile);
+        pdfFormData.append("type", "pdf");
+
+        const pdfRes = await fetch("/api/upload", {
+          method: "POST",
+          body: pdfFormData,
+        });
+
+        if (!pdfRes.ok) {
+          throw new Error("Failed to upload PDF");
+        }
+
+        const pdfData = await pdfRes.json();
+        pdfFileData = {
+          cloudinaryId: pdfData.public_id,
+          cloudinaryUrl: pdfData.secure_url || pdfData.url,
+          fileName: pdfFile.name,
+          fileSize: pdfFile.size,
+        };
+      }
+
+      const updateData: Record<string, unknown> = {
+        title: formData.title,
+        author: formData.author,
+        category: formData.category,
+        ageRange: formData.ageRange,
+        description: formData.description,
+        shortDescription: formData.shortDescription,
+        pages: formData.pages,
+        pricing: {
+          softcopy: {
+            price: formData.softcopyPrice,
+            available: formData.softcopyAvailable,
+            currency: "NGN",
+          },
+          paperback: {
+            price: formData.paperbackPrice,
+            available: formData.paperbackAvailable,
+            currency: "NGN",
+            deliveryDays: 3,
+          },
+        },
+        stock: {
+          paperback: formData.paperbackStock,
+        },
+        status: formData.status,
+        featured: formData.featured,
+      };
+
+      if (pdfFileData) {
+        updateData.pdfFile = pdfFileData;
+      }
+
       const response = await fetch(`/api/products/${product._id}`, {
         method: "PATCH",
         headers: {
@@ -150,7 +214,9 @@ export default function EditProductModal({
       toast.success("Product updated successfully!");
       onSuccess();
     } catch (error) {
-      toast.error("Failed to update product");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update product",
+      );
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -275,6 +341,47 @@ export default function EditProductModal({
                   className="textarea textarea-bordered w-full h-24"
                   placeholder="Detailed product description"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* PDF File */}
+          <div className="card bg-base-200">
+            <div className="card-body">
+              <h4 className="font-semibold">PDF File</h4>
+              {product.pdfFile?.fileName && !pdfFile && (
+                <p className="text-sm text-gray-600 mb-2">
+                  Current: {product.pdfFile.fileName}
+                  {product.pdfFile.fileSize ? (
+                    <span>
+                      {" "}
+                      ({(product.pdfFile.fileSize / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  ) : null}
+                </p>
+              )}
+              <div className="form-control flex flex-col gap-1">
+                <label className="label">
+                  <span className="label-text">
+                    {product.pdfFile ? "Replace PDF" : "Upload PDF"}
+                  </span>
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) =>
+                    handlePdfFileChange(e.target.files?.[0] || null)
+                  }
+                  className="file-input file-input-bordered"
+                />
+                <span className="label-text-alt mt-1 text-gray-500">
+                  PDF only, maximum 50MB. Leave empty to keep the current file.
+                </span>
+                {pdfFile && (
+                  <span className="label-text-alt mt-1 text-success">
+                    New file: {pdfFile.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>

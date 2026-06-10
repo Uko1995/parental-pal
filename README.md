@@ -37,7 +37,8 @@ Create `.env.local` with at least:
 
 | Variable | Description |
 |----------|-------------|
-| `MONGODB_URI` | MongoDB connection string |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `MONGODB_DB_NAME` | Database name (`parental-pal_dev` locally; `parental-pal` on Vercel Production) |
 | `AUTH_SECRET` | NextAuth secret (e.g. `openssl rand -base64 32`) |
 | `NEXTAUTH_URL` | App URL (e.g. `http://localhost:3000`) |
 
@@ -62,4 +63,11 @@ For full functionality add: `GOOGLE_ID`, `GOOGLE_SECRET`, Cloudinary (`NEXT_PUBL
 
 ## Deploy
 
-Configured for Vercel (`vercel.json`). Set the same env vars in your project and deploy.
+Configured for Vercel (`vercel.json`). Set env vars per environment:
+
+| Environment | `MONGODB_DB_NAME` |
+|-------------|-------------------|
+| **Production** (Vercel) | `parental-pal` (or omit — same as default) |
+| **Local / Preview** | `parental-pal_dev` |
+
+Keep the same `MONGODB_URI` cluster on Production unless you use separate Atlas users. Dev DB is already seeded from your prod copy — no need to run `init-db` locally.

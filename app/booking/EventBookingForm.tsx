@@ -6,13 +6,18 @@ import React, {
   forwardRef,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
-import { useSession } from "next-auth/react";
 import PaymentSchedule from "./PaymentSchedule";
 import OptionalChild from "./OptionalChild";
 import PhoneInput from "@/components/PhoneInput";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import { parseJsonField } from "@/lib/rebook-form-utils";
+import {
+  applyParentContactPrefill,
+  type BookingChildPrefill,
+} from "@/lib/booking-profile-prefill";
+import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface EventBookingFormRef {
   resetForm: () => void;
@@ -31,9 +36,12 @@ interface EventBookingFormProps {
 
 const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
   ({ initialTemplate }, ref) => {
-  const { data: session } = useSession();
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
+  const [profileChildren, setProfileChildren] = useState<BookingChildPrefill[]>(
+    [],
+  );
 
   const [eventType, setEventType] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -52,6 +60,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
 
     if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
     if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    if (initialTemplate.parentPhone) setParentPhone(initialTemplate.parentPhone);
     if (initialTemplate.eventType) setEventType(initialTemplate.eventType);
     if (initialTemplate.eventDate) setEventDate(initialTemplate.eventDate);
     if (initialTemplate.eventTime) setEventTime(initialTemplate.eventTime);
@@ -74,13 +83,29 @@ const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
     }
   }, [initialTemplate]);
 
-  // Autofill parent info from session
-  useEffect(() => {
-    if (session?.user) {
-      if (session.user.name) setParentName(session.user.name);
-      if (session.user.email) setParentEmail(session.user.email);
+  const applyProfilePrefill = useCallback((profile: {
+    parentName: string;
+    parentEmail: string;
+    parentPhone: string;
+    parentAddress: string;
+    children: BookingChildPrefill[];
+  }) => {
+    applyParentContactPrefill(profile, {
+      setParentName,
+      setParentEmail,
+      setParentPhone,
+      setParentAddress: () => {},
+    });
+    if (profile.children.length > 0) {
+      setProfileChildren(profile.children);
     }
-  }, [session]);
+  }, []);
+
+  useBookingProfilePrefill({
+    initialTemplate,
+    templateAppliedRef,
+    onApply: applyProfilePrefill,
+  });
 
   const eventTypes = [
     "Birthday Party",
@@ -230,6 +255,8 @@ const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
             label="Phone Number"
             required
             placeholder="Enter phone number"
+            value={parentPhone}
+            onValueChange={setParentPhone}
           />
 
           <div>
@@ -255,7 +282,7 @@ const EventBookingForm = forwardRef<EventBookingFormRef, EventBookingFormProps>(
         <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
           Child Information
         </h3>
-        <OptionalChild />
+        <OptionalChild initialChildren={profileChildren} />
       </div>
 
       {/* Event Details Section */}

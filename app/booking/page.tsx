@@ -3,6 +3,7 @@ import BookingForm from "./BookingForm";
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { isHolidayCampServiceActive } from "@/app/services/actions";
 
 interface BookingPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -18,12 +19,32 @@ export default async function Page({ searchParams }: BookingPageProps) {
     const serviceParam = Array.isArray(params?.service)
       ? params.service[0]
       : params?.service;
+    const campParamValue = Array.isArray(params?.camp)
+      ? params.camp[0]
+      : params?.camp;
 
-    const callbackUrl = serviceParam
-      ? `/booking?service=${encodeURIComponent(serviceParam)}`
-      : "/booking";
+    const callbackUrl =
+      serviceParam === "holiday-camps" && campParamValue
+        ? `/booking?service=holiday-camps&camp=${encodeURIComponent(campParamValue)}`
+        : serviceParam
+          ? `/booking?service=${encodeURIComponent(serviceParam)}`
+          : "/booking";
 
     redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+
+  const serviceParam = Array.isArray(params?.service)
+    ? params.service[0]
+    : params?.service;
+  const campParamValue = Array.isArray(params?.camp)
+    ? params.camp[0]
+    : params?.camp;
+
+  const isHolidayCampBooking =
+    serviceParam === "holiday-camps" || Boolean(campParamValue);
+
+  if (isHolidayCampBooking && !(await isHolidayCampServiceActive())) {
+    redirect("/services");
   }
 
   return (

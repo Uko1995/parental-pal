@@ -71,6 +71,10 @@ export interface PaymentDetails {
   currency?: string;
   method?: string;
   serviceType?: string;
+  campers?: Array<{
+    name: string;
+    camperId: string;
+  }>;
 }
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
@@ -206,19 +210,19 @@ export const emailTemplates = {
             
             <div class="booking-details">
               <div class="detail-row">
-                <span class="detail-label">Booking ID:</span>
+                <span class="detail-label">Booking ID: </span>
                 <span class="detail-value">#${
                   bookingDetails._id || "N/A"
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Service Type:</span>
+                <span class="detail-label">Service Type: </span>
                 <span class="detail-value">${
                   bookingDetails.serviceType || "N/A"
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Start Date:</span>
+                <span class="detail-label">Start Date: </span>
                 <span class="detail-value">${
                   bookingDetails.schedule?.startDate
                     ? new Date(
@@ -228,13 +232,13 @@ export const emailTemplates = {
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Children:</span>
+                <span class="detail-label">Children: </span>
                 <span class="detail-value">${
                   bookingDetails.children?.length || 0
                 } child(ren)</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Status:</span>
+                <span class="detail-label">Status: </span>
                 <span class="detail-value">${
                   bookingDetails.status || "Pending"
                 }</span>
@@ -266,7 +270,35 @@ export const emailTemplates = {
   }),
 
   // Payment confirmation email
-  paymentConfirmation: (userName: string, paymentDetails: PaymentDetails) => ({
+  paymentConfirmation: (userName: string, paymentDetails: PaymentDetails) => {
+    const camperSection =
+      paymentDetails.campers && paymentDetails.campers.length > 0
+        ? `
+            <div class="payment-details" style="border-left: 4px solid #90AC19;">
+              <p style="font-weight: bold; margin: 0 0 8px 0; color: #333;">Your Camper ID(s)</p>
+              <p style="font-size: 14px; color: #666; margin: 0 0 16px 0;">
+                Please save these IDs. You will need them for camp check-in and correspondence.
+              </p>
+              ${paymentDetails.campers
+                .map(
+                  (camper) => `
+              <div class="detail-row" style="display: block; padding: 10px 0;">
+                <span class="detail-label">${camper.name}: </span>
+                <span class="detail-value" style="font-family: monospace; font-weight: bold; font-size: 22px; color: #90AC19; letter-spacing: 0.5px;">${camper.camperId}</span>
+              </div>`,
+                )
+                .join("")}
+            </div>`
+        : "";
+
+    const camperText =
+      paymentDetails.campers && paymentDetails.campers.length > 0
+        ? ` Camper ID(s): ${paymentDetails.campers
+            .map((c) => `${c.name}: ${c.camperId}`)
+            .join(", ")}.`
+        : "";
+
+    return {
     subject: `Payment Received - ${paymentDetails.serviceType} Service`,
     html: `
       <!DOCTYPE html>
@@ -303,34 +335,35 @@ export const emailTemplates = {
             
             <div class="payment-details">
               <div class="detail-row">
-                <span class="detail-label">Transaction ID:</span>
+                <span class="detail-label">Transaction ID: </span>
                 <span class="detail-value">${
                   paymentDetails.transactionId || "N/A"
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Amount Paid:</span>
+                <span class="detail-label">Amount Paid: </span>
                 <span class="detail-value">${paymentDetails.currency || "₦"}${
       paymentDetails.amount?.toLocaleString() || "0"
     }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Payment Method:</span>
+                <span class="detail-label">Payment Method: </span>
                 <span class="detail-value">${
                   paymentDetails.method || "Online Payment"
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Service:</span>
+                <span class="detail-label">Service: </span>
                 <span class="detail-value">${
                   paymentDetails.serviceType || "N/A"
                 }</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Payment Date:</span>
+                <span class="detail-label">Payment Date: </span>
                 <span class="detail-value">${new Date().toLocaleDateString()}</span>
               </div>
             </div>
+            ${camperSection}
 
             <p>Your service is now fully confirmed and we'll proceed with the arrangements as scheduled.</p>
             
@@ -348,8 +381,9 @@ export const emailTemplates = {
       paymentDetails.amount?.toLocaleString() || "0"
     }, Transaction ID: ${paymentDetails.transactionId || "N/A"}, Service: ${
       paymentDetails.serviceType || "N/A"
-    }`,
-  }),
+    }.${camperText}`,
+  };
+  },
 
   // Product order confirmation email
   productOrderConfirmation: (

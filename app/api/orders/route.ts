@@ -6,6 +6,10 @@ import ProductRepository from "@/lib/ProductRepository";
 import { OrderInterface } from "@/models/Order";
 import { v4 as uuidv4 } from "uuid";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import {
+  resolveProductUnitPrice,
+  validateBdgPromoApplication,
+} from "@/lib/product-promotions";
 
 // GET /api/orders - Get all orders
 export async function GET(request: NextRequest) {
@@ -167,12 +171,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate price
     const quantity = body.quantity || 1;
-    const unitPrice =
-      body.orderType === "softcopy"
-        ? product.pricing.softcopy.price
-        : product.pricing.paperback.price;
+    const promoCode = body.promoCode as string | undefined;
+
+    if (promoCode) {
+      const validation = validateBdgPromoApplication({
+        promoCode,
+        orderType: body.orderType,
+        productCategory: product.category,
+      });
+      if (!validation.valid) {
+        return NextResponse.json(
+          { success: false, error: validation.error },
+          { status: 400 },
+        );
+      }
+    }
+
+    const unitPrice = resolveProductUnitPrice({
+      orderType: body.orderType,
+      productCategory: product.category,
+      listSoftcopyPrice: product.pricing.softcopy.price,
+      listPaperbackPrice: product.pricing.paperback.price,
+      promoCode,
+    });
     const totalAmount = unitPrice * quantity;
 
     // Generate unique reference for Paystack

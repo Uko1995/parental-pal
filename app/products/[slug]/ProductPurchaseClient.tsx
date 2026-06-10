@@ -18,6 +18,12 @@ export default function ProductPurchaseClient({
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoStatus, setPromoStatus] = useState<
+    "idle" | "checking" | "applied" | "error"
+  >("idle");
+  const [promoMessage, setPromoMessage] = useState("");
+  const [promoUnitPrice, setPromoUnitPrice] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -31,13 +37,67 @@ export default function ProductPurchaseClient({
     deliveryNotes: "",
   });
 
-  const currentPrice =
+  const listPrice =
     selectedType === "softcopy"
       ? product.pricing.softcopy.price
       : product.pricing.paperback.price;
+  const currentPrice =
+    selectedType === "softcopy" &&
+    promoStatus === "applied" &&
+    promoUnitPrice !== null
+      ? promoUnitPrice
+      : listPrice;
   const maxQuantity =
     selectedType === "paperback" ? Math.max(1, product.stock.paperback) : 50;
   const totalPrice = currentPrice * quantity;
+  const showPromoField =
+    selectedType === "softcopy" && product.category === "storybook";
+
+  const resetPromo = () => {
+    setPromoCode("");
+    setPromoStatus("idle");
+    setPromoMessage("");
+    setPromoUnitPrice(null);
+  };
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) {
+      setPromoStatus("error");
+      setPromoMessage("Enter a promo code first.");
+      return;
+    }
+
+    setPromoStatus("checking");
+    setPromoMessage("");
+
+    try {
+      const response = await fetch("/api/promotions/products/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          orderType: selectedType,
+          productId: product._id,
+        }),
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        setPromoStatus("error");
+        setPromoMessage(data.error || "Invalid promo code.");
+        setPromoUnitPrice(null);
+        return;
+      }
+
+      setPromoStatus("applied");
+      setPromoUnitPrice(data.data.unitPrice);
+      setPromoMessage(data.data.message || "Promo applied.");
+    } catch {
+      setPromoStatus("error");
+      setPromoMessage("Unable to validate promo code right now.");
+      setPromoUnitPrice(null);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -81,6 +141,9 @@ export default function ProductPurchaseClient({
           productId: product._id,
           orderType: selectedType,
           quantity,
+          ...(promoStatus === "applied" && promoCode.trim()
+            ? { promoCode: promoCode.trim() }
+            : {}),
           ...formData,
         }),
       });
@@ -129,6 +192,7 @@ export default function ProductPurchaseClient({
               onClick={() => {
                 setSelectedType("softcopy");
                 setShowCheckoutForm(false);
+                resetPromo();
               }}
               className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                 selectedType === "softcopy"
@@ -163,6 +227,7 @@ export default function ProductPurchaseClient({
               onClick={() => {
                 setSelectedType("paperback");
                 setShowCheckoutForm(false);
+                resetPromo();
               }}
               disabled={product.stock.paperback === 0}
               className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
@@ -234,6 +299,47 @@ export default function ProductPurchaseClient({
               </p>
             )}
           </div>
+
+          {showPromoField && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Promo code
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    if (promoStatus !== "checking") {
+                      setPromoStatus("idle");
+                      setPromoMessage("");
+                      setPromoUnitPrice(null);
+                    }
+                  }}
+                  placeholder="Enter promo code"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19]"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={promoStatus === "checking"}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {promoStatus === "checking" ? "..." : "Apply"}
+                </button>
+              </div>
+              {promoMessage && (
+                <p
+                  className={`mt-2 text-sm ${
+                    promoStatus === "applied" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {promoMessage}
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             onClick={() => setShowCheckoutForm(true)}
@@ -387,6 +493,12 @@ export default function ProductPurchaseClient({
                 <span className="text-gray-600">Quantity:</span>
                 <span className="font-medium text-gray-900">{quantity}</span>
               </div>
+              {promoStatus === "applied" && currentPrice < listPrice && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Promo price</span>
+                  <span>₦{currentPrice.toLocaleString()} each</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Total:</span>
                 <span className="text-[#90AC19]">

@@ -4,6 +4,7 @@ import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { auth } from "@/auth";
 import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import { getSessionUser } from "@/lib/session-user";
 import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
@@ -11,12 +12,11 @@ export async function GET() {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     // Authentication check
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       logSecurityEvent(
         AuditEventType.UNAUTHORIZED_ACCESS,
         undefined,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const currentUser = await UserRepository.findByEmail(session.user.email);
+    const currentUser = await getSessionUser(session);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

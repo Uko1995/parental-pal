@@ -33,7 +33,7 @@ interface RecentBooking {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const interval = searchParams.get("interval") || "month"; // "7days", "month", "year"
+    const interval = searchParams.get("interval") || "month"; // "month", "3months", "year"
 
     const bookingsCollection = await getCollection<BookingInterface>(
       "bookings"
@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     let previousPeriodStart: Date;
 
     switch (interval) {
-      case "7days":
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      case "3months":
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
         previousPeriodStart = new Date(
-          startDate.getTime() - 7 * 24 * 60 * 60 * 1000
+          startDate.getTime() - 90 * 24 * 60 * 60 * 1000
         );
         break;
       case "year":
@@ -197,48 +197,7 @@ export async function GET(request: NextRequest) {
     // Get revenue data for chart based on interval
     const revenueData: RevenueData[] = [];
 
-    if (interval === "7days") {
-      // 7 days - show daily revenue
-      const dailyRevenue = await bookingsCollection
-        .aggregate([
-          {
-            $match: {
-              createdAt: { $gte: startDate, $lte: now },
-              "payment.status": "paid",
-            },
-          },
-          {
-            $group: {
-              _id: {
-                year: { $year: "$createdAt" },
-                month: { $month: "$createdAt" },
-                day: { $dayOfMonth: "$createdAt" },
-              },
-              revenue: { $sum: "$pricing.totalAmount" },
-            },
-          },
-          { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
-        ])
-        .toArray();
-
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-        const dayData = dailyRevenue.find(
-          (item) =>
-            item._id.year === date.getFullYear() &&
-            item._id.month === date.getMonth() + 1 &&
-            item._id.day === date.getDate()
-        );
-
-        revenueData.push({
-          label: date.toLocaleDateString("en-US", {
-            weekday: "short",
-            day: "numeric",
-          }),
-          revenue: dayData?.revenue || 0,
-        });
-      }
-    } else if (interval === "month") {
+    if (interval === "month") {
       // 30 days - show daily revenue
       const dailyRevenue = await bookingsCollection
         .aggregate([
@@ -277,6 +236,60 @@ export async function GET(request: NextRequest) {
             day: "numeric",
           }),
           revenue: dayData?.revenue || 0,
+        });
+      }
+    } else if (interval === "3months") {
+      // 90 days - show weekly revenue
+      const dailyRevenue = await bookingsCollection
+        .aggregate([
+          {
+            $match: {
+              createdAt: { $gte: startDate, $lte: now },
+              "payment.status": "paid",
+            },
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: "$createdAt" },
+                month: { $month: "$createdAt" },
+                day: { $dayOfMonth: "$createdAt" },
+              },
+              revenue: { $sum: "$pricing.totalAmount" },
+            },
+          },
+          { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
+        ])
+        .toArray();
+
+      for (let w = 0; w < 13; w++) {
+        const weekStart = new Date(
+          startDate.getTime() + w * 7 * 24 * 60 * 60 * 1000
+        );
+        if (weekStart > now) break;
+
+        let weekRevenue = 0;
+        for (let d = 0; d < 7; d++) {
+          const date = new Date(
+            weekStart.getTime() + d * 24 * 60 * 60 * 1000
+          );
+          if (date > now) break;
+
+          const dayData = dailyRevenue.find(
+            (item) =>
+              item._id.year === date.getFullYear() &&
+              item._id.month === date.getMonth() + 1 &&
+              item._id.day === date.getDate()
+          );
+          weekRevenue += dayData?.revenue || 0;
+        }
+
+        revenueData.push({
+          label: weekStart.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          revenue: weekRevenue,
         });
       }
     } else if (interval === "year") {

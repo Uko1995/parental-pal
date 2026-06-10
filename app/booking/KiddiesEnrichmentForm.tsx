@@ -10,7 +10,6 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useSession } from "next-auth/react";
 import {
   UserIcon,
   PlusIcon,
@@ -27,6 +26,12 @@ import {
   extractChildIdsFromFormEntries,
   parseJsonField,
 } from "@/lib/rebook-form-utils";
+import {
+  applyParentContactPrefill,
+  createPrefilledChildrenFromProfile,
+  type ChildInfoDefaults,
+} from "@/lib/booking-profile-prefill";
+import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface KiddiesEnrichmentFormRef {
   resetForm: () => void;
@@ -52,9 +57,13 @@ const KiddiesEnrichmentForm = forwardRef<
   KiddiesEnrichmentFormRef,
   KiddiesEnrichmentFormProps
 >(({ initialTemplate }, ref) => {
-    const { data: session } = useSession();
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
+    const [parentPhone, setParentPhone] = useState("");
+    const [parentAddress, setParentAddress] = useState("");
+    const [childDefaults, setChildDefaults] = useState<
+      Record<string, ChildInfoDefaults>
+    >({});
 
     const [childrenData, setChildrenData] = useState<ChildEnrichmentData[]>([
       {
@@ -97,18 +106,56 @@ const KiddiesEnrichmentForm = forwardRef<
       if (initialTemplate.parentEmail) {
         setParentEmail(initialTemplate.parentEmail);
       }
+      if (initialTemplate.parentPhone) setParentPhone(initialTemplate.parentPhone);
+      if (initialTemplate.parentAddress || initialTemplate.address) {
+        setParentAddress(
+          initialTemplate.parentAddress || initialTemplate.address || "",
+        );
+      }
       if (initialTemplate.hourlyRate) {
         setHourlyRate(parseInt(initialTemplate.hourlyRate, 10) || 8000);
       }
     }, [initialTemplate]);
 
-    // Autofill parent info from session
-    useEffect(() => {
-      if (session?.user) {
-        if (session.user.name) setParentName(session.user.name);
-        if (session.user.email) setParentEmail(session.user.email);
+    const applyProfilePrefill = useCallback((profile: {
+      parentName: string;
+      parentEmail: string;
+      parentPhone: string;
+      parentAddress: string;
+      children: Array<{ name: string; age: number; gender?: string }>;
+    }) => {
+      applyParentContactPrefill(profile, {
+        setParentName,
+        setParentEmail,
+        setParentPhone,
+        setParentAddress,
+      });
+
+      if (profile.children.length > 0) {
+        const { ids, defaults } = createPrefilledChildrenFromProfile(
+          profile.children,
+        );
+        setChildrenData(
+          ids.map((id, index) => ({
+            id,
+            index,
+            selectedPrograms: [],
+            interests: "",
+            parentGoals: "",
+            eventDate: "",
+            startTime: "",
+            hours: 1,
+          })),
+        );
+        setChildDefaults(defaults);
       }
-    }, [session]);
+    }, []);
+
+    useBookingProfilePrefill({
+      initialTemplate,
+      templateAppliedRef,
+      onApply: applyProfilePrefill,
+    });
 
     // Fetch pricing from database
     useEffect(() => {
@@ -303,6 +350,8 @@ const KiddiesEnrichmentForm = forwardRef<
                 label="Phone Number"
                 required
                 placeholder="Enter phone number"
+                value={parentPhone}
+                onValueChange={setParentPhone}
               />
 
               <div className="form-control flex flex-col">
@@ -314,6 +363,8 @@ const KiddiesEnrichmentForm = forwardRef<
                 <input
                   type="text"
                   name="parentAddress"
+                  value={parentAddress}
+                  onChange={(e) => setParentAddress(e.target.value)}
                   className="input input-bordered border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800"
                   placeholder="Enter your address"
                   required
@@ -350,10 +401,12 @@ const KiddiesEnrichmentForm = forwardRef<
               {/* Basic Child Information */}
               <div className="mb-8">
                 <ChildInfoForm
+                  key={`${child.id}-${childDefaults[child.id]?.name ?? "new"}`}
                   childIndex={index}
                   childId={child.id}
                   onRemove={() => removeChild(child.id)}
                   showRemoveButton={false}
+                  defaults={childDefaults[child.id]}
                 />
               </div>
 

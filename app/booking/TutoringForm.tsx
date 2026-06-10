@@ -11,7 +11,6 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { useSession } from "next-auth/react";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
@@ -28,6 +27,12 @@ import {
   CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import {
+  applyParentContactPrefill,
+  createPrefilledChildrenFromProfile,
+  type ChildInfoDefaults,
+} from "@/lib/booking-profile-prefill";
+import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface TutoringFormRef {
   resetForm: () => void;
@@ -58,9 +63,13 @@ interface TutoringFormProps {
 
 const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   ({ initialTemplate }, ref) => {
-  const { data: session } = useSession();
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
+  const [parentAddress, setParentAddress] = useState("");
+  const [childDefaults, setChildDefaults] = useState<
+    Record<string, ChildInfoDefaults>
+  >({});
 
   const [childrenData, setChildrenData] = useState<ChildTutoringData[]>([
     {
@@ -122,6 +131,12 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
 
     if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
     if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
+    if (initialTemplate.parentPhone) setParentPhone(initialTemplate.parentPhone);
+    if (initialTemplate.parentAddress || initialTemplate.address) {
+      setParentAddress(
+        initialTemplate.parentAddress || initialTemplate.address || "",
+      );
+    }
     if (initialTemplate.startDate) setStartDate(initialTemplate.startDate);
     if (initialTemplate.tutoringLocation === "virtual") {
       setTutoringLocation("virtual");
@@ -159,13 +174,44 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     return () => window.clearTimeout(scheduleLoadTimer);
   }, [initialTemplate]);
 
-  // Autofill parent info from session
-  useEffect(() => {
-    if (session?.user) {
-      if (session.user.name) setParentName(session.user.name);
-      if (session.user.email) setParentEmail(session.user.email);
+  const applyProfilePrefill = useCallback((profile: {
+    parentName: string;
+    parentEmail: string;
+    parentPhone: string;
+    parentAddress: string;
+    children: Array<{ name: string; age: number; gender?: string }>;
+  }) => {
+    applyParentContactPrefill(profile, {
+      setParentName,
+      setParentEmail,
+      setParentPhone,
+      setParentAddress,
+    });
+
+    if (profile.children.length > 0) {
+      const { ids, defaults } = createPrefilledChildrenFromProfile(
+        profile.children,
+      );
+      setChildrenData(
+        ids.map((id, index) => ({
+          id,
+          index,
+          selectedSubjects: [],
+          academicLevel: "",
+          learningGoals: "",
+          totalHours: 0,
+          schedule: [],
+        })),
+      );
+      setChildDefaults(defaults);
     }
-  }, [session]);
+  }, []);
+
+  useBookingProfilePrefill({
+    initialTemplate,
+    templateAppliedRef,
+    onApply: applyProfilePrefill,
+  });
 
   // Fetch pricing from database
   useEffect(() => {
@@ -458,6 +504,8 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
             label="Phone Number"
             required
             placeholder="8012345678"
+            value={parentPhone}
+            onValueChange={setParentPhone}
           />
 
           <div>
@@ -469,6 +517,8 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
             <input
               type="text"
               name="address"
+              value={parentAddress}
+              onChange={(e) => setParentAddress(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
               placeholder="Enter your address"
               required
@@ -664,10 +714,12 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
 
           {/* Basic Child Info */}
           <ChildInfoForm
+            key={`${child.id}-${childDefaults[child.id]?.name ?? "new"}`}
             childIndex={index}
             childId={child.id}
             onRemove={() => removeChild(child.id)}
             showRemoveButton={false}
+            defaults={childDefaults[child.id]}
           />
 
           {/* Academic Level for this child */}

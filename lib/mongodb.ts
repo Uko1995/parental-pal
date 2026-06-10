@@ -52,8 +52,8 @@ function getClientPromise(): Promise<MongoClient> {
   return clientPromise;
 }
 
-// Database name extracted from URI or default
-const dbName = "parental-pal";
+// Database name from env: local dev uses parental-pal_dev, production uses parental-pal
+const dbName = process.env.MONGODB_DB_NAME || "parental-pal";
 
 // Helper function to get database
 export async function getDb(): Promise<Db> {

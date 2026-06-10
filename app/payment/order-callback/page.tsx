@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  EnvelopeIcon,
+  TruckIcon,
+} from "@heroicons/react/24/outline";
 
 export default function OrderCallbackPage() {
   const searchParams = useSearchParams();
@@ -91,23 +97,11 @@ export default function OrderCallbackPage() {
         {status === "success" && (
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#90AC19]/10 ring-4 ring-[#90AC19]/10">
+                <CheckCircleIcon className="h-9 w-9 text-[#90AC19]" strokeWidth={1.5} />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Payment Successful!
+                Payment Successful
               </h2>
               <p className="text-gray-600 mb-4">
                 Your order has been confirmed
@@ -141,10 +135,10 @@ export default function OrderCallbackPage() {
 
             {orderDetails?.orderType === "softcopy" ? (
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+                  <EnvelopeIcon className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
                   <p className="text-green-800 text-sm">
-                    📧 A download link has been sent to your email. Check your
-                    inbox!
+                    A download link has been sent to your email. Check your inbox.
                   </p>
                 </div>
                 <Link
@@ -157,10 +151,11 @@ export default function OrderCallbackPage() {
                 </Link>
               </div>
             ) : (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                <TruckIcon className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
                 <p className="text-blue-800 text-sm">
-                  📦 Your book will be delivered within 2 business days.
-                  We&apos;ll send you shipping updates via email.
+                  Your book will be delivered within 2 business days. We&apos;ll
+                  send you shipping updates via email.
                 </p>
               </div>
             )}
@@ -179,20 +174,8 @@ export default function OrderCallbackPage() {
         {status === "failed" && (
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 ring-4 ring-red-100">
+                <XCircleIcon className="h-9 w-9 text-red-500" strokeWidth={1.5} />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Payment Failed

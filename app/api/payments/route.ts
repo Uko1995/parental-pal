@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { BookingRepository } from "@/lib/BookingRepository";
-import { UserRepository } from "@/lib/UserRepository";
+import { getSessionUser } from "@/lib/session-user";
 
 export async function GET() {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
