@@ -10,6 +10,7 @@ export interface CartItemInterface {
   orderType: "softcopy" | "paperback";
   unitPrice: number;
   quantity: number;
+  productCategory?: string;
   addedAt: Date;
 }
 
@@ -91,6 +92,7 @@ export interface ClientCartItem {
   orderType: "softcopy" | "paperback";
   unitPrice: number;
   quantity: number;
+  productCategory?: string;
   addedAt: string;
 }
 

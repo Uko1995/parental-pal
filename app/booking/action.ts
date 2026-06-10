@@ -9,12 +9,35 @@ import { ObjectId } from "mongodb";
 import { BookingInterface } from "@/models/Booking";
 import { getDb } from "@/lib/mongodb";
 import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
+import {
+  type CampLocation,
+  resolveCampSeasonId,
+} from "@/lib/camp-seasons";
+import { calculateCampPricing } from "@/lib/camp-pricing";
+import { isHolidayCampServiceActive } from "@/app/services/actions";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
 
 function isServerDateInJune(now: Date): boolean {
   return now.getMonth() === 5;
+}
+
+function getCampScheduleBounds(
+  childrenCampData: Array<{
+    campWeeks?: Array<{ startDate: string; endDate: string }>;
+  }>,
+): { startDate: string; endDate: string } | null {
+  const allWeeks = childrenCampData.flatMap((child) => child.campWeeks ?? []);
+  if (allWeeks.length === 0) return null;
+
+  let startDate = allWeeks[0].startDate;
+  let endDate = allWeeks[0].endDate;
+  for (const week of allWeeks) {
+    if (week.startDate < startDate) startDate = week.startDate;
+    if (week.endDate > endDate) endDate = week.endDate;
+  }
+  return { startDate, endDate };
 }
 
 async function getTutoringRatesFromService() {
@@ -136,6 +159,22 @@ export async function registerChild(formData: FormData) {
 
 export type BookingFormEntries = FormDataEntries;
 
+const HOLIDAY_CAMP_UNAVAILABLE_MESSAGE =
+  "Holiday camp registrations are not currently open.";
+
+async function assertHolidayCampBookingAllowed(
+  serviceType: string | undefined,
+): Promise<void> {
+  if (serviceType !== "holiday-camps") {
+    return;
+  }
+
+  const isActive = await isHolidayCampServiceActive();
+  if (!isActive) {
+    throw new Error(HOLIDAY_CAMP_UNAVAILABLE_MESSAGE);
+  }
+}
+
 export async function previewBookingPrice(
   formEntries: BookingFormEntries,
 ): Promise<{ totalAmount: number; currency: string }> {
@@ -143,6 +182,9 @@ export async function previewBookingPrice(
   if (!session?.user?.email) {
     throw new Error("Unauthorized");
   }
+
+  const serviceType = formEntries.selectedService || formEntries.serviceType;
+  await assertHolidayCampBookingAllowed(serviceType);
 
   const user = await UserRepository.findByEmail(session.user.email);
   if (!user) {
@@ -170,6 +212,9 @@ export async function createBookingFromFormEntries(
     image?: string | null;
   },
 ) {
+  const serviceType = formEntries.selectedService || formEntries.serviceType;
+  await assertHolidayCampBookingAllowed(serviceType);
+
   const bookingData = await parseFormDataToBooking(
     formEntries,
     user._id!,
@@ -601,8 +646,14 @@ export async function parseFormDataToBooking(
     serviceData.dailyRate = parseInt(cleanedData.dailyRate) || 5000;
     serviceData.monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
   } else if (serviceType === "holiday-camps") {
+    const campSeasonId = resolveCampSeasonId(
+      (cleanedData.campSeasonId as string) || null,
+    );
+    const campLocation = cleanedData.campLocation as CampLocation | undefined;
+
     const childrenCampData: Array<{
       childId: string;
+      boarding?: boolean;
       campWeeks: Array<{
         startDate: string;
         endDate: string;
@@ -610,7 +661,8 @@ export async function parseFormDataToBooking(
       }>;
     }> = [];
 
-    const campStartDate = (cleanedData.campStartDate as string) || "2026-04-07";
+    const campStartDate =
+      (cleanedData.campStartDate as string) || "2026-04-07";
     const campEndDate = (cleanedData.campEndDate as string) || "2026-04-25";
 
     Array.from(childIds).forEach((childId) => {
@@ -630,6 +682,7 @@ export async function parseFormDataToBooking(
 
       childrenCampData.push({
         childId,
+        boarding: cleanedData[`boarding_${childId}`] === "true",
         campWeeks:
           parsedCampWeeks && parsedCampWeeks.length > 0
             ? parsedCampWeeks
@@ -643,12 +696,11 @@ export async function parseFormDataToBooking(
       });
     });
 
+    serviceData.campSeasonId = campSeasonId;
+    if (campLocation) {
+      serviceData.campLocation = campLocation;
+    }
     serviceData.childrenData = childrenCampData;
-    serviceData.weeklyRate =
-      parseInt((cleanedData.weeklyRate as string) || "") ||
-      parseInt((cleanedData.campFee as string) || "") ||
-      0;
-    serviceData.campFee = serviceData.weeklyRate;
     serviceData.totalWeeks = childrenCampData.reduce(
       (sum, child) => sum + child.campWeeks.length,
       0,
@@ -820,40 +872,50 @@ export async function parseFormDataToBooking(
       }
     }, 0);
   } else if (serviceType === "holiday-camps") {
-    const earlyBirdCutoff = new Date("2026-04-01T00:00:00Z").getTime();
-    const isEarlyBird = Date.now() < earlyBirdCutoff;
-    const weeklyRateFromForm =
-      parseInt(cleanedData.weeklyRate as string) ||
-      parseInt(cleanedData.campFee as string);
-    const effectiveWeeklyRate =
-      weeklyRateFromForm || (isEarlyBird ? 25000 : 30000);
+    const campSeasonId = resolveCampSeasonId(
+      (cleanedData.campSeasonId as string) || null,
+    );
+    const campLocation = cleanedData.campLocation as CampLocation | undefined;
 
-    const promoDiscount = parseInt(cleanedData.promoDiscount as string) || 0;
-    const promoCode = (cleanedData.promoCode || "").toString().trim();
     const childrenData = serviceData.childrenData as Array<{
+      childId: string;
+      boarding?: boolean;
       campWeeks?: Array<{
         startDate: string;
         endDate: string;
         weekNumber: number;
       }>;
     }>;
-    const totalSelectedWeeks = childrenData.reduce((sum, child) => {
-      return sum + (child.campWeeks?.length || 0);
-    }, 0);
 
-    pricingBaseAmount = totalSelectedWeeks * effectiveWeeklyRate;
-    pricingDiscount = Math.max(0, promoDiscount);
-    pricingDiscountReason = pricingDiscount
-      ? promoCode
-        ? `Promo code: ${promoCode}`
-        : "Early bird discount"
-      : isEarlyBird
-        ? "Early bird rate applied"
-        : undefined;
+    const pricingInputs = childrenData.map((child) => ({
+      childId: child.childId,
+      age: parseInt(cleanedData[`childAge_${child.childId}`] as string) || 0,
+      weekCount: child.campWeeks?.length || 0,
+      boarding: child.boarding ?? false,
+    }));
 
-    totalAmount = Math.max(0, pricingBaseAmount - pricingDiscount);
-    serviceData.weeklyRate = effectiveWeeklyRate;
-    serviceData.totalWeeks = totalSelectedWeeks;
+    const campPricing = calculateCampPricing(
+      campSeasonId,
+      campLocation ?? null,
+      pricingInputs,
+    );
+
+    pricingBaseAmount = campPricing.subtotal;
+    pricingDiscount = campPricing.discount;
+    pricingDiscountReason = campPricing.discount
+      ? `Multi-week discount (${campPricing.discountPercent}%)`
+      : undefined;
+    totalAmount = campPricing.total;
+
+    serviceData.weeklyRate = pricingInputs[0]
+      ? campPricing.lines[0]?.campFeePerWeek || 0
+      : 0;
+    serviceData.campFee = serviceData.weeklyRate;
+    serviceData.totalWeeks = campPricing.totalWeeks;
+    serviceData.promoDiscount = campPricing.discount;
+    if (campPricing.discount > 0) {
+      serviceData.promoCode = "MULTI-WEEK-10";
+    }
   } else if (serviceType === "space-rental") {
     totalAmount =
       (serviceData.baseRate as number) + (serviceData.cautionFee as number);
@@ -891,6 +953,15 @@ export async function parseFormDataToBooking(
     );
   }
 
+  const campScheduleBounds =
+    serviceType === "holiday-camps"
+      ? getCampScheduleBounds(
+          (serviceData.childrenData as Array<{
+            campWeeks?: Array<{ startDate: string; endDate: string }>;
+          }>) ?? [],
+        )
+      : null;
+
   // Create booking object
   const booking: BookingInterface = {
     userId,
@@ -905,8 +976,11 @@ export async function parseFormDataToBooking(
     serviceData,
     schedule: {
       startDate:
-        cleanedData.startDate || new Date().toISOString().split("T")[0],
-      endDate: cleanedData.endDate || undefined,
+        campScheduleBounds?.startDate ||
+        cleanedData.startDate ||
+        new Date().toISOString().split("T")[0],
+      endDate:
+        campScheduleBounds?.endDate || cleanedData.endDate || undefined,
       weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
       isRecurring: weekdays.length > 0,
       frequency:

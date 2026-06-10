@@ -175,8 +175,8 @@ const RevenueChart = memo(
   }) => {
     const intervals = useMemo(
       () => [
-        { label: "7 Days", value: "7days" },
         { label: "1 Month", value: "month" },
+        { label: "3 Months", value: "3months" },
         { label: "1 Year", value: "year" },
       ],
       []
@@ -246,7 +246,13 @@ const RevenueChart = memo(
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 12 }}
-                  interval={selectedInterval === "month" ? 2 : 0}
+                  interval={
+                    selectedInterval === "month"
+                      ? 2
+                      : selectedInterval === "3months"
+                        ? 1
+                        : 0
+                  }
                 />
                 <YAxis
                   tickFormatter={(value) =>

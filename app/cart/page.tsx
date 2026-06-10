@@ -33,6 +33,9 @@ interface Cart {
   couponCode?: string;
   couponDiscount?: number;
   couponType?: "percentage" | "fixed";
+  promoApplied?: boolean;
+  promoMessage?: string;
+  showCouponCode?: boolean;
   subtotal: number;
   discount: number;
   total: number;
@@ -446,10 +449,10 @@ export default function CartPage() {
               </h2>
 
               {/* Coupon Code */}
-              {!cart.couponCode ? (
+              {!cart.promoApplied && !cart.couponCode ? (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Have a coupon?
+                    Promo code
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -478,13 +481,17 @@ export default function CartPage() {
                   <div>
                     <p className="text-green-800 font-medium text-sm">
                       <TagIcon className="w-4 h-4 inline mr-1" />
-                      {cart.couponCode}
+                      {cart.promoMessage ||
+                        cart.couponCode ||
+                        "Promo applied"}
                     </p>
-                    <p className="text-green-600 text-xs">
-                      {cart.couponType === "percentage"
-                        ? `${cart.couponDiscount}% off`
-                        : `₦${cart.couponDiscount?.toLocaleString()} off`}
-                    </p>
+                    {!cart.promoMessage && cart.couponCode && (
+                      <p className="text-green-600 text-xs">
+                        {cart.couponType === "percentage"
+                          ? `${cart.couponDiscount}% off`
+                          : `₦${cart.couponDiscount?.toLocaleString()} off`}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={removeCoupon}

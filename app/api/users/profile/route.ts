@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import { getSessionUser } from "@/lib/session-user";
 import {
   sanitizeObject,
   sanitizeUserData,
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       logAuthEvent(
         AuditEventType.UNAUTHORIZED_ACCESS,
         undefined,
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user profile
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -97,7 +98,7 @@ export async function PATCH(request: NextRequest) {
 
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       logAuthEvent(
         AuditEventType.UNAUTHORIZED_ACCESS,
         undefined,
@@ -114,9 +115,37 @@ export async function PATCH(request: NextRequest) {
     const updateData = sanitizeObject(rawData);
 
     // Get user first to get the ID
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const rawEmail =
+      typeof updateData.email === "string" ? updateData.email.trim() : "";
+    const currentEmail = user.userData?.user?.email?.trim() || "";
+    let nextEmail = currentEmail;
+
+    if (rawEmail && rawEmail.toLowerCase() !== currentEmail.toLowerCase()) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(rawEmail)) {
+        return NextResponse.json(
+          { error: "Please enter a valid email address" },
+          { status: 400 },
+        );
+      }
+
+      const existingUser = await UserRepository.findByEmail(rawEmail);
+      if (
+        existingUser &&
+        existingUser._id!.toString() !== user._id!.toString()
+      ) {
+        return NextResponse.json(
+          { error: "This email is already in use" },
+          { status: 409 },
+        );
+      }
+
+      nextEmail = rawEmail;
     }
 
     // Update user profile using UserRepository
@@ -125,7 +154,8 @@ export async function PATCH(request: NextRequest) {
         ...user.userData,
         user: {
           ...user.userData.user,
-          name: updateData.name as string,
+          name: (updateData.name as string) || user.userData.user.name,
+          email: nextEmail,
         },
       },
       phone: updateData.phone as string,
@@ -159,9 +189,15 @@ export async function PATCH(request: NextRequest) {
     // Invalidate users cache immediately
     revalidateTag(CACHE_TAGS.USERS);
 
+    const emailChanged =
+      nextEmail.toLowerCase() !== currentEmail.toLowerCase();
+
     return NextResponse.json({
       message: "Profile updated successfully",
       user: sanitizeUserData(updatedUser),
+      emailChanged,
+      userId: user._id!.toString(),
+      email: nextEmail,
     });
   } catch (error) {
     console.error("Error updating user profile:", error);

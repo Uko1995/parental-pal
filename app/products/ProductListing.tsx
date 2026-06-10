@@ -12,6 +12,8 @@ import {
   ChevronDownIcon,
   ShoppingCartIcon,
   HeartIcon,
+  DocumentTextIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { CartItem } from "../cart/page";
@@ -85,6 +87,8 @@ export default function ProductListing({ products }: ProductListingProps) {
   const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set());
   const [loadingCart, setLoadingCart] = useState<string | null>(null);
   const [loadingWishlist, setLoadingWishlist] = useState<string | null>(null);
+  const [formatPickerProduct, setFormatPickerProduct] =
+    useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -209,7 +213,7 @@ export default function ProductListing({ products }: ProductListingProps) {
     e: React.MouseEvent,
     productId: string,
     orderType: "softcopy" | "paperback"
-  ) => {
+  ): Promise<boolean> => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -221,7 +225,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         const product = products.find((p) => p._id === productId);
         if (!product) {
           toast.error("Product not found");
-          return;
+          return false;
         }
 
         const unitPrice =
@@ -264,6 +268,7 @@ export default function ProductListing({ products }: ProductListingProps) {
         localStorage.setItem("guest_cart", JSON.stringify(guestCart));
         toast.success("Added to cart!");
         window.dispatchEvent(new Event("cart-updated"));
+        return true;
       } else {
         // Handle authenticated users with API
         const response = await fetch("/api/cart", {
@@ -276,15 +281,37 @@ export default function ProductListing({ products }: ProductListingProps) {
         if (data.success) {
           toast.success("Added to cart!");
           window.dispatchEvent(new Event("cart-updated"));
-        } else {
-          toast.error(data.error || "Failed to add to cart");
+          return true;
         }
+
+        toast.error(data.error || "Failed to add to cart");
+        return false;
       }
     } catch (error) {
       console.error("Add to cart error:", error);
       toast.error("Failed to add to cart");
+      return false;
     } finally {
       setLoadingCart(null);
+    }
+  };
+
+  const handleFormatSelect = async (
+    orderType: "softcopy" | "paperback",
+  ) => {
+    if (!formatPickerProduct) return;
+
+    const success = await handleAddToCart(
+      {
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      } as React.MouseEvent,
+      formatPickerProduct._id,
+      orderType,
+    );
+
+    if (success) {
+      setFormatPickerProduct(null);
     }
   };
 
@@ -703,56 +730,25 @@ export default function ProductListing({ products }: ProductListingProps) {
 
               {/* Action Buttons */}
               <div className="flex gap-2 px-4 pb-4 pt-1">
-                {/* Add to Cart Dropdown */}
                 {(product.pricing.softcopy.available ||
                   product.pricing.paperback.available) && (
-                  <div className="dropdown dropdown-top flex-1">
-                    <button
-                      tabIndex={0}
-                      className="btn btn-sm w-full gap-2 border-none bg-gray-900 text-white hover:bg-gray-800"
-                      disabled={loadingCart === product._id}
-                    >
-                      {loadingCart === product._id ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : (
-                        <ShoppingCartIcon className="w-4 h-4" />
-                      )}
-                      Add to Cart
-                    </button>
-                    <ul
-                      tabIndex={0}
-                      className="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-52 mb-2"
-                    >
-                      {product.pricing.softcopy.available && (
-                        <li>
-                          <button
-                            onClick={(e) =>
-                              handleAddToCart(e, product._id, "softcopy")
-                            }
-                          >
-                            <span>
-                              PDF - ₦
-                              {product.pricing.softcopy.price.toLocaleString()}
-                            </span>
-                          </button>
-                        </li>
-                      )}
-                      {product.pricing.paperback.available && (
-                        <li>
-                          <button
-                            onClick={(e) =>
-                              handleAddToCart(e, product._id, "paperback")
-                            }
-                          >
-                            <span>
-                              Paperback - ₦
-                              {product.pricing.paperback.price.toLocaleString()}
-                            </span>
-                          </button>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setFormatPickerProduct(product);
+                    }}
+                    className="btn btn-sm flex-1 gap-2 border-none bg-gray-900 text-white hover:bg-gray-800"
+                    disabled={loadingCart === product._id}
+                  >
+                    {loadingCart === product._id ? (
+                      <span className="loading loading-spinner loading-xs"></span>
+                    ) : (
+                      <ShoppingCartIcon className="w-4 h-4" />
+                    )}
+                    Add to Cart
+                  </button>
                 )}
 
                 {/* Wishlist Button */}
@@ -777,6 +773,129 @@ export default function ProductListing({ products }: ProductListingProps) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {formatPickerProduct && (
+        <div className="modal modal-open z-50">
+          <div className="modal-box max-w-lg p-0 overflow-hidden border border-gray-200 shadow-2xl">
+            <div className="bg-[#90AC19] px-6 py-5 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-wide text-white/80">
+                    Choose format
+                  </p>
+                  <h3 className="mt-1 text-xl font-bold leading-snug">
+                    {formatPickerProduct.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-white/90">
+                    by {formatPickerProduct.author}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormatPickerProduct(null)}
+                  className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20"
+                  aria-label="Close format picker"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-6">
+              <p className="text-center text-sm font-medium text-gray-600">
+                Which version would you like to add to your cart?
+              </p>
+
+              <div className="space-y-3">
+                {formatPickerProduct.pricing.softcopy.available && (
+                  <button
+                    type="button"
+                    onClick={() => handleFormatSelect("softcopy")}
+                    disabled={loadingCart === formatPickerProduct._id}
+                    className="group w-full rounded-xl border-2 border-[#90AC19]/30 bg-[#90AC19]/5 p-4 text-left transition-all hover:border-[#90AC19] hover:bg-[#90AC19]/10 hover:shadow-md disabled:opacity-60"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#90AC19] text-white">
+                        <DocumentTextIcon className="h-6 w-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-lg font-bold text-gray-900">
+                            PDF (Softcopy)
+                          </p>
+                          <p className="text-lg font-bold text-[#90AC19]">
+                            ₦
+                            {formatPickerProduct.pricing.softcopy.price.toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Instant download after purchase
+                        </p>
+                        <span className="mt-2 inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                          Instant delivery
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                )}
+
+                {formatPickerProduct.pricing.paperback.available && (
+                  <button
+                    type="button"
+                    onClick={() => handleFormatSelect("paperback")}
+                    disabled={loadingCart === formatPickerProduct._id}
+                    className="group w-full rounded-xl border-2 border-[#E8931A]/30 bg-[#E8931A]/5 p-4 text-left transition-all hover:border-[#E8931A] hover:bg-[#E8931A]/10 hover:shadow-md disabled:opacity-60"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E8931A] text-white">
+                        <BookOpenIcon className="h-6 w-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-lg font-bold text-gray-900">
+                            Paperback
+                          </p>
+                          <p className="text-lg font-bold text-[#E8931A]">
+                            ₦
+                            {formatPickerProduct.pricing.paperback.price.toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Physical book delivered to your address
+                        </p>
+                        <span className="mt-2 inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                          2-day delivery
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {loadingCart === formatPickerProduct._id && (
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Adding to cart...
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setFormatPickerProduct(null)}
+                className="btn btn-ghost w-full text-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="modal-backdrop"
+            aria-label="Close format picker"
+            onClick={() => setFormatPickerProduct(null)}
+          />
         </div>
       )}
     </div>

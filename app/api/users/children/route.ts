@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
+import { getSessionUser } from "@/lib/session-user";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
@@ -9,12 +10,11 @@ export async function GET() {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user with children
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -137,8 +137,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user
-    const user = await UserRepository.findByEmail(session.user.email);
+    const user = await getSessionUser(session);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

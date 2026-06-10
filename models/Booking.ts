@@ -63,6 +63,8 @@ export interface BookingInterface {
         endDate: string;
         weekNumber: number;
       }>;
+      boarding?: boolean;
+      camperId?: string;
       // Homeschooling specific
       selectedSubjects?: string[];
       gradeLevel?: string;
@@ -99,6 +101,11 @@ export interface BookingInterface {
       endDate: string;
       weekNumber: number;
     }>;
+    campSeasonId?: string;
+    campLocation?: string;
+    camperIds?: string[];
+    boarding?: boolean;
+    totalWeeks?: number;
     weeklyRate?: number;
 
     // Event/Space rental specific

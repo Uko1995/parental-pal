@@ -84,6 +84,8 @@ interface Booking {
         endDate: string;
         weekNumber: number;
       }>;
+      camperId?: string;
+      boarding?: boolean;
       // Homeschooling specific
       selectedSubjects?: string[];
       gradeLevel?: string;
@@ -1017,6 +1019,11 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
                           <h6 className="font-semibold text-sm mb-2">
                             {child.name} (Age {child.age})
                           </h6>
+                          {childData?.camperId && (
+                            <p className="text-xs font-mono font-semibold text-primary mb-2">
+                              Camper ID: {childData.camperId}
+                            </p>
+                          )}
                           <div className="space-y-2">
                             {childData?.campWeeks &&
                               childData.campWeeks.length > 0 && (

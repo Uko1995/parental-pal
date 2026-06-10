@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getCollection, getDb } from "../lib/mongodb";
 import { BookingInterface, BookingSchema } from "../models/Booking";
+import { enrichBookingWithHtrCamperIds } from "../lib/camper-id";
 
 // Helper interfaces
 interface RepeatCustomer {
@@ -97,6 +98,8 @@ export class BookingRepository {
       createdAt: now,
       updatedAt: now,
     };
+
+    await enrichBookingWithHtrCamperIds(booking);
 
     try {
       const result = await collection.insertOne(booking);

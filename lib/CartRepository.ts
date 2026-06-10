@@ -1,6 +1,10 @@
 import { ObjectId } from "mongodb";
 import { getCollection, getDb } from "./mongodb";
 import { CartInterface, CartItemInterface, CartSchema } from "../models/Cart";
+import {
+  getEffectiveCartItemUnitPrice,
+  isBdgPromoCode,
+} from "./product-promotions";
 
 export class CartRepository {
   private static collectionName = "carts";
@@ -283,8 +287,23 @@ export class CartRepository {
   } {
     const subtotal = cart.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
-      0
+      0,
     );
+
+    if (isBdgPromoCode(cart.couponCode)) {
+      const total = cart.items.reduce(
+        (sum, item) =>
+          sum +
+          getEffectiveCartItemUnitPrice(item, cart.couponCode) * item.quantity,
+        0,
+      );
+
+      return {
+        subtotal,
+        discount: subtotal - total,
+        total,
+      };
+    }
 
     let discount = 0;
     if (cart.couponDiscount && cart.couponType) {
@@ -295,7 +314,6 @@ export class CartRepository {
       }
     }
 
-    // Ensure discount doesn't exceed subtotal
     discount = Math.min(discount, subtotal);
 
     return {

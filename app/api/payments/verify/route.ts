@@ -6,6 +6,8 @@ import { UserInterface } from "@/models/User";
 import { getCollection } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import { getHtrCamperEmailEntries } from "@/lib/camper-id";
+import { CAMP_SEASONS } from "@/lib/camp-seasons";
 
 export async function POST(req: NextRequest) {
   const payment = await getCollection<PaymentInterface>("payments");
@@ -100,6 +102,12 @@ export async function POST(req: NextRequest) {
         });
 
         if (user?.userData?.user?.email) {
+          const campers = getHtrCamperEmailEntries(updatedBooking);
+          const serviceLabel =
+            campers.length > 0
+              ? CAMP_SEASONS["holidays-that-rock-2026"].name
+              : updatedBooking.serviceType;
+
           const emailResponse = await fetch(
             `${process.env.NEXTAUTH_URL}/api/email` ||
               "http://localhost:3000/api/email",
@@ -118,7 +126,8 @@ export async function POST(req: NextRequest) {
                   amount: (paystackData.data?.amount || 0) / 100,
                   currency: paystackData.data?.currency || "NGN",
                   method: "Card Payment",
-                  serviceType: updatedBooking.serviceType,
+                  serviceType: serviceLabel,
+                  campers: campers.length > 0 ? campers : undefined,
                 },
               }),
             }

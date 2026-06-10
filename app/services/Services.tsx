@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getPublicServices, ClientServiceForDisplay } from "./actions";
+import {
+  getPublicServices,
+  getVisiblePromoCampSeason,
+  ClientServiceForDisplay,
+} from "./actions";
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -9,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatBillingSuffix, isEduvantaService } from "@/lib/service-utils";
 import Image from "next/image";
+import ActiveCampPromo from "@/components/ActiveCampPromo";
 
 // Helper function to format pricing
 const formatPricing = (service: ClientServiceForDisplay) => {
@@ -40,7 +45,10 @@ const formatCurrency = (amount: number, currency: string = "NGN") => {
 };
 
 export default async function Services() {
-  const services = await getPublicServices();
+  const [services, promoSeason] = await Promise.all([
+    getPublicServices(),
+    getVisiblePromoCampSeason(),
+  ]);
 
   // WhatsApp consultation link
   const whatsappNumber = "+2348065394795";
@@ -63,6 +71,8 @@ export default async function Services() {
             designed to support your family&apos;s journey.
           </p>
         </div>
+
+        {promoSeason && <ActiveCampPromo seasonId={promoSeason} />}
 
         {/* Services Grid - Modern Card Design */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">

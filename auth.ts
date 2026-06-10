@@ -269,16 +269,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return true;
     },
-    async session({ session }) {
-      if (session.user?.email) {
+    async session({ session, token }) {
+      if (session.user) {
+        if (token.id) {
+          session.user.id = token.id as string;
+        }
+
         try {
-          const dbUser = await UserRepository.findByEmail(session.user.email);
+          let dbUser = null;
+          if (token.id) {
+            dbUser = await UserRepository.findById(token.id as string);
+          }
+          if (!dbUser && token.email) {
+            dbUser = await UserRepository.findByEmail(token.email as string);
+          }
 
           if (dbUser) {
             session.user.id = dbUser._id!.toString();
+            session.user.email = dbUser.userData?.user?.email ?? session.user.email;
+            session.user.name = dbUser.userData?.user?.name ?? session.user.name;
             session.user.role = dbUser.role;
             session.user.membershipType = dbUser.membershipType;
             session.user.isActive = dbUser.isActive;
+          } else if (token.email) {
+            session.user.email = token.email as string;
           }
         } catch (error) {
           console.error("Error fetching user in session:", error);
@@ -286,10 +300,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
-    async jwt({ token, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (account?.provider === "google") {
         token.googleId = account.providerAccountId;
       }
+
+      if (user) {
+        if (user.id) {
+          token.id = user.id;
+        } else if (user.email) {
+          const dbUser = await UserRepository.findByEmail(user.email);
+          if (dbUser) {
+            token.id = dbUser._id!.toString();
+          }
+        }
+        if (user.role) token.role = user.role;
+      }
+
+      if (trigger === "update" && session) {
+        const update = session as { email?: string; name?: string; id?: string };
+        if (update.id) token.id = update.id;
+        if (update.email) token.email = update.email;
+        if (update.name) token.name = update.name;
+      }
+
       return token;
     },
   },

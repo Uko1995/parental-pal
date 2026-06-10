@@ -5,6 +5,10 @@ import CartRepository from "@/lib/CartRepository";
 import OrderRepository from "@/lib/OrderRepository";
 import ProductRepository from "@/lib/ProductRepository";
 import CouponRepository from "@/lib/CouponRepository";
+import {
+  getEffectiveCartItemUnitPrice,
+  isBdgPromoCode,
+} from "@/lib/product-promotions";
 import { OrderInterface } from "@/models/Order";
 import { ObjectId } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
@@ -97,18 +101,32 @@ export async function POST(request: NextRequest) {
       const product = await ProductRepository.getProductById(item.productId);
       if (!product) continue;
 
-      // Calculate item price with proportional discount
-      const itemSubtotal = item.unitPrice * item.quantity;
-      let itemDiscount = 0;
+      const productCategory = product.category;
+      let unitPrice = item.unitPrice;
+      let itemTotal: number;
 
-      if (totals.discount > 0) {
-        // Apply discount proportionally
-        itemDiscount = Math.round(
-          (itemSubtotal / totals.subtotal) * totals.discount
+      if (isBdgPromoCode(cart.couponCode)) {
+        unitPrice = getEffectiveCartItemUnitPrice(
+          {
+            orderType: item.orderType,
+            unitPrice: item.unitPrice,
+            productCategory,
+          },
+          cart.couponCode,
         );
-      }
+        itemTotal = unitPrice * item.quantity;
+      } else {
+        const itemSubtotal = item.unitPrice * item.quantity;
+        let itemDiscount = 0;
 
-      const itemTotal = itemSubtotal - itemDiscount;
+        if (totals.discount > 0) {
+          itemDiscount = Math.round(
+            (itemSubtotal / totals.subtotal) * totals.discount,
+          );
+        }
+
+        itemTotal = itemSubtotal - itemDiscount;
+      }
 
       const orderData: Omit<
         OrderInterface,
@@ -122,7 +140,7 @@ export async function POST(request: NextRequest) {
         productTitle: item.productTitle,
         productThumbnail: item.productThumbnail,
         orderType: item.orderType,
-        unitPrice: item.unitPrice,
+        unitPrice,
         quantity: item.quantity,
         totalAmount: itemTotal,
         currency: "NGN",
@@ -167,8 +185,12 @@ export async function POST(request: NextRequest) {
       orders.push(order);
     }
 
-    // Record coupon usage if applied
-    if (cart.couponCode && totals.discount > 0) {
+    // Record coupon usage if applied (database coupons only)
+    if (
+      cart.couponCode &&
+      totals.discount > 0 &&
+      !isBdgPromoCode(cart.couponCode)
+    ) {
       const coupon = await CouponRepository.getCouponByCode(cart.couponCode);
       if (coupon && coupon._id) {
         // Record usage for first order (we track by user)

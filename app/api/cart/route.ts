@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import CartRepository from "@/lib/CartRepository";
 import ProductRepository from "@/lib/ProductRepository";
+import { getCartPromoDisplay } from "@/lib/product-promotions";
 import { ObjectId } from "mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
@@ -28,6 +29,7 @@ export async function GET() {
 
     const cart = await CartRepository.getOrCreateCart(session.user.id);
     const totals = CartRepository.calculateTotals(cart);
+    const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     // Serialize for client
     const serializedCart = {
@@ -38,9 +40,10 @@ export async function GET() {
         productId: item.productId.toString(),
         addedAt: item.addedAt.toISOString(),
       })),
-      couponCode: cart.couponCode,
+      couponCode: promoDisplay.showCouponCode ? cart.couponCode : undefined,
       couponDiscount: cart.couponDiscount,
       couponType: cart.couponType,
+      ...promoDisplay,
       ...totals,
       createdAt: cart.createdAt.toISOString(),
       updatedAt: cart.updatedAt.toISOString(),
@@ -139,6 +142,7 @@ export async function POST(request: NextRequest) {
       orderType: body.orderType as "softcopy" | "paperback",
       unitPrice: price,
       quantity: body.quantity || 1,
+      productCategory: product.category,
     };
 
     const cart = await CartRepository.addItem(session.user.id, cartItem);
@@ -151,6 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     const totals = CartRepository.calculateTotals(cart);
+    const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     const serializedCart = {
       _id: cart._id?.toString(),
@@ -160,9 +165,10 @@ export async function POST(request: NextRequest) {
         productId: item.productId.toString(),
         addedAt: item.addedAt.toISOString(),
       })),
-      couponCode: cart.couponCode,
+      couponCode: promoDisplay.showCouponCode ? cart.couponCode : undefined,
       couponDiscount: cart.couponDiscount,
       couponType: cart.couponType,
+      ...promoDisplay,
       ...totals,
       createdAt: cart.createdAt.toISOString(),
       updatedAt: cart.updatedAt.toISOString(),
@@ -223,6 +229,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const totals = CartRepository.calculateTotals(cart);
+    const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     const serializedCart = {
       _id: cart._id?.toString(),
@@ -232,9 +239,10 @@ export async function PUT(request: NextRequest) {
         productId: item.productId.toString(),
         addedAt: item.addedAt.toISOString(),
       })),
-      couponCode: cart.couponCode,
+      couponCode: promoDisplay.showCouponCode ? cart.couponCode : undefined,
       couponDiscount: cart.couponDiscount,
       couponType: cart.couponType,
+      ...promoDisplay,
       ...totals,
       createdAt: cart.createdAt.toISOString(),
       updatedAt: cart.updatedAt.toISOString(),
@@ -286,6 +294,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       const totals = CartRepository.calculateTotals(cart);
+      const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
       const serializedCart = {
         _id: cart._id?.toString(),
@@ -295,9 +304,10 @@ export async function DELETE(request: NextRequest) {
           productId: item.productId.toString(),
           addedAt: item.addedAt.toISOString(),
         })),
-        couponCode: cart.couponCode,
+        couponCode: promoDisplay.showCouponCode ? cart.couponCode : undefined,
         couponDiscount: cart.couponDiscount,
         couponType: cart.couponType,
+        ...promoDisplay,
         ...totals,
         createdAt: cart.createdAt.toISOString(),
         updatedAt: cart.updatedAt.toISOString(),

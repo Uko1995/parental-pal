@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
+import { getSessionUser } from "@/lib/session-user";
 import { getDb } from "@/lib/mongodb";
 import {
   buildRebookTemplate,
@@ -28,11 +29,11 @@ export async function getOwnedBooking(
   bookingId: string,
 ): Promise<GetOwnedBookingResult> {
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id && !session?.user?.email) {
     return { error: "Unauthorized", status: 401 };
   }
 
-  const user = await UserRepository.findByEmail(session.user.email);
+  const user = await getSessionUser(session);
   if (!user) {
     return { error: "User not found", status: 404 };
   }

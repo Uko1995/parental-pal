@@ -32,6 +32,8 @@ import { initializeBookingPayment } from "@/lib/booking-payment";
 import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import Link from "next/link";
+import { resolveCampSeasonId, type CampSeasonId } from "@/lib/camp-seasons";
+import { BookingProfileProvider } from "./BookingProfileContext";
 
 interface AboutUs {
   label: string;
@@ -66,8 +68,11 @@ interface BookingServiceOption {
 export default function BookingForm({ submitAction }: BookingFormProps) {
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
+  const campParam = searchParams.get("camp");
   const rebookParam = searchParams.get("rebook");
   const actionParam = searchParams.get("action");
+
+  const campSeasonId: CampSeasonId = resolveCampSeasonId(campParam);
 
   // State management
   const [selectedService, setSelectedService] = useState("");
@@ -351,7 +356,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       }
 
       console.error("Booking/Payment error:", error);
-      toast.error("Failed to process booking. Please try again.");
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to process booking. Please try again.",
+      );
     }
   };
 
@@ -403,11 +412,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           });
         }, 800); // Increased delay to allow top scroll to complete first
       }
-    } else if (urlService) {
-      // Normal URL service parameter update
-      setSelectedService(urlService);
+    } else if (urlService || campParam === "holidays-that-rock-2026") {
+      setSelectedService(urlService || "holiday-camps");
     }
-  }, [urlService, actionParam]);
+  }, [urlService, campParam, actionParam]);
 
   useEffect(() => {
     const loadRebookTemplate = async () => {
@@ -614,6 +622,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       return (
         <HolidayCampForm
           ref={holidayCampFormRef}
+          campSeasonId={campSeasonId}
           onTotalChange={setTotalAmount}
           initialTemplate={rebookTemplate}
         />
@@ -651,6 +660,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   };
 
   return (
+    <BookingProfileProvider>
     <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
@@ -1012,5 +1022,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         </Form>
       </div>
     </div>
+    </BookingProfileProvider>
   );
 }

@@ -258,9 +258,9 @@ export async function POST(request: NextRequest) {
           </div>
         `,
       });
-      console.log("✅ Verification email sent successfully");
+      console.log("Verification email sent successfully");
     } catch (emailError) {
-      console.error("❌ Error sending verification email:", emailError);
+      console.error(" Error sending verification email:", emailError);
       // Don't fail registration if email fails
     }
 

@@ -92,6 +92,8 @@ interface Booking {
         endDate: string;
         weekNumber: number;
       }>;
+      camperId?: string;
+      boarding?: boolean;
       // Homeschooling specific
       selectedSubjects?: string[];
       gradeLevel?: string;
@@ -136,6 +138,10 @@ interface Booking {
       endDate: string;
       weekNumber: number;
     }>;
+    campSeasonId?: string;
+    campLocation?: string;
+    camperIds?: string[];
+    camperId?: string;
     weeklyRate?: number;
 
     // Event/Space rental specific
@@ -1025,6 +1031,12 @@ export default function ViewBookingModal({
                                 <div className="text-sm text-gray-600">
                                   Age {child.age}
                                 </div>
+                                {"camperId" in (childData || {}) &&
+                                  childData?.camperId && (
+                                    <div className="text-xs font-mono font-semibold text-primary mt-1">
+                                      Camper ID: {childData.camperId}
+                                    </div>
+                                  )}
                               </div>
                             </div>
 
