@@ -11,6 +11,7 @@ import {
   resetLoginAttempts,
 } from "./lib/account-lockout-mongodb";
 import { logAuthEvent, AuditEventType } from "./lib/audit-logger-mongodb";
+import { isValidObjectId } from "./lib/security";
 dotenv.config({ path: ".env.local" });
 
 declare module "next-auth" {
@@ -277,7 +278,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         try {
           let dbUser = null;
-          if (token.id) {
+          if (token.id && isValidObjectId(token.id as string)) {
             dbUser = await UserRepository.findById(token.id as string);
           }
           if (!dbUser && token.email) {
@@ -293,6 +294,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             session.user.isActive = dbUser.isActive;
           } else if (token.email) {
             session.user.email = token.email as string;
+            if (token.role) {
+              session.user.role = token.role as string;
+            }
           }
         } catch (error) {
           console.error("Error fetching user in session:", error);
@@ -306,15 +310,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       if (user) {
-        if (user.id) {
-          token.id = user.id;
-        } else if (user.email) {
+        if (user.email) {
           const dbUser = await UserRepository.findByEmail(user.email);
-          if (dbUser) {
-            token.id = dbUser._id!.toString();
+          if (dbUser?._id) {
+            token.id = dbUser._id.toString();
+            token.role = dbUser.role;
           }
+        } else if (user.id && isValidObjectId(user.id)) {
+          token.id = user.id;
         }
+
         if (user.role) token.role = user.role;
+      } else if (
+        token.email &&
+        (!token.id || !isValidObjectId(token.id as string))
+      ) {
+        const dbUser = await UserRepository.findByEmail(token.email as string);
+        if (dbUser?._id) {
+          token.id = dbUser._id.toString();
+          token.role = dbUser.role;
+        }
       }
 
       if (trigger === "update" && session) {
