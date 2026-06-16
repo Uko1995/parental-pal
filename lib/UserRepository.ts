@@ -61,6 +61,32 @@ function normalizeGender(value: unknown): "male" | "female" {
   return normalizeString(value).toLowerCase() === "female" ? "female" : "male";
 }
 
+function normalizeRole(value: unknown): "admin" | "parent" | "tutor" {
+  const role = normalizeString(value).toLowerCase();
+  if (role === "admin" || role === "tutor") {
+    return role;
+  }
+  return "parent";
+}
+
+function mapUserDocument(user: UserInterface | null): UserInterface | null {
+  if (!user) return null;
+
+  return {
+    ...user,
+    role: normalizeRole(user.role),
+    userData: {
+      ...user.userData,
+      user: {
+        ...user.userData.user,
+        name: normalizeOptionalString(user.userData.user.name) ?? null,
+        email: normalizeOptionalString(user.userData.user.email) ?? null,
+        image: normalizeOptionalString(user.userData.user.image) ?? null,
+      },
+    },
+  };
+}
+
 export class UserRepository {
   private static collectionName = "users";
 
@@ -164,18 +190,33 @@ export class UserRepository {
   // Find user by ID
   static async findById(id: string | ObjectId): Promise<UserInterface | null> {
     const collection = await getCollection(this.collectionName);
-    const objectId = typeof id === "string" ? new ObjectId(id) : id;
-    return (await collection.findOne({
+    const idString = typeof id === "string" ? id : id.toString();
+
+    if (!/^[a-f\d]{24}$/i.test(idString)) {
+      return null;
+    }
+
+    const objectId = new ObjectId(idString);
+    const user = (await collection.findOne({
       _id: objectId,
     })) as UserInterface | null;
+
+    return mapUserDocument(user);
   }
 
   // Find user by email
   static async findByEmail(email: string): Promise<UserInterface | null> {
     const collection = await getCollection(this.collectionName);
-    return (await collection.findOne({
-      "userData.user.email": email,
+    const normalizedEmail = email.trim();
+
+    const user = (await collection.findOne({
+      "userData.user.email": {
+        $regex: `^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        $options: "i",
+      },
     })) as UserInterface | null;
+
+    return mapUserDocument(user);
   }
 
   // Find user by Google ID
