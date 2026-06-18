@@ -57,7 +57,9 @@ interface Booking {
   schedule?: Schedule;
   children?: Child[];
   payment?: {
-    status: "pending" | "paid" | "refunded";
+    status?: "pending" | "paid" | "refunded";
+    paidAmount?: number;
+    transactionId?: string;
     method?: string;
   };
 }

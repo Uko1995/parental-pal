@@ -1,8 +1,13 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import {
+  buildInvoiceLineItems,
+  type InvoiceLineItem,
+} from "@/lib/booking-invoice";
+import type { BookingInterface } from "@/models/Booking";
 
 interface Child {
   name: string;
@@ -23,7 +28,9 @@ interface Booking {
   createdAt: string;
   children?: Child[];
   payment?: {
-    status: "pending" | "paid" | "refunded";
+    status?: "pending" | "paid" | "refunded";
+    paidAmount?: number;
+    transactionId?: string;
     method?: string;
   };
 }
@@ -40,6 +47,36 @@ export default function InvoiceModal({
   onClose,
 }: InvoiceModalProps) {
   const [isSending, setIsSending] = useState(false);
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceLineItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !booking) {
+      setInvoiceItems([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingItems(true);
+
+    fetch(`/api/bookings/${booking._id}`)
+      .then((response) => response.json())
+      .then((data: { booking?: BookingInterface }) => {
+        if (!cancelled && data.booking) {
+          setInvoiceItems(buildInvoiceLineItems(data.booking));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setInvoiceItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingItems(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, booking?._id]);
 
   if (!isOpen || !booking) return null;
 
@@ -77,27 +114,12 @@ export default function InvoiceModal({
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 7);
 
-  // Calculate invoice items
-  const childrenCount = booking.children?.length || 1;
-  let unitPrice = booking.totalCost;
-  let quantity = 1;
-  let description = `${booking.serviceType
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")} Service`;
-
-  if (
-    (booking.serviceType === "childcare" ||
-      booking.serviceType === "tutoring") &&
-    childrenCount > 1
-  ) {
-    unitPrice = booking.totalCost / childrenCount;
-    quantity = childrenCount;
-    description = `${booking.serviceType
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")} Service (per child)`;
-  }
+  const positiveSubtotal = invoiceItems
+    .filter((item) => item.total > 0)
+    .reduce((sum, item) => sum + item.total, 0);
+  const discountTotal = invoiceItems
+    .filter((item) => item.total < 0)
+    .reduce((sum, item) => sum + item.total, 0);
 
   const handleSendInvoice = async () => {
     setIsSending(true);
@@ -230,14 +252,32 @@ export default function InvoiceModal({
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b">
-                  <td>{description}</td>
-                  <td className="text-center">{quantity}</td>
-                  <td className="text-right">{formatCurrency(unitPrice)}</td>
-                  <td className="text-right font-semibold">
-                    {formatCurrency(booking.totalCost)}
-                  </td>
-                </tr>
+                {loadingItems ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-6 text-gray-500">
+                      Loading line items...
+                    </td>
+                  </tr>
+                ) : invoiceItems.length > 0 ? (
+                  invoiceItems.map((item, index) => (
+                    <tr key={index} className="border-b">
+                      <td>{item.description}</td>
+                      <td className="text-center">{item.quantity}</td>
+                      <td className="text-right">
+                        {formatCurrency(Math.abs(item.unitPrice))}
+                      </td>
+                      <td className="text-right font-semibold">
+                        {formatCurrency(item.total)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="border-b">
+                    <td colSpan={4} className="text-center py-6 text-gray-500">
+                      No line items available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -247,8 +287,14 @@ export default function InvoiceModal({
             <div className="w-full md:w-1/2">
               <div className="flex justify-between py-2 border-b">
                 <span className="font-medium">Subtotal:</span>
-                <span>{formatCurrency(booking.totalCost)}</span>
+                <span>{formatCurrency(positiveSubtotal || booking.totalCost)}</span>
               </div>
+              {discountTotal < 0 && (
+                <div className="flex justify-between py-2 border-b text-success">
+                  <span className="font-medium">Discount:</span>
+                  <span>{formatCurrency(discountTotal)}</span>
+                </div>
+              )}
               <div className="flex justify-between py-3 bg-[#90AC19] text-white px-4 rounded-lg mt-2">
                 <span className="font-bold text-lg">
                   {isPaymentConfirmed

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { getSessionUser } from "@/lib/session-user";
+import { buildInvoiceLineItems, buildServiceSummary } from "@/lib/booking-invoice";
 
 export async function GET() {
   try {
@@ -37,6 +38,8 @@ export async function GET() {
       } service for ${booking.children.length} child${
         booking.children.length > 1 ? "ren" : ""
       }`,
+      lineItems: buildInvoiceLineItems(booking),
+      serviceSummary: buildServiceSummary(booking),
     }));
 
     return NextResponse.json({

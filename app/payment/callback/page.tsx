@@ -41,7 +41,10 @@ function PaymentCallbackContent() {
           body: JSON.stringify({ reference }),
         });
         const data = await res.json();
-        if (data.success && data.payment?.status === "success") {
+        if (data.success && (data.alreadyPaid || data.booking?.payment?.status === "paid")) {
+          setStatus("success");
+          toast.success("Payment verified successfully!");
+        } else if (data.success && data.payment?.status === "success") {
           setStatus("success");
           toast.success("Payment verified successfully!");
         } else {

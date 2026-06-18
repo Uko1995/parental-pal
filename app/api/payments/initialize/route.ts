@@ -124,6 +124,18 @@ export async function POST(req: NextRequest) {
     // Check for existing payment with same idempotencyKey
     const existing = await payment.findOne({ idempotencyKey });
     if (existing) {
+      const paystackAuthUrl =
+        (existing.paystackResponse as { data?: { authorization_url?: string } })
+          ?.data?.authorization_url;
+      if (paystackAuthUrl) {
+        return NextResponse.json({
+          success: true,
+          data: { authorization_url: paystackAuthUrl, reference: existing.reference },
+          paymentId: existing._id,
+          idempotencyKey,
+          reused: true,
+        });
+      }
       return NextResponse.json({
         success: true,
         data: existing,

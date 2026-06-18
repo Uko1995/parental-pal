@@ -59,6 +59,13 @@ interface Booking {
   createdAt: string;
   schedule?: Schedule;
   children?: Child[];
+  payment?: {
+    status?: "pending" | "paid" | "refunded";
+    paidAmount?: number;
+    transactionId?: string;
+    method?: string;
+  };
+  pricing?: { totalAmount?: number };
 }
 
 interface BookingAnalytics {
@@ -275,6 +282,25 @@ export default function BookingsPage() {
           setSelectedBooking(null);
         }}
         booking={selectedBooking}
+        onPaymentConfirmed={async () => {
+          await fetchData();
+          if (selectedBooking) {
+            const res = await fetch(`/api/bookings/${selectedBooking._id}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.booking) {
+                setSelectedBooking({
+                  ...selectedBooking,
+                  ...data.booking,
+                  _id: data.booking._id?.toString() || selectedBooking._id,
+                  totalCost:
+                    data.booking.pricing?.totalAmount ??
+                    selectedBooking.totalCost,
+                });
+              }
+            }
+          }
+        }}
       />
     </div>
   );

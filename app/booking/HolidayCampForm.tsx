@@ -418,21 +418,44 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
               <MapPin className="w-5 h-5 text-brand-primary" weight="regular" />
               Camp Location
             </h3>
+            <p className="text-sm text-gray-600">
+              Weekly camp fees depend on location and your child&apos;s age. Prices
+              below are per child, per week.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(
                 [
                   {
                     id: "gbagada" as CampLocation,
                     title: "Gbagada (Mainland)",
-                    description:
-                      "All ages 0–14. Optional weekday boarding for ages 6–14.",
-                    from: formatNaira(SUMMER_CAMP_RATES.gbagadaYoungWeekly),
+                    tiers: [
+                      {
+                        label: "Ages 0–5",
+                        price: SUMMER_CAMP_RATES.gbagadaYoungWeekly,
+                        note: "Day camp",
+                      },
+                      {
+                        label: "Ages 6–14",
+                        price: SUMMER_CAMP_RATES.gbagadaOlderWeekly,
+                        note: "Day camp",
+                      },
+                      {
+                        label: "Boarding add-on (ages 6–14 only)",
+                        price: SUMMER_CAMP_RATES.boardingWeekly,
+                        note: "Gbagada only · weekday boarding",
+                      },
+                    ],
                   },
                   {
                     id: "lekki" as CampLocation,
                     title: "Lekki",
-                    description: "All ages 5–14. Day camp only — no boarding.",
-                    from: formatNaira(SUMMER_CAMP_RATES.lekkiWeekly),
+                    tiers: [
+                      {
+                        label: "Ages 0–14",
+                        price: SUMMER_CAMP_RATES.lekkiWeekly,
+                        note: "Day camp only — no boarding",
+                      },
+                    ],
                   },
                 ] as const
               ).map((option) => (
@@ -447,10 +470,23 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                   }`}
                 >
                   <p className="font-semibold text-gray-900">{option.title}</p>
-                  <p className="text-sm text-gray-600 mt-1">{option.description}</p>
-                  <p className="text-sm font-medium text-brand-primary mt-3">
-                    From {option.from}/week
-                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {option.tiers.map((tier) => (
+                      <li
+                        key={tier.label}
+                        className="flex items-start justify-between gap-3 text-sm"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900">{tier.label}</p>
+                          <p className="text-gray-500 text-xs mt-0.5">{tier.note}</p>
+                        </div>
+                        <p className="font-semibold text-brand-primary whitespace-nowrap">
+                          {formatNaira(tier.price)}
+                          <span className="text-gray-500 font-normal">/wk</span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
                 </button>
               ))}
             </div>
@@ -478,6 +514,19 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           const boardingEligible =
             isSummer && location === "gbagada" && canChildBoard(childAge);
           const boardingSelected = boardingByChild[child.id] ?? false;
+          const boardingDisabled =
+            !isSummer ||
+            location !== "gbagada" ||
+            childAge === 0 ||
+            !canChildBoard(childAge);
+          const boardingDisabledReason =
+            location !== "gbagada"
+              ? "Weekday boarding is only available at Gbagada (Mainland) for children aged 6–14."
+              : childAge === 0
+                ? "Enter your child's age above to enable boarding."
+                : !canChildBoard(childAge)
+                  ? "Boarding at Gbagada (Mainland) is for ages 6–14 only. Children aged 0–5 attend day camp."
+                  : null;
 
           return (
             <div
@@ -511,17 +560,14 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                 defaults={childDefaults[child.id]}
               />
 
-              {isSummer && location === "gbagada" && childAge > 0 && !boardingEligible && (
-                <p className="text-sm text-gray-600 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                  Weekday boarding is available at Gbagada for children aged 6 to
-                  14 only. This child is in the day-camp age group.
-                </p>
-              )}
-
-              {boardingEligible && (
+              {isSummer && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-900">
-                    Boarding option (Gbagada, ages 6–14)
+                    Day camp or boarding?
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Boarding is only available at Gbagada (Mainland) for ages
+                    6–14. Lekki and ages 0–5 are day camp only.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
@@ -540,21 +586,28 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                     >
                       <p className="font-semibold text-gray-900">Day camp only</p>
                       <p className="text-sm text-gray-600 mt-1">
-                        Drop-off and pick-up each day
+                        Drop-off and pick-up each day at your selected campus
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        All locations · ages 0–14
                       </p>
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
+                      disabled={boardingDisabled}
+                      onClick={() => {
+                        if (boardingDisabled) return;
                         setBoardingByChild((prev) => ({
                           ...prev,
                           [child.id]: true,
-                        }))
-                      }
+                        }));
+                      }}
                       className={`text-left rounded-xl border-2 p-4 transition-all ${
-                        boardingSelected
-                          ? "border-brand-accent bg-brand-accent/5 shadow-sm"
-                          : "border-gray-200 hover:border-gray-300"
+                        boardingDisabled
+                          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                          : boardingSelected
+                            ? "border-brand-accent bg-brand-accent/5 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
                       <p className="font-semibold text-gray-900 flex items-center gap-2">
@@ -565,33 +618,25 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                         +{formatNaira(SUMMER_CAMP_RATES.boardingWeekly)}/week on
                         top of camp fee
                       </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Gbagada (Mainland) · ages 6–14 only
+                      </p>
                     </button>
                   </div>
+                  {boardingDisabledReason && (
+                    <p className="text-sm text-gray-600 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                      {boardingDisabledReason}
+                    </p>
+                  )}
                   <input
                     type="hidden"
                     name={`boarding_${child.id}`}
-                    value={boardingSelected ? "true" : "false"}
+                    value={boardingSelected && boardingEligible ? "true" : "false"}
                   />
                 </div>
               )}
 
-              {!boardingEligible && isSummer && location === "gbagada" && (
-                <input
-                  type="hidden"
-                  name={`boarding_${child.id}`}
-                  value="false"
-                />
-              )}
-
               {!isSummer && (
-                <input
-                  type="hidden"
-                  name={`boarding_${child.id}`}
-                  value="false"
-                />
-              )}
-
-              {isSummer && location === "lekki" && (
                 <input
                   type="hidden"
                   name={`boarding_${child.id}`}

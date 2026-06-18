@@ -30,6 +30,10 @@ import {
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
+import {
+  countChildcareMonthDays,
+  formatLocalDate,
+} from "@/lib/booking-calendar";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
@@ -77,9 +81,7 @@ const ChildCareSpecificBookingForm = forwardRef<
     ]);
     const [dailyRate, setDailyRate] = useState(5000); // Default to ₦5,000/day
     const [monthlyRate, setMonthlyRate] = useState(110500); // Default to ₦110,500/month (15% discount)
-    const [startDate, setStartDate] = useState<string>(
-      new Date().toISOString().split("T")[0]
-    ); // Default to today
+    const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
 
     // Create refs for each child's WeekdaysSchedule
     const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
@@ -200,6 +202,15 @@ const ChildCareSpecificBookingForm = forwardRef<
       onApply: applyProfilePrefill,
     });
 
+    const monthWeekdayCount = countChildcareMonthDays(startDate);
+
+    const recalculateMonthlyRate = useCallback(
+      (baseRate: number) => {
+        setMonthlyRate(Math.floor(baseRate * monthWeekdayCount * 0.85));
+      },
+      [monthWeekdayCount],
+    );
+
     // Fetch pricing from database
     useEffect(() => {
       const fetchPricing = async () => {
@@ -210,17 +221,29 @@ const ChildCareSpecificBookingForm = forwardRef<
             if (data["childcare"]?.baseRate) {
               const baseRate = data["childcare"].baseRate;
               setDailyRate(baseRate);
-              // Calculate monthly rate with 15% discount (assuming 26 days)
-              setMonthlyRate(Math.floor(baseRate * 26 * 0.85));
+              recalculateMonthlyRate(baseRate);
             }
           }
         } catch (error) {
           console.error("Error fetching pricing:", error);
-          // Keep default rates if fetch fails
         }
       };
       fetchPricing();
-    }, []);
+    }, [recalculateMonthlyRate]);
+
+    useEffect(() => {
+      recalculateMonthlyRate(dailyRate);
+    }, [dailyRate, recalculateMonthlyRate]);
+
+    useEffect(() => {
+      setChildrenData((prev) =>
+        prev.map((child) =>
+          child.careType === "monthly" || child.isMonthSelected
+            ? { ...child, totalDays: monthWeekdayCount }
+            : child,
+        ),
+      );
+    }, [monthWeekdayCount]);
 
     const handleCareTypeChange = useCallback(
       (childId: string, type: "daily" | "monthly" | "") => {
@@ -231,12 +254,18 @@ const ChildCareSpecificBookingForm = forwardRef<
                   ...child,
                   careType: type,
                   isMonthSelected: type === "monthly",
+                  totalDays:
+                    type === "monthly"
+                      ? monthWeekdayCount
+                      : type === "daily"
+                        ? child.totalDays
+                        : 0,
                 }
               : child
           )
         );
       },
-      []
+      [monthWeekdayCount]
     );
 
     const handleDropoffTimeChange = useCallback(
@@ -456,7 +485,7 @@ const ChildCareSpecificBookingForm = forwardRef<
                 name="startDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                min={formatLocalDate(new Date())}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
                 required
               />
@@ -634,11 +663,19 @@ const ChildCareSpecificBookingForm = forwardRef<
                   scheduleRefs.current[child.id] = el;
                 }}
                 childcare={true}
+                startDate={startDate}
                 onDaysChange={(days) => handleOnDaysChange(child.id, days)}
                 onMonthSelected={(isMonth) => {
                   setChildrenData((prev) =>
                     prev.map((c) =>
-                      c.id === child.id ? { ...c, isMonthSelected: isMonth } : c
+                      c.id === child.id
+                        ? {
+                            ...c,
+                            isMonthSelected: isMonth,
+                            totalDays: isMonth ? monthWeekdayCount : c.totalDays,
+                            careType: isMonth ? "monthly" : c.careType,
+                          }
+                        : c
                     )
                   );
                 }}
@@ -665,7 +702,7 @@ const ChildCareSpecificBookingForm = forwardRef<
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
                       {child.careType === "monthly"
-                        ? "Monthly plan (26 days, 15% discount)"
+                        ? `Monthly plan (${monthWeekdayCount} days, 15% discount)`
                         : `${
                             child.totalDays
                           } days × ₦${dailyRate.toLocaleString()}/day`}
@@ -727,7 +764,7 @@ const ChildCareSpecificBookingForm = forwardRef<
                           </p>
                           <p className="text-sm text-gray-600">
                             {child.careType === "monthly"
-                              ? "Monthly plan"
+                              ? `Monthly plan (${monthWeekdayCount} days)`
                               : `${child.totalDays} days/week`}{" "}
                             •
                             {child.dropoffTime &&

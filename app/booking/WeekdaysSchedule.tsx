@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import { getWeekdayDatesInMonth } from "@/lib/booking-calendar";
 
 interface DaySchedule {
   day: string;
@@ -26,49 +27,6 @@ export interface WeekdaysScheduleRef {
   resetSchedule: () => void;
   loadSchedule: (schedules: DaySchedule[]) => void;
 }
-
-// Helper function to get all dates for a specific weekday in a month
-const getWeekdayDatesInMonth = (
-  weekday: string,
-  startDate: string
-): string[] => {
-  const dayMap: { [key: string]: number } = {
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-    sunday: 0,
-  };
-
-  const targetDay = dayMap[weekday.toLowerCase()];
-  const start = new Date(startDate);
-  const dates: string[] = [];
-
-  // Get the first occurrence of the weekday in the month
-  const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
-  const daysUntilTarget = (targetDay - firstDay.getDay() + 7) % 7;
-  const firstOccurrence = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    1 + daysUntilTarget
-  );
-
-  // Get all occurrences of this weekday in the month
-  const currentDate = new Date(firstOccurrence);
-  if (currentDate < start) {
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-
-  // Get all occurrences of this weekday in the month
-  while (currentDate.getMonth() === start.getMonth()) {
-    dates.push(currentDate.toISOString().split("T")[0]);
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-
-  return dates;
-};
 
 const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
   (
@@ -117,6 +75,25 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
       resetSchedule,
       loadSchedule,
     }));
+
+    // Recompute tutoring session dates when the billing month changes
+    useEffect(() => {
+      if (childcare || !startDate) return;
+
+      setDaySchedules((prev) => {
+        if (!prev.length) return prev;
+        const next = prev.map((schedule) => {
+          if (schedule.day === "month" || !schedule.startTime) return schedule;
+          return updateDatesForSchedule(schedule);
+        });
+        const changed = next.some(
+          (schedule, index) =>
+            JSON.stringify(schedule.dates) !== JSON.stringify(prev[index]?.dates),
+        );
+        return changed ? next : prev;
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startDate, childcare]);
 
     // Calculate total hours and notify parent
     // Now calculates based on actual dates if available (for tutoring)
@@ -298,8 +275,8 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
             </div>
 
             <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <strong>Summary:</strong> {daySchedules.length} day(s) for the
-              week selected • {calculateTotalHours(daySchedules)} total hours
+              <strong>Summary:</strong> {daySchedules.length} day(s) selected •{" "}
+              {calculateTotalHours(daySchedules)} total session hours (this month)
               {daySchedules.length > 0 && (
                 <div className="mt-1">
                   {daySchedules.map((schedule) => (

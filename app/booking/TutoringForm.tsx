@@ -33,6 +33,7 @@ import {
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
+import { formatLocalDate } from "@/lib/booking-calendar";
 
 export interface TutoringFormRef {
   resetForm: () => void;
@@ -93,9 +94,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     "idle" | "checking" | "applied" | "invalid"
   >("idle");
   const [promoMessage, setPromoMessage] = useState("");
-  const [startDate, setStartDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  ); // Default to today
+  const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
 
   // Create refs for each child's WeekdaysSchedule
   const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
@@ -540,7 +539,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
               name="startDate"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
+              min={formatLocalDate(new Date())}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
               required
             />
@@ -842,8 +841,12 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                       Subtotal for Child #{index + 1}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {child.totalHours} hours × ₦{hourlyRate.toLocaleString()}
-                      /hour
+                      {child.schedule.reduce(
+                        (sum, block) => sum + (block.dates?.length || 0),
+                        0,
+                      )}{" "}
+                      sessions • {child.totalHours} total session hours • ₦
+                      {hourlyRate.toLocaleString()}/hour
                     </p>
                   </div>
                   <p className="text-2xl font-bold text-[#90AC19]">
@@ -895,7 +898,11 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                           Child #{index + 1}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {child.totalHours} hours/week •{" "}
+                          {child.schedule.reduce(
+                            (sum, block) => sum + (block.dates?.length || 0),
+                            0,
+                          )}{" "}
+                          sessions • {child.totalHours} total session hours •{" "}
                           {child.selectedSubjects.length} subject(s)
                         </p>
                       </div>

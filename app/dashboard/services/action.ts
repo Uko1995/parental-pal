@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { CACHE_TIMES, CACHE_TAGS } from "@/lib/cache-config";
 import { getCollection } from "@/lib/mongodb";
 import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
+import { getBookingRevenueByServiceType } from "@/lib/booking-revenue-stats";
 import { ServiceInterface } from "@/models/Service";
 
 // Client-safe interface with string _id
@@ -22,6 +23,7 @@ interface ServicesData {
 
 const fetchServices = async (): Promise<ServicesData> => {
   const collection = await getCollection("services");
+  const bookingMetrics = await getBookingRevenueByServiceType();
 
   const services = (await collection
     .find({})
@@ -31,10 +33,28 @@ const fetchServices = async (): Promise<ServicesData> => {
   // Convert ObjectIds to strings for client components
   const serializedServices: ClientServiceInterface[] =
     sortServicesWithEduvantaFirst(
-      services.map((service) => ({
-        ...service,
-        _id: service._id?.toString(),
-      })),
+      services.map((service) => {
+        const liveMetrics = bookingMetrics.get(service.type);
+        return {
+          ...service,
+          _id: service._id?.toString(),
+          metrics: {
+            totalBookings:
+              liveMetrics?.totalBookings ??
+              service.metrics?.totalBookings ??
+              0,
+            totalRevenue:
+              liveMetrics?.totalRevenue ??
+              service.metrics?.totalRevenue ??
+              0,
+            averageRating: service.metrics?.averageRating ?? 0,
+            totalReviews: service.metrics?.totalReviews ?? 0,
+            conversionRate: service.metrics?.conversionRate ?? 0,
+            repeatCustomerRate: service.metrics?.repeatCustomerRate ?? 0,
+            monthlyStats: service.metrics?.monthlyStats,
+          },
+        };
+      }),
     );
 
   const serviceStats = {
@@ -58,7 +78,7 @@ const fetchServices = async (): Promise<ServicesData> => {
  */
 export const getServices = unstable_cache(fetchServices, ["services-data"], {
   revalidate: CACHE_TIMES.STATIC_DATA,
-  tags: [CACHE_TAGS.SERVICES],
+  tags: [CACHE_TAGS.SERVICES, CACHE_TAGS.BOOKINGS],
 });
 
 /**

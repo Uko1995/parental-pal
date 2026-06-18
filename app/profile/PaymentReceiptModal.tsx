@@ -9,6 +9,11 @@ import {
 import { useRef } from "react";
 import Image from "next/image";
 
+import {
+  buildInvoiceLineItems,
+  type InvoiceLineItem,
+} from "@/lib/booking-invoice";
+
 interface Payment {
   _id: string;
   bookingId: string;
@@ -21,6 +26,8 @@ interface Payment {
   createdAt: string;
   serviceType: string;
   description: string;
+  lineItems?: InvoiceLineItem[];
+  serviceSummary?: string;
 }
 
 interface PaymentReceiptModalProps {
@@ -287,6 +294,48 @@ export default function PaymentReceiptModal({
                     </span>
                   </div>
                 </div>
+
+                {payment.lineItems && payment.lineItems.length > 0 && (
+                  <div className="info-section">
+                    <h4 className="font-semibold text-gray-900 mb-3">
+                      Line Items
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="text-left p-2">Description</th>
+                            <th className="text-center p-2">Qty</th>
+                            <th className="text-right p-2">Unit</th>
+                            <th className="text-right p-2">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payment.lineItems.map((item, index) => (
+                            <tr key={index} className="border-t border-gray-100">
+                              <td className="p-2">{item.description}</td>
+                              <td className="text-center p-2">{item.quantity}</td>
+                              <td className="text-right p-2">
+                                {formatCurrency(
+                                  Math.abs(item.unitPrice),
+                                  payment.currency,
+                                )}
+                              </td>
+                              <td className="text-right p-2 font-medium">
+                                {formatCurrency(item.total, payment.currency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {payment.serviceSummary && (
+                      <p className="text-xs text-gray-600 mt-3 whitespace-pre-line">
+                        {payment.serviceSummary}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Amount Section */}
                 <div className="amount-section">

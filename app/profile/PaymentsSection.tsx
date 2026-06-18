@@ -10,6 +10,8 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import PaymentReceiptModal from "./PaymentReceiptModal";
 import PaymentDetailsModal from "./PaymentDetailsModal";
+import { initializeBookingPayment } from "@/lib/booking-payment";
+import type { InvoiceLineItem } from "@/lib/booking-invoice";
 
 interface Payment {
   _id: string;
@@ -23,6 +25,8 @@ interface Payment {
   createdAt: string;
   serviceType: string;
   description: string;
+  lineItems?: InvoiceLineItem[];
+  serviceSummary?: string;
 }
 
 interface PaymentSummary {
@@ -102,33 +106,16 @@ export default function PaymentsSection() {
   const initiatePayment = async (bookingId: string, amount: number) => {
     setPaymentInProgress(bookingId);
     try {
-      const response = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          bookingId,
-          amount,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authorizationUrl) {
-          // Redirect to Paystack payment page
-          window.location.href = data.authorizationUrl;
-        } else {
-          toast.error("Payment initialization failed");
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || "Failed to initialize payment");
+      const ok = await initializeBookingPayment(
+        { bookingId, amount, currency: "NGN" },
+        { toastId: `pay-${bookingId}` },
+      );
+      if (!ok) {
+        setPaymentInProgress(null);
       }
     } catch (error) {
       console.error("Failed to initialize payment:", error);
       toast.error("Failed to initialize payment");
-    } finally {
       setPaymentInProgress(null);
     }
   };
