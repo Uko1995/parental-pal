@@ -253,7 +253,7 @@ export const emailTemplates = {
 
             ${
               bookingDetails.status === "confirmed"
-                ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt has also been sent to this email address.</p>`
+                ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt with your service schedule and line items is sent to this email address after payment.</p>`
                 : `<p>Your booking request has been received. You can proceed to make payment from your profile.</p>`
             }
             <p>If you have any questions, please don't hesitate to contact us.</p>
@@ -1143,6 +1143,7 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
       paymentMethod?: string;
       transactionId?: string;
       serviceSummary?: string;
+      campers?: Array<{ name: string; camperId: string }>;
     }
   ) => ({
     subject: `Payment Receipt #${receiptDetails.receiptNumber} - ParentalPal Services`,
@@ -1261,12 +1262,31 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
             <div>
               <div class="info-label">Service Type:</div>
               <div style="font-size: 16px; font-weight: bold; color: #22c55e; margin-top: 5px;">
-                ${receiptDetails.serviceType
-                  .split("-")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")}
+                ${receiptDetails.serviceType}
               </div>
             </div>
+
+            ${
+              receiptDetails.campers && receiptDetails.campers.length > 0
+                ? `
+            <div style="margin: 15px 0; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #90AC19;">
+              <div class="info-label">Camper ID(s):</div>
+              <p style="font-size: 13px; color: #666; margin: 8px 0;">
+                Save these IDs for camp check-in and correspondence.
+              </p>
+              ${receiptDetails.campers
+                .map(
+                  (camper) => `
+              <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                <strong>${camper.name}:</strong>
+                <span style="font-family: monospace; font-size: 18px; color: #90AC19; margin-left: 8px;">${camper.camperId}</span>
+              </div>`,
+                )
+                .join("")}
+            </div>
+            `
+                : ""
+            }
 
             ${
               receiptDetails.children && receiptDetails.children.length > 0
@@ -1447,6 +1467,13 @@ ${
 }
 
 Service: ${receiptDetails.serviceType}
+${
+  receiptDetails.campers && receiptDetails.campers.length > 0
+    ? `\nCamper ID(s):\n${receiptDetails.campers
+        .map((c) => `${c.name}: ${c.camperId}`)
+        .join("\n")}\n`
+    : ""
+}
 ${
   receiptDetails.serviceSummary
     ? `\nService Details:\n${receiptDetails.serviceSummary}\n`

@@ -9,6 +9,12 @@ import {
   buildServiceSummary,
 } from "@/lib/booking-invoice";
 import { buildBookingReceiptDetails } from "@/lib/booking-payment-emails";
+import {
+  resolveBookingParentEmail,
+  resolveBookingParentName,
+} from "@/lib/booking-parent-email";
+import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
+import validator from "validator";
 
 // Generate a unique invoice number
 function generateInvoiceNumber(): string {
@@ -70,10 +76,22 @@ export async function POST(
     const isPaymentConfirmed =
       booking.status === "confirmed" || booking.payment?.status === "paid";
 
-    // Get parent name and email
-    const parentName = parent.userData?.user?.name || "Valued Customer";
+    // Get parent name and email (booking email matches invoice modal display)
+    const parentName = resolveBookingParentName(booking, parent);
+    const defaultParentEmail = resolveBookingParentEmail(booking, parent);
+
+    let body: { sendTo?: string } = {};
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+
+    const requestedEmail = body.sendTo?.trim();
     const parentEmail =
-      parent.userData?.user?.email || booking.parentEmail || "";
+      requestedEmail && validator.isEmail(requestedEmail)
+        ? requestedEmail
+        : defaultParentEmail;
 
     if (!parentEmail) {
       return NextResponse.json(
@@ -93,6 +111,13 @@ export async function POST(
     let emailContent;
     let documentNumber: string;
     let documentType: string;
+
+    const resolvedSchedule = resolveBookingScheduleDates(booking);
+    const receiptSchedule = {
+      startDate:
+        resolvedSchedule.startDate || booking.schedule?.startDate,
+      endDate: resolvedSchedule.endDate || booking.schedule?.endDate,
+    };
 
     if (isPaymentConfirmed) {
       // Generate receipt for confirmed bookings
@@ -123,7 +148,7 @@ export async function POST(
         dueDate,
         serviceType: booking.serviceType || "Service",
         children: booking.children || [],
-        schedule: booking.schedule,
+        schedule: receiptSchedule,
         items,
         subtotal,
         totalAmount,
@@ -137,6 +162,9 @@ export async function POST(
     }
 
     // Send email (invoice or receipt)
+    console.log(
+      `[invoice] Sending ${documentType} ${documentNumber} to ${parentEmail}`,
+    );
     const emailResult = await sendEmail({
       to: parentEmail,
       subject: emailContent.subject,
@@ -161,7 +189,9 @@ export async function POST(
       "",
       `${
         documentType === "receipt" ? "Receipt" : "Invoice"
-      } ${documentNumber} generated for booking ${id}`
+      } ${documentNumber} sent to ${parentEmail} for booking ${id}`,
+      { documentType, documentNumber, bookingId: id, sentTo: parentEmail },
+      true,
     );
 
     return NextResponse.json({

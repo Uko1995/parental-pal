@@ -11,6 +11,10 @@ import {
   findPaymentByReference,
 } from "@/lib/PaymentRepository";
 import { sendPostPaymentEmails } from "@/lib/booking-payment-emails";
+import {
+  resolveBookingParentEmail,
+  resolveBookingParentName,
+} from "@/lib/booking-parent-email";
 
 export type PaymentConfirmSource =
   | "verify"
@@ -179,14 +183,13 @@ async function dispatchPostPaymentEmails(
     _id: new ObjectId(booking.userId),
   });
 
-  const email =
-    user?.userData?.user?.email || booking.parentEmail || undefined;
+  const email = resolveBookingParentEmail(booking, user);
   if (!email) return;
 
   await sendPostPaymentEmails(
     booking,
     {
-      name: user?.userData?.user?.name || booking.parentName || "Customer",
+      name: resolveBookingParentName(booking, user),
       email,
     },
     {

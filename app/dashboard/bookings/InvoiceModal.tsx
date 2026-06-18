@@ -49,12 +49,16 @@ export default function InvoiceModal({
   const [isSending, setIsSending] = useState(false);
   const [invoiceItems, setInvoiceItems] = useState<InvoiceLineItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState("");
 
   useEffect(() => {
     if (!isOpen || !booking) {
       setInvoiceItems([]);
+      setSendToEmail("");
       return;
     }
+
+    setSendToEmail(booking.parentEmail || "");
 
     let cancelled = false;
     setLoadingItems(true);
@@ -122,11 +126,18 @@ export default function InvoiceModal({
     .reduce((sum, item) => sum + item.total, 0);
 
   const handleSendInvoice = async () => {
+    if (!sendToEmail.trim()) {
+      toast.error("Enter a recipient email address");
+      return;
+    }
+
     setIsSending(true);
 
     try {
       const response = await fetch(`/api/bookings/${booking._id}/invoice`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sendTo: sendToEmail.trim() }),
       });
 
       if (response.ok) {
@@ -359,6 +370,25 @@ export default function InvoiceModal({
           )}
         </div>
 
+        <div className="form-control mt-4">
+          <label className="label py-1">
+            <span className="label-text font-medium">Send to email</span>
+          </label>
+          <input
+            type="email"
+            className="input input-bordered"
+            value={sendToEmail}
+            onChange={(e) => setSendToEmail(e.target.value)}
+            placeholder="parent@example.com"
+          />
+          <label className="label py-1">
+            <span className="label-text-alt text-gray-500">
+              Receipt or invoice is emailed to this address. Check spam if it
+              does not arrive within a few minutes.
+            </span>
+          </label>
+        </div>
+
         {/* Modal Actions */}
         <div className="modal-action">
           <button className="btn btn-ghost" onClick={onClose}>
@@ -388,7 +418,7 @@ export default function InvoiceModal({
                     d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
-                Send {documentType} to {booking.parentEmail}
+                Send {documentType} to {sendToEmail || "recipient"}
               </>
             )}
           </button>
