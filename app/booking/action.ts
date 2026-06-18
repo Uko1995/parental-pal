@@ -19,29 +19,16 @@ import {
   countChildcareMonthDays,
   getWeekdayDatesInMonth,
 } from "@/lib/booking-calendar";
+import {
+  getCampScheduleBounds,
+  resolveBookingScheduleDates,
+} from "@/lib/booking-schedule";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
 
 function isServerDateInJune(now: Date): boolean {
   return now.getMonth() === 5;
-}
-
-function getCampScheduleBounds(
-  childrenCampData: Array<{
-    campWeeks?: Array<{ startDate: string; endDate: string }>;
-  }>,
-): { startDate: string; endDate: string } | null {
-  const allWeeks = childrenCampData.flatMap((child) => child.campWeeks ?? []);
-  if (allWeeks.length === 0) return null;
-
-  let startDate = allWeeks[0].startDate;
-  let endDate = allWeeks[0].endDate;
-  for (const week of allWeeks) {
-    if (week.startDate < startDate) startDate = week.startDate;
-    if (week.endDate > endDate) endDate = week.endDate;
-  }
-  return { startDate, endDate };
 }
 
 async function getTutoringRatesFromService() {
@@ -998,6 +985,27 @@ export async function parseFormDataToBooking(
         )
       : null;
 
+  const preliminaryStart =
+    campScheduleBounds?.startDate ||
+    (cleanedData.startDate as string) ||
+    new Date().toISOString().split("T")[0];
+
+  const resolvedSchedule = resolveBookingScheduleDates({
+    serviceType: serviceType as BookingInterface["serviceType"],
+    serviceData,
+    schedule: {
+      startDate: preliminaryStart,
+      endDate:
+        campScheduleBounds?.endDate ||
+        (cleanedData.endDate as string) ||
+        undefined,
+      weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
+      isRecurring: weekdays.length > 0,
+      frequency:
+        (cleanedData.frequency as "daily" | "weekly" | "monthly") || "weekly",
+    },
+  });
+
   // Create booking object
   const booking: BookingInterface = {
     userId,
@@ -1011,12 +1019,12 @@ export async function parseFormDataToBooking(
     children,
     serviceData,
     schedule: {
-      startDate:
-        campScheduleBounds?.startDate ||
-        cleanedData.startDate ||
-        new Date().toISOString().split("T")[0],
+      startDate: resolvedSchedule.startDate || preliminaryStart,
       endDate:
-        campScheduleBounds?.endDate || cleanedData.endDate || undefined,
+        resolvedSchedule.endDate ||
+        campScheduleBounds?.endDate ||
+        (cleanedData.endDate as string) ||
+        undefined,
       weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
       isRecurring: weekdays.length > 0,
       frequency:

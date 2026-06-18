@@ -2,13 +2,12 @@ import { BookingInterface } from "@/models/Booking";
 import {
   sendEmail,
   emailTemplates,
-  type BookingDetails,
-  type PaymentDetails,
 } from "@/lib/email-service";
 import {
   buildInvoiceLineItems,
   buildServiceSummary,
 } from "@/lib/booking-invoice";
+import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
 import { getHtrCamperEmailEntries } from "@/lib/camper-id";
 import { CAMP_SEASONS } from "@/lib/camp-seasons";
 
@@ -54,6 +53,7 @@ export function buildBookingReceiptDetails(
 ) {
   const items = buildInvoiceLineItems(booking);
   const serviceSummary = buildServiceSummary(booking);
+  const resolvedSchedule = resolveBookingScheduleDates(booking);
   const positiveSubtotal = items
     .filter((item) => item.total > 0)
     .reduce((sum, item) => sum + item.total, 0);
@@ -71,7 +71,11 @@ export function buildBookingReceiptDetails(
     paymentDate,
     serviceType: formatServiceLabel(booking),
     children: booking.children || [],
-    schedule: booking.schedule,
+    schedule: {
+      startDate:
+        resolvedSchedule.startDate || booking.schedule?.startDate,
+      endDate: resolvedSchedule.endDate || booking.schedule?.endDate,
+    },
     items,
     subtotal,
     totalAmount,
@@ -79,72 +83,11 @@ export function buildBookingReceiptDetails(
     paymentMethod: payment.method,
     transactionId: payment.reference,
     serviceSummary,
+    campers: (() => {
+      const campers = getHtrCamperEmailEntries(booking);
+      return campers.length > 0 ? campers : undefined;
+    })(),
   };
-}
-
-async function sendPaymentConfirmationEmail(
-  booking: BookingInterface,
-  recipient: PaymentEmailRecipient,
-  payment: PaymentEmailContext,
-): Promise<void> {
-  const campers = getHtrCamperEmailEntries(booking);
-  const paymentDetails: PaymentDetails = {
-    transactionId: payment.reference,
-    amount: payment.amount,
-    currency: displayCurrency(payment.currency),
-    method: payment.method,
-    serviceType: formatServiceLabel(booking),
-    campers: campers.length > 0 ? campers : undefined,
-  };
-
-  const emailContent = emailTemplates.paymentConfirmation(
-    recipient.name,
-    paymentDetails,
-  );
-
-  const result = await sendEmail({
-    to: recipient.email,
-    subject: emailContent.subject,
-    html: emailContent.html,
-    text: emailContent.text,
-  });
-
-  if (!result.success) {
-    throw new Error(result.error || "Failed to send payment confirmation email");
-  }
-}
-
-async function sendBookingConfirmationEmail(
-  booking: BookingInterface,
-  recipient: PaymentEmailRecipient,
-): Promise<void> {
-  const bookingDetails: BookingDetails = {
-    _id: booking._id?.toString(),
-    serviceType: formatServiceLabel(booking),
-    schedule: booking.schedule,
-    children: booking.children,
-    status: booking.status || "confirmed",
-    pricing: {
-      totalAmount: booking.pricing?.totalAmount,
-      currency: displayCurrency(booking.pricing?.currency),
-    },
-  };
-
-  const emailContent = emailTemplates.bookingConfirmation(
-    recipient.name,
-    bookingDetails,
-  );
-
-  const result = await sendEmail({
-    to: recipient.email,
-    subject: emailContent.subject,
-    html: emailContent.html,
-    text: emailContent.text,
-  });
-
-  if (!result.success) {
-    throw new Error(result.error || "Failed to send booking confirmation email");
-  }
 }
 
 async function sendPaymentReceiptEmail(
@@ -165,33 +108,21 @@ async function sendPaymentReceiptEmail(
   if (!result.success) {
     throw new Error(result.error || "Failed to send payment receipt email");
   }
+
+  console.log(
+    `[payment-receipt] Sent detailed receipt ${receiptDetails.receiptNumber} to ${recipient.email} (${booking.serviceType})`,
+  );
 }
 
+/** Sends the full itemized payment receipt after successful payment (all services). */
 export async function sendPostPaymentEmails(
   booking: BookingInterface,
   recipient: PaymentEmailRecipient,
   payment: PaymentEmailContext,
 ): Promise<void> {
-  const tasks = [
-    {
-      label: "payment confirmation",
-      send: () => sendPaymentConfirmationEmail(booking, recipient, payment),
-    },
-    {
-      label: "booking confirmation",
-      send: () => sendBookingConfirmationEmail(booking, recipient),
-    },
-    {
-      label: "payment receipt",
-      send: () => sendPaymentReceiptEmail(booking, recipient, payment),
-    },
-  ];
-
-  for (const task of tasks) {
-    try {
-      await task.send();
-    } catch (error) {
-      console.error(`Failed to send ${task.label} email:`, error);
-    }
+  try {
+    await sendPaymentReceiptEmail(booking, recipient, payment);
+  } catch (error) {
+    console.error("Failed to send payment receipt email:", error);
   }
 }

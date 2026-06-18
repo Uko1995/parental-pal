@@ -78,6 +78,8 @@ export async function POST(
         admin._id?.toString(),
         "",
         `Manual payment confirmed for booking ${bookingId} (${method}, ₦${paidAmount})${notes ? `: ${notes}` : ""}`,
+        undefined,
+        true,
       );
 
       return NextResponse.json({
@@ -136,6 +138,8 @@ export async function POST(
         admin._id?.toString(),
         "",
         `Paystack payment reconciled for booking ${bookingId} (ref: ${reference})`,
+        undefined,
+        true,
       );
 
       return NextResponse.json({

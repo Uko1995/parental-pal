@@ -187,14 +187,15 @@ export async function logSecurityEvent(
   userId: string | undefined,
   ipAddress: string,
   message: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  success: boolean = false,
 ): Promise<void> {
   await logAuditEvent({
     timestamp: new Date(),
     eventType,
     userId,
     ipAddress,
-    success: false,
+    success,
     message,
     metadata,
     createdAt: new Date(),

@@ -1,4 +1,5 @@
 import type { BookingInterface } from "@/models/Booking";
+import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
 
 export interface InvoiceLineItem {
   description: string;
@@ -41,6 +42,63 @@ function countTutoringSessions(
   return schedule.reduce((sum, block) => sum + (block.dates?.length || 0), 0);
 }
 
+function formatWeekdayLabel(day: string): string {
+  const labels: Record<string, string> = {
+    monday: "Mondays",
+    tuesday: "Tuesdays",
+    wednesday: "Wednesdays",
+    thursday: "Thursdays",
+    friday: "Fridays",
+    saturday: "Saturdays",
+    sunday: "Sundays",
+  };
+  return labels[day.toLowerCase().trim()] || day;
+}
+
+function formatSessionTime(time?: string): string {
+  if (!time) return "TBD";
+  const trimmed = time.trim();
+  if (/am|pm/i.test(trimmed)) return trimmed;
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return trimmed;
+  const hours = Number(match[1]);
+  const minutes = match[2];
+  const period = hours >= 12 ? "pm" : "am";
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${minutes}${period}`;
+}
+
+function formatTutoringScheduleBlock(
+  block: {
+    day: string;
+    startTime?: string;
+    dates?: Array<{ date: string; startTime?: string }>;
+  },
+): string {
+  const dayLabel = formatWeekdayLabel(block.day);
+  const defaultTime = formatSessionTime(block.startTime);
+
+  if (block.dates?.length) {
+    const sessionDates = block.dates
+      .map((session) => formatDateLabel(session.date))
+      .join("; ");
+    return `${dayLabel} @ ${defaultTime}: ${sessionDates}`;
+  }
+
+  return `${dayLabel} @ ${defaultTime}`;
+}
+
+function formatTutoringScheduleSummary(
+  schedule?: Array<{
+    day: string;
+    startTime?: string;
+    dates?: Array<{ date: string; startTime?: string }>;
+  }>,
+): string {
+  if (!schedule?.length) return "";
+  return schedule.map(formatTutoringScheduleBlock).join(" | ");
+}
+
 function formatWeekRange(
   week: { startDate: string; endDate: string; weekNumber?: number; dateLabel?: string },
 ): string {
@@ -70,13 +128,7 @@ export function buildInvoiceLineItems(
           sessionCount > 0 ? sessionCount : childData.totalHours || 1;
         const unitPrice = hourlyRate;
         const subjects = childData.subjects?.join(", ") || "Tutoring";
-        const scheduleSummary =
-          childData.schedule
-            ?.map((s) => {
-              const days = s.dates?.length || 0;
-              return `${s.day} (${days} session${days === 1 ? "" : "s"}, ${s.startTime || "TBD"})`;
-            })
-            .join("; ") || "";
+        const scheduleSummary = formatTutoringScheduleSummary(childData.schedule);
 
         items.push({
           description: `${subjects} — ${childName} (${location})${scheduleSummary ? ` — ${scheduleSummary}` : ""}`,
@@ -300,8 +352,15 @@ export function buildInvoiceLineItems(
 export function buildServiceSummary(booking: BookingInterface): string {
   const lines: string[] = [];
   const sd = booking.serviceData || {};
+  const resolvedSchedule = resolveBookingScheduleDates(booking);
 
-  if (booking.schedule?.startDate) {
+  if (resolvedSchedule.startDate) {
+    let scheduleLine = `Start: ${formatDateLabel(resolvedSchedule.startDate)}`;
+    if (resolvedSchedule.endDate) {
+      scheduleLine += ` — End: ${formatDateLabel(resolvedSchedule.endDate)}`;
+    }
+    lines.push(scheduleLine);
+  } else if (booking.schedule?.startDate) {
     let scheduleLine = `Start: ${formatDateLabel(booking.schedule.startDate)}`;
     if (booking.schedule.endDate) {
       scheduleLine += ` — End: ${formatDateLabel(booking.schedule.endDate)}`;
@@ -319,10 +378,11 @@ export function buildServiceSummary(booking: BookingInterface): string {
         );
         childData.schedule?.forEach((block) => {
           if (block.dates?.length) {
-            const dates = block.dates
-              .map((d) => formatDateLabel(d.date))
-              .join(", ");
-            lines.push(`  ${block.day}: ${dates} @ ${block.startTime || "TBD"}`);
+            lines.push(`  ${formatTutoringScheduleBlock(block)}`);
+          } else {
+            lines.push(
+              `  ${formatWeekdayLabel(block.day)} @ ${formatSessionTime(block.startTime)}`,
+            );
           }
         });
       });

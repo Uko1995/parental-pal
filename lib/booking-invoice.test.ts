@@ -71,6 +71,45 @@ describe("booking-invoice", () => {
     assert.equal(items[0].quantity, 6);
     assert.equal(items[0].unitPrice, 12000);
     assert.equal(items[0].total, 72000);
+    assert.match(items[0].description, /Mondays @ 9:00am:/);
+    assert.match(items[0].description, /Mar 2, 2026; Mar 9, 2026; Mar 16, 2026/);
+  });
+
+  it("lists each tutoring session date with plural weekday labels", () => {
+    const booking = baseBooking({
+      serviceData: {
+        hourlyRate: 13000,
+        tutoringLocation: "virtual",
+        childrenData: [
+          {
+            childId: "child-1",
+            subjects: ["English Language"],
+            academicLevel: "Primary",
+            totalHours: 4,
+            schedule: [
+              {
+                day: "monday",
+                hours: 1,
+                startTime: "09:00am",
+                dates: [
+                  { date: "2026-03-02", startTime: "09:00am" },
+                  { date: "2026-03-09", startTime: "09:00am" },
+                  { date: "2026-03-16", startTime: "09:00am" },
+                  { date: "2026-03-23", startTime: "09:00am" },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      children: [{ name: "Donald", age: 9 }],
+    });
+
+    const items = buildInvoiceLineItems(booking);
+    assert.equal(
+      items[0].description,
+      "English Language — Donald (Virtual) — Mondays @ 09:00am: Mar 2, 2026; Mar 9, 2026; Mar 16, 2026; Mar 23, 2026",
+    );
   });
 
   it("lists holiday camp weeks per child", () => {
