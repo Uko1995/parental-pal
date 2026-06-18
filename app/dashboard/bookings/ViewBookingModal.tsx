@@ -7,6 +7,7 @@ import {
   PhoneIcon,
   EnvelopeIcon,
 } from "@heroicons/react/24/outline";
+import PaymentReconciliationSection from "./PaymentReconciliationSection";
 
 interface Child {
   id?: string;
@@ -158,18 +159,28 @@ interface Booking {
     cautionFee?: number;
     baseRate?: number;
   };
+  payment?: {
+    status?: "pending" | "paid" | "refunded";
+    paidAmount?: number;
+    transactionId?: string;
+    method?: string;
+    paymentDate?: string;
+  };
+  pricing?: { totalAmount?: number };
 }
 
 interface ViewBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   booking: Booking | null;
+  onPaymentConfirmed?: () => void;
 }
 
 export default function ViewBookingModal({
   isOpen,
   onClose,
   booking,
+  onPaymentConfirmed,
 }: ViewBookingModalProps) {
   if (!isOpen || !booking) return null;
 
@@ -256,6 +267,15 @@ export default function ViewBookingModal({
             </div>
             {getStatusBadge(booking.status)}
           </div>
+
+          <PaymentReconciliationSection
+            bookingId={booking._id}
+            totalAmount={
+              booking.pricing?.totalAmount ?? booking.totalCost ?? 0
+            }
+            payment={booking.payment}
+            onSuccess={onPaymentConfirmed}
+          />
 
           {/* Parent Information */}
           <div className="card bg-base-200">

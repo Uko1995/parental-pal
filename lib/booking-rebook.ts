@@ -1,8 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
 import { BookingInterface } from "@/models/Booking";
 import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
+import {
+  addCalendarMonths,
+  countChildcareMonthDays,
+  getTargetMonthLabel,
+  getTargetMonthStart,
+  getWeekdayDatesInMonth,
+  shiftDateRangeByMonths,
+} from "@/lib/booking-calendar";
 
 export { isRebookEligibleBooking };
+export { getTargetMonthStart, getTargetMonthLabel };
 
 export type RebookFormEntries = Record<string, string>;
 
@@ -15,58 +24,6 @@ export interface RebookTemplateResult {
   childIds: string[];
   targetMonthStart: string;
   targetMonthLabel: string;
-}
-
-function getWeekdayDatesInMonth(weekday: string, startDate: string): string[] {
-  const dayMap: Record<string, number> = {
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-    sunday: 0,
-  };
-
-  const targetDay = dayMap[weekday.toLowerCase()];
-  if (targetDay === undefined) return [];
-
-  const start = new Date(startDate);
-  const dates: string[] = [];
-  const firstDay = new Date(start.getFullYear(), start.getMonth(), 1);
-  const daysUntilTarget = (targetDay - firstDay.getDay() + 7) % 7;
-  const firstOccurrence = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    1 + daysUntilTarget,
-  );
-  const currentDate = new Date(firstOccurrence);
-  if (currentDate < start) {
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-
-  while (currentDate.getMonth() === start.getMonth()) {
-    dates.push(currentDate.toISOString().split("T")[0]);
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-
-  return dates;
-}
-
-function addMonthsToDateString(dateStr: string, months: number): string {
-  const d = new Date(dateStr);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().split("T")[0];
-}
-
-export function getTargetMonthStart(now: Date = new Date()): string {
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return next.toISOString().split("T")[0];
-}
-
-export function getTargetMonthLabel(targetMonthStart: string): string {
-  const d = new Date(targetMonthStart);
-  return d.toLocaleString("default", { month: "long", year: "numeric" });
 }
 
 export function isRebookEligible(booking: BookingInterface): boolean {
@@ -112,10 +69,7 @@ function shiftDatesForService(
 
   booking.schedule.startDate = targetMonthStart;
   if (booking.schedule.endDate) {
-    booking.schedule.endDate = addMonthsToDateString(
-      booking.schedule.endDate,
-      1,
-    );
+    booking.schedule.endDate = addCalendarMonths(booking.schedule.endDate, 1);
   }
 
   if (serviceType === "tutoring" || serviceType === "childcare") {
@@ -164,11 +118,15 @@ function shiftDatesForService(
         childData.totalHours = totalHours;
       }
 
-      if (serviceType === "childcare" && childData.careType === "daily") {
-        const weekdays = booking.schedule.weekdays || [];
-        childData.totalDays = weekdays.filter(
-          (w) => (w.day as string) !== "month",
-        ).length;
+      if (serviceType === "childcare") {
+        if (childData.careType === "monthly" || childData.isMonthSelected) {
+          childData.totalDays = countChildcareMonthDays(targetMonthStart);
+        } else if (childData.careType === "daily") {
+          const weekdays = booking.schedule.weekdays || [];
+          childData.totalDays = weekdays.filter(
+            (w) => (w.day as string) !== "month",
+          ).length;
+        }
       }
 
       if (serviceType === "holiday-camps" && Array.isArray(childData.campWeeks)) {
@@ -180,13 +138,12 @@ function shiftDatesForService(
           }>
         ).map((w) => ({
           ...w,
-          startDate: addMonthsToDateString(w.startDate, 1),
-          endDate: addMonthsToDateString(w.endDate, 1),
+          ...shiftDateRangeByMonths(w.startDate, w.endDate, 1),
         }));
       }
 
       if (serviceType === "kiddies-enrichment" && childData.eventDate) {
-        childData.eventDate = addMonthsToDateString(
+        childData.eventDate = addCalendarMonths(
           childData.eventDate as string,
           1,
         );
@@ -196,7 +153,7 @@ function shiftDatesForService(
 
   if (serviceType === "space-rental") {
     if (sd.eventDate) {
-      sd.eventDate = addMonthsToDateString(sd.eventDate as string, 1);
+      sd.eventDate = addCalendarMonths(sd.eventDate as string, 1);
     }
   }
 }

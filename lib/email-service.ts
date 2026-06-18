@@ -251,8 +251,12 @@ export const emailTemplates = {
     }
             </div>
 
-            <p>You can proceed to make payments..</p>
-            <p>We'll be in touch soon to finalize the arrangements. If you have any questions, please don't hesitate to contact us.</p>
+            ${
+              bookingDetails.status === "confirmed"
+                ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt has also been sent to this email address.</p>`
+                : `<p>Your booking request has been received. You can proceed to make payment from your profile.</p>`
+            }
+            <p>If you have any questions, please don't hesitate to contact us.</p>
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
@@ -788,6 +792,7 @@ export const emailTemplates = {
       totalAmount: number;
       currency: string;
       paymentInstructions?: string;
+      serviceSummary?: string;
     }
   ) => ({
     subject: `Invoice #${invoiceDetails.invoiceNumber} - ParentalPal Services`,
@@ -928,6 +933,17 @@ export const emailTemplates = {
                 : ""
             }
 
+            ${
+              invoiceDetails.serviceSummary
+                ? `
+            <div style="margin: 15px 0; padding: 15px; background-color: #f0f7ff; border-radius: 8px; white-space: pre-line; font-size: 13px; line-height: 1.6;">
+              <div class="info-label">Service Details:</div>
+              <div style="margin-top: 8px;">${invoiceDetails.serviceSummary}</div>
+            </div>
+            `
+                : ""
+            }
+
             <table class="items-table">
               <thead>
                 <tr>
@@ -1047,6 +1063,11 @@ Due Date: ${invoiceDetails.dueDate.toLocaleDateString()}
 
 Service: ${invoiceDetails.serviceType}
 ${
+  invoiceDetails.serviceSummary
+    ? `\nService Details:\n${invoiceDetails.serviceSummary}\n`
+    : ""
+}
+${
   invoiceDetails.children && invoiceDetails.children.length > 0
     ? `Children: ${invoiceDetails.children
         .map((child) => `${child.name} (${child.age} years)`)
@@ -1121,6 +1142,7 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
       currency: string;
       paymentMethod?: string;
       transactionId?: string;
+      serviceSummary?: string;
     }
   ) => ({
     subject: `Payment Receipt #${receiptDetails.receiptNumber} - ParentalPal Services`,
@@ -1292,6 +1314,17 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
                 : ""
             }
 
+            ${
+              receiptDetails.serviceSummary
+                ? `
+            <div style="margin: 15px 0; padding: 15px; background-color: #f0f7ff; border-radius: 8px; white-space: pre-line; font-size: 13px; line-height: 1.6;">
+              <div class="info-label">Service Details:</div>
+              <div style="margin-top: 8px;">${receiptDetails.serviceSummary}</div>
+            </div>
+            `
+                : ""
+            }
+
             <table class="items-table">
               <thead>
                 <tr>
@@ -1414,6 +1447,11 @@ ${
 }
 
 Service: ${receiptDetails.serviceType}
+${
+  receiptDetails.serviceSummary
+    ? `\nService Details:\n${receiptDetails.serviceSummary}\n`
+    : ""
+}
 ${
   receiptDetails.children && receiptDetails.children.length > 0
     ? `Children: ${receiptDetails.children

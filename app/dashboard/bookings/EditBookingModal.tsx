@@ -51,6 +51,9 @@ interface Booking {
   children?: Child[];
   specialRequests?: string;
   schedule?: Schedule;
+  payment?: {
+    status?: "pending" | "paid" | "refunded";
+  };
 }
 
 interface EditBookingModalProps {
@@ -77,6 +80,7 @@ export default function EditBookingModal({
         parentPhone: booking.parentPhone,
         serviceType: booking.serviceType,
         status: booking.status,
+        payment: booking.payment,
         totalCost: booking.totalCost,
         children: booking.children || [],
         specialRequests: booking.specialRequests || "",
@@ -253,10 +257,20 @@ export default function EditBookingModal({
                 onChange={handleInputChange}
               >
                 <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
+                {formData.payment?.status === "paid" && (
+                  <option value="confirmed">Confirmed</option>
+                )}
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+              {formData.payment?.status !== "paid" && (
+                <label className="label">
+                  <span className="label-text-alt text-warning">
+                    Use Payment Reconciliation in the booking view to mark paid
+                    before setting Confirmed.
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control">

@@ -4,6 +4,11 @@ import { UserRepository } from "@/lib/UserRepository";
 import { auth } from "@/auth";
 import { sendEmail, emailTemplates } from "@/lib/email-service";
 import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
+import {
+  buildInvoiceLineItems,
+  buildServiceSummary,
+} from "@/lib/booking-invoice";
+import { buildBookingReceiptDetails } from "@/lib/booking-payment-emails";
 
 // Generate a unique invoice number
 function generateInvoiceNumber(): string {
@@ -12,48 +17,6 @@ function generateInvoiceNumber(): string {
     .toString()
     .padStart(3, "0");
   return `INV-${timestamp}-${random}`;
-}
-
-// Generate invoice items from booking data
-function generateInvoiceItems(booking: {
-  serviceType?: string;
-  children?: Array<{ name: string; age: number }>;
-  pricing?: { totalAmount?: number };
-}) {
-  const items = [];
-  const serviceType = booking.serviceType || "Service";
-  const childrenCount = booking.children?.length || 1;
-  const totalAmount = booking.pricing?.totalAmount || 0;
-
-  // Calculate unit price based on service type
-  let unitPrice = totalAmount;
-  let quantity = 1;
-  let description = `${serviceType
-    .split("-")
-    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")} Service`;
-
-  // Adjust for services with multiple children
-  if (
-    (serviceType === "childcare" || serviceType === "tutoring") &&
-    childrenCount > 1
-  ) {
-    unitPrice = totalAmount / childrenCount;
-    quantity = childrenCount;
-    description = `${serviceType
-      .split("-")
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")} Service (per child)`;
-  }
-
-  items.push({
-    description,
-    quantity,
-    unitPrice,
-    total: totalAmount,
-  });
-
-  return items;
 }
 
 export async function POST(
@@ -119,9 +82,13 @@ export async function POST(
       );
     }
 
-    const items = generateInvoiceItems(booking);
-    const subtotal = booking.pricing?.totalAmount || 0;
-    const totalAmount = subtotal;
+    const items = buildInvoiceLineItems(booking);
+    const serviceSummary = buildServiceSummary(booking);
+    const positiveSubtotal = items
+      .filter((item) => item.total > 0)
+      .reduce((sum, item) => sum + item.total, 0);
+    const subtotal = positiveSubtotal || booking.pricing?.totalAmount || 0;
+    const totalAmount = booking.pricing?.totalAmount || 0;
 
     let emailContent;
     let documentNumber: string;
@@ -131,26 +98,14 @@ export async function POST(
       // Generate receipt for confirmed bookings
       documentNumber = generateInvoiceNumber().replace("INV", "RCT");
       documentType = "receipt";
-      const receiptDate = new Date();
-      const paymentDate = booking.payment?.paymentDate
-        ? new Date(booking.payment.paymentDate)
-        : receiptDate;
 
-      const receiptDetails = {
-        receiptNumber: documentNumber,
-        bookingId: booking._id?.toString() || id,
-        receiptDate,
-        paymentDate,
-        serviceType: booking.serviceType || "Service",
-        children: booking.children || [],
-        schedule: booking.schedule,
-        items,
-        subtotal,
-        totalAmount,
-        currency: booking.pricing?.currency || "₦",
-        paymentMethod: booking.payment?.method,
-        transactionId: booking.payment?.transactionId,
-      };
+      const receiptDetails = buildBookingReceiptDetails(booking, {
+        reference: booking.payment?.transactionId || documentNumber,
+        amount: booking.payment?.paidAmount || totalAmount,
+        currency: booking.pricing?.currency || "NGN",
+        method: booking.payment?.method?.replace("_", " ") || "payment",
+      });
+      documentNumber = receiptDetails.receiptNumber;
 
       emailContent = emailTemplates.receipt(parentName, receiptDetails);
     } else {
@@ -175,6 +130,7 @@ export async function POST(
         currency: booking.pricing?.currency || "₦",
         paymentInstructions:
           "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
+        serviceSummary,
       };
 
       emailContent = emailTemplates.invoice(parentName, invoiceDetails);

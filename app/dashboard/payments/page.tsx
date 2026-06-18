@@ -43,6 +43,23 @@ export interface PaymentAnalytics {
   paymentMethodStats: { method: string; count: number; amount: number }[];
 }
 
+function mapBookingPaymentStatus(
+  status?: string,
+): PaymentInterface["paymentStatus"] {
+  switch (status) {
+    case "paid":
+      return "completed";
+    case "refunded":
+      return "refunded";
+    case "failed":
+      return "failed";
+    case "partial":
+      return "partial";
+    default:
+      return "pending";
+  }
+}
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentInterface[]>([]);
   const [analytics, setAnalytics] = useState<PaymentAnalytics | null>(null);
@@ -78,13 +95,22 @@ export default function PaymentsPage() {
             parentName: booking.parentName || "N/A",
             parentEmail: booking.parentEmail || "N/A",
             service: booking.serviceType || "N/A",
-            amount: booking.totalCost || 0,
-            amountPaid: booking.amountPaid || 0,
-            paymentMethod: booking.paymentMethod || "bank-transfer",
-            paymentStatus: booking.paymentStatus || "pending",
+            amount:
+              (booking.pricing as { totalAmount?: number })?.totalAmount ||
+              (booking as { totalCost?: number }).totalCost ||
+              0,
+            amountPaid:
+              (booking.payment as { paidAmount?: number })?.paidAmount || 0,
+            paymentMethod:
+              (booking.payment as { method?: string })?.method || "bank-transfer",
+            paymentStatus: mapBookingPaymentStatus(
+              (booking.payment as { status?: string })?.status,
+            ),
             paymentDate:
-              booking.paymentDate && typeof booking.paymentDate === "string"
-                ? new Date(booking.paymentDate)
+              (booking.payment as { paymentDate?: string })?.paymentDate
+                ? new Date(
+                    (booking.payment as { paymentDate: string }).paymentDate,
+                  )
                 : undefined,
             dueDate:
               booking.dueDate && typeof booking.dueDate === "string"
@@ -177,20 +203,29 @@ export default function PaymentsPage() {
         });
       }
 
-      // Payment by service
+      // Payment by service (paid bookings only)
       const serviceStats = new Map<string, { amount: number; count: number }>();
-      transformedPayments.forEach((p) => {
-        const existing = serviceStats.get(p.service) || { amount: 0, count: 0 };
-        serviceStats.set(p.service, {
-          amount: existing.amount + (p.amountPaid || 0),
-          count: existing.count + 1,
+      transformedPayments
+        .filter((p) => p.paymentStatus === "completed")
+        .forEach((p) => {
+          const revenue = p.amountPaid || p.amount || 0;
+          const existing = serviceStats.get(p.service) || {
+            amount: 0,
+            count: 0,
+          };
+          serviceStats.set(p.service, {
+            amount: existing.amount + revenue,
+            count: existing.count + 1,
+          });
         });
-      });
       const paymentsByService = Array.from(serviceStats.entries()).map(
         ([service, stats]) => ({
-          service,
+          service: service
+            .split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" "),
           ...stats,
-        })
+        }),
       );
 
       // Payments by status

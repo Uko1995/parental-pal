@@ -15,6 +15,10 @@ import {
 } from "@/lib/camp-seasons";
 import { calculateCampPricing } from "@/lib/camp-pricing";
 import { isHolidayCampServiceActive } from "@/app/services/actions";
+import {
+  countChildcareMonthDays,
+  getWeekdayDatesInMonth,
+} from "@/lib/booking-calendar";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
@@ -600,6 +604,31 @@ export async function parseFormDataToBooking(
           }
         }
 
+        const bookingStartDate = (cleanedData.startDate as string) || "";
+        if (childData.schedule?.length && bookingStartDate) {
+          childData.schedule = childData.schedule.map((block) => {
+            if (block.startTime && block.day !== "month") {
+              const dates = getWeekdayDatesInMonth(block.day, bookingStartDate);
+              return {
+                ...block,
+                dates: dates.map((date) => ({
+                  date,
+                  startTime: block.startTime || "09:00",
+                })),
+              };
+            }
+            return block;
+          });
+          const recomputedHours = childData.schedule.reduce(
+            (sum, block) =>
+              sum + (block.dates?.length || 0) * (block.hours || 1),
+            0,
+          );
+          if (recomputedHours > 0) {
+            childData.totalHours = recomputedHours;
+          }
+        }
+
         childrenTutoringData.push(childData);
       }
     });
@@ -625,16 +654,23 @@ export async function parseFormDataToBooking(
 
     Array.from(childIds).forEach((childId) => {
       const careType = cleanedData[`careType_${childId}`];
-      const totalDays = parseFloat(cleanedData[`totalDays_${childId}`]) || 0;
+      let totalDays = parseFloat(cleanedData[`totalDays_${childId}`]) || 0;
       const dropoffTime = cleanedData[`dropoffTime_${childId}`];
       const pickupTime = cleanedData[`pickupTime_${childId}`];
 
       if (careType) {
+        const isMonthly =
+          careType === "monthly" ||
+          cleanedData[`isMonthSelected_${childId}`] === "true";
+        if (isMonthly && cleanedData.startDate) {
+          totalDays = countChildcareMonthDays(cleanedData.startDate as string);
+        }
+
         childrenCareData.push({
           childId,
           careType,
           totalDays,
-          isMonthSelected: careType === "monthly",
+          isMonthSelected: isMonthly,
           dropoffTime: dropoffTime || "",
           pickupTime: pickupTime || "",
           specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",

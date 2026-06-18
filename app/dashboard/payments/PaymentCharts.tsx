@@ -262,31 +262,37 @@ export default function PaymentCharts({ analytics }: PaymentChartsProps) {
           <div className="card-body">
             <h2 className="card-title text-lg mb-4">Revenue by Service</h2>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={serviceData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: 12 }}
-                    stroke="#666"
-                    tickFormatter={formatCurrency}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    stroke="#666"
-                    width={100}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar
-                    dataKey="amount"
-                    name="Revenue"
-                    fill={COLORS.secondary}
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {serviceData.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-gray-500">
+                  No paid bookings yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={serviceData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12 }}
+                      stroke="#666"
+                      angle={-20}
+                      textAnchor="end"
+                      height={70}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      stroke="#666"
+                      tickFormatter={formatCurrency}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar
+                      dataKey="amount"
+                      name="Revenue"
+                      fill={COLORS.secondary}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
