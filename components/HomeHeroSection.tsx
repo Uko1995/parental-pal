@@ -7,8 +7,10 @@ export default async function HomeHeroSection() {
 
   return (
     <div className="relative">
-      <CampPromoBanner activeSeason={activeSeason} />
-      <Hero />
+      {activeSeason ? (
+        <CampPromoBanner activeSeason={activeSeason} />
+      ) : null}
+      <Hero hasPromoBanner={Boolean(activeSeason)} />
     </div>
   );
 }

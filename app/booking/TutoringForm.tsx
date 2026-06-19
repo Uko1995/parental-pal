@@ -22,22 +22,23 @@ import {
   UserIcon,
   CurrencyDollarIcon,
   InformationCircleIcon,
-  PlusIcon,
   TrashIcon,
   CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
 import {
   applyParentContactPrefill,
-  createPrefilledChildrenFromProfile,
+  applyFirstChildPrefillToRow,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 import { formatLocalDate } from "@/lib/booking-calendar";
 
 export interface TutoringFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
+  isPricingReady: () => boolean;
 }
 
 interface ChildTutoringData {
@@ -88,6 +89,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   >("physical");
   const [virtualRate, setVirtualRate] = useState(13000); // ₦13,000 for virtual
   const [physicalRate, setPhysicalRate] = useState(12000); // ₦12,000 for physical
+  const [pricingLoadState, setPricingLoadState] = useState<
+    "loading" | "ready" | "failed"
+  >("loading");
   const [hourlyRate, setHourlyRate] = useState(12000); // Default to physical rate
   const [promoCode, setPromoCode] = useState("");
   const [promoStatus, setPromoStatus] = useState<
@@ -188,21 +192,15 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     });
 
     if (profile.children.length > 0) {
-      const { ids, defaults } = createPrefilledChildrenFromProfile(
-        profile.children,
-      );
-      setChildrenData(
-        ids.map((id, index) => ({
-          id,
-          index,
-          selectedSubjects: [],
-          academicLevel: "",
-          learningGoals: "",
-          totalHours: 0,
-          schedule: [],
-        })),
-      );
-      setChildDefaults(defaults);
+      setChildrenData((prev) => {
+        if (prev.length === 0) return prev;
+        const { defaults } = applyFirstChildPrefillToRow(
+          profile.children,
+          prev[0].id,
+        );
+        setChildDefaults((d) => ({ ...d, ...defaults }));
+        return prev;
+      });
     }
   }, []);
 
@@ -219,16 +217,18 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         const response = await fetch("/api/services/pricing");
         const data = await response.json();
         if (data.success && data.data.tutoring) {
-          // Set rates from database or use defaults
           const vRate = data.data.tutoring.virtualRate || 13000;
           const pRate = data.data.tutoring.physicalRate || 12000;
           setVirtualRate(vRate);
           setPhysicalRate(pRate);
-          // Set initial hourly rate based on default location
           setHourlyRate(pRate);
+          setPricingLoadState("ready");
+        } else {
+          setPricingLoadState("failed");
         }
       } catch (error) {
         console.error("Error fetching tutoring pricing:", error);
+        setPricingLoadState("failed");
       }
     };
     fetchPricing();
@@ -431,6 +431,11 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
       if (!child.academicLevel) {
         errors.push(`Child ${index + 1}: Please select an academic level`);
       }
+      if (!child.learningGoals.trim()) {
+        errors.push(
+          `Child ${index + 1}: Please describe learning goals and objectives`,
+        );
+      }
       if (child.totalHours === 0) {
         errors.push(`Child ${index + 1}: Please select tutoring schedule`);
       }
@@ -445,6 +450,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   useImperativeHandle(ref, () => ({
     resetForm,
     validate,
+    isPricingReady: () => pricingLoadState === "ready",
   }));
 
   // Calculate total cost for all children
@@ -801,7 +807,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 resize-none"
               placeholder="e.g., Improve math grades, prepare for WAEC exams, strengthen reading comprehension..."
               rows={4}
-              required
             />
           </div>
 
@@ -858,15 +863,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         </div>
       ))}
 
-      {/* Add Another Child Button */}
-      <button
-        type="button"
-        onClick={addChild}
-        className="w-full flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-gray-300 text-gray-700 rounded-lg hover:border-[#90AC19] hover:bg-[#90AC19]/5 hover:text-[#90AC19] transition-all duration-200 font-medium"
-      >
-        <PlusIcon className="w-6 h-6" />
-        Add Another Child
-      </button>
+      <AddAnotherChildButton onClick={addChild} />
 
       {/* Hidden field for children count */}
       <input type="hidden" name="childrenCount" value={childrenData.length} />
@@ -877,9 +874,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
 
       {/* Final Payment Summary */}
       {childrenData.some((child) => child.totalHours > 0) && (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
-          <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-gray-900 mb-6">
-            <CurrencyDollarIcon className="w-6 h-6 mr-2 text-gray-700" />
+        <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-6 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-base-content mb-6">
+            <CurrencyDollarIcon className="w-6 h-6 mr-2 text-base-content/70" />
             Final Payment Summary
           </h3>
 
@@ -890,14 +887,14 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                 return (
                   <div
                     key={child.id}
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                    className="bg-base-200 p-4 rounded-lg border border-base-300"
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-base-content">
                           Child #{index + 1}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-base-content/70">
                           {child.schedule.reduce(
                             (sum, block) => sum + (block.dates?.length || 0),
                             0,
@@ -906,7 +903,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                           {child.selectedSubjects.length} subject(s)
                         </p>
                       </div>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-xl font-bold text-base-content">
                         ₦{(child.totalHours * hourlyRate).toLocaleString()}
                       </p>
                     </div>
@@ -933,10 +930,10 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           <input type="hidden" name="hourlyRate" value={hourlyRate} />
           <input type="hidden" name="totalCost" value={calculateTotalCost()} />
 
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mt-6 bg-base-200 border border-base-300 rounded-lg p-4">
             <div className="flex items-start gap-2">
-              <InformationCircleIcon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-              <span className="text-sm text-gray-700">
+              <InformationCircleIcon className="w-5 h-5 text-brand-primary shrink-0 mt-0.5" />
+              <span className="text-sm text-base-content">
                 Professional qualified tutors with personalized learning
                 approach and progress tracking included.
               </span>

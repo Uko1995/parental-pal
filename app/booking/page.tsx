@@ -48,7 +48,7 @@ export default async function Page({ searchParams }: BookingPageProps) {
   }
 
   return (
-    <section className="min-h-screen  py-8 px-4">
+    <section className="min-h-screen py-8 px-4 bg-base-100 text-base-content">
       <div className="max-w-6xl mx-auto">
         {/* Registration Form */}
         <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
@@ -56,8 +56,8 @@ export default async function Page({ searchParams }: BookingPageProps) {
         </Suspense>
 
         {/* Contact Info */}
-        <div className="text-center mt-8 p-6 bg-white/50 rounded-xl border border-gray-100">
-          <p className="text-gray-600 mb-2">
+        <div className="text-center mt-8 p-6 bg-base-200/80 rounded-xl border border-base-300">
+          <p className="text-base-content/70 mb-2">
             Have questions? We&apos;re here to help!
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">

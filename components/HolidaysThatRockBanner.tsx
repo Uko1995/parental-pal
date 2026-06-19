@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkle } from "@phosphor-icons/react";
 
 export default function HolidaysThatRockBanner({
   inline = false,
@@ -10,34 +9,50 @@ export default function HolidaysThatRockBanner({
 }) {
   const wrapperClass = inline
     ? "relative w-full my-6"
-    : "absolute top-16 left-0 right-0 z-20 w-full px-4 sm:px-6";
+    : "relative z-20 w-full px-3 pb-1 md:absolute md:top-16 md:left-0 md:right-0 md:px-6 md:pb-0";
 
   return (
     <div className={wrapperClass}>
-      <div className="relative overflow-hidden rounded-2xl shadow-lg border border-white/10">
-        <div className="absolute inset-0 bg-linear-to-r from-brand-primary via-brand-accent to-brand-secondary opacity-90" />
-        <div className="absolute inset-0 bg-black/20" />
+      <div className="relative overflow-hidden rounded-lg sm:rounded-2xl shadow-md sm:shadow-lg border border-white/10">
+        <div className="absolute inset-0 bg-linear-to-r from-brand-primary via-brand-accent to-brand-secondary opacity-95" />
+        <div className="absolute inset-0 bg-black/25" />
 
         <Link
           href="/services/holidays-that-rock-2026"
           className="relative block group"
-          aria-label="Holidays That Rock 2026 summer camp"
+          aria-label="Holidays That Rock 2026 summer camp — register now"
         >
-          <div className="py-4 sm:py-5 px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-white">
-              {/* <div className="p-2 rounded-xl bg-white/15">
-                <Sparkle className="w-6 h-6" weight="fill" />
-              </div> */}
-              <div className="text-left">
-                <p className="font-bold text-sm sm:text-base tracking-wide">
+          {/* Mobile: compact single-row layout */}
+          <div className="py-2 px-3 sm:hidden flex items-center gap-2">
+            <div className="min-w-0 flex-1 text-white">
+              <p className="font-bold text-xs leading-tight truncate">
+                Holidays That Rock 2026
+              </p>
+              <p className="text-[10px] text-white/90 leading-tight truncate mt-0.5">
+                Jul 20 – Aug 29 · 7% off 6 weeks
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-full bg-white text-brand-primary font-semibold text-[11px] group-active:scale-[0.98] transition-transform">
+              Register
+            </span>
+          </div>
+
+          {/* sm+: roomier layout */}
+          <div className="hidden sm:flex py-3 px-4 sm:py-4 sm:px-6 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-white min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="font-bold text-sm sm:text-base tracking-wide leading-tight">
                   Holidays That Rock 2026
                 </p>
-                <p className="text-xs sm:text-sm text-white/90">
-                  July 20 – August 29 · Ages 0–14 · Lekki & Gbagada
-                </p>
+                <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white whitespace-nowrap">
+                  7% off 6 weeks
+                </span>
               </div>
+              <p className="mt-1 text-sm text-white leading-snug">
+                July 20 – Aug 29 · Ages 0–14 · Lekki & Gbagada
+              </p>
             </div>
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white text-brand-primary font-semibold text-sm group-hover:scale-105 transition-transform">
+            <span className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white text-brand-primary font-semibold text-sm shadow-sm group-hover:scale-[1.02] group-active:scale-[0.98] transition-transform shrink-0">
               Register now
             </span>
           </div>

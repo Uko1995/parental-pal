@@ -23,7 +23,7 @@ export default function ConditionalLayout({
   return (
     <>
       <NavBar />
-      <main className="pt-16">{children}</main>
+      <main className="pt-16 bg-base-100 text-base-content min-h-screen">{children}</main>
       <Footer />
     </>
   );

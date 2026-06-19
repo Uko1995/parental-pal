@@ -1,7 +1,9 @@
 @import "@fontsource/manrope/latin.css";
 @import "@fontsource/jost/900.css";
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
 
 html {
   scroll-behavior: smooth;
@@ -11,6 +13,19 @@ html {
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface-elevated: #ffffff;
+  --surface-muted: #f3f4f6;
+  --surface-cream: rgb(255 234 207 / 0.35);
+  --border-default: #d1d5db;
+  --border-subtle: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --input-bg: #ffffff;
+  --input-text: #111827;
+  --toast-bg: #ffffff;
+  --toast-text: #363636;
+  --toast-border: #e5e7eb;
 
   /* Custom brand colors for DaisyUI */
   --brand-primary: #90ac19;
@@ -32,8 +47,111 @@ html {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #121212;
+    --foreground: #f3f4f6;
+    --surface-elevated: #1e1e1e;
+    --surface-muted: #252525;
+    --surface-cream: rgb(55 42 24 / 0.55);
+    --border-default: #525252;
+    --border-subtle: #404040;
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --text-muted: #a3a3a3;
+    --input-bg: #1e1e1e;
+    --input-text: #f3f4f6;
+    --toast-bg: #1e1e1e;
+    --toast-text: #f3f4f6;
+    --toast-border: #525252;
+    color-scheme: dark;
+  }
+
+  /* Legacy Tailwind grays → readable tokens (cards, forms, dashboard) */
+  .text-gray-900,
+  .text-gray-800,
+  .text-gray-700 {
+    color: var(--text-primary);
+  }
+
+  .text-gray-600,
+  .text-gray-500 {
+    color: var(--text-secondary);
+  }
+
+  .text-gray-400 {
+    color: var(--text-muted);
+  }
+
+  .bg-white {
+    background-color: var(--surface-elevated);
+  }
+
+  .bg-gray-50 {
+    background-color: #1a1a1a;
+  }
+
+  .bg-gray-100 {
+    background-color: var(--surface-muted);
+  }
+
+  .bg-gray-200 {
+    background-color: #333333;
+  }
+
+  .border-gray-100,
+  .border-gray-200,
+  .border-gray-300 {
+    border-color: var(--border-default);
+  }
+
+  .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border-default);
+  }
+
+  .hover\:bg-gray-50:hover {
+    background-color: var(--surface-muted);
+  }
+
+  .hover\:bg-gray-100:hover {
+    background-color: #333333;
+  }
+
+  /* Keep intentional white chips/buttons on brand banners */
+  .bg-white.text-brand-primary,
+  .bg-white.text-\[\#90AC19\] {
+    background-color: #ffffff;
+    color: var(--brand-primary);
+  }
+
+  /* Form controls with hardcoded light classes */
+  input[class*="bg-white"],
+  select[class*="bg-white"],
+  textarea[class*="bg-white"],
+  input[class*="text-gray"],
+  select[class*="text-gray"],
+  textarea[class*="text-gray"] {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--border-default);
+  }
+
+  input[class*="border-gray"],
+  select[class*="border-gray"],
+  textarea[class*="border-gray"] {
+    border-color: var(--border-default);
+  }
+
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl {
+    --tw-shadow-color: rgb(0 0 0 / 0.35);
+  }
+
+  .gradient-border {
+    background: linear-gradient(var(--surface-elevated), var(--surface-elevated))
+        padding-box,
+      linear-gradient(45deg, #90ac19, #e8931a) border-box;
   }
 }
 
@@ -48,9 +166,9 @@ body {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 select,
 textarea {
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  color: #111827;
+  border: 1px solid var(--border-default);
+  background-color: var(--input-bg);
+  color: var(--input-text);
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
@@ -58,7 +176,67 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: #90ac19;
-  box-shadow: 0 0 0 2px rgba(144, 172, 25, 0.15);
+  box-shadow: 0 0 0 2px rgba(144, 172, 25, 0.25);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--input-text) 45%, transparent);
+}
+
+/* Theme-aware react-hot-toast overrides */
+[data-sonner-toaster],
+div[class*="go"][class*="207"] {
+  top: 72px !important;
+}
+
+@media (max-width: 767px) {
+  [data-sonner-toaster],
+  div[class*="go"][class*="207"] {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
+}
+
+/* react-hot-toast container */
+.go2072408551 {
+  top: 72px !important;
+}
+
+@media (max-width: 767px) {
+  .go2072408551 {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
+}
+
+.go3958317564 {
+  background: var(--toast-bg) !important;
+  color: var(--toast-text) !important;
+  border: 1px solid var(--toast-border) !important;
+  max-width: min(100vw - 16px, 420px) !important;
+  word-break: break-word;
+}
+
+/* Semantic surface utilities */
+.surface-page {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.surface-card {
+  background-color: var(--background);
+  border-color: var(--border-default);
+}
+
+.surface-cream {
+  background-color: var(--surface-cream);
+}
+
+.surface-muted {
+  background-color: var(--surface-muted);
 }
 
 /* Custom gradient utilities for mesh background */
@@ -88,10 +266,31 @@ textarea:focus {
 
 /* Custom DaisyUI theme overrides */
 [data-theme="light"] {
-  --p: var(--brand-primary);
-  --s: var(--brand-secondary);
-  --a: var(--brand-accent);
-  --n: var(--brand-cream);
+  --p: 144 172 25;
+  --s: 232 147 26;
+  --a: 162 95 151;
+  --n: 255 234 207;
+  --b1: 255 255 255;
+  --b2: 243 244 246;
+  --b3: 229 231 235;
+  --bc: 23 23 23;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] {
+    --p: 168 196 42;
+    --s: 232 147 26;
+    --a: 180 120 170;
+    --n: 55 42 24;
+    --b1: 18 18 18;
+    --b2: 30 30 30;
+    --b3: 64 64 64;
+    --bc: 243 244 246;
+  }
+
+  .dashboard-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.35);
+  }
 }
 
 /* Dashboard specific styles */
@@ -104,7 +303,7 @@ textarea:focus {
 }
 
 .dashboard-card {
-  background: #ffffff;
+  background: var(--surface-elevated);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border-radius: 1rem;
 }

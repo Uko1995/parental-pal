@@ -10,7 +10,6 @@ import ChildInfoForm from "./ChildInfoForm";
 import WeekdaysSchedule, { WeekdaysScheduleRef } from "./WeekdaysSchedule";
 import PhoneInput from "@/components/PhoneInput";
 import {
-  PlusIcon,
   UserIcon,
   ClockIcon,
   CalendarIcon,
@@ -26,9 +25,10 @@ import {
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  createPrefilledChildrenFromProfile,
+  applyFirstChildPrefillToRow,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 import {
   countChildcareMonthDays,
@@ -38,6 +38,7 @@ import {
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
+  isPricingReady: () => boolean;
 }
 
 interface ChildCareData {
@@ -81,6 +82,9 @@ const ChildCareSpecificBookingForm = forwardRef<
     ]);
     const [dailyRate, setDailyRate] = useState(5000); // Default to ₦5,000/day
     const [monthlyRate, setMonthlyRate] = useState(110500); // Default to ₦110,500/month (15% discount)
+    const [pricingLoadState, setPricingLoadState] = useState<
+      "loading" | "ready" | "failed"
+    >("loading");
     const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
 
     // Create refs for each child's WeekdaysSchedule
@@ -177,22 +181,15 @@ const ChildCareSpecificBookingForm = forwardRef<
       });
 
       if (profile.children.length > 0) {
-        const { ids, defaults } = createPrefilledChildrenFromProfile(
-          profile.children,
-        );
-        setChildrenData(
-          ids.map((id, index) => ({
-            id,
-            index,
-            careType: "" as "daily" | "monthly" | "",
-            totalDays: 0,
-            isMonthSelected: false,
-            dropoffTime: "",
-            pickupTime: "",
-            specialNeeds: "",
-          })),
-        );
-        setChildDefaults(defaults);
+        setChildrenData((prev) => {
+          if (prev.length === 0) return prev;
+          const { defaults } = applyFirstChildPrefillToRow(
+            profile.children,
+            prev[0].id,
+          );
+          setChildDefaults((d) => ({ ...d, ...defaults }));
+          return prev;
+        });
       }
     }, []);
 
@@ -222,10 +219,16 @@ const ChildCareSpecificBookingForm = forwardRef<
               const baseRate = data["childcare"].baseRate;
               setDailyRate(baseRate);
               recalculateMonthlyRate(baseRate);
+              setPricingLoadState("ready");
+            } else {
+              setPricingLoadState("failed");
             }
+          } else {
+            setPricingLoadState("failed");
           }
         } catch (error) {
           console.error("Error fetching pricing:", error);
+          setPricingLoadState("failed");
         }
       };
       fetchPricing();
@@ -386,6 +389,7 @@ const ChildCareSpecificBookingForm = forwardRef<
     useImperativeHandle(ref, () => ({
       resetForm,
       validate,
+      isPricingReady: () => pricingLoadState === "ready",
     }));
 
     // Calculate total cost for all children
@@ -721,15 +725,7 @@ const ChildCareSpecificBookingForm = forwardRef<
           </div>
         ))}
 
-        {/* Add Another Child Button */}
-        <button
-          type="button"
-          onClick={addChild}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-gray-300 text-gray-700 rounded-lg hover:border-[#90AC19] hover:bg-[#90AC19]/5 hover:text-[#90AC19] transition-all duration-200 font-medium"
-        >
-          <PlusIcon className="w-6 h-6" />
-          Add Another Child
-        </button>
+        <AddAnotherChildButton onClick={addChild} />
 
         {/* Hidden field for children count */}
         <input type="hidden" name="childrenCount" value={childrenData.length} />
@@ -738,9 +734,9 @@ const ChildCareSpecificBookingForm = forwardRef<
         {childrenData.some(
           (child) => child.careType && child.totalDays > 0
         ) && (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
-            <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-gray-900 mb-6">
-              <CurrencyDollarIcon className="w-6 h-6 mr-2 text-gray-700" />
+          <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-6 sm:p-8">
+            <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-base-content mb-6">
+              <CurrencyDollarIcon className="w-6 h-6 mr-2 text-base-content/70" />
               Final Payment Summary
             </h3>
 
@@ -755,14 +751,14 @@ const ChildCareSpecificBookingForm = forwardRef<
                   return (
                     <div
                       key={child.id}
-                      className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                      className="bg-base-200 p-4 rounded-lg border border-base-300"
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-base-content">
                             Child #{index + 1}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-base-content/70">
                             {child.careType === "monthly"
                               ? `Monthly plan (${monthWeekdayCount} days)`
                               : `${child.totalDays} days/week`}{" "}
@@ -772,7 +768,7 @@ const ChildCareSpecificBookingForm = forwardRef<
                               ` ${child.dropoffTime} - ${child.pickupTime}`}
                           </p>
                         </div>
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-base-content">
                           ₦{childCost.toLocaleString()}
                         </p>
                       </div>
@@ -804,10 +800,10 @@ const ChildCareSpecificBookingForm = forwardRef<
               value={calculateTotalCost()}
             />
 
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="mt-6 bg-base-200 border border-base-300 rounded-lg p-4">
               <div className="flex items-start gap-2">
-                <InformationCircleIcon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">
+                <InformationCircleIcon className="w-5 h-5 text-brand-primary shrink-0 mt-0.5" />
+                <span className="text-sm text-base-content">
                   Professional childcare in a safe, nurturing environment with
                   qualified staff. Meals and activities included.
                 </span>

@@ -73,14 +73,14 @@ export default function CartIcon({ isTransparent = false }: CartIconProps) {
     <Link
       href="/cart"
       className={`relative p-2 rounded-lg transition-colors ${
-        isTransparent ? "hover:bg-white/10" : "hover:bg-gray-100"
+        isTransparent ? "hover:bg-white/10" : "hover:bg-base-200"
       }`}
       aria-label={`Shopping cart${
         itemCount > 0 ? ` with ${itemCount} items` : ""
       }`}
     >
       <ShoppingCartIcon
-        className={`w-6 h-6 ${isTransparent ? "text-white" : "text-gray-700"}`}
+        className={`w-6 h-6 ${isTransparent ? "text-white" : "text-base-content"}`}
       />
       {!loading && itemCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-[#90AC19] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">

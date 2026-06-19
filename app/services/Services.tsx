@@ -58,7 +58,7 @@ export default async function Services() {
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
-    <section className="min-h-screen py-16 px-4 bg-gray-50">
+    <section className="min-h-screen py-16 px-4 bg-base-200 text-base-content">
       <div className="max-w-7xl mx-auto">
         {/* Header Section - Modern & Clean */}
         <div className="text-center mb-16 space-y-6">

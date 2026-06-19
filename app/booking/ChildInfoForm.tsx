@@ -25,8 +25,8 @@ export default function ChildInfoForm({
   return (
     <div className=" p-6 space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <UserIcon className="w-5 h-5 text-gray-600" />
+        <h4 className="text-lg font-semibold text-base-content flex items-center gap-2">
+          <UserIcon className="w-5 h-5 text-base-content/70" />
           <span>Child #{childIndex + 1}</span>
         </h4>
         {showRemoveButton && onRemove && (
@@ -44,7 +44,7 @@ export default function ChildInfoForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="form-control flex flex-col">
           <label className="label">
-            <span className="label-text font-medium text-gray-800">
+            <span className="label-text font-medium text-base-content">
               Child&apos;s Name <span className="text-red-600">*</span>
             </span>
           </label>
@@ -60,7 +60,7 @@ export default function ChildInfoForm({
 
         <div className="form-control flex flex-col">
           <label className="label">
-            <span className="label-text font-medium text-gray-800">
+            <span className="label-text font-medium text-base-content">
               Age <span className="text-red-600">*</span>
             </span>
           </label>
@@ -84,7 +84,7 @@ export default function ChildInfoForm({
 
         <div className="form-control flex flex-col">
           <label className="label">
-            <span className="label-text font-medium text-gray-800">
+            <span className="label-text font-medium text-base-content">
               Gender <span className="text-red-600">*</span>
             </span>
           </label>
@@ -103,7 +103,7 @@ export default function ChildInfoForm({
 
         <div className="form-control flex flex-col">
           <label className="label">
-            <span className="label-text font-medium text-gray-800">
+            <span className="label-text font-medium text-base-content">
               Allergies/Medical Info
             </span>
             <span className="label-text-alt text-gray-500 text-xs">

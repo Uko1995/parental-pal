@@ -145,8 +145,8 @@ export const SUMMER_CAMP_RATES = {
   gbagadaOlderWeekly: 65_000,
   lekkiWeekly: 100_000,
   boardingWeekly: 65_000,
-  multiWeekDiscountPercent: 10,
-  multiWeekDiscountMinWeeks: 3,
+  multiWeekDiscountPercent: 7,
+  multiWeekDiscountMinWeeks: 6,
 } as const;
 
 export const EASTER_CAMP_RATES = {

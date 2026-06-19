@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import ConditionalLayout from "../components/ConditionalLayout";
 import AnalyticsProvider from "../components/AnalyticsProvider";
+import ToastRouteCleanup from "../components/ToastRouteCleanup";
 import { baseMetadata } from "../lib/metadata";
 import Image from "next/image";
 
@@ -54,24 +55,28 @@ export default function RootLayout({
           <AnalyticsProvider>
             <ConditionalLayout>{children}</ConditionalLayout>
           </AnalyticsProvider>
+          <ToastRouteCleanup />
           <Toaster
-            position="top-right"
+            position="top-center"
+            containerStyle={{ top: 72 }}
             toastOptions={{
-              duration: 3000,
+              duration: 2500,
               style: {
-                background: "#fff",
-                color: "#363636f",
+                background: "var(--toast-bg)",
+                color: "var(--toast-text)",
+                border: "1px solid var(--toast-border)",
+                maxWidth: "min(100vw - 16px, 420px)",
               },
               success: {
                 iconTheme: {
                   primary: "#90AC19",
-                  secondary: "#fff",
+                  secondary: "var(--toast-bg)",
                 },
               },
               error: {
                 iconTheme: {
                   primary: "#f87171",
-                  secondary: "#fff",
+                  secondary: "var(--toast-bg)",
                 },
               },
             }}

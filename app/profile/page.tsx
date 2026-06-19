@@ -69,13 +69,13 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30 flex items-center justify-center">
+      <div className="min-h-screen surface-cream flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
             <div className="absolute inset-0 blur-xl bg-[#90AC19]/20 rounded-full"></div>
             <span className="loading loading-spinner loading-lg text-[#90AC19] relative z-10"></span>
           </div>
-          <p className="mt-6 text-gray-600 font-medium">
+          <p className="mt-6 text-base-content/70 font-medium">
             Loading your profile...
           </p>
         </div>
@@ -88,7 +88,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/30 via-white to-[#FFEACF]/30">
+    <div className="min-h-screen surface-cream">
       {/* Modern Header with Gradient */}
       <div className="relative bg-linear-to-r from-[#90AC19] via-[#90AC19] to-[#A25F97] shadow-xl overflow-hidden">
         {/* Decorative Background Pattern */}
@@ -141,7 +141,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Modern Tab Navigation */}
-      <div className="bg-white shadow-md sticky top-0 z-40 border-b-2 border-gray-100">
+      <div className="bg-base-100 shadow-md sticky top-0 z-40 border-b-2 border-base-300">
         <div className="container mx-auto px-2 md:px-4">
           <div className="flex overflow-x-auto hide-scrollbar">
             {/* Profile Tab - Always visible */}
