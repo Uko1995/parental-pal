@@ -101,7 +101,7 @@ export default function DashboardLayout({
       <div className="min-h-screen flex items-center justify-center bg-base-100">
         <div className="text-center">
           <span className="loading loading-spinner loading-lg text-[#90AC19]"></span>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-base-content/70">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -131,7 +131,7 @@ export default function DashboardLayout({
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50">
-        <div className="flex flex-col grow bg-white shadow-xl border-r border-base-200">
+        <div className="flex flex-col grow bg-base-100 shadow-xl border-r border-base-300">
           {/* Logo */}
           <div className="shrink-0">
             <Link href="/" className="flex items-center justify-center h-16">
@@ -158,14 +158,14 @@ export default function DashboardLayout({
                     ${
                       isActive
                         ? "bg-[#90AC19] text-white shadow-lg"
-                        : "text-gray-700 hover:bg-base-200 hover:text-[#90AC19]"
+                        : "text-base-content/80 hover:bg-base-200 hover:text-[#90AC19]"
                     }
                   `}
                 >
                   <div className="flex items-center">
                     <item.icon
                       className={`mr-3 h-5 w-5 ${
-                        isActive ? "text-white" : "text-gray-500"
+                        isActive ? "text-white" : "text-base-content/60"
                       }`}
                     />
                     {item.name}
@@ -207,13 +207,13 @@ export default function DashboardLayout({
       {/* Mobile Sidebar */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 lg:hidden
+          fixed inset-y-0 left-0 z-50 w-64 bg-base-100 shadow-xl transform transition-transform duration-300 lg:hidden
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <div className="flex flex-col h-full">
           {/* Mobile header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-base-200">
+          <div className="flex items-center justify-between px-6 py-4 bg-base-100 border-b border-base-300">
             <Link href="/" className="shrink-0">
               <Image
                 src="/parentalpalLOGO.webp"
@@ -225,7 +225,7 @@ export default function DashboardLayout({
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors"
+              className="text-base-content/70 hover:bg-base-200 p-2 rounded-md transition-colors"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
@@ -245,14 +245,14 @@ export default function DashboardLayout({
                     ${
                       isActive
                         ? "bg-[#90AC19] text-white shadow-lg"
-                        : "text-gray-700 hover:bg-base-200 hover:text-[#90AC19]"
+                        : "text-base-content/80 hover:bg-base-200 hover:text-[#90AC19]"
                     }
                   `}
                 >
                   <div className="flex items-center">
                     <item.icon
                       className={`mr-3 h-5 w-5 ${
-                        isActive ? "text-white" : "text-gray-500"
+                        isActive ? "text-white" : "text-base-content/60"
                       }`}
                     />
                     {item.name}
@@ -272,16 +272,16 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="lg:pl-64">
         {/* Top Navigation Bar */}
-        <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-base-200">
+        <div className="sticky top-0 z-40 bg-base-100 shadow-sm border-b border-base-300">
           <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-base-200 rounded-md"
+                className="lg:hidden p-2 text-base-content/60 hover:text-base-content hover:bg-base-200 rounded-md"
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
-              <h1 className="ml-3 text-xl font-semibold text-gray-900 lg:ml-0">
+              <h1 className="ml-3 text-xl font-semibold text-base-content lg:ml-0">
                 Welcome {Name.split(" ")[0]}!
               </h1>
             </div>
@@ -304,14 +304,14 @@ export default function DashboardLayout({
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full border flex items-center justify-center p-1">
-                      <UserIcon className="size-6 text-gray-500" />
+                      <UserIcon className="size-6 text-base-content/60" />
                     </div>
                   )}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-base-content">
                       {Name}
                     </h4>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-base-content/60">
                       {session?.user?.email || "user@example.com"}
                     </p>
                   </div>
@@ -344,7 +344,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-base-200 lg:hidden z-30">
+      <div className="fixed bottom-0 left-0 right-0 bg-base-100 border-t border-base-300 lg:hidden z-30">
         <div className="grid grid-cols-5 gap-1 px-2 py-2">
           {navigation.slice(0, 5).map((item) => {
             const isActive = isActivePath(item.href);
@@ -357,7 +357,7 @@ export default function DashboardLayout({
                   ${
                     isActive
                       ? "bg-[#90AC19] text-white"
-                      : "text-gray-500 hover:text-[#90AC19] hover:bg-base-200"
+                      : "text-base-content/60 hover:text-[#90AC19] hover:bg-base-200"
                   }
                 `}
               >

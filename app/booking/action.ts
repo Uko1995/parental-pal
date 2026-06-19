@@ -926,7 +926,7 @@ export async function parseFormDataToBooking(
     pricingBaseAmount = campPricing.subtotal;
     pricingDiscount = campPricing.discount;
     pricingDiscountReason = campPricing.discount
-      ? `Multi-week discount (${campPricing.discountPercent}%)`
+      ? `Full-season discount (${campPricing.discountPercent}% per child, 6 weeks)`
       : undefined;
     totalAmount = campPricing.total;
 
@@ -937,7 +937,7 @@ export async function parseFormDataToBooking(
     serviceData.totalWeeks = campPricing.totalWeeks;
     serviceData.promoDiscount = campPricing.discount;
     if (campPricing.discount > 0) {
-      serviceData.promoCode = "MULTI-WEEK-10";
+      serviceData.promoCode = "FULL-SUMMER-7";
     }
   } else if (serviceType === "space-rental") {
     totalAmount =

@@ -74,14 +74,14 @@ export default function MiniProducts() {
   };
 
   return (
-    <section className="py-16 px-4 bg-gradient-to-b from-white to-[#FFEACF]/20">
+    <section className="py-16 px-4 surface-cream">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-base-content mb-4">
             Featured Children&apos;s Books
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-base-content/70 max-w-3xl mx-auto">
             Discover our collection of carefully curated story books,
             educational materials, and activity books to inspire young minds
           </p>

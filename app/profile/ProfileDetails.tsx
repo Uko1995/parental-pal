@@ -130,18 +130,25 @@ export default function ProfileDetails({
     }));
   };
 
+  const fieldInputClass =
+    "w-full px-4 py-3 border-2 border-base-300 bg-base-200 text-base-content rounded-xl placeholder:text-base-content/45 focus:ring-2 transition-all duration-300 outline-none";
+  const readOnlyFieldClass =
+    "p-4 bg-base-200/70 rounded-xl border border-base-300";
+  const fieldLabelClass =
+    "flex items-center gap-2 text-sm font-semibold text-base-content mb-3";
+
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-gray-100">
+    <div className="bg-base-100 rounded-2xl shadow-lg p-6 md:p-8 border border-base-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b-2 border-gray-100">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b-2 border-base-300">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <h2 className="text-2xl md:text-3xl font-bold text-base-content flex items-center gap-3">
             <div className="p-2 bg-linear-to-br from-[#90AC19] to-[#A25F97] rounded-xl">
               <UserIcon className="h-6 w-6 md:h-7 md:w-7 text-white" />
             </div>
             Profile Details
           </h2>
-          <p className="text-gray-500 mt-2 text-sm md:text-base">
+          <p className="text-base-content/70 mt-2 text-sm md:text-base">
             Manage your personal information
           </p>
         </div>
@@ -174,7 +181,7 @@ export default function ProfileDetails({
                 setIsEditing(false);
                 fetchUserProfile();
               }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
+              className="flex items-center gap-2 px-5 py-2.5 bg-base-200 text-base-content rounded-xl font-semibold hover:bg-base-300 transition-all duration-300"
             >
               <XMarkIcon className="h-5 w-5" />
               <span>Cancel</span>
@@ -187,7 +194,7 @@ export default function ProfileDetails({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Full Name */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+          <label className={fieldLabelClass}>
             <div className="p-1.5 bg-[#90AC19]/10 rounded-lg">
               <UserIcon className="h-4 w-4 text-[#90AC19]" />
             </div>
@@ -198,12 +205,12 @@ export default function ProfileDetails({
               type="text"
               value={profile.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#90AC19] focus:ring-2 focus:ring-[#90AC19]/20 transition-all duration-300 outline-none"
+              className={`${fieldInputClass} focus:border-[#90AC19] focus:ring-[#90AC19]/20`}
               placeholder="Enter your full name"
             />
           ) : (
-            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
-              <p className="text-gray-800 font-medium">
+            <div className={readOnlyFieldClass}>
+              <p className="text-base-content font-medium">
                 {profile.name || "Not provided"}
               </p>
             </div>
@@ -212,7 +219,7 @@ export default function ProfileDetails({
 
         {/* Email Address */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+          <label className={fieldLabelClass}>
             <div className="p-1.5 bg-[#E8931A]/10 rounded-lg">
               <EnvelopeIcon className="h-4 w-4 text-[#E8931A]" />
             </div>
@@ -224,17 +231,17 @@ export default function ProfileDetails({
                 type="email"
                 value={profile.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#E8931A] focus:ring-2 focus:ring-[#E8931A]/20 transition-all duration-300 outline-none"
+                className={`${fieldInputClass} focus:border-[#E8931A] focus:ring-[#E8931A]/20`}
                 placeholder="your.email@example.com"
                 required
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-base-content/60">
                 You may need to sign in again after changing your email.
               </p>
             </>
           ) : (
-            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
-              <p className="text-gray-800 font-medium break-all">
+            <div className={readOnlyFieldClass}>
+              <p className="text-base-content font-medium break-all">
                 {profile.email || "Not provided"}
               </p>
             </div>
@@ -243,7 +250,7 @@ export default function ProfileDetails({
 
         {/* Phone Number */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+          <label className={fieldLabelClass}>
             <div className="p-1.5 bg-[#A25F97]/10 rounded-lg">
               <PhoneIcon className="h-4 w-4 text-[#A25F97]" />
             </div>
@@ -255,13 +262,13 @@ export default function ProfileDetails({
               onValueChange={(value) => handleInputChange("phone", value)}
               placeholder="8012345678"
               wrapperClassName="form-control"
-              inputClassName="w-full px-4 py-3 border-2 border-gray-200 rounded-r-xl focus:border-[#A25F97] focus:ring-2 focus:ring-[#A25F97]/20 transition-all duration-300 outline-none"
-              selectClassName="w-32 rounded-r-none border-2 border-r-0 border-gray-200 bg-white px-2 py-3 text-sm text-gray-800 outline-none transition"
+              inputClassName={`${fieldInputClass} rounded-r-xl focus:border-[#A25F97] focus:ring-[#A25F97]/20`}
+              selectClassName="w-32 rounded-r-none border-2 border-r-0 border-base-300 bg-base-200 px-2 py-3 text-sm text-base-content outline-none transition focus:border-[#A25F97] focus:ring-2 focus:ring-[#A25F97]/20"
               showPreview={false}
             />
           ) : (
-            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
-              <p className="text-gray-800 font-medium">
+            <div className={readOnlyFieldClass}>
+              <p className="text-base-content font-medium">
                 {profile.phone || "Not provided"}
               </p>
             </div>
@@ -270,7 +277,7 @@ export default function ProfileDetails({
 
         {/* Address */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+          <label className={fieldLabelClass}>
             <div className="p-1.5 bg-[#E8931A]/10 rounded-lg">
               <MapPinIcon className="h-4 w-4 text-[#E8931A]" />
             </div>
@@ -280,13 +287,13 @@ export default function ProfileDetails({
             <textarea
               value={profile.address}
               onChange={(e) => handleInputChange("address", e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#E8931A] focus:ring-2 focus:ring-[#E8931A]/20 transition-all duration-300 outline-none resize-none"
+              className={`${fieldInputClass} focus:border-[#E8931A] focus:ring-[#E8931A]/20 resize-none`}
               placeholder="Enter your address"
               rows={4}
             />
           ) : (
-            <div className="p-4 bg-linear-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200 min-h-24">
-              <p className="text-gray-800 font-medium">
+            <div className={`${readOnlyFieldClass} min-h-24`}>
+              <p className="text-base-content font-medium">
                 {profile.address || "Not provided"}
               </p>
             </div>
@@ -428,10 +435,10 @@ export default function ProfileDetails({
           <div className="flex items-start gap-3">
             <ShieldCheckIcon className="h-5 w-5 text-[#90AC19] shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-gray-800 mb-1">
+              <p className="text-sm font-semibold text-base-content mb-1">
                 Your Information is Secure
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-base-content/70">
                 Your personal data is encrypted and stored securely. We will
                 never share your information with third parties without your
                 consent.

@@ -142,7 +142,7 @@ export default function Statistics() {
   ];
 
   return (
-    <section ref={sectionRef} className="py-16 px-4 bg-[#FFEACF]/30">
+    <section ref={sectionRef} className="py-16 px-4 surface-cream">
       <div className="max-w-7xl mx-auto">
         {/* Statistics Section */}
         <motion.div
@@ -155,7 +155,7 @@ export default function Statistics() {
             initial={{ opacity: 0, y: -20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-4xl font-bold text-gray-900 mb-4"
+            className="text-4xl font-bold text-base-content mb-4"
           >
             Trusted by Families Everywhere
           </motion.h2>
@@ -163,7 +163,7 @@ export default function Statistics() {
             initial={{ opacity: 0 }}
             animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg text-gray-600 max-w-2xl mx-auto mb-12"
+            className="text-lg text-base-content/70 max-w-2xl mx-auto mb-12"
           >
             Our track record speaks for itself - real numbers that demonstrate
             our commitment to excellence

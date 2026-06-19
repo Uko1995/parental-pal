@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import { initializeBookingPayment } from "@/lib/booking-payment";
 
@@ -24,6 +25,8 @@ export default function RebookSummaryModal({
   onClose,
 }: RebookSummaryModalProps) {
   const [loading, setLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [savedBookingId, setSavedBookingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number, currency: string) => {
     if (currency === "NGN") return `₦${amount.toLocaleString()}`;
@@ -32,6 +35,8 @@ export default function RebookSummaryModal({
 
   const handleConfirm = async () => {
     setLoading(true);
+    setPaymentError(null);
+    setSavedBookingId(null);
     toast.loading("Creating your booking...", { id: "rebook-submit" });
 
     try {
@@ -54,7 +59,7 @@ export default function RebookSummaryModal({
         return;
       }
 
-      await initializeBookingPayment(
+      const paymentResult = await initializeBookingPayment(
         {
           bookingId: data.bookingId,
           userId: data.userId,
@@ -62,8 +67,15 @@ export default function RebookSummaryModal({
           currency: data.currency,
           email: data.email,
         },
-        { toastId: "rebook-submit" },
+        { toastId: "rebook-submit", showToast: false },
       );
+
+      if (!paymentResult.ok) {
+        toast.dismiss("rebook-submit");
+        toast.error(paymentResult.error);
+        setPaymentError(paymentResult.error);
+        setSavedBookingId(data.bookingId);
+      }
     } catch (error) {
       console.error("Rebook confirm error:", error);
       toast.dismiss("rebook-submit");
@@ -111,6 +123,30 @@ export default function RebookSummaryModal({
             </dd>
           </div>
         </dl>
+
+        {paymentError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
+          >
+            <p className="font-semibold mb-2">
+              Re-book saved, but payment could not start
+            </p>
+            <p>{paymentError}</p>
+            {savedBookingId && (
+              <p className="mt-2">
+                Booking reference: {savedBookingId}.{" "}
+                <Link
+                  href="/profile?tab=payments"
+                  className="font-semibold underline"
+                  onClick={onClose}
+                >
+                  Pay from Profile → Payments
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="modal-action">
           <button

@@ -19,17 +19,16 @@ export default function ActiveCampPromo({
 
   return (
     <div className="mb-12 rounded-2xl overflow-hidden border border-brand-primary/20 shadow-sm">
-      <div className="bg-linear-to-r from-brand-primary/10 via-brand-cream to-brand-accent/10 p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-base-100 md:bg-linear-to-r md:from-brand-primary/10 md:via-brand-cream md:to-brand-accent/10 p-6 sm:p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-start gap-4">
-          
           <div>
             <p className="text-sm font-semibold text-brand-secondary uppercase tracking-wide">
               {isSummer ? "Now registering" : "Holiday camp"}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-base-content mt-1">
               {season.name}
             </h2>
-            <p className="text-gray-600 mt-2 flex items-center gap-2 text-sm">
+            <p className="text-base-content/70 mt-2 flex items-center gap-2 text-sm">
               <Calendar className="w-4 h-4 text-brand-primary" weight="regular" />
               {season.dateLabel}
             </p>

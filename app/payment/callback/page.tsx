@@ -89,7 +89,7 @@ function PaymentCallbackContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#FFEACF]/40 via-white to-[#FFEACF]/40 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-base-100 surface-cream flex items-center justify-center px-4 py-10">
       <div className="max-w-xl w-full">
         <div className="flex justify-center mb-8">
           <Link href="/" className="transition-transform hover:scale-105">
@@ -104,7 +104,7 @@ function PaymentCallbackContent() {
           </Link>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-base-100 rounded-2xl shadow-xl border border-base-300 overflow-hidden">
           {loading ? (
             <div className="px-8 py-14 text-center">
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#A25F97]/10">

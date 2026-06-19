@@ -106,11 +106,11 @@ export default function PaymentsSection() {
   const initiatePayment = async (bookingId: string, amount: number) => {
     setPaymentInProgress(bookingId);
     try {
-      const ok = await initializeBookingPayment(
+      const result = await initializeBookingPayment(
         { bookingId, amount, currency: "NGN" },
         { toastId: `pay-${bookingId}` },
       );
-      if (!ok) {
+      if (!result.ok) {
         setPaymentInProgress(null);
       }
     } catch (error) {
@@ -163,7 +163,7 @@ export default function PaymentsSection() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-base-100 rounded-lg shadow-md p-6 border border-base-300">
         <div className="text-center">
           <span className="loading loading-spinner loading-lg text-primary"></span>
           <p className="mt-4 text-base-content/70">

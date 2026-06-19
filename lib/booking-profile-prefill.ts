@@ -34,6 +34,20 @@ export function childPrefillToDefaults(
   };
 }
 
+export function prefillFirstChildOnly(
+  children: BookingChildPrefill[],
+  createId: () => string = uuidv4,
+) {
+  if (children.length === 0) {
+    return {
+      ids: [] as string[],
+      defaults: {} as Record<string, ChildInfoDefaults>,
+      ages: {} as Record<string, number>,
+    };
+  }
+  return createPrefilledChildrenFromProfile([children[0]], createId);
+}
+
 export function createPrefilledChildrenFromProfile(
   children: BookingChildPrefill[],
   createId: () => string = uuidv4,
@@ -49,6 +63,23 @@ export function createPrefilledChildrenFromProfile(
   });
 
   return { ids, defaults, ages };
+}
+
+export function applyFirstChildPrefillToRow(
+  profileChildren: BookingChildPrefill[],
+  existingChildId: string,
+): {
+  defaults: Record<string, ChildInfoDefaults>;
+  ages: Record<string, number>;
+} {
+  if (profileChildren.length === 0) {
+    return { defaults: {}, ages: {} };
+  }
+  const child = profileChildren[0];
+  return {
+    defaults: { [existingChildId]: childPrefillToDefaults(child) },
+    ages: { [existingChildId]: child.age },
+  };
 }
 
 export function applyParentContactPrefill(
