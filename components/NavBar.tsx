@@ -55,8 +55,8 @@ export default function NavBar() {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isTransparent
-          ? "bg-white backdrop-blur-md shadow-md border-b border-gray-200 md:bg-transparent md:backdrop-blur-sm md:border-b-0 md:shadow-none"
-          : "bg-white backdrop-blur-md shadow-md border-b border-gray-200"
+          ? "bg-base-100/95 backdrop-blur-md shadow-md border-b border-base-300 md:bg-transparent md:backdrop-blur-sm md:border-b-0 md:shadow-none"
+          : "bg-base-100/95 backdrop-blur-md shadow-md border-b border-base-300"
       }`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4">
@@ -94,7 +94,7 @@ export default function NavBar() {
                           : "bg-[#90AC19]/10 text-[#90AC19]"
                         : isTransparent
                         ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                        : "text-base-content/80 hover:text-[#90AC19] hover:bg-base-200"
                     }`}
                   >
                     {item.name}
@@ -134,14 +134,14 @@ export default function NavBar() {
                   <Link
                     href={`/profile`}
                     className={`${
-                      isTransparent ? "text-white" : "text-gray-800"
+                      isTransparent ? "text-white" : "text-base-content"
                     } font-semibold text-xs hover:text-[#90AC19] transition-colors`}
                   >
                     {session.user.name}
                   </Link>
                   <span
                     className={`${
-                      isTransparent ? "text-white/70" : "text-gray-500"
+                      isTransparent ? "text-white/70" : "text-base-content/60"
                     } text-xs`}
                   >
                     {session.user.role === "admin"
@@ -188,19 +188,15 @@ export default function NavBar() {
 
           {/* Mobile actions */}
           <div className="md:hidden flex items-center gap-1 pr-2">
-            {session?.user && (
-              <>
-                <WishlistIcon isTransparent={isTransparent} />
-                <CartIcon isTransparent={isTransparent} />
-              </>
-            )}
+            <WishlistIcon isTransparent={false} />
+            <CartIcon isTransparent={false} />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               type="button"
               className={`inline-flex items-center justify-center p-2 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-inset ${
                 isTransparent
-                  ? " text-gray-500 md:text-white md:hover:text-white md:hover:bg-white/10 md:focus:ring-white"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:ring-[#90AC19]"
+                  ? "text-base-content/70 md:text-white md:hover:text-white md:hover:bg-white/10 md:focus:ring-white"
+                  : "text-base-content/70 hover:text-base-content hover:bg-base-200 focus:ring-[#90AC19]"
               }`}
               aria-controls="mobile-menu"
               aria-expanded="false"
@@ -232,8 +228,8 @@ export default function NavBar() {
           <div
             className={`px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t ${
               isTransparent
-                ? "bg-black/20 backdrop-blur-md border-white/20"
-                : "bg-white border-gray-200"
+                ? "bg-base-100/95 backdrop-blur-md border-base-300 md:bg-black/20 md:border-white/20"
+                : "bg-base-100 border-base-300"
             }`}
           >
             {navItems.map((item) => {
@@ -245,12 +241,8 @@ export default function NavBar() {
                   onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
                     isActive
-                      ? isTransparent
-                        ? "bg-white/20 text-white"
-                        : "bg-[#90AC19]/10 text-[#90AC19]"
-                      : isTransparent
-                      ? "text-white/90 hover:text-white hover:bg-white/10"
-                      : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
+                      ? "bg-[#90AC19]/10 text-[#90AC19]"
+                      : "text-base-content/80 hover:text-[#90AC19] hover:bg-base-200"
                   }`}
                 >
                   {item.name}
@@ -258,36 +250,8 @@ export default function NavBar() {
               );
             })}
 
-            {/* Cart & Wishlist Links - Mobile (guest only) */}
-            {!session?.user && (
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <Link
-                  href="/wishlist"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                    isTransparent
-                      ? "text-white/90 hover:text-white hover:bg-white/10"
-                      : "text-gray-700 hover:text-[#A25F97] hover:bg-gray-50"
-                  }`}
-                >
-                  Wishlist
-                </Link>
-                <Link
-                  href="/cart"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                    isTransparent
-                      ? "text-white/90 hover:text-white hover:bg-white/10"
-                      : "text-gray-900 hover:text-[#90AC19] hover:bg-gray-50"
-                  }`}
-                >
-                  Cart
-                </Link>
-              </div>
-            )}
-
             {/* Mobile Authentication Section */}
-            <div className="border-t border-gray-200 pt-3 mt-3">
+            <div className="border-t border-base-300 pt-3 mt-3">
               {session?.user ? (
                 <div className="space-y-2">
                   {/* User Profile Section */}
@@ -302,32 +266,16 @@ export default function NavBar() {
                           className="rounded-full object-cover"
                         />
                       ) : (
-                        <div
-                          className={`rounded-full p-1 ${
-                            isTransparent ? "bg-white" : "bg-gray-200"
-                          }`}
-                        >
-                          <UserIcon
-                            className={`w-6 h-6 ${
-                              isTransparent ? "text-black" : "text-gray-600"
-                            }`}
-                          />
+                        <div className="rounded-full p-1 bg-base-200">
+                          <UserIcon className="w-6 h-6 text-base-content/70" />
                         </div>
                       )}
                     </div>
                     <div>
-                      <p
-                        className={`text-sm font-medium ${
-                          isTransparent ? "text-white" : "text-gray-900"
-                        }`}
-                      >
+                      <p className="text-sm font-medium text-base-content">
                         {session.user.name}
                       </p>
-                      <p
-                        className={`text-xs ${
-                          isTransparent ? "text-white/70" : "text-gray-500"
-                        }`}
-                      >
+                      <p className="text-xs text-base-content/60">
                         {session.user.email}
                       </p>
                     </div>
@@ -337,11 +285,7 @@ export default function NavBar() {
                   <Link
                     href="/profile"
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                      isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-[#90AC19] hover:bg-gray-50"
-                    }`}
+                    className="block px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 text-base-content/80 hover:text-[#90AC19] hover:bg-base-200"
                   >
                     Profile
                   </Link>
@@ -352,11 +296,7 @@ export default function NavBar() {
                       setIsMenuOpen(false);
                       handleSignOut();
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
-                      isTransparent
-                        ? "text-white/90 hover:text-white hover:bg-white/10"
-                        : "text-gray-700 hover:text-red-600 hover:bg-red-50"
-                    }`}
+                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 text-base-content/80 hover:text-red-600 hover:bg-red-500/10"
                   >
                     Sign Out
                   </button>

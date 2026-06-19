@@ -4,6 +4,11 @@ import { auth } from "@/auth";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { UserRepository } from "@/lib/UserRepository";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import { bookingBelongsToUser } from "@/lib/booking-ownership";
+import {
+  AuditEventType,
+  logDataEvent,
+} from "@/lib/audit-logger-mongodb";
 
 export async function GET(
   request: NextRequest,
@@ -143,15 +148,12 @@ export async function DELETE(
 
     // Allow access if user is admin or owns the booking
     const isAdmin = user.role === "admin";
-
-    console.log("DELETE Authorization Check:", {
-      userId: user._id!.toString(),
-      userRole: user.role,
-      bookingUserId: booking.userId.toString(),
-      isAdmin,
+    const isOwner = bookingBelongsToUser(booking, user, {
+      id: session.user.id,
+      email: session.user.email,
     });
 
-    if (!isAdmin) {
+    if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -159,6 +161,16 @@ export async function DELETE(
     if (booking.status !== "pending") {
       return NextResponse.json(
         { error: "Only pending bookings can be cancelled" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !isAdmin &&
+      booking.payment?.status === "paid"
+    ) {
+      return NextResponse.json(
+        { error: "Paid bookings cannot be cancelled from your profile" },
         { status: 400 }
       );
     }
@@ -172,6 +184,15 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    await logDataEvent(
+      AuditEventType.BOOKING_DELETED,
+      user._id!.toString(),
+      "booking",
+      isAdmin ? "admin_cancel" : "parent_cancel",
+      true,
+      { bookingId: id, serviceType: booking.serviceType },
+    );
 
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.BOOKINGS);

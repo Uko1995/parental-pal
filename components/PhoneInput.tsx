@@ -111,7 +111,7 @@ export default function PhoneInput({
     <div className={wrapperClassName || "form-control"}>
       {label && (
         <label className="label">
-          <span className="label-text text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <span className="label-text text-sm font-semibold text-base-content flex items-center gap-2">
             {label} {required && <span className="text-red-600">*</span>}
           </span>
         </label>
@@ -127,7 +127,7 @@ export default function PhoneInput({
           }}
           className={
             selectClassName ||
-            "select select-bordered w-25 ps-1 bg-white focus:outline-none focus:border-gray-600 focus:ring focus:ring-gray-300 text-gray-800"
+            "select select-bordered w-25 ps-1 bg-base-100 border-base-300 focus:outline-none focus:border-[#90AC19] focus:ring focus:ring-[#90AC19]/20 text-base-content"
           }
         >
           {countryCodes.map((country) => (
@@ -149,7 +149,7 @@ export default function PhoneInput({
           }}
           className={
             inputClassName ||
-            "input border-gray-500 bg-white focus:border-gray-600 focus:ring focus:ring-gray-300 text-gray-800"
+            "input border-base-300 bg-base-100 focus:border-[#90AC19] focus:ring focus:ring-[#90AC19]/20 text-base-content"
           }
           placeholder={placeholder}
           required={required}
@@ -162,7 +162,7 @@ export default function PhoneInput({
       {/* Display formatted phone number */}
       {showPreview && phoneNumber && (
         <label className="label">
-          <span className="label-text-alt text-sm text-gray-700">
+          <span className="label-text-alt text-sm text-base-content/70">
             Full number: {fullPhoneNumber}
           </span>
         </label>

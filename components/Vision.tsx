@@ -158,7 +158,7 @@ export default function Vision() {
   ];
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-16 px-4 bg-base-100 text-base-content">
       <div className="max-w-7xl mx-auto">
         {/* Our Approach Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">

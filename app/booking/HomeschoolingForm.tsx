@@ -14,7 +14,6 @@ import {
   UserIcon,
   AcademicCapIcon,
   BookOpenIcon,
-  PlusIcon,
   TrashIcon,
   CurrencyDollarIcon,
   InformationCircleIcon,
@@ -27,9 +26,10 @@ import {
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  createPrefilledChildrenFromProfile,
+  applyFirstChildPrefillToRow,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface HomeschoolingFormRef {
@@ -136,23 +136,15 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
     });
 
     if (profile.children.length > 0) {
-      const { ids, defaults } = createPrefilledChildrenFromProfile(
-        profile.children,
-      );
-      setChildrenData(
-        ids.map((id, index) => ({
-          id,
-          index,
-          selectedSubjects: [],
-          gradeLevel: "",
-          curriculum: "",
-          learningStyle: "",
-          specialNeeds: "",
-          educationalGoals: "",
-          selectedTerm: "" as "first" | "second" | "third" | "",
-        })),
-      );
-      setChildDefaults(defaults);
+      setChildrenData((prev) => {
+        if (prev.length === 0) return prev;
+        const { defaults } = applyFirstChildPrefillToRow(
+          profile.children,
+          prev[0].id,
+        );
+        setChildDefaults((d) => ({ ...d, ...defaults }));
+        return prev;
+      });
     }
   }, []);
 
@@ -305,6 +297,9 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
       }
       if (!child.selectedTerm) {
         errors.push(`Child ${index + 1}: Please select a school term`);
+      }
+      if (!child.educationalGoals.trim()) {
+        errors.push(`Child ${index + 1}: Please describe educational goals`);
       }
     });
 
@@ -640,7 +635,6 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                 }
                 className="textarea border-gray-300 bg-white focus:border-gray-600 focus:ring-2 focus:ring-gray-300 text-gray-800 h-24"
                 placeholder="e.g., Master multiplication tables, improve reading comprehension, develop critical thinking skills..."
-                required
               />
             </div>
           </div>
@@ -673,15 +667,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
         </div>
       ))}
 
-      {/* Add Another Child Button */}
-      <button
-        type="button"
-        onClick={addChild}
-        className="btn btn-outline border-gray-400 text-gray-700 hover:bg-gray-100 hover:border-gray-600 w-full text-lg py-6"
-      >
-        <PlusIcon className="w-6 h-6" />
-        Add Another Child
-      </button>
+      <AddAnotherChildButton onClick={addChild} />
 
       {/* Hidden field for children count */}
       <input type="hidden" name="childrenCount" value={childrenData.length} />
@@ -694,9 +680,9 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
           child.gradeLevel &&
           child.curriculum
       ) && (
-        <div className="bg-linear-to-br from-gray-100 to-gray-200 border-4 border-gray-500 rounded-lg p-6 shadow-xl">
-          <h3 className="text-2xl font-bold flex items-center text-gray-800 mb-4">
-            <CurrencyDollarIcon className="w-8 h-8 mr-2 text-gray-600" />
+        <div className="bg-base-100 border border-base-300 rounded-lg p-6 shadow-sm">
+          <h3 className="text-2xl font-bold flex items-center text-base-content mb-4">
+            <CurrencyDollarIcon className="w-8 h-8 mr-2 text-base-content/70" />
             Final Payment Summary
           </h3>
 
@@ -712,14 +698,14 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                 return (
                   <div
                     key={child.id}
-                    className="bg-white p-4 rounded-lg border-2 border-gray-300"
+                    className="bg-base-200 p-4 rounded-lg border border-base-300"
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-semibold text-gray-800">
+                        <p className="font-semibold text-base-content">
                           Child #{index + 1}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-base-content/70">
                           {child.curriculum} • {child.selectedSubjects.length}{" "}
                           subjects •{" "}
                           {
@@ -729,7 +715,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                           }
                         </p>
                       </div>
-                      <p className="text-xl font-bold text-gray-800">
+                      <p className="text-xl font-bold text-base-content">
                         ₦{termRate.toLocaleString()}
                       </p>
                     </div>
@@ -756,9 +742,9 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
           <input type="hidden" name="termRate" value={termRate} />
           <input type="hidden" name="totalCost" value={calculateTotalCost()} />
 
-          <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-            <InformationCircleIcon className="w-5 h-5 text-blue-600 inline mr-2" />
-            <span className="text-sm text-gray-700">
+          <div className="mt-4 bg-base-200 border border-base-300 rounded-lg p-4">
+            <InformationCircleIcon className="w-5 h-5 text-brand-primary inline mr-2" />
+            <span className="text-sm text-base-content">
               Comprehensive homeschooling program with personalized curriculum,
               qualified educators, and progress tracking.
             </span>

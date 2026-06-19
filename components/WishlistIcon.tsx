@@ -67,7 +67,7 @@ export default function WishlistIcon({
     <Link
       href="/wishlist"
       className={`relative p-2 rounded-lg transition-colors ${
-        isTransparent ? "hover:bg-white/10" : "hover:bg-gray-100"
+        isTransparent ? "hover:bg-white/10" : "hover:bg-base-200"
       }`}
       aria-label={`Wishlist${itemCount > 0 ? ` with ${itemCount} items` : ""}`}
     >
@@ -80,7 +80,7 @@ export default function WishlistIcon({
       ) : (
         <HeartIcon
           className={`w-6 h-6 ${
-            isTransparent ? "text-white" : "text-gray-700"
+            isTransparent ? "text-white" : "text-base-content"
           }`}
         />
       )}

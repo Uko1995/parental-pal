@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -29,6 +29,11 @@ import {
   saveRebookTemplate,
 } from "@/lib/rebook-persistence";
 import { initializeBookingPayment } from "@/lib/booking-payment";
+import {
+  scrollToField,
+  validateBookingForm,
+  type ServiceFormValidationRef,
+} from "@/lib/booking-form-validation";
 import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import Link from "next/link";
@@ -65,6 +70,13 @@ interface BookingServiceOption {
   label: string;
 }
 
+type SubmitFeedback = {
+  type: "error" | "warning" | "info";
+  title?: string;
+  messages: string[];
+  bookingId?: string;
+} | null;
+
 export default function BookingForm({ submitAction }: BookingFormProps) {
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
@@ -88,6 +100,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [totalAmount, setTotalAmount] = useState(0);
   const [services, setServices] = useState<BookingServiceOption[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [servicesLoadFailed, setServicesLoadFailed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitFeedback, setSubmitFeedback] = useState<SubmitFeedback>(null);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [rebookTemplate, setRebookTemplate] =
     useState<RebookFormEntries | null>(null);
   const [rebookSourceId, setRebookSourceId] = useState<string | null>(null);
@@ -162,10 +178,12 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           );
 
         setServices(options);
+        setServicesLoadFailed(false);
       } catch (error) {
         console.error("Error loading booking services:", error);
         toast.error("Unable to load services right now");
         setServices([]);
+        setServicesLoadFailed(true);
       } finally {
         setIsLoadingServices(false);
       }
@@ -182,6 +200,144 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const homeschoolingFormRef = useRef<HomeschoolingFormRef>(null);
   const kiddiesEnrichmentFormRef = useRef<KiddiesEnrichmentFormRef>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const revalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const getServiceFormRef = (): ServiceFormValidationRef | null => {
+    switch (selectedService) {
+      case "tutoring":
+        return tutoringFormRef.current;
+      case "childcare":
+        return childCareFormRef.current;
+      case "space-rental":
+        return eventFormRef.current;
+      case "holiday-camps":
+        return holidayCampFormRef.current;
+      case "homeschooling":
+        return homeschoolingFormRef.current;
+      case "kiddies-enrichment":
+        return kiddiesEnrichmentFormRef.current;
+      default:
+        return null;
+    }
+  };
+
+  const showValidationFailure = (
+    errors: string[],
+    firstInvalidElement?: HTMLElement | null,
+    scrollTargetId?: string,
+  ) => {
+    setHasAttemptedSubmit(true);
+    setSubmitFeedback({
+      type: "error",
+      title: "Please fix the following before continuing:",
+      messages: errors,
+    });
+    toast.error(errors[0]);
+    const scrollTarget =
+      firstInvalidElement ??
+      (scrollTargetId
+        ? document.getElementById(scrollTargetId)
+        : null) ??
+      submitButtonRef.current;
+    scrollToField(scrollTarget);
+  };
+
+  const runClientValidation = useCallback(() => {
+    const formEl = document.getElementById(
+      "booking-form",
+    ) as HTMLFormElement | null;
+
+    return validateBookingForm({
+      form: formEl,
+      selectedService,
+      hearAboutUs: {
+        selected: selectedHearAboutUs,
+        otherText: otherHearAboutUsText,
+        socialMediaPlatform,
+        referralName,
+      },
+      serviceFormRef: getServiceFormRef(),
+      servicesLoaded: !isLoadingServices,
+      servicesLoadFailed,
+    });
+  }, [
+    selectedService,
+    selectedHearAboutUs,
+    otherHearAboutUsText,
+    socialMediaPlatform,
+    referralName,
+    isLoadingServices,
+    servicesLoadFailed,
+  ]);
+
+  // Re-run validation after a failed submit so errors update as the parent fixes fields
+  useEffect(() => {
+    if (!hasAttemptedSubmit) return;
+
+    const applyValidationResult = () => {
+      const validation = runClientValidation();
+      if (validation.ok) {
+        setSubmitFeedback(null);
+        setHasAttemptedSubmit(false);
+        return;
+      }
+
+      setSubmitFeedback((prev) =>
+        prev?.type === "error"
+          ? { ...prev, messages: validation.errors }
+          : prev,
+      );
+    };
+
+    const scheduleRevalidate = () => {
+      if (revalidateDebounceRef.current) {
+        clearTimeout(revalidateDebounceRef.current);
+      }
+      // Defer until after React commits controlled input state (avoids wiping keystrokes)
+      revalidateDebounceRef.current = setTimeout(applyValidationResult, 100);
+    };
+
+    scheduleRevalidate();
+
+    const formEl = document.getElementById("booking-form");
+    if (!formEl) return;
+
+    formEl.addEventListener("input", scheduleRevalidate);
+    formEl.addEventListener("change", scheduleRevalidate);
+    return () => {
+      if (revalidateDebounceRef.current) {
+        clearTimeout(revalidateDebounceRef.current);
+      }
+      formEl.removeEventListener("input", scheduleRevalidate);
+      formEl.removeEventListener("change", scheduleRevalidate);
+    };
+  }, [
+    hasAttemptedSubmit,
+    runClientValidation,
+    selectedService,
+    selectedHearAboutUs,
+    otherHearAboutUsText,
+    socialMediaPlatform,
+    referralName,
+  ]);
+
+  const resetServiceForms = () => {
+    if (selectedService === "space-rental") {
+      eventFormRef.current?.resetForm();
+    } else if (selectedService === "childcare") {
+      childCareFormRef.current?.resetForm();
+    } else if (selectedService === "holiday-camps") {
+      holidayCampFormRef.current?.resetForm();
+    } else if (selectedService === "tutoring") {
+      tutoringFormRef.current?.resetForm();
+    } else if (selectedService === "homeschooling") {
+      homeschoolingFormRef.current?.resetForm();
+    } else if (selectedService === "kiddies-enrichment") {
+      kiddiesEnrichmentFormRef.current?.resetForm();
+    }
+  };
 
   // Save form data to localStorage whenever form state changes
   const saveCurrentFormData = () => {
@@ -199,69 +355,18 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
   // Wrapper function to handle form reset after submission
   const handleFormSubmit = async (formData: FormData) => {
-    // Client-side validation
-    if (!selectedService) {
-      toast.error("Please select a service before submitting");
-      return;
-    }
+    setSubmitFeedback(null);
+    setHasAttemptedSubmit(false);
 
-    if (!selectedHearAboutUs) {
-      toast.error("Please let us know how you heard about us");
-      return;
-    }
+    const validation = runClientValidation();
 
-    if (selectedHearAboutUs === "other" && !otherHearAboutUsText.trim()) {
-      toast.error("Please specify how you heard about us");
+    if (!validation.ok) {
+      showValidationFailure(
+        validation.errors,
+        validation.firstInvalidElement,
+        validation.scrollTargetId,
+      );
       return;
-    }
-
-    if (selectedHearAboutUs === "socialMedia" && !socialMediaPlatform.trim()) {
-      toast.error("Please specify which social media platform");
-      return;
-    }
-
-    if (selectedHearAboutUs === "referral" && !referralName.trim()) {
-      toast.error("Please specify who referred you");
-      return;
-    }
-
-    // Service-specific validation
-    if (selectedService === "tutoring") {
-      const validation = tutoringFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
-    } else if (selectedService === "childcare") {
-      const validation = childCareFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
-    } else if (selectedService === "space-rental") {
-      const validation = eventFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
-    } else if (selectedService === "holiday-camps") {
-      const validation = holidayCampFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
-    } else if (selectedService === "homeschooling") {
-      const validation = homeschoolingFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
-    } else if (selectedService === "kiddies-enrichment") {
-      const validation = kiddiesEnrichmentFormRef.current?.validate();
-      if (validation && !validation.isValid) {
-        toast.error(validation.errors[0]);
-        return;
-      }
     }
 
     // Save form data before submission in case of auth redirect
@@ -277,25 +382,25 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     });
     saveFormData(persistenceData);
 
-    // Show loading state immediately
+    setIsSubmitting(true);
     toast.loading("Creating your booking...", { id: "booking-submit" });
 
     try {
-      // 1. Submit booking and get booking data
       const bookingResult = await submitAction(formData);
 
-      // Update progress
       toast.loading("Initializing payment...", { id: "booking-submit" });
 
-      // Check if this is an auth redirect (the action will throw/redirect before returning)
-      // If we got here, user is authenticated
       if (!bookingResult.success) {
         toast.dismiss("booking-submit");
-        toast.error("Booking creation failed");
+        setSubmitFeedback({
+          type: "error",
+          title: "Booking could not be created",
+          messages: ["Something went wrong while saving your booking. Please try again."],
+        });
         return;
       }
 
-      const paid = await initializeBookingPayment(
+      const paymentResult = await initializeBookingPayment(
         {
           bookingId: bookingResult.bookingId!,
           userId: bookingResult.userId,
@@ -303,41 +408,39 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           currency: bookingResult.currency,
           email: bookingResult.email,
         },
-        { toastId: "booking-submit" },
+        { toastId: "booking-submit", showToast: false },
       );
 
-      if (!paid) return;
+      if (!paymentResult.ok) {
+        toast.dismiss("booking-submit");
+        toast.error(paymentResult.error);
+        setSubmitFeedback({
+          type: "warning",
+          title: "Your booking was saved, but payment could not start",
+          messages: [
+            paymentResult.error,
+            `Booking reference: ${bookingResult.bookingId}`,
+            "You can complete payment anytime from Profile → Payments.",
+          ],
+          bookingId: bookingResult.bookingId,
+        });
+        scrollToField(submitButtonRef.current);
+        return;
+      }
 
       clearFormData();
       clearRebookTemplate();
+      resetServiceForms();
 
-      // Reset forms after successful submission
-      if (selectedService === "space-rental") {
-        eventFormRef.current?.resetForm();
-      } else if (selectedService === "childcare") {
-        childCareFormRef.current?.resetForm();
-      } else if (selectedService === "holiday-camps") {
-        holidayCampFormRef.current?.resetForm();
-      } else if (selectedService === "tutoring") {
-        tutoringFormRef.current?.resetForm();
-      } else if (selectedService === "homeschooling") {
-        homeschoolingFormRef.current?.resetForm();
-      } else if (selectedService === "kiddies-enrichment") {
-        kiddiesEnrichmentFormRef.current?.resetForm();
-      }
-
-      // Reset main form states
       setSelectedHearAboutUs("");
       setOtherHearAboutUsText("");
       setPriority("normal");
       setFollowUpRequired(false);
       setIsRepeatedCustomer(false);
       setTotalAmount(0);
-
     } catch (error: unknown) {
       toast.dismiss("booking-submit");
 
-      // Check if this is a redirect error (NEXT_REDIRECT)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const errorDigest =
@@ -349,18 +452,31 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         errorMessage.includes("NEXT_REDIRECT") ||
         errorDigest.includes("NEXT_REDIRECT")
       ) {
-        // This is a redirect to sign in - show appropriate message
         toast.success("Please sign in to complete your booking");
-        // The redirect will happen automatically, form data is already saved
+        setSubmitFeedback({
+          type: "info",
+          title: "Sign in required",
+          messages: [
+            "Please sign in to complete your booking.",
+            "Your form details have been saved and will be restored after sign-in.",
+          ],
+        });
         return;
       }
 
       console.error("Booking/Payment error:", error);
-      toast.error(
+      const message =
         error instanceof Error && error.message
           ? error.message
-          : "Failed to process booking. Please try again.",
-      );
+          : "Failed to process booking. Please try again.";
+      toast.error(message);
+      setSubmitFeedback({
+        type: "error",
+        title: "Booking failed",
+        messages: [message],
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -398,8 +514,17 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         // Show success toast to inform user their data was preserved
         toast.success(
           "Your form data has been restored. Please review and submit.",
-          { duration: 5000 },
+          { duration: 3000 },
         );
+
+        setSubmitFeedback({
+          type: "info",
+          title: "Sign in required",
+          messages: [
+            "Please sign in to complete your booking.",
+            "Your form details have been restored — review them, then submit again.",
+          ],
+        });
 
         // First scroll to top, then scroll to submit button after delay
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -460,7 +585,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
         toast.success(
           `Form pre-filled for ${data.targetMonthLabel}. Review and submit when ready.`,
-          { duration: 5000 },
+          { duration: 3000 },
         );
       } catch (error) {
         console.error("Failed to load rebook template:", error);
@@ -523,7 +648,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         return;
       }
       toast.loading("Initializing payment...", { id: "rebook-quick" });
-      await initializeBookingPayment(
+      const paymentResult = await initializeBookingPayment(
         {
           bookingId: data.bookingId,
           userId: data.userId,
@@ -531,8 +656,24 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           currency: data.currency,
           email: data.email,
         },
-        { toastId: "rebook-quick" },
+        { toastId: "rebook-quick", showToast: false },
       );
+
+      if (!paymentResult.ok) {
+        toast.dismiss("rebook-quick");
+        toast.error(paymentResult.error);
+        setSubmitFeedback({
+          type: "warning",
+          title: "Re-book saved, but payment could not start",
+          messages: [
+            paymentResult.error,
+            `Booking reference: ${data.bookingId}`,
+            "Complete payment from Profile → Payments.",
+          ],
+          bookingId: data.bookingId,
+        });
+        scrollToField(submitButtonRef.current);
+      }
     } catch (error) {
       console.error(error);
       toast.dismiss("rebook-quick");
@@ -650,8 +791,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       );
     } else {
       return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-12 text-center">
-          <p className="text-gray-600 text-base">
+        <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-12 text-center">
+          <p className="text-base-content/70 text-base">
             Please select a service to continue with booking.
           </p>
         </div>
@@ -665,16 +806,29 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className=" mb-8 p-8 sm:p-10 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-base-content mb-3">
             Book Our Services
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-base-content/70 max-w-2xl mx-auto">
             Choose your service and provide the necessary details for your
             booking
           </p>
         </div>
 
-        <Form action={handleFormSubmit} className="space-y-8">
+        <Form
+          id="booking-form"
+          noValidate
+          action={handleFormSubmit}
+          className="space-y-8"
+        >
+          {servicesLoadFailed && services.length === 0 && (
+            <div className="alert alert-error">
+              <span>
+                Services could not be loaded. Please refresh the page before
+                booking.
+              </span>
+            </div>
+          )}
           {rebookMonthLabel && (
             <div className="alert alert-info">
               <span>
@@ -713,8 +867,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           )}
 
           {/* Service Selection */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">
+          <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-6 sm:p-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-base-content mb-6">
               Select Your Service
             </h2>
 
@@ -797,8 +951,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
           {/* Additional Booking Information */}
           {selectedService && (
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-6 sm:p-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-base-content mb-6">
                 Additional Information
               </h2>
 
@@ -879,10 +1033,16 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           )}
 
           {/* How did you hear about us Selection */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+          <div
+            id="hear-about-us-section"
+            className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8"
+          >
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
               How did you hear about us? <span className="text-red-500">*</span>
             </h2>
+            <p className="text-sm text-base-content/70 mb-6">
+              Choose one option below.
+            </p>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {HearAboutUs.map((option) => (
@@ -904,7 +1064,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                     checked={isHearAboutUsSelected(option.value)}
                     onChange={() => handleHearAboutUsChange(option.value)}
                     className="sr-only"
-                    required
                   />
                   <span
                     className={`text-sm font-medium ${
@@ -934,7 +1093,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 resize-none"
                   placeholder="Please tell us how you heard about us..."
                   rows={4}
-                  required
                 />
               </div>
             )}
@@ -953,7 +1111,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                   value={socialMediaPlatform}
                   onChange={handleSocialMediaChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white"
-                  required
                 >
                   <option value="" className="text-gray-500">
                     Select platform...
@@ -985,7 +1142,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
                   onChange={handleReferralChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900"
                   placeholder="Enter the name of the person who referred you..."
-                  required
                 />
               </div>
             )}
@@ -993,11 +1149,48 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
           {/* Submit Button */}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+            {submitFeedback && (
+              <div
+                role="alert"
+                className={`mb-4 rounded-lg border p-4 ${
+                  submitFeedback.type === "error"
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : submitFeedback.type === "warning"
+                      ? "border-amber-200 bg-amber-50 text-amber-950"
+                      : "border-blue-200 bg-blue-50 text-blue-950"
+                }`}
+              >
+                {submitFeedback.title && (
+                  <p className="font-semibold mb-2">{submitFeedback.title}</p>
+                )}
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  {submitFeedback.messages.map((message, index) => (
+                    <li key={`${index}-${message}`}>{message}</li>
+                  ))}
+                </ul>
+                {submitFeedback.bookingId && (
+                  <p className="mt-3 text-sm">
+                    <Link
+                      href="/profile?tab=payments"
+                      className="font-semibold underline"
+                    >
+                      Go to Profile → Payments
+                    </Link>
+                  </p>
+                )}
+              </div>
+            )}
+
             <button
               ref={submitButtonRef}
               type="submit"
-              className="w-full bg-[#90AC19] hover:bg-[#7a9315] tracking-wider text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-xl md:text-2xl"
+              disabled={isSubmitting || (servicesLoadFailed && services.length === 0)}
+              aria-busy={isSubmitting}
+              className="w-full bg-[#90AC19] hover:bg-[#7a9315] disabled:opacity-60 disabled:cursor-not-allowed tracking-wider text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md text-xl md:text-2xl flex items-center justify-center gap-3"
             >
+              {isSubmitting && (
+                <span className="loading loading-spinner loading-md" />
+              )}
               {totalAmount > 0
                 ? `Pay ${" "} ₦${totalAmount.toLocaleString()}`
                 : "Complete Booking & Continue to Payment"}

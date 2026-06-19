@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function Hero() {
+export default function Hero({ hasPromoBanner = false }: { hasPromoBanner?: boolean }) {
   return (
     <section
-      className="relative h-screen -mt-16 mb-15 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col"
+      className={`relative h-screen mb-15 overflow-hidden bg-[url('/gemini.webp')] bg-cover bg-center bg-no-repeat flex flex-col ${
+        hasPromoBanner ? "max-md:mt-0 md:-mt-16" : "-mt-16"
+      }`}
       style={{ contentVisibility: "auto" }}
     >
       {/* Mobile: Content centered, CTAs at bottom */}

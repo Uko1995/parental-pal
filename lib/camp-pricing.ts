@@ -139,11 +139,25 @@ export function calculateCampPricing(
 
   const subtotal = campFees + boardingFees;
   const totalWeeks = children.reduce((sum, c) => sum + c.weekCount, 0);
-  const discountPercent =
-    totalWeeks >= SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks
-      ? SUMMER_CAMP_RATES.multiWeekDiscountPercent
-      : 0;
-  const discount = Math.round((subtotal * discountPercent) / 100);
+
+  let discount = 0;
+  let anyChildQualifies = false;
+
+  for (const child of children) {
+    if (child.weekCount >= SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks) {
+      anyChildQualifies = true;
+      const line = lines.find((l) => l.childId === child.childId);
+      if (line) {
+        discount += Math.round(
+          (line.lineSubtotal * SUMMER_CAMP_RATES.multiWeekDiscountPercent) / 100,
+        );
+      }
+    }
+  }
+
+  const discountPercent = anyChildQualifies
+    ? SUMMER_CAMP_RATES.multiWeekDiscountPercent
+    : 0;
   const total = Math.max(0, subtotal - discount);
 
   return {

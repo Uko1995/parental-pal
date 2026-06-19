@@ -29,14 +29,14 @@ export default function MiniServices() {
   }, []);
 
   return (
-    <section className="py-16 px-4 bg-gray-50">
+    <section className="py-16 px-4 bg-base-200">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-base-content mb-4">
             Our Services
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-base-content/70 max-w-2xl mx-auto">
             Comprehensive childcare and educational solutions designed to
             support your family&apos;s unique needs
           </p>
@@ -49,7 +49,7 @@ export default function MiniServices() {
             Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="bg-white shadow-lg overflow-hidden animate-pulse"
+                className="bg-base-100 shadow-lg overflow-hidden animate-pulse border border-base-300"
               >
                 <div className="w-full h-48 bg-gray-200"></div>
                 <div className="p-6">
@@ -64,7 +64,7 @@ export default function MiniServices() {
             services.map((service) => (
               <div
                 key={service._id}
-                className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden flex flex-col h-full"
+                className="bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden flex flex-col h-full border border-base-300"
               >
                 {/* Service Image */}
                 <div className="w-full h-48 md:h-52 relative overflow-hidden shrink-0">
@@ -78,7 +78,7 @@ export default function MiniServices() {
 
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-1 min-h-0">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <h3 className="text-xl font-semibold text-base-content mb-3">
                     {service.name}
                   </h3>
                   <p className="text-gray-600 mb-4 leading-relaxed">

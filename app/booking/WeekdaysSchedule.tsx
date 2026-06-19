@@ -274,22 +274,25 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
               ))}
             </div>
 
-            <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <strong>Summary:</strong> {daySchedules.length} day(s) selected •{" "}
-              {calculateTotalHours(daySchedules)} total session hours (this month)
+            <div className="text-sm bg-base-200 text-base-content p-3 rounded-lg border border-base-300">
+              <p className="font-semibold text-base-content">
+                Summary: {daySchedules.length} day(s) selected •{" "}
+                {calculateTotalHours(daySchedules)} total session hours (this
+                month)
+              </p>
               {daySchedules.length > 0 && (
-                <div className="mt-1">
+                <ul className="mt-2 space-y-1 text-base-content/90">
                   {daySchedules.map((schedule) => (
-                    <div key={schedule.day} className="capitalize">
+                    <li key={schedule.day} className="capitalize">
                       • {schedule.day}
                       {"s"}: {schedule.startTime || "Time not set"} (
                       {schedule.dates?.length || 0} session
                       {schedule.dates?.length !== 1 ? "s" : ""} ×{" "}
                       {schedule.hours} {schedule.hours === 1 ? "hour" : "hours"}{" "}
                       = {(schedule.dates?.length || 0) * schedule.hours} hours )
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>

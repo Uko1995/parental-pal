@@ -22,7 +22,7 @@ export default function FeedbackCheckboxGroup({
 }: FeedbackCheckboxGroupProps) {
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-semibold text-gray-800">
+      <legend className="text-sm font-semibold text-base-content">
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}
       </legend>
@@ -30,13 +30,13 @@ export default function FeedbackCheckboxGroup({
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700"
+            className="flex items-center gap-2 rounded-md border border-base-300 bg-base-200/40 px-3 py-2 text-sm text-base-content/90"
           >
             <input
               type="checkbox"
               checked={selectedValues.includes(option.value)}
               onChange={() => onToggle(option.value)}
-              className="checkbox checkbox-sm border-gray-400 checked:border-[#90AC19] checked:bg-[#90AC19]"
+              className="checkbox checkbox-sm border-base-300 checked:border-[#90AC19] checked:bg-[#90AC19]"
             />
             <span>{option.label}</span>
           </label>

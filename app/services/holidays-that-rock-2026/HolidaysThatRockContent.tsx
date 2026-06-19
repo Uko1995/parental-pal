@@ -50,7 +50,7 @@ const marqueeItems = [
   "Arts, sports and entrepreneurship",
   "Pizza excursion",
   "Trade fair August 28 to 29",
-  "10% off 3 or more weeks",
+  "7% off per child when booking all 6 weeks",
   "Extended care until 5 PM included",
 ];
 
@@ -96,7 +96,7 @@ const faqs = [
   },
   {
     q: "How does pricing work?",
-    a: "Gbagada: ₦40,000/week (ages 0 to 5) or ₦65,000/week (ages 6 to 14). Lekki: ₦100,000/week (all ages). Boarding add-on at Gbagada is ₦65,000/week. A 10% discount applies when you book 3 or more weeks.",
+    a: "Gbagada: ₦40,000/week (ages 0 to 5) or ₦65,000/week (ages 6 to 14). Lekki: ₦100,000/week (all ages). Boarding add-on at Gbagada is ₦65,000/week. Each child who books all 6 weeks receives 7% off that child's fees.",
   },
   {
     q: "Are meals included?",
@@ -384,7 +384,7 @@ export default function HolidaysThatRockContent() {
             <StatPill label="Ages" value="0 to 14" color={BRAND.primary} />
             <StatPill label="Locations" value="2" color={BRAND.secondary} />
             <StatPill label="Weeks" value="6" color={BRAND.accent} />
-            <StatPill label="Multi-week booking discount" value="10% off" color={BRAND.primary} />
+            <StatPill label="Full-season discount" value="7% per child" color={BRAND.primary} />
           </motion.div>
         </div>
       </section>
@@ -626,11 +626,10 @@ export default function HolidaysThatRockContent() {
           <AnimateOnScroll className="mt-10">
             <div className="rounded-2xl bg-brand-secondary/15 border-2 border-brand-secondary/30 p-6 text-center">
               <p className="text-brand-secondary font-extrabold text-lg">
-                Book 3 or more weeks and receive 10% off your total
+                Book all 6 weeks for a child and receive 7% off that child&apos;s fees
               </p>
-              <p className="text-gray-700 text-sm mt-2">
-                The more weeks you book, the more your child grows — and the more
-                you save.
+              <p className="text-base-content/70 text-sm mt-2">
+                Each child qualifies independently — partial weeks are charged at the regular rate.
               </p>
             </div>
           </AnimateOnScroll>

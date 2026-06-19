@@ -51,11 +51,11 @@ function PaymentSchedule({
 
     return (
       <div className="mt-4 space-y-2">
-        <div className="text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
+        <div className="text-base flex justify-between text-base-content bg-base-200 p-5 rounded-lg border border-base-300">
           <span className="font-bold">
             Easter Camp
             <br />
-            <span className="text-xs text-gray-500 font-normal">
+            <span className="text-xs text-base-content/70 font-normal">
               {CAMP_LABEL}
             </span>
           </span>
@@ -69,7 +69,7 @@ function PaymentSchedule({
               {totalWeeks} × {formatCurrency(effectiveWeeklyRate)}
             </span>
             {discountAmount > 0 && (
-              <span className="block text-sm text-green-700 mt-1">
+              <span className="block text-sm text-brand-primary mt-1">
                 {discountLabel || "Discount"}: -{formatCurrency(discountAmount)}
               </span>
             )}
@@ -137,7 +137,7 @@ function PaymentSchedule({
   return (
     <>
       {(totalHours || totalDays || event) && (
-        <div className="mt-4 text-base flex justify-between text-gray-600 bg-green-50 p-5 rounded-lg border border-green-200">
+        <div className="mt-4 text-base flex justify-between text-base-content bg-base-200 p-5 rounded-lg border border-base-300">
           <span className="font-bold">
             {event
               ? "Event Services"
@@ -174,13 +174,13 @@ function PaymentSchedule({
       {/* Event Services Breakdown */}
       {event &&
         (eventMode || (selectedServices && selectedServices.length > 0)) && (
-          <div className="mt-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-gray-800 mb-3">
+          <div className="mt-2 bg-base-200 p-4 rounded-lg border border-base-300">
+            <h4 className="font-semibold text-base-content mb-3">
               Service Breakdown:
             </h4>
 
             {eventMode && (
-              <div className="flex justify-between text-sm text-gray-700 mb-2">
+              <div className="flex justify-between text-sm text-base-content/90 mb-2">
                 <span>
                   {eventMode === "indoor"
                     ? "Indoor Event"
@@ -209,7 +209,7 @@ function PaymentSchedule({
                   return (
                     <div
                       key={index}
-                      className="flex justify-between text-sm text-gray-700 mb-1"
+                      className="flex justify-between text-sm text-base-content/90 mb-1"
                     >
                       <span>{serviceName}</span>
                       <span>{formatCurrency(cost)}</span>
@@ -231,7 +231,7 @@ function PaymentSchedule({
                   return (
                     <div
                       key={index}
-                      className="flex justify-between text-sm text-gray-700 mb-1"
+                      className="flex justify-between text-sm text-base-content/90 mb-1"
                     >
                       <span>{serviceName}</span>
                       <span>{formatCurrency(cost)}</span>
@@ -240,12 +240,12 @@ function PaymentSchedule({
                 }
               })}
 
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between text-sm text-orange-600 font-medium">
+            <div className="border-t border-base-300 pt-2 mt-2">
+              <div className="flex justify-between text-sm text-brand-secondary font-medium">
                 <span>Refundable Caution Fee</span>
                 <span>{formatCurrency(50000)}</span>
               </div>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-base-content/70 mt-1">
                 This fee will be fully refunded after the event if no damages
                 occur.
               </p>

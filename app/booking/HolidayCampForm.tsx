@@ -10,7 +10,6 @@ import {
 import ChildInfoForm from "./ChildInfoForm";
 import PhoneInput from "@/components/PhoneInput";
 import {
-  Plus,
   Trash,
   MapPin,
   Bed,
@@ -42,9 +41,10 @@ import {
 } from "@/lib/camp-pricing";
 import {
   applyParentContactPrefill,
-  createPrefilledChildrenFromProfile,
+  applyFirstChildPrefillToRow,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface HolidayCampFormRef {
@@ -145,12 +145,16 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       });
 
       if (profile.children.length > 0) {
-        const { ids, defaults, ages } = createPrefilledChildrenFromProfile(
-          profile.children,
-        );
-        setChildrenData(ids.map((id) => ({ id })));
-        setChildAges(ages);
-        setChildDefaults(defaults);
+        setChildrenData((prev) => {
+          if (prev.length === 0) return prev;
+          const { defaults, ages } = applyFirstChildPrefillToRow(
+            profile.children,
+            prev[0].id,
+          );
+          setChildDefaults((d) => ({ ...d, ...defaults }));
+          setChildAges((a) => ({ ...a, ...ages }));
+          return prev;
+        });
       }
     }, []);
 
@@ -310,7 +314,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
         {isSummer && (
           <input type="hidden" name="campLocation" value={location} />
         )}
-        <input type="hidden" name="promoCode" value={pricing.discount > 0 ? "MULTI-WEEK-10" : ""} />
+        <input type="hidden" name="promoCode" value={pricing.discount > 0 ? "FULL-SUMMER-7" : ""} />
         <input type="hidden" name="promoDiscount" value={pricing.discount} />
         <input type="hidden" name="totalWeeks" value={pricing.totalWeeks} />
         <input
@@ -735,19 +739,12 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           );
         })}
 
-        <button
-          type="button"
-          onClick={addChild}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-gray-200 text-gray-700 rounded-xl hover:border-brand-primary hover:bg-brand-primary/5 hover:text-brand-primary transition-all duration-200 font-medium"
-        >
-          <Plus className="w-6 h-6" />
-          Add Another Child
-        </button>
+        <AddAnotherChildButton onClick={addChild} />
 
         <input type="hidden" name="childrenCount" value={childrenData.length} />
 
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8">
-          <h3 className="text-xl font-semibold flex items-center gap-2 text-gray-900 mb-6">
+        <div className="bg-base-100 border border-base-300 rounded-2xl shadow-sm p-6 sm:p-8">
+          <h3 className="text-xl font-semibold flex items-center gap-2 text-base-content mb-6">
             <CurrencyCircleDollar
               className="w-6 h-6 text-brand-primary"
               weight="regular"
@@ -755,7 +752,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
             Payment Summary
           </h3>
 
-          <div className="space-y-2 text-sm text-gray-700 mb-4">
+          <div className="space-y-2 text-sm text-base-content/90 mb-4">
             <div className="flex justify-between">
               <span>Camp fees</span>
               <span>{formatNaira(pricing.campFees)}</span>
@@ -769,23 +766,23 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
             {pricing.discount > 0 && (
               <div className="flex justify-between text-brand-secondary font-medium">
                 <span>
-                  {pricing.discountPercent}% multi-week discount (3+ weeks)
+                  {pricing.discountPercent}% full-season discount (6 weeks per child)
                 </span>
                 <span>-{formatNaira(pricing.discount)}</span>
               </div>
             )}
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-            <span className="text-lg font-semibold text-gray-900">Total</span>
+          <div className="flex justify-between items-center pt-4 border-t border-base-300">
+            <span className="text-lg font-semibold text-base-content">Total</span>
             <span className="text-2xl font-bold text-brand-primary">
               {formatNaira(pricing.total)}
             </span>
           </div>
 
-          <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-2">
-            <InformationCircleIcon className="w-5 h-5 text-blue-600 shrink-0" />
-            <span className="text-sm text-gray-700">
+          <div className="mt-4 bg-base-200 border border-base-300 rounded-xl p-4 flex gap-2">
+            <InformationCircleIcon className="w-5 h-5 text-brand-primary shrink-0" />
+            <span className="text-sm text-base-content">
               {isSummer
                 ? "Extended care until 5 PM and pick-up/drop-off are included at no extra charge. Meals provided for boarding campers only."
                 : "Camp pricing is based on weeks selected per child. Early bird rate applies until March 31, 2026."}

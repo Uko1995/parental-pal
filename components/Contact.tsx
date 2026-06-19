@@ -171,14 +171,14 @@ export default function Contact() {
   ];
 
   return (
-    <section className="py-16 px-4 bg-[#FFEACF]/30">
+    <section className="py-16 px-4 surface-cream">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-base-content mb-4">
             Get In Touch
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-base-content/70 max-w-3xl mx-auto">
             We&apos;d love to hear from you. Send us a message and we&apos;ll
             respond as soon as possible.
           </p>
@@ -187,7 +187,7 @@ export default function Contact() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Contact Information */}
           <div className="lg:col-span-1">
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">
+            <h3 className="text-2xl font-bold text-base-content mb-8">
               Contact Information
             </h3>
 
@@ -198,7 +198,7 @@ export default function Contact() {
                     {info.icon}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">
+                    <h4 className="font-semibold text-base-content mb-1">
                       {info.title}
                     </h4>
                     {info.details.map((detail, detailIndex) => (
@@ -239,8 +239,8 @@ export default function Contact() {
 
           {/* Contact Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">
+            <div className="bg-base-100 rounded-2xl shadow-lg p-8 border border-base-300">
+              <h3 className="text-2xl font-bold text-base-content mb-8">
                 Send Us a Message
               </h3>
 

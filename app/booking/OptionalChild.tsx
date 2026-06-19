@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import type { BookingChildPrefill } from "@/lib/booking-profile-prefill";
 
 interface OptionalChildProps {
@@ -11,13 +12,6 @@ export default function OptionalChild({
   initialChildren = [],
 }: OptionalChildProps) {
   const [children, setChildren] = useState<number[]>([]);
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    if (initialized || initialChildren.length === 0) return;
-    setChildren(initialChildren.map((_, index) => index + 1));
-    setInitialized(true);
-  }, [initialChildren, initialized]);
 
   const addChild = () => {
     const newChildId = children.length > 0 ? Math.max(...children) + 1 : 1;
@@ -30,16 +24,7 @@ export default function OptionalChild({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mt-3">
-        <button
-          type="button"
-          id="addAnotherChild"
-          onClick={addChild}
-          className="btn btn-outline btn-sm rounded-lg"
-        >
-          Add child
-        </button>
-      </div>
+      <AddAnotherChildButton onClick={addChild} label="Add child" />
 
       {children.map((childId, index) => {
         const defaults = initialChildren[index];
@@ -47,7 +32,7 @@ export default function OptionalChild({
         return (
           <div
             key={childId}
-            className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50"
+            className="mt-4 p-4 border border-base-300 rounded-lg bg-base-200"
           >
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-md font-medium text-gray-800">

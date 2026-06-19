@@ -21,7 +21,7 @@ export default function FeedbackInput({
 }: FeedbackInputProps) {
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-semibold text-gray-800">
+      <label htmlFor={id} className="block text-sm font-semibold text-base-content">
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}
       </label>
@@ -32,7 +32,7 @@ export default function FeedbackInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="input input-bordered w-full bg-white focus:border-[#90AC19] focus:outline-none"
+        className="input input-bordered w-full bg-base-100 border-base-300 text-base-content focus:border-[#90AC19] focus:outline-none"
         required={required}
       />
     </div>

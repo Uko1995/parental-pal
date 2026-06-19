@@ -12,7 +12,6 @@ import {
 } from "react";
 import {
   UserIcon,
-  PlusIcon,
   TrashIcon,
   CurrencyDollarIcon,
   InformationCircleIcon,
@@ -28,9 +27,10 @@ import {
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  createPrefilledChildrenFromProfile,
+  applyFirstChildPrefillToRow,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
+import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 
 export interface KiddiesEnrichmentFormRef {
@@ -132,22 +132,15 @@ const KiddiesEnrichmentForm = forwardRef<
       });
 
       if (profile.children.length > 0) {
-        const { ids, defaults } = createPrefilledChildrenFromProfile(
-          profile.children,
-        );
-        setChildrenData(
-          ids.map((id, index) => ({
-            id,
-            index,
-            selectedPrograms: [],
-            interests: "",
-            parentGoals: "",
-            eventDate: "",
-            startTime: "",
-            hours: 1,
-          })),
-        );
-        setChildDefaults(defaults);
+        setChildrenData((prev) => {
+          if (prev.length === 0) return prev;
+          const { defaults } = applyFirstChildPrefillToRow(
+            profile.children,
+            prev[0].id,
+          );
+          setChildDefaults((d) => ({ ...d, ...defaults }));
+          return prev;
+        });
       }
     }, []);
 
@@ -631,17 +624,7 @@ const KiddiesEnrichmentForm = forwardRef<
           </div>
         ))}
 
-        {/* Add Another Child Button */}
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={addChild}
-            className="btn btn-outline border-gray-400 text-gray-700 hover:bg-gray-100 hover:border-gray-500 gap-2 px-8"
-          >
-            <PlusIcon className="w-5 h-5" />
-            Add Another Child
-          </button>
-        </div>
+        <AddAnotherChildButton onClick={addChild} />
 
         {/* Hidden Fields */}
         <input type="hidden" name="childrenCount" value={childrenData.length} />
