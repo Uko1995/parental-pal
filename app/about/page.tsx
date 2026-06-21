@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion, useInView, Variants } from "framer-motion";
 import { useRef } from "react";
 
@@ -522,25 +523,25 @@ export default function AboutPage() {
             your child thrive.
           </motion.p>
           <motion.div
-            className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4"
+            className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-4"
             variants={staggerContainer}
           >
-            <motion.button
-              className="bg-white text-[#90AC19] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
-              variants={scaleIn}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Explore Our Services
-            </motion.button>
-            <motion.button
-              className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#90AC19] transition-colors duration-300"
-              variants={scaleIn}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Contact Us Today
-            </motion.button>
+            <motion.div variants={scaleIn} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/services"
+                className="inline-block bg-white text-[#90AC19] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
+              >
+                Explore Our Services
+              </Link>
+            </motion.div>
+            <motion.div variants={scaleIn} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/contact"
+                className="inline-block bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#90AC19] transition-colors duration-300"
+              >
+                Contact Us Today
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </motion.section>
