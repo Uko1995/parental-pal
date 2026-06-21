@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { stableChildId } from "@/lib/booking-child-id";
 
 export interface BookingChildPrefill {
   name: string;
@@ -36,7 +36,7 @@ export function childPrefillToDefaults(
 
 export function prefillFirstChildOnly(
   children: BookingChildPrefill[],
-  createId: () => string = uuidv4,
+  createId: (index: number) => string = stableChildId,
 ) {
   if (children.length === 0) {
     return {
@@ -50,9 +50,9 @@ export function prefillFirstChildOnly(
 
 export function createPrefilledChildrenFromProfile(
   children: BookingChildPrefill[],
-  createId: () => string = uuidv4,
+  createId: (index: number) => string = stableChildId,
 ) {
-  const ids = children.map(() => createId());
+  const ids = children.map((_, index) => createId(index));
   const defaults: Record<string, ChildInfoDefaults> = {};
   const ages: Record<string, number> = {};
 

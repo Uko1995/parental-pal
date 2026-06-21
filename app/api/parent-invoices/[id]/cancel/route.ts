@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
 import { ParentInvoiceRepository } from "@/lib/ParentInvoiceRepository";
-import { validateParentInvoiceLineItems } from "@/lib/parent-invoice";
+import {
+  canParentCancelInvoice,
+  getParentCancelInvoiceBlockReason,
+} from "@/lib/parent-invoice";
 
 export async function POST(
   _req: Request,
@@ -28,25 +31,27 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (invoice.status !== "draft" && invoice.status !== "rejected") {
+  const blockReason = getParentCancelInvoiceBlockReason(invoice);
+  if (blockReason || !canParentCancelInvoice(invoice)) {
     return NextResponse.json(
-      { error: "Invoice cannot be submitted in its current state" },
+      { error: blockReason || "This invoice cannot be cancelled" },
       { status: 400 },
     );
   }
 
-  const validation = validateParentInvoiceLineItems(invoice.lineItems);
-  if (!validation.ok) {
-    return NextResponse.json({ errors: validation.errors }, { status: 400 });
-  }
-
   const updated = await ParentInvoiceRepository.update(id, {
-    status: "pending_payment",
-    approval: {
-      submittedAt: invoice.approval?.submittedAt ?? new Date(),
-      rejectionReason: undefined,
-    },
+    status: "cancelled",
   });
 
-  return NextResponse.json({ success: true, invoice: updated });
+  return NextResponse.json({
+    success: true,
+    invoice: updated
+      ? {
+          ...updated,
+          _id: updated._id?.toString(),
+          userId: updated.userId.toString(),
+          linkedBookingId: updated.linkedBookingId?.toString(),
+        }
+      : null,
+  });
 }

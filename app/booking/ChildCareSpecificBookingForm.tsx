@@ -18,6 +18,7 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
@@ -75,7 +76,7 @@ const ChildCareSpecificBookingForm = forwardRef<
 
     const [childrenData, setChildrenData] = useState<ChildCareData[]>([
       {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         careType: "",
         totalDays: 0,
@@ -369,7 +370,7 @@ const ChildCareSpecificBookingForm = forwardRef<
     const resetForm = () => {
       setChildrenData([
         {
-          id: uuidv4(),
+          id: INITIAL_CHILD_ID,
           index: 0,
           careType: "",
           totalDays: 0,

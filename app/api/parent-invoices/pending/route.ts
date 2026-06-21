@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const invoices = await ParentInvoiceRepository.findPendingApproval();
+  const invoices = await ParentInvoiceRepository.findSubmittedInvoices();
   return NextResponse.json({
     invoices: invoices.map((inv) => ({
       ...inv,

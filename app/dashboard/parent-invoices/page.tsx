@@ -5,10 +5,11 @@ export default function ParentInvoicesDashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-base-content">
-          Parent Invoice Approvals
+          Submitted Session Invoices
         </h1>
         <p className="text-sm text-base-content/70 mt-1">
-          Review session invoices submitted by parents before they can pay.
+          Review invoices parents have submitted for payment. Approval is not
+          required before they pay.
         </p>
       </div>
       <ParentInvoiceApprovalQueue />

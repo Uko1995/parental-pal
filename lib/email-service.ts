@@ -315,6 +315,105 @@ export const emailTemplates = {
   };
   },
 
+  paymentReminder: ({
+    parentName,
+    serviceLabel,
+    amount,
+    dueDate,
+    dueLine,
+    daysRemaining,
+    profileUrl,
+  }: {
+    parentName: string;
+    serviceLabel: string;
+    amount: number;
+    dueDate: string;
+    dueLine: string;
+    daysRemaining: number;
+    profileUrl: string;
+  }) => {
+    const dueDateDisplay = dueDate
+      ? new Date(dueDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "your due date";
+    const urgencyCopy =
+      daysRemaining === 1
+        ? "Your payment is due tomorrow."
+        : `Your payment is due in ${daysRemaining} days.`;
+
+    return {
+      subject: `Payment reminder — ${serviceLabel} (${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left)`,
+      html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Reminder</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+          .container { max-width: 600px; margin: 0 auto; background-color: white; }
+          .header { background-color: #90AC19; padding: 30px 20px; text-align: center; }
+          .header h1 { color: white; margin: 0; font-size: 24px; }
+          .content { padding: 30px 20px; }
+          .booking-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .detail-label { font-weight: bold; color: #333; }
+          .detail-value { color: #666; }
+          .total-amount { background-color: #90AC19; color: white; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; font-size: 18px; font-weight: bold; }
+          .cta-button { display: inline-block; background: #90AC19; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; margin: 20px 0; font-weight: bold; }
+          .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Payment Reminder</h1>
+          </div>
+          <div class="content">
+            <p>Hello ${parentName},</p>
+            <p>${urgencyCopy} ${dueLine}.</p>
+
+            <div class="booking-details">
+              <div class="detail-row">
+                <span class="detail-label">Service</span>
+                <span class="detail-value">${serviceLabel}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Amount due</span>
+                <span class="detail-value">₦${amount.toLocaleString()}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Due date</span>
+                <span class="detail-value">${dueDateDisplay}</span>
+              </div>
+            </div>
+
+            <div class="total-amount">
+              Amount due: ₦${amount.toLocaleString()}
+            </div>
+
+            <p>Please complete payment from your profile to keep your booking confirmed. Payment is due 5 days before your last session.</p>
+
+            <center>
+              <a href="${profileUrl}" class="cta-button">Pay from Profile → Payments</a>
+            </center>
+          </div>
+          <div class="footer">
+            <p>© 2024 ParentalPal. All rights reserved.</p>
+            <p>Need help? Contact us at ${process.env.EMAIL_USER || "support@parentalpal.com"}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}`,
+    };
+  },
+
   // Payment confirmation email
   paymentConfirmation: (userName: string, paymentDetails: PaymentDetails) => {
     const camperSection =

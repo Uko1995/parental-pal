@@ -20,6 +20,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import PhoneInput from "@/components/PhoneInput";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
@@ -71,7 +72,7 @@ const KiddiesEnrichmentForm = forwardRef<
 
     const [childrenData, setChildrenData] = useState<ChildEnrichmentData[]>([
       {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedPrograms: [],
         interests: "",
@@ -252,7 +253,7 @@ const KiddiesEnrichmentForm = forwardRef<
 
     const resetForm = () => {
       const initialChild: ChildEnrichmentData = {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedPrograms: [],
         interests: "",

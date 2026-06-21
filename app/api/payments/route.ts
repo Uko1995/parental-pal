@@ -24,6 +24,7 @@ export async function GET() {
     const payments = bookings.map((booking) => ({
       _id: booking._id,
       bookingId: booking._id,
+      bookingStatus: booking.status,
       amount: booking.pricing.totalAmount,
       currency: booking.pricing.currency,
       status: booking.payment.status,

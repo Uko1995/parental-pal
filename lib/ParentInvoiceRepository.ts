@@ -44,6 +44,18 @@ export class ParentInvoiceRepository {
       .toArray();
   }
 
+  static async findSubmittedInvoices(): Promise<ParentInvoiceInterface[]> {
+    const collection = await getCollection<ParentInvoiceInterface>(
+      this.collectionName,
+    );
+    return collection
+      .find({
+        status: { $in: ["pending_payment", "pending_approval"] },
+      })
+      .sort({ "approval.submittedAt": -1, createdAt: -1 })
+      .toArray();
+  }
+
   static async update(
     id: string,
     updates: Partial<ParentInvoiceInterface>,

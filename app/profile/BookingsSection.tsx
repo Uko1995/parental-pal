@@ -13,6 +13,7 @@ import {
   formatPaymentDueDateLine,
   isPaymentOverdue,
 } from "@/lib/booking-payment-due";
+import { canParentCancelBooking } from "@/lib/booking-cancellation";
 
 interface Booking {
   _id: string;
@@ -229,8 +230,10 @@ export default function BookingsSection() {
       });
 
       if (response.ok) {
-        toast.success("Booking cancelled and deleted successfully");
+        const data = await response.json();
+        toast.success(data.message || "Booking cancelled successfully");
         setBookingToCancel(null);
+        setSelectedBooking(null);
         await fetchBookings();
       } else {
         const errorData = await response.json();
@@ -294,6 +297,9 @@ export default function BookingsSection() {
     booking.status === "confirmed" &&
     booking.payment?.status === "pending" &&
     (booking.pricing?.totalAmount ?? 0) > 0;
+
+  const canCancelBooking = (booking: Booking) =>
+    canParentCancelBooking(booking);
 
   const handleQuickRebook = async (booking: Booking) => {
     setRebookLoadingId(booking._id);
@@ -577,12 +583,13 @@ export default function BookingsSection() {
                       </>
                     )}
 
-                    {booking.status === "pending" && (
+                    {canCancelBooking(booking) && (
                       <button
+                        type="button"
                         onClick={() => setBookingToCancel(booking)}
-                        className="btn btn-error btn-sm"
+                        className="btn btn-error btn-outline btn-sm"
                       >
-                        Cancel
+                        Cancel booking
                       </button>
                     )}
                   </div>
@@ -619,14 +626,22 @@ export default function BookingsSection() {
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Cancel Booking</h3>
             <p className="py-4">
-              Are you sure you want to cancel and permanently delete this
-              booking for{" "}
+              Are you sure you want to cancel this booking for{" "}
               <span className="font-semibold">
                 {SERVICE_TYPE_LABELS[
                   bookingToCancel.serviceType as keyof typeof SERVICE_TYPE_LABELS
                 ] || bookingToCancel.serviceType}
               </span>
-              ? This action cannot be undone.
+              ?
+              {bookingToCancel.status === "pending"
+                ? " It will be removed from your account."
+                : " It will be marked as cancelled."}
+              {bookingToCancel.payment?.status === "paid" && (
+                <span className="block mt-2 text-sm text-base-content/70">
+                  You have already paid for this booking. Contact us if you
+                  need a refund.
+                </span>
+              )}
             </p>
             <div className="modal-action">
               <button
@@ -641,7 +656,7 @@ export default function BookingsSection() {
                 className="btn btn-error"
                 disabled={cancelLoading}
               >
-                {cancelLoading ? "Cancelling..." : "Yes, Cancel & Delete"}
+                {cancelLoading ? "Cancelling..." : "Yes, cancel booking"}
               </button>
             </div>
           </div>

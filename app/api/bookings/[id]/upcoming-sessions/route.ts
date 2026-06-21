@@ -4,6 +4,11 @@ import { UserRepository } from "@/lib/UserRepository";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { bookingBelongsToUser } from "@/lib/booking-ownership";
 import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
+import { fetchServicePricingMap } from "@/lib/service-pricing-server";
+import {
+  getBookingHourlyRateForLocation,
+  resolveBookingPricingContext,
+} from "@/lib/parent-invoice-pricing";
 
 export async function GET(
   _req: NextRequest,
@@ -35,11 +40,21 @@ export async function GET(
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  const pricing = await fetchServicePricingMap();
+  const bookingCtx = resolveBookingPricingContext(booking.serviceData);
+  const defaultLocation =
+    bookingCtx.tutoringLocation ??
+    (booking.serviceData?.tutoringLocation as "virtual" | "physical" | undefined) ??
+    "physical";
+
   const sessions: Array<{
     date: string;
     childName: string;
     serviceType: string;
     description: string;
+    hours: number;
+    unitPrice: number;
+    tutoringLocation?: "virtual" | "physical";
   }> = [];
 
   const serviceType = booking.serviceType;
@@ -50,12 +65,26 @@ export async function GET(
       if (wd.dates?.length) {
         for (const sessionDate of wd.dates) {
           if (sessionDate.date >= today) {
+            const hours = wd.hours || 1;
+            const unitPrice =
+              serviceType === "tutoring"
+                ? getBookingHourlyRateForLocation(
+                    bookingCtx,
+                    pricing,
+                    defaultLocation,
+                  )
+                : pricing[serviceType]?.baseRate ?? 0;
+
             for (const child of children) {
               sessions.push({
                 date: sessionDate.date,
                 childName: child.name,
                 serviceType,
-                description: `${wd.day} session (${wd.hours}h)`,
+                description: `${wd.day} session (${hours}h)`,
+                hours,
+                unitPrice,
+                tutoringLocation:
+                  serviceType === "tutoring" ? defaultLocation : undefined,
               });
             }
           }
@@ -66,12 +95,21 @@ export async function GET(
 
   const resolved = resolveBookingScheduleDates(booking);
   if (!sessions.length && resolved.startDate && resolved.startDate >= today) {
+    const unitPrice =
+      serviceType === "tutoring"
+        ? getBookingHourlyRateForLocation(bookingCtx, pricing, defaultLocation)
+        : pricing[serviceType]?.baseRate ?? 0;
+
     for (const child of children) {
       sessions.push({
         date: resolved.startDate,
         childName: child.name,
         serviceType,
-        description: "Scheduled session",
+        description: "Scheduled session (1h)",
+        hours: 1,
+        unitPrice,
+        tutoringLocation:
+          serviceType === "tutoring" ? defaultLocation : undefined,
       });
     }
   }

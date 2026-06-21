@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import type { ParentInvoiceLineItem } from "@/models/ParentInvoice";
 import { formatPaymentDueLabel } from "@/lib/booking-payment-due";
 
-interface PendingInvoice {
+interface SubmittedInvoice {
   _id: string;
   invoiceNumber: string;
   userId: string;
@@ -16,14 +16,20 @@ interface PendingInvoice {
   approval?: { submittedAt?: string };
 }
 
-export default function ParentInvoiceApprovalQueue() {
-  const [invoices, setInvoices] = useState<PendingInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
+const SERVICE_LABELS: Record<string, string> = {
+  tutoring: "Tutoring",
+  childcare: "Childcare",
+  homeschooling: "Homeschooling",
+  "holiday-camps": "Holiday Camps",
+  "space-rental": "Space Rental",
+  "kiddies-enrichment": "Kiddies Enrichment",
+};
 
-  const fetchPending = async () => {
+export default function ParentInvoiceApprovalQueue() {
+  const [invoices, setInvoices] = useState<SubmittedInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSubmitted = async () => {
     try {
       const res = await fetch("/api/parent-invoices/pending");
       if (res.ok) {
@@ -31,59 +37,15 @@ export default function ParentInvoiceApprovalQueue() {
         setInvoices(data.invoices || []);
       }
     } catch {
-      toast.error("Failed to load pending invoices");
+      toast.error("Failed to load submitted invoices");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
+    fetchSubmitted();
   }, []);
-
-  const approve = async (id: string) => {
-    setActionId(id);
-    try {
-      const res = await fetch(`/api/parent-invoices/${id}/approve`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        toast.success("Invoice approved");
-        await fetchPending();
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Approve failed");
-      }
-    } finally {
-      setActionId(null);
-    }
-  };
-
-  const reject = async (id: string) => {
-    if (!rejectReason.trim()) {
-      toast.error("Enter a rejection reason");
-      return;
-    }
-    setActionId(id);
-    try {
-      const res = await fetch(`/api/parent-invoices/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rejectionReason: rejectReason }),
-      });
-      if (res.ok) {
-        toast.success("Invoice rejected");
-        setRejectingId(null);
-        setRejectReason("");
-        await fetchPending();
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Reject failed");
-      }
-    } finally {
-      setActionId(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -96,13 +58,17 @@ export default function ParentInvoiceApprovalQueue() {
   if (!invoices.length) {
     return (
       <p className="text-base-content/60 text-center py-8">
-        No invoices awaiting approval.
+        No submitted invoices awaiting payment.
       </p>
     );
   }
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-base-content/70">
+        Parents submit invoices directly for payment. This list is for review
+        only — approval is not required before they pay.
+      </p>
       {invoices.map((invoice) => (
         <div
           key={invoice._id}
@@ -118,7 +84,11 @@ export default function ParentInvoiceApprovalQueue() {
                   ` • ${formatPaymentDueLabel(invoice.paymentDueDate)}`}
               </p>
             </div>
-            <span className="badge badge-warning">Pending approval</span>
+            <span className="badge badge-info">
+              {invoice.status === "pending_approval"
+                ? "Legacy pending approval"
+                : "Awaiting payment"}
+            </span>
           </div>
 
           <div className="overflow-x-auto mb-4">
@@ -140,70 +110,29 @@ export default function ParentInvoiceApprovalQueue() {
                   <tr key={i}>
                     <td>{line.date}</td>
                     <td>{line.childName}</td>
-                    <td>{line.serviceType}</td>
+                    <td>
+                      {SERVICE_LABELS[line.serviceType] || line.serviceType}
+                    </td>
                     <td>{line.description}</td>
                     <td>{line.quantity}</td>
                     <td>₦{line.unitPrice.toLocaleString()}</td>
                     <td>₦{line.total.toLocaleString()}</td>
-                    <td>{line.sessionKind}</td>
+                    <td>
+                      <span
+                        className={`badge badge-xs ${
+                          line.sessionKind === "future"
+                            ? "badge-info"
+                            : "badge-neutral"
+                        }`}
+                      >
+                        {line.sessionKind}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {rejectingId === invoice._id ? (
-            <div className="flex flex-col gap-2">
-              <textarea
-                className="textarea textarea-bordered"
-                placeholder="Rejection reason (required)"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-error btn-sm"
-                  disabled={actionId === invoice._id}
-                  onClick={() => reject(invoice._id)}
-                >
-                  Confirm reject
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => {
-                    setRejectingId(null);
-                    setRejectReason("");
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={actionId === invoice._id}
-                onClick={() => approve(invoice._id)}
-              >
-                {actionId === invoice._id ? (
-                  <span className="loading loading-spinner loading-xs" />
-                ) : (
-                  "Approve"
-                )}
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline btn-error btn-sm"
-                onClick={() => setRejectingId(invoice._id)}
-              >
-                Reject
-              </button>
-            </div>
-          )}
         </div>
       ))}
     </div>

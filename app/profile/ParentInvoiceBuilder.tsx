@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import type { ParentInvoiceLineItem, ParentInvoiceSessionKind } from "@/models/ParentInvoice";
+import type {
+  ParentInvoiceLineItem,
+  ParentInvoiceSessionKind,
+} from "@/models/ParentInvoice";
+import {
+  applyServiceDefaultsToLine,
+  getBookingHourlyRateForLocation,
+  getTutoringRatesFromPricing,
+  resolveBookingPricingContext,
+  suggestSummerCampDiscountLine,
+} from "@/lib/parent-invoice-pricing";
+import type { ServicePricingMap } from "@/lib/service-pricing";
 
 const SERVICE_OPTIONS = [
   { value: "tutoring", label: "Tutoring" },
@@ -13,8 +24,20 @@ const SERVICE_OPTIONS = [
   { value: "kiddies-enrichment", label: "Kiddies Enrichment" },
 ];
 
-function emptyLine(): ParentInvoiceLineItem {
-  return {
+export interface BookingPricingContext {
+  hourlyRate?: number;
+  tutoringLocation?: "virtual" | "physical";
+  virtualRate?: number;
+  physicalRate?: number;
+  serviceData?: Record<string, unknown>;
+}
+
+function emptyLine(
+  sessionKind: ParentInvoiceSessionKind,
+  pricing?: ServicePricingMap,
+  tutoringLocation?: "virtual" | "physical",
+): ParentInvoiceLineItem {
+  const base: ParentInvoiceLineItem = {
     date: "",
     childName: "",
     serviceType: "tutoring",
@@ -22,29 +45,298 @@ function emptyLine(): ParentInvoiceLineItem {
     quantity: 1,
     unitPrice: 0,
     total: 0,
-    sessionKind: "past",
+    sessionKind,
+    tutoringLocation: tutoringLocation ?? "physical",
   };
+  if (pricing) {
+    return applyServiceDefaultsToLine(base, pricing, {
+      tutoringLocation: tutoringLocation ?? "physical",
+    });
+  }
+  return base;
 }
 
 interface ParentInvoiceBuilderProps {
   linkedBookingId?: string;
+  bookingContext?: BookingPricingContext;
   initialLineItems?: ParentInvoiceLineItem[];
-  onSave: (lineItems: ParentInvoiceLineItem[]) => Promise<void>;
-  onSubmitForApproval?: (lineItems: ParentInvoiceLineItem[]) => Promise<void>;
+  onSave: (
+    lineItems: ParentInvoiceLineItem[],
+    linkedBookingId?: string,
+  ) => Promise<void>;
+  onSubmitInvoice?: (
+    lineItems: ParentInvoiceLineItem[],
+    linkedBookingId?: string,
+  ) => Promise<void>;
   saving?: boolean;
+}
+
+function SessionKindToggle({
+  value,
+  onChange,
+}: {
+  value: ParentInvoiceSessionKind;
+  onChange: (kind: ParentInvoiceSessionKind) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1 min-w-[9rem]">
+      <div className="join join-horizontal w-full">
+        <button
+          type="button"
+          className={`join-item btn btn-xs flex-1 ${
+            value === "past" ? "btn-neutral" : "btn-ghost"
+          }`}
+          onClick={() => onChange("past")}
+        >
+          Past
+        </button>
+        <button
+          type="button"
+          className={`join-item btn btn-xs flex-1 ${
+            value === "future" ? "btn-info" : "btn-ghost"
+          }`}
+          onClick={() => onChange("future")}
+        >
+          Future
+        </button>
+      </div>
+      <span className="text-[10px] text-base-content/60 leading-tight">
+        {value === "past" ? "Already completed" : "Not yet attended"}
+      </span>
+    </div>
+  );
+}
+
+function LineRowFields({
+  item,
+  index,
+  pricing,
+  tutoringLocation,
+  onUpdate,
+  onRemove,
+  canRemove,
+  showDate,
+}: {
+  item: ParentInvoiceLineItem;
+  index: number;
+  pricing: ServicePricingMap | null;
+  tutoringLocation: "virtual" | "physical";
+  onUpdate: (
+    index: number,
+    field: keyof ParentInvoiceLineItem,
+    value: string | number,
+  ) => void;
+  onRemove: (index: number) => void;
+  canRemove: boolean;
+  showDate: boolean;
+}) {
+  const isTutoring = item.serviceType === "tutoring";
+  const isPast = item.sessionKind === "past";
+  const quantityLabel = isPast ? "No. of sessions" : "Hours / units";
+  const unitPriceLabel = isPast ? "Price per session" : "Price per unit";
+
+  return (
+  <tr className="align-top">
+    {showDate && (
+      <td className="min-w-[8rem]">
+        <label className="text-xs font-medium text-base-content/70 lg:hidden">
+          Session date
+        </label>
+        <input
+          type="date"
+          className="input input-bordered input-sm w-full min-w-0"
+          value={item.date}
+          onChange={(e) => onUpdate(index, "date", e.target.value)}
+          required={item.sessionKind === "future"}
+        />
+      </td>
+    )}
+    <td className="min-w-[8rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        Child name
+      </label>
+      <input
+        type="text"
+        placeholder="Child name"
+        className="input input-bordered input-sm w-full min-w-0"
+        value={item.childName}
+        onChange={(e) => onUpdate(index, "childName", e.target.value)}
+      />
+    </td>
+    <td className="min-w-[9rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        Service
+      </label>
+      <select
+        className="select select-bordered select-sm w-full min-w-0"
+        value={item.serviceType}
+        onChange={(e) => onUpdate(index, "serviceType", e.target.value)}
+      >
+        {SERVICE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </td>
+    <td className="min-w-[12rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        {isPast ? "Notes (optional)" : "Session details"}
+      </label>
+      <input
+        type="text"
+        placeholder={
+          isPast ? "Optional notes" : "e.g. Monday session (2h)"
+        }
+        className="input input-bordered input-sm w-full min-w-0"
+        value={item.description}
+        onChange={(e) => onUpdate(index, "description", e.target.value)}
+      />
+    </td>
+    <td className="min-w-[5rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        {quantityLabel}
+      </label>
+      <input
+        type="number"
+        min={1}
+        className="input input-bordered input-sm w-full min-w-0"
+        value={item.quantity}
+        onChange={(e) =>
+          onUpdate(index, "quantity", parseInt(e.target.value, 10) || 1)
+        }
+      />
+    </td>
+    <td className="min-w-[6rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        {unitPriceLabel}
+      </label>
+      <input
+        type="number"
+        min={0}
+        className="input input-bordered input-sm w-full min-w-0"
+        value={item.unitPrice}
+        onChange={(e) =>
+          onUpdate(index, "unitPrice", parseInt(e.target.value, 10) || 0)
+        }
+      />
+    </td>
+    <td className="min-w-[6rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        Line total
+      </label>
+      <p className="text-sm font-semibold py-2">
+        ₦{item.total.toLocaleString()}
+      </p>
+    </td>
+    <td className="min-w-[9rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        Timing
+      </label>
+      <SessionKindToggle
+        value={item.sessionKind}
+        onChange={(kind) => onUpdate(index, "sessionKind", kind)}
+      />
+    </td>
+    {isTutoring && pricing && (
+      <td className="min-w-[8rem] hidden xl:table-cell">
+        <label className="text-xs font-medium text-base-content/70">
+          Tutoring mode
+        </label>
+        <select
+          className="select select-bordered select-sm w-full min-w-0 mt-1"
+          value={item.tutoringLocation ?? tutoringLocation}
+          onChange={(e) =>
+            onUpdate(
+              index,
+              "tutoringLocation",
+              e.target.value as "virtual" | "physical",
+            )
+          }
+        >
+          <option value="virtual">Virtual</option>
+          <option value="physical">Physical</option>
+        </select>
+      </td>
+    )}
+    <td>
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm btn-square mt-1"
+        onClick={() => onRemove(index)}
+        disabled={!canRemove}
+        aria-label="Remove line"
+      >
+        <TrashIcon className="w-4 h-4" />
+      </button>
+    </td>
+  </tr>
+  );
 }
 
 export default function ParentInvoiceBuilder({
   linkedBookingId,
+  bookingContext,
   initialLineItems,
   onSave,
-  onSubmitForApproval,
+  onSubmitInvoice,
   saving = false,
 }: ParentInvoiceBuilderProps) {
+  const [pricing, setPricing] = useState<ServicePricingMap | null>(null);
+  const [pricingError, setPricingError] = useState(false);
+  const [tutoringLocation, setTutoringLocation] = useState<
+    "virtual" | "physical"
+  >(bookingContext?.tutoringLocation ?? "physical");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoStatus, setPromoStatus] = useState<"idle" | "applied" | "error">(
+    "idle",
+  );
+  const [promoMessage, setPromoMessage] = useState("");
   const [lineItems, setLineItems] = useState<ParentInvoiceLineItem[]>(
-    initialLineItems?.length ? initialLineItems : [emptyLine()],
+    initialLineItems?.length ? initialLineItems : [emptyLine("past")],
   );
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const resolvedBookingCtx = resolveBookingPricingContext(
+    (bookingContext?.serviceData ?? bookingContext) as
+      | Record<string, unknown>
+      | undefined,
+  );
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const res = await fetch("/api/services/pricing");
+        const data = await res.json();
+        if (data.success && data.data) {
+          setPricing(data.data);
+          if (!initialLineItems?.length) {
+            setLineItems([emptyLine("past", data.data, tutoringLocation)]);
+          }
+        } else {
+          setPricingError(true);
+        }
+      } catch {
+        setPricingError(true);
+      }
+    };
+    fetchPricing();
+  }, [initialLineItems?.length]);
+
+  useEffect(() => {
+    if (bookingContext?.tutoringLocation) {
+      setTutoringLocation(bookingContext.tutoringLocation);
+    }
+  }, [bookingContext?.tutoringLocation]);
+
+  const getBookingHourlyRate = (location: "virtual" | "physical") => {
+    if (!pricing) return 0;
+    return getBookingHourlyRateForLocation(
+      resolvedBookingCtx,
+      pricing,
+      location,
+    );
+  };
 
   const updateLine = (
     index: number,
@@ -54,18 +346,76 @@ export default function ParentInvoiceBuilder({
     setLineItems((prev) =>
       prev.map((item, i) => {
         if (i !== index) return item;
-        const next = { ...item, [field]: value };
+        let next = { ...item, [field]: value };
+
+        if (field === "sessionKind") {
+          if (value === "past") {
+            next.date = "";
+          }
+        }
+
+        if (field === "serviceType" && pricing) {
+          next = applyServiceDefaultsToLine(next, pricing, {
+            tutoringLocation:
+              next.tutoringLocation ?? tutoringLocation,
+            bookingHourlyRate:
+              next.serviceType === "tutoring"
+                ? getBookingHourlyRate(
+                    (next.tutoringLocation ?? tutoringLocation) as
+                      | "virtual"
+                      | "physical",
+                  )
+                : undefined,
+          });
+        }
+
+        if (
+          field === "tutoringLocation" &&
+          pricing &&
+          next.serviceType === "tutoring"
+        ) {
+          const loc = value as "virtual" | "physical";
+          const rate =
+            promoStatus === "applied" && loc === "virtual"
+              ? next.unitPrice
+              : getBookingHourlyRate(loc);
+          next.unitPrice = rate;
+          next.total = next.quantity * rate;
+        }
+
         if (field === "quantity" || field === "unitPrice") {
-          const qty = field === "quantity" ? Number(value) : item.quantity;
-          const price = field === "unitPrice" ? Number(value) : item.unitPrice;
+          const qty =
+            field === "quantity" ? Number(value) : next.quantity;
+          const price =
+            field === "unitPrice" ? Number(value) : next.unitPrice;
           next.total = qty * price;
         }
+
+        if (field === "description" && pricing && next.sessionKind !== "past") {
+          next = applyServiceDefaultsToLine(next, pricing, {
+            tutoringLocation: next.tutoringLocation ?? tutoringLocation,
+            bookingHourlyRate:
+              next.serviceType === "tutoring"
+                ? getBookingHourlyRate(
+                    (next.tutoringLocation ?? tutoringLocation) as
+                      | "virtual"
+                      | "physical",
+                  )
+                : undefined,
+          });
+        }
+
         return next;
       }),
     );
   };
 
-  const addLine = () => setLineItems((prev) => [...prev, emptyLine()]);
+  const addLine = (sessionKind: ParentInvoiceSessionKind) => {
+    setLineItems((prev) => [
+      ...prev,
+      emptyLine(sessionKind, pricing ?? undefined, tutoringLocation),
+    ]);
+  };
 
   const removeLine = (index: number) => {
     setLineItems((prev) =>
@@ -73,7 +423,81 @@ export default function ParentInvoiceBuilder({
     );
   };
 
+  const applyTutoringLocation = (location: "virtual" | "physical") => {
+    setTutoringLocation(location);
+    if (promoStatus === "applied" && location === "physical") {
+      setPromoStatus("idle");
+      setPromoMessage("");
+    }
+    if (!pricing) return;
+    setLineItems((prev) =>
+      prev.map((item) => {
+        if (item.serviceType !== "tutoring") return item;
+        const rate = getBookingHourlyRate(location);
+        return {
+          ...item,
+          tutoringLocation: location,
+          unitPrice: rate,
+          total: item.quantity * rate,
+        };
+      }),
+    );
+  };
+
+  const applyPromo = async () => {
+    if (!promoCode.trim()) {
+      setPromoMessage("Enter a promo code first.");
+      setPromoStatus("error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/promotions/eduvanta/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          tutoringLocation,
+        }),
+      });
+      const result = await res.json();
+      if (result.success && result.data) {
+        setPromoStatus("applied");
+        setPromoMessage(result.message || "Promo applied.");
+        if (typeof result.data.discountedRate === "number") {
+          const rate = result.data.discountedRate;
+          setLineItems((prev) =>
+            prev.map((item) =>
+              item.serviceType === "tutoring"
+                ? {
+                    ...item,
+                    tutoringLocation: "virtual",
+                    unitPrice: rate,
+                    total: item.quantity * rate,
+                  }
+                : item,
+            ),
+          );
+          setTutoringLocation("virtual");
+        }
+      } else {
+        setPromoStatus("error");
+        setPromoMessage(result.error || "Invalid promo code.");
+      }
+    } catch {
+      setPromoStatus("error");
+      setPromoMessage("Unable to validate promo code.");
+    }
+  };
+
+  const maybeAddCampDiscount = () => {
+    const discountLine = suggestSummerCampDiscountLine(lineItems);
+    if (discountLine) {
+      setLineItems((prev) => [...prev, discountLine]);
+    }
+  };
+
   const totalAmount = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const tutoringRates = pricing ? getTutoringRatesFromPricing(pricing) : null;
 
   const loadFutureSessions = async () => {
     if (!linkedBookingId) return;
@@ -91,26 +515,181 @@ export default function ParentInvoiceBuilder({
           childName: string;
           serviceType: string;
           description: string;
-        }) => ({
-          date: s.date,
-          childName: s.childName,
-          serviceType: s.serviceType,
-          description: s.description,
-          quantity: 1,
-          unitPrice: 0,
-          total: 0,
-          sessionKind: "future" as ParentInvoiceSessionKind,
-        }),
+          hours?: number;
+          unitPrice?: number;
+          tutoringLocation?: "virtual" | "physical";
+        }) => {
+          const hours = s.hours ?? 1;
+          const unitPrice = s.unitPrice ?? 0;
+          return {
+            date: s.date,
+            childName: s.childName,
+            serviceType: s.serviceType,
+            description: s.description,
+            quantity: hours,
+            unitPrice,
+            total: hours * unitPrice,
+            sessionKind: "future" as ParentInvoiceSessionKind,
+            tutoringLocation: s.tutoringLocation,
+          };
+        },
       );
 
-      setLineItems((prev) => [...prev, ...newLines]);
+      setLineItems((prev) => {
+        const merged = [...prev, ...newLines];
+        const discount = suggestSummerCampDiscountLine(merged);
+        return discount ? [...merged, discount] : merged;
+      });
     } finally {
       setLoadingSessions(false);
     }
   };
 
+  const pastIndices = lineItems
+    .map((item, i) => (item.sessionKind === "past" ? i : -1))
+    .filter((i) => i >= 0);
+  const futureIndices = lineItems
+    .map((item, i) => (item.sessionKind === "future" ? i : -1))
+    .filter((i) => i >= 0);
+
+  const renderSection = (
+    title: string,
+    helper: string,
+    indices: number[],
+    sessionKind: ParentInvoiceSessionKind,
+  ) => (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h4 className="font-semibold text-base-content">{title}</h4>
+          <p className="text-xs text-base-content/60">{helper}</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => addLine(sessionKind)}
+        >
+          <PlusIcon className="w-4 h-4" />
+          Add {sessionKind} line
+        </button>
+      </div>
+
+      {indices.length === 0 ? (
+        <p className="text-sm text-base-content/50 py-2">
+          No {sessionKind} session lines yet.
+        </p>
+      ) : (
+        <div className="overflow-x-auto -mx-1 px-1">
+          <table
+            className={`table table-sm w-full ${
+              sessionKind === "past" ? "min-w-[48rem]" : "min-w-[56rem]"
+            }`}
+          >
+            <thead>
+              <tr className="text-xs text-base-content/70">
+                {sessionKind === "future" && <th>Session date</th>}
+                <th>Child name</th>
+                <th>Service</th>
+                <th>
+                  {sessionKind === "past" ? "Notes (optional)" : "Session details"}
+                </th>
+                <th>
+                  {sessionKind === "past" ? "No. of sessions" : "Hours / units"}
+                </th>
+                <th>
+                  {sessionKind === "past" ? "Price per session" : "Price per unit"}
+                </th>
+                <th>Line total</th>
+                <th>Timing</th>
+                {pricing && <th className="hidden xl:table-cell">Mode</th>}
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {indices.map((index) => (
+                <LineRowFields
+                  key={index}
+                  item={lineItems[index]}
+                  index={index}
+                  pricing={pricing}
+                  tutoringLocation={tutoringLocation}
+                  onUpdate={updateLine}
+                  onRemove={removeLine}
+                  canRemove={lineItems.length > 1}
+                  showDate={sessionKind === "future"}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-full">
+      {pricingError && (
+        <p className="text-sm text-warning">
+          Could not load current rates. You can still enter prices manually.
+        </p>
+      )}
+
+      {tutoringRates && (
+        <div className="bg-base-200 border border-base-300 rounded-lg p-4 space-y-3">
+          <p className="text-sm font-medium">Tutoring rates (from your plan)</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`btn btn-sm ${
+                tutoringLocation === "virtual" ? "btn-info" : "btn-outline"
+              }`}
+              onClick={() => applyTutoringLocation("virtual")}
+            >
+              Virtual — ₦{tutoringRates.virtual.toLocaleString()}/hr
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${
+                tutoringLocation === "physical" ? "btn-neutral" : "btn-outline"
+              }`}
+              onClick={() => applyTutoringLocation("physical")}
+            >
+              Physical — ₦{tutoringRates.physical.toLocaleString()}/hr
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+            <div className="flex-1 min-w-0">
+              <label className="text-xs font-medium text-base-content/70">
+                Promo code (virtual tutoring)
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full mt-1"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Optional promo code"
+              />
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={applyPromo}
+            >
+              Apply promo
+            </button>
+          </div>
+          {promoMessage && (
+            <p
+              className={`text-xs ${
+                promoStatus === "error" ? "text-error" : "text-success"
+              }`}
+            >
+              {promoMessage}
+            </p>
+          )}
+        </div>
+      )}
+
       {linkedBookingId && (
         <button
           type="button"
@@ -121,109 +700,50 @@ export default function ParentInvoiceBuilder({
           {loadingSessions ? (
             <span className="loading loading-spinner loading-xs" />
           ) : (
-            "Add future sessions from booking"
+            "Import future sessions from linked booking"
           )}
         </button>
       )}
 
-      <div className="space-y-3">
-        {lineItems.map((item, index) => (
-          <div
-            key={index}
-            className="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 bg-base-200 rounded-lg border border-base-300"
-          >
-            <input
-              type="date"
-              className="input input-bordered input-sm"
-              value={item.date}
-              onChange={(e) => updateLine(index, "date", e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Child name"
-              className="input input-bordered input-sm"
-              value={item.childName}
-              onChange={(e) => updateLine(index, "childName", e.target.value)}
-            />
-            <select
-              className="select select-bordered select-sm"
-              value={item.serviceType}
-              onChange={(e) =>
-                updateLine(index, "serviceType", e.target.value)
-              }
-            >
-              {SERVICE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Description"
-              className="input input-bordered input-sm md:col-span-2"
-              value={item.description}
-              onChange={(e) =>
-                updateLine(index, "description", e.target.value)
-              }
-            />
-            <div className="flex gap-2 items-center">
-              <input
-                type="number"
-                min={1}
-                className="input input-bordered input-sm w-16"
-                value={item.quantity}
-                onChange={(e) =>
-                  updateLine(index, "quantity", parseInt(e.target.value, 10) || 1)
-                }
-              />
-              <input
-                type="number"
-                min={0}
-                className="input input-bordered input-sm w-24"
-                value={item.unitPrice}
-                onChange={(e) =>
-                  updateLine(index, "unitPrice", parseInt(e.target.value, 10) || 0)
-                }
-              />
-              <select
-                className="select select-bordered select-sm"
-                value={item.sessionKind}
-                onChange={(e) =>
-                  updateLine(index, "sessionKind", e.target.value)
-                }
-              >
-                <option value="past">Past</option>
-                <option value="future">Future</option>
-              </select>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm btn-square"
-                onClick={() => removeLine(index)}
-                aria-label="Remove line"
-              >
-                <TrashIcon className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+      {renderSection(
+        "Past sessions",
+        "Sessions your child has already attended. Enter the number of sessions — no date needed.",
+        pastIndices,
+        "past",
+      )}
+
+      {renderSection(
+        "Future sessions",
+        "Upcoming sessions not yet attended. Each line needs a date and session details. Link a booking to import.",
+        futureIndices,
+        "future",
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={maybeAddCampDiscount}
+        >
+          Check summer camp discount
+        </button>
       </div>
 
-      <button type="button" className="btn btn-ghost btn-sm" onClick={addLine}>
-        <PlusIcon className="w-4 h-4" />
-        Add session line
-      </button>
-
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-base-300">
-        <p className="text-lg font-bold">
-          Total: ₦{totalAmount.toLocaleString()}
-        </p>
-        <div className="flex gap-2">
+        <div>
+          <p className="text-lg font-bold">
+            Invoice total: ₦{totalAmount.toLocaleString()}
+          </p>
+          <p className="text-xs text-base-content/60">
+            Total updates automatically as you add or edit sessions.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="btn btn-outline"
             disabled={saving}
-            onClick={() => onSave(lineItems)}
+            onClick={() => onSave(lineItems, linkedBookingId)}
           >
             {saving ? (
               <span className="loading loading-spinner loading-sm" />
@@ -231,14 +751,14 @@ export default function ParentInvoiceBuilder({
               "Save draft"
             )}
           </button>
-          {onSubmitForApproval && (
+          {onSubmitInvoice && (
             <button
               type="button"
               className="btn btn-primary"
               disabled={saving}
-              onClick={() => onSubmitForApproval(lineItems)}
+              onClick={() => onSubmitInvoice(lineItems, linkedBookingId)}
             >
-              Submit for approval
+              Submit invoice
             </button>
           )}
         </div>

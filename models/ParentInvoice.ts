@@ -20,6 +20,7 @@ export interface ParentInvoiceLineItem {
   unitPrice: number;
   total: number;
   sessionKind: ParentInvoiceSessionKind;
+  tutoringLocation?: "virtual" | "physical";
 }
 
 export interface ParentInvoiceInterface {

@@ -182,6 +182,11 @@ export interface BookingInterface {
     transactionId?: string;
   };
 
+  paymentReminders?: {
+    fourDaySentAt?: string;
+    oneDaySentAt?: string;
+  };
+
   // Booking status and management
   status:
     | "pending"
@@ -489,7 +494,16 @@ export const BookingSchema = {
             },
             paidAmount: { bsonType: "number", minimum: 0 },
             paymentDate: { bsonType: "string" },
+            paymentDueDate: { bsonType: "string" },
             transactionId: { bsonType: "string" },
+          },
+        },
+
+        paymentReminders: {
+          bsonType: "object",
+          properties: {
+            fourDaySentAt: { bsonType: "string" },
+            oneDaySentAt: { bsonType: "string" },
           },
         },
 

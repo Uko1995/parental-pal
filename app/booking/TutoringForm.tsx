@@ -35,6 +35,7 @@ import {
 import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 import { formatLocalDate } from "@/lib/booking-calendar";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 
 export interface TutoringFormRef {
   resetForm: () => void;
@@ -78,7 +79,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
 
   const [childrenData, setChildrenData] = useState<ChildTutoringData[]>([
     {
-      id: uuidv4(),
+      id: INITIAL_CHILD_ID,
       index: 0,
       selectedSubjects: [],
       academicLevel: "",
@@ -429,7 +430,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   const resetForm = () => {
     setChildrenData([
       {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedSubjects: [],
         academicLevel: "",

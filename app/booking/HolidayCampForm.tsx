@@ -21,6 +21,7 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
@@ -74,7 +75,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     const [parentPhone, setParentPhone] = useState("");
     const [parentAddress, setParentAddress] = useState("");
     const [location, setLocation] = useState<CampLocation>("gbagada");
-    const [initialChild] = useState(() => ({ id: uuidv4() }));
+    const [initialChild] = useState(() => ({ id: INITIAL_CHILD_ID }));
     const [childrenData, setChildrenData] = useState<ChildCampData[]>([
       initialChild,
     ]);
@@ -260,7 +261,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     };
 
     const resetForm = () => {
-      const firstChildId = uuidv4();
+      const firstChildId = INITIAL_CHILD_ID;
       setChildrenData([{ id: firstChildId }]);
       setSelectedWeeksByChild({
         [firstChildId]: allSeasonWeekNumbers,
