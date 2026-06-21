@@ -19,14 +19,16 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
   parseJsonField,
+  childDefaultsFromFormEntries,
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  applyFirstChildPrefillToRow,
+  buildChildrenRowsFromProfile,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
@@ -46,7 +48,7 @@ interface ChildHomeschoolData {
   learningStyle: string;
   specialNeeds: string;
   educationalGoals: string;
-  selectedTerm: "first" | "second" | "third" | "";
+  selectedTerms: string[];
 }
 
 interface HomeschoolingFormProps {
@@ -65,7 +67,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
 
   const [childrenData, setChildrenData] = useState<ChildHomeschoolData[]>([
     {
-      id: uuidv4(),
+      id: INITIAL_CHILD_ID,
       index: 0,
       selectedSubjects: [],
       gradeLevel: "",
@@ -73,7 +75,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
       learningStyle: "",
       specialNeeds: "",
       educationalGoals: "",
-      selectedTerm: "",
+      selectedTerms: [],
     },
   ]);
 
@@ -87,6 +89,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
 
     const childIds = extractChildIdsFromFormEntries(initialTemplate);
     if (childIds.length > 0) {
+      setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
       setChildrenData(
         childIds.map((id, index) => ({
           id,
@@ -100,11 +103,12 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
           learningStyle: initialTemplate[`learningStyle_${id}`] || "",
           specialNeeds: initialTemplate[`specialNeeds_${id}`] || "",
           educationalGoals: initialTemplate[`educationalGoals_${id}`] || "",
-          selectedTerm: (initialTemplate[`schoolTerm_${id}`] || "") as
-            | "first"
-            | "second"
-            | "third"
-            | "",
+          selectedTerms: parseJsonField<string[]>(
+            initialTemplate[`selectedTerms_${id}`],
+            initialTemplate[`schoolTerm_${id}`]
+              ? [String(initialTemplate[`schoolTerm_${id}`])]
+              : [],
+          ),
         })),
       );
     }
@@ -136,15 +140,24 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
     });
 
     if (profile.children.length > 0) {
-      setChildrenData((prev) => {
-        if (prev.length === 0) return prev;
-        const { defaults } = applyFirstChildPrefillToRow(
-          profile.children,
-          prev[0].id,
-        );
-        setChildDefaults((d) => ({ ...d, ...defaults }));
-        return prev;
-      });
+      const built = buildChildrenRowsFromProfile(
+        profile.children,
+        (id, index) => ({
+          id,
+          index,
+          selectedSubjects: [],
+          gradeLevel: "",
+          curriculum: "",
+          learningStyle: "",
+          specialNeeds: "",
+          educationalGoals: "",
+          selectedTerms: [],
+        }),
+      );
+      if (built) {
+        setChildDefaults(built.defaults);
+        setChildrenData(built.rows);
+      }
     }
   }, []);
 
@@ -232,6 +245,19 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
     []
   );
 
+  const toggleTerm = useCallback((childId: string, term: string) => {
+    setChildrenData((prev) =>
+      prev.map((child) => {
+        if (child.id !== childId) return child;
+        const hasTerm = child.selectedTerms.includes(term);
+        const selectedTerms = hasTerm
+          ? child.selectedTerms.filter((t) => t !== term)
+          : [...child.selectedTerms, term];
+        return { ...child, selectedTerms };
+      }),
+    );
+  }, []);
+
   const handleFieldChange = useCallback(
     (childId: string, field: keyof ChildHomeschoolData, value: string) => {
       setChildrenData((prev) =>
@@ -255,7 +281,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
         learningStyle: "",
         specialNeeds: "",
         educationalGoals: "",
-        selectedTerm: "",
+        selectedTerms: [],
       },
     ]);
   };
@@ -269,7 +295,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
   const resetForm = () => {
     setChildrenData([
       {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedSubjects: [],
         gradeLevel: "",
@@ -277,7 +303,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
         learningStyle: "",
         specialNeeds: "",
         educationalGoals: "",
-        selectedTerm: "",
+        selectedTerms: [],
       },
     ]);
   };
@@ -295,8 +321,8 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
       if (!child.curriculum) {
         errors.push(`Child ${index + 1}: Please select a curriculum`);
       }
-      if (!child.selectedTerm) {
-        errors.push(`Child ${index + 1}: Please select a school term`);
+      if (!child.selectedTerms.length) {
+        errors.push(`Child ${index + 1}: Select at least one school term`);
       }
       if (!child.educationalGoals.trim()) {
         errors.push(`Child ${index + 1}: Please describe educational goals`);
@@ -317,8 +343,8 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
   // Calculate total cost for all children
   const calculateTotalCost = () => {
     return childrenData.reduce((total, child) => {
-      if (child.selectedTerm) {
-        return total + termRate;
+      if (child.selectedTerms.length) {
+        return total + termRate * child.selectedTerms.length;
       }
       return total;
     }, 0);
@@ -565,19 +591,11 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                   className="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors"
                 >
                   <input
-                    type="radio"
-                    name={`schoolTerm_${child.id}`}
-                    value={term.value}
-                    checked={child.selectedTerm === term.value}
-                    onChange={() =>
-                      handleFieldChange(
-                        child.id,
-                        "selectedTerm",
-                        term.value as "first" | "second" | "third"
-                      )
-                    }
-                    className="radio border-gray-400"
-                    required
+                    type="checkbox"
+                    name={`schoolTerm_${child.id}_${term.value}`}
+                    checked={child.selectedTerms.includes(term.value)}
+                    onChange={() => toggleTerm(child.id, term.value)}
+                    className="checkbox border-gray-400"
                   />
                   <div className="flex-1">
                     <div className="font-medium text-gray-800">
@@ -590,6 +608,16 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                 </label>
               ))}
             </div>
+            <input
+              type="hidden"
+              name={`selectedTerms_${child.id}`}
+              value={JSON.stringify(child.selectedTerms)}
+            />
+            <input
+              type="hidden"
+              name={`schoolTerm_${child.id}`}
+              value={child.selectedTerms[0] || ""}
+            />
           </div>
           <div className="flex flex-col md:flex-row gap-6">
             {/* Special Needs */}
@@ -640,7 +668,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
           </div>
 
           {/* Subtotal for this child */}
-          {child.selectedTerm &&
+          {child.selectedTerms.length > 0 &&
             child.selectedSubjects.length > 0 &&
             child.gradeLevel &&
             child.curriculum && (
@@ -651,15 +679,19 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                       Subtotal for Child #{index + 1}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      1 term •{" "}
-                      {
-                        schoolTerms.find((t) => t.value === child.selectedTerm)
-                          ?.label
-                      }
+                      {child.selectedTerms.length} term
+                      {child.selectedTerms.length > 1 ? "s" : ""} •{" "}
+                      {child.selectedTerms
+                        .map(
+                          (t) =>
+                            schoolTerms.find((st) => st.value === t)?.label,
+                        )
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
                   </div>
                   <p className="text-2xl font-bold text-gray-800">
-                    ₦{termRate.toLocaleString()}
+                    ₦{(termRate * child.selectedTerms.length).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -675,7 +707,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
       {/* Final Payment Summary */}
       {childrenData.some(
         (child) =>
-          child.selectedTerm &&
+          child.selectedTerms.length > 0 &&
           child.selectedSubjects.length > 0 &&
           child.gradeLevel &&
           child.curriculum
@@ -690,7 +722,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
           <div className="space-y-3 mb-4">
             {childrenData.map((child, index) => {
               if (
-                child.selectedTerm &&
+                child.selectedTerms.length > 0 &&
                 child.selectedSubjects.length > 0 &&
                 child.gradeLevel &&
                 child.curriculum
@@ -707,16 +739,12 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                         </p>
                         <p className="text-sm text-base-content/70">
                           {child.curriculum} • {child.selectedSubjects.length}{" "}
-                          subjects •{" "}
-                          {
-                            schoolTerms
-                              .find((t) => t.value === child.selectedTerm)
-                              ?.label.split("(")[0]
-                          }
+                          subjects • {child.selectedTerms.length} term
+                          {child.selectedTerms.length > 1 ? "s" : ""}
                         </p>
                       </div>
                       <p className="text-xl font-bold text-base-content">
-                        ₦{termRate.toLocaleString()}
+                        ₦{(termRate * child.selectedTerms.length).toLocaleString()}
                       </p>
                     </div>
                   </div>

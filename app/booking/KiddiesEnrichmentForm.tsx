@@ -2,6 +2,7 @@
 
 import ChildInfoForm from "./ChildInfoForm";
 import PaymentSchedule from "./PaymentSchedule";
+import BillingPeriodMonthsField from "./BillingPeriodMonthsField";
 import {
   useState,
   useImperativeHandle,
@@ -19,15 +20,17 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import PhoneInput from "@/components/PhoneInput";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
   parseJsonField,
+  childDefaultsFromFormEntries,
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  applyFirstChildPrefillToRow,
+  buildChildrenRowsFromProfile,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
@@ -51,12 +54,14 @@ interface ChildEnrichmentData {
 
 interface KiddiesEnrichmentFormProps {
   initialTemplate?: RebookFormEntries | null;
+  billingPeriodMonths?: number;
+  onBillingPeriodMonthsChange?: (months: number) => void;
 }
 
 const KiddiesEnrichmentForm = forwardRef<
   KiddiesEnrichmentFormRef,
   KiddiesEnrichmentFormProps
->(({ initialTemplate }, ref) => {
+>(({ initialTemplate, billingPeriodMonths = 1, onBillingPeriodMonthsChange }, ref) => {
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
     const [parentPhone, setParentPhone] = useState("");
@@ -67,7 +72,7 @@ const KiddiesEnrichmentForm = forwardRef<
 
     const [childrenData, setChildrenData] = useState<ChildEnrichmentData[]>([
       {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedPrograms: [],
         interests: "",
@@ -86,6 +91,7 @@ const KiddiesEnrichmentForm = forwardRef<
 
       const childIds = extractChildIdsFromFormEntries(initialTemplate);
       if (childIds.length > 0) {
+        setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
         setChildrenData(
           childIds.map((id, index) => ({
             id,
@@ -132,15 +138,23 @@ const KiddiesEnrichmentForm = forwardRef<
       });
 
       if (profile.children.length > 0) {
-        setChildrenData((prev) => {
-          if (prev.length === 0) return prev;
-          const { defaults } = applyFirstChildPrefillToRow(
-            profile.children,
-            prev[0].id,
-          );
-          setChildDefaults((d) => ({ ...d, ...defaults }));
-          return prev;
-        });
+        const built = buildChildrenRowsFromProfile(
+          profile.children,
+          (id, index) => ({
+            id,
+            index,
+            selectedPrograms: [],
+            interests: "",
+            parentGoals: "",
+            eventDate: "",
+            startTime: "",
+            hours: 1,
+          }),
+        );
+        if (built) {
+          setChildDefaults(built.defaults);
+          setChildrenData(built.rows);
+        }
       }
     }, []);
 
@@ -239,7 +253,7 @@ const KiddiesEnrichmentForm = forwardRef<
 
     const resetForm = () => {
       const initialChild: ChildEnrichmentData = {
-        id: uuidv4(),
+        id: INITIAL_CHILD_ID,
         index: 0,
         selectedPrograms: [],
         interests: "",
@@ -667,6 +681,15 @@ const KiddiesEnrichmentForm = forwardRef<
                 )}
                 serviceCost={hourlyRate}
               />
+
+              {onBillingPeriodMonthsChange && (
+                <div className="mt-4 p-4 rounded-lg bg-white/10 border border-gray-600">
+                  <BillingPeriodMonthsField
+                    value={billingPeriodMonths}
+                    onChange={onBillingPeriodMonthsChange}
+                  />
+                </div>
+              )}
 
               <div className="alert bg-gray-700 border-gray-600 mt-4">
                 <InformationCircleIcon className="w-6 h-6" />

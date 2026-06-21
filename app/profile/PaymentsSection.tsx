@@ -11,17 +11,23 @@ import toast from "react-hot-toast";
 import PaymentReceiptModal from "./PaymentReceiptModal";
 import PaymentDetailsModal from "./PaymentDetailsModal";
 import { initializeBookingPayment } from "@/lib/booking-payment";
+import {
+  formatPaymentDueDateLine,
+  isPaymentOverdue,
+} from "@/lib/booking-payment-due";
 import type { InvoiceLineItem } from "@/lib/booking-invoice";
 
 interface Payment {
   _id: string;
   bookingId: string;
+  bookingStatus?: string;
   amount: number;
   currency: string;
   status: "pending" | "paid" | "failed" | "refunded";
   method?: "card" | "bank_transfer" | "cash" | "installments";
   transactionId?: string;
   paidDate?: string;
+  paymentDueDate?: string;
   createdAt: string;
   serviceType: string;
   description: string;
@@ -36,12 +42,30 @@ interface PaymentSummary {
   totalPayments: number;
 }
 
-const PAYMENT_STATUS_COLORS = {
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
   pending: "badge-warning",
   paid: "badge-success",
   failed: "badge-error",
   refunded: "badge-info",
 };
+
+function isCancelledBooking(payment: Payment) {
+  return payment.bookingStatus === "cancelled";
+}
+
+function getDisplayStatus(payment: Payment): string {
+  if (isCancelledBooking(payment)) {
+    return payment.status === "paid" ? "cancelled (paid)" : "cancelled";
+  }
+  return payment.status;
+}
+
+function getStatusBadgeClass(payment: Payment): string {
+  if (isCancelledBooking(payment)) {
+    return "badge-neutral";
+  }
+  return PAYMENT_STATUS_COLORS[payment.status] || "badge-ghost";
+}
 
 export default function PaymentsSection() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -76,12 +100,17 @@ export default function PaymentsSection() {
         const summary = paymentsData.reduce(
           (acc: PaymentSummary, payment: Payment) => {
             acc.totalPayments++;
+            const cancelled = isCancelledBooking(payment);
             switch (payment.status) {
               case "paid":
-                acc.totalPaid += payment.amount;
+                if (!cancelled) {
+                  acc.totalPaid += payment.amount;
+                }
                 break;
               case "pending":
-                acc.totalPending += payment.amount;
+                if (!cancelled) {
+                  acc.totalPending += payment.amount;
+                }
                 break;
               case "refunded":
                 acc.totalRefunded += payment.amount;
@@ -137,9 +166,11 @@ export default function PaymentsSection() {
     return `${currency} ${amount.toLocaleString()}`;
   };
 
-  const filteredPayments = payments.filter(
-    (payment) => filterStatus === "all" || payment.status === filterStatus
-  );
+  const filteredPayments = payments.filter((payment) => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "cancelled") return isCancelledBooking(payment);
+    return payment.status === filterStatus && !isCancelledBooking(payment);
+  });
 
   const openReceiptModal = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -187,6 +218,7 @@ export default function PaymentsSection() {
             <option value="all">All Payments</option>
             <option value="paid">Paid</option>
             <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
             <option value="failed">Failed</option>
             <option value="refunded">Refunded</option>
           </select>
@@ -290,7 +322,19 @@ export default function PaymentsSection() {
                   </td>
                   <td>
                     <div className="font-semibold">
-                      {formatCurrency(payment.amount, payment.currency)}
+                      {isCancelledBooking(payment) &&
+                      payment.status === "pending" ? (
+                        <>
+                          <span className="text-base-content/40 line-through">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </span>
+                          <span className="text-sm text-base-content/60 ml-1">
+                            ₦0 due
+                          </span>
+                        </>
+                      ) : (
+                        formatCurrency(payment.amount, payment.currency)
+                      )}
                     </div>
                   </td>
                   <td>
@@ -299,13 +343,43 @@ export default function PaymentsSection() {
                     </div>
                   </td>
                   <td>
-                    <div
-                      className={`badge ${
-                        PAYMENT_STATUS_COLORS[payment.status]
-                      } badge-sm`}
-                    >
-                      {payment.status}
+                    <div className={`badge ${getStatusBadgeClass(payment)} badge-sm`}>
+                      {getDisplayStatus(payment)}
                     </div>
+                    {isCancelledBooking(payment) && payment.status === "paid" && (
+                      <p className="text-xs text-base-content/60 mt-1 max-w-[12rem] leading-snug">
+                        Contact support if you need a refund.
+                      </p>
+                    )}
+                    {payment.status === "pending" &&
+                      !isCancelledBooking(payment) &&
+                      payment.paymentDueDate && (
+                      <div
+                        className={`text-xs mt-1 max-w-[12rem] sm:max-w-none leading-snug break-words ${
+                          isPaymentOverdue(
+                            payment.paymentDueDate,
+                            payment.status,
+                          )
+                            ? "text-error font-medium"
+                            : "text-base-content/60"
+                        }`}
+                      >
+                        {isPaymentOverdue(
+                          payment.paymentDueDate,
+                          payment.status,
+                        )
+                          ? "Overdue"
+                          : formatPaymentDueDateLine(payment.paymentDueDate)}
+                        {!isPaymentOverdue(
+                          payment.paymentDueDate,
+                          payment.status,
+                        ) && (
+                          <span className="block text-base-content/50 mt-0.5">
+                            Due 5 days before your last session
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td>
                     <div className="text-xs font-mono">
@@ -314,7 +388,8 @@ export default function PaymentsSection() {
                   </td>
                   <td>
                     <div className="flex gap-1">
-                      {payment.status === "pending" ? (
+                      {payment.status === "pending" &&
+                      !isCancelledBooking(payment) ? (
                         <button
                           onClick={() =>
                             initiatePayment(payment.bookingId, payment.amount)

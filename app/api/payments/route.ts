@@ -24,12 +24,14 @@ export async function GET() {
     const payments = bookings.map((booking) => ({
       _id: booking._id,
       bookingId: booking._id,
+      bookingStatus: booking.status,
       amount: booking.pricing.totalAmount,
       currency: booking.pricing.currency,
       status: booking.payment.status,
       method: booking.payment.method || undefined,
       transactionId: booking.payment.transactionId || undefined,
       paidDate: booking.payment.paymentDate || undefined,
+      paymentDueDate: booking.payment.paymentDueDate || undefined,
       createdAt: booking.createdAt,
       serviceType: booking.serviceType,
       description: `${

@@ -138,3 +138,44 @@ export async function initializeBookingPayment(
     return { ok: false, error: networkError, code: "network" };
   }
 }
+
+export async function initializeParentInvoicePayment(
+  parentInvoiceId: string,
+  options?: { toastId?: string; showToast?: boolean },
+): Promise<BookingPaymentResult> {
+  const toastId = options?.toastId ?? `invoice-pay-${parentInvoiceId}`;
+  const showToast = options?.showToast ?? true;
+
+  try {
+    const res = await fetch(`/api/parent-invoices/${parentInvoiceId}/pay`, {
+      method: "POST",
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success || !data.data?.authorization_url) {
+      const message = data.error || "Payment initialization failed";
+      if (showToast) {
+        toast.dismiss(toastId);
+        toast.error(message);
+      }
+      return { ok: false, error: message, code: "unknown" };
+    }
+
+    if (showToast) {
+      toast.dismiss(toastId);
+      toast.success("Redirecting to secure payment...", { duration: 2000 });
+    }
+
+    window.location.href = data.data.authorization_url;
+    return { ok: true };
+  } catch (error) {
+    const networkError =
+      "Could not reach the payment service. Check your connection and try again.";
+    if (showToast) {
+      toast.dismiss(toastId);
+      toast.error(networkError);
+    }
+    console.error("Invoice payment error:", error);
+    return { ok: false, error: networkError, code: "network" };
+  }
+}

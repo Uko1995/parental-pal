@@ -44,6 +44,11 @@ const navigation: NavigationItem[] = [
     icon: CalendarDaysIcon,
   },
   { name: "Payments", href: "/dashboard/payments", icon: CreditCardIcon },
+  {
+    name: "Parent Invoices",
+    href: "/dashboard/parent-invoices",
+    icon: DocumentTextIcon,
+  },
   { name: "Services", href: "/dashboard/services", icon: BuildingOfficeIcon },
   { name: "Products", href: "/dashboard/products", icon: BookOpenIcon },
   {

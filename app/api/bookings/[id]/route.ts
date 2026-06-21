@@ -6,6 +6,10 @@ import { UserRepository } from "@/lib/UserRepository";
 import { CACHE_TAGS } from "@/lib/cache-config";
 import { bookingBelongsToUser } from "@/lib/booking-ownership";
 import {
+  canParentCancelBooking,
+  getParentCancelBlockReason,
+} from "@/lib/booking-cancellation";
+import {
   AuditEventType,
   logDataEvent,
 } from "@/lib/audit-logger-mongodb";
@@ -157,55 +161,90 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Only allow deletion of pending bookings
-    if (booking.status !== "pending") {
+    if (!isAdmin) {
+      const blockReason = getParentCancelBlockReason(booking);
+      if (blockReason) {
+        return NextResponse.json({ error: blockReason }, { status: 400 });
+      }
+
+      if (!canParentCancelBooking(booking)) {
+        return NextResponse.json(
+          { error: "This booking cannot be cancelled" },
+          { status: 400 },
+        );
+      }
+    } else if (booking.status === "cancelled") {
       return NextResponse.json(
-        { error: "Only pending bookings can be cancelled" },
-        { status: 400 }
+        { error: "Booking is already cancelled" },
+        { status: 400 },
       );
     }
 
-    if (
-      !isAdmin &&
-      booking.payment?.status === "paid"
-    ) {
-      return NextResponse.json(
-        { error: "Paid bookings cannot be cancelled from your profile" },
-        { status: 400 }
+    if (booking.status === "pending") {
+      const deleted = await BookingRepository.deleteBooking(id);
+
+      if (!deleted) {
+        return NextResponse.json(
+          { error: "Failed to cancel booking" },
+          { status: 500 },
+        );
+      }
+
+      await logDataEvent(
+        AuditEventType.BOOKING_DELETED,
+        user._id!.toString(),
+        "booking",
+        isAdmin ? "admin_cancel" : "parent_cancel",
+        true,
+        { bookingId: id, serviceType: booking.serviceType },
       );
+
+      revalidateTag(CACHE_TAGS.BOOKINGS);
+      revalidateTag(CACHE_TAGS.DASHBOARD);
+      revalidateTag(CACHE_TAGS.ANALYTICS);
+
+      return NextResponse.json({
+        message: "Booking cancelled and removed successfully",
+        cancelled: true,
+        removed: true,
+      });
     }
 
-    // Delete booking
-    const deleted = await BookingRepository.deleteBooking(id);
+    const cancelledBooking = await BookingRepository.updateStatus(
+      id,
+      "cancelled",
+      isAdmin ? "Cancelled by admin" : "Cancelled by parent",
+    );
 
-    if (!deleted) {
+    if (!cancelledBooking) {
       return NextResponse.json(
-        { error: "Failed to delete booking" },
-        { status: 500 }
+        { error: "Failed to cancel booking" },
+        { status: 500 },
       );
     }
 
     await logDataEvent(
-      AuditEventType.BOOKING_DELETED,
+      AuditEventType.BOOKING_UPDATED,
       user._id!.toString(),
       "booking",
       isAdmin ? "admin_cancel" : "parent_cancel",
       true,
-      { bookingId: id, serviceType: booking.serviceType },
+      { bookingId: id, serviceType: booking.serviceType, status: "cancelled" },
     );
 
-    // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.BOOKINGS);
     revalidateTag(CACHE_TAGS.DASHBOARD);
     revalidateTag(CACHE_TAGS.ANALYTICS);
 
     return NextResponse.json({
-      message: "Booking cancelled and deleted successfully",
+      message: "Booking cancelled successfully",
+      cancelled: true,
+      booking: cancelledBooking,
     });
   } catch (error) {
     console.error("Error deleting booking:", error);
     return NextResponse.json(
-      { error: "Failed to delete booking" },
+      { error: "Failed to cancel booking" },
       { status: 500 }
     );
   }

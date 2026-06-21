@@ -6,6 +6,7 @@ import {
   confirmBookingPayment,
   fetchPaystackTransaction,
 } from "@/lib/booking-payment-confirm";
+import { confirmParentInvoicePayment } from "@/lib/parent-invoice-payment-confirm";
 import { findPaymentByReference } from "@/lib/PaymentRepository";
 
 export async function POST(req: NextRequest) {
@@ -46,6 +47,29 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 },
     );
+  }
+
+  if (paystackData.data?.metadata?.parentInvoiceId) {
+    const invoiceResult = await confirmParentInvoicePayment({
+      reference,
+      paystackData,
+    });
+
+    if (!invoiceResult.success && !invoiceResult.alreadyPaid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: invoiceResult.error || "Invoice payment confirmation failed",
+        },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      alreadyPaid: invoiceResult.alreadyPaid,
+      parentInvoiceId: invoiceResult.invoiceId,
+    });
   }
 
   const result = await confirmBookingPayment({

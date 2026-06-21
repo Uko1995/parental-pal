@@ -83,6 +83,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    if (booking.status === "cancelled") {
+      return NextResponse.json(
+        { error: "This booking has been cancelled and cannot be paid" },
+        { status: 400 },
+      );
+    }
+
     if (!booking.userId) {
       return NextResponse.json(
         { error: "Booking has no owner" },

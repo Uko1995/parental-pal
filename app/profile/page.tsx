@@ -2,13 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import ProfileDetails from "./ProfileDetails";
 import ChildrenSection from "./ChildrenSection";
 import BookingsSection from "./BookingsSection";
 import PaymentsSection from "./PaymentsSection";
+import ParentInvoicesSection from "./ParentInvoicesSection";
 import OrdersSection from "./OrdersSection";
 import Link from "next/link";
 import {
@@ -20,6 +21,7 @@ import {
   ChartBarSquareIcon,
   PhoneIcon,
   MapPinIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import {
   UserCircleIcon as UserCircleIconSolid,
@@ -31,13 +33,24 @@ type TabType =
   | "children"
   | "bookings"
   | "payments"
+  | "invoices"
   | "orders"
   | "availability"
   | "reviews";
 
 export default function ProfilePage() {
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<TabType>(
+    tabParam === "bookings" ||
+      tabParam === "payments" ||
+      tabParam === "invoices" ||
+      tabParam === "children" ||
+      tabParam === "orders"
+      ? tabParam
+      : "profile",
+  );
   const [userRole, setUserRole] = useState<"parent" | "tutor" | "admin">(
     "parent"
   );
@@ -207,6 +220,20 @@ export default function ProfilePage() {
                 </button>
                 <button
                   className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
+                    activeTab === "invoices"
+                      ? "border-[#90AC19] text-[#90AC19] bg-[#90AC19]/5"
+                      : "border-transparent text-gray-600 hover:text-[#90AC19] hover:bg-gray-50"
+                  }`}
+                  onClick={() => setActiveTab("invoices")}
+                >
+                  <DocumentTextIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="text-sm md:text-base font-semibold">
+                    <span className="hidden sm:inline">Session Invoices</span>
+                    <span className="sm:hidden">Invoices</span>
+                  </span>
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-4 md:px-6 py-4 font-medium transition-all duration-300 whitespace-nowrap border-b-4 ${
                     activeTab === "orders"
                       ? "border-[#E8931A] text-[#E8931A] bg-[#E8931A]/5"
                       : "border-transparent text-gray-600 hover:text-[#E8931A] hover:bg-gray-50"
@@ -285,6 +312,7 @@ export default function ProfilePage() {
               {activeTab === "children" && <ChildrenSection />}
               {activeTab === "bookings" && <BookingsSection />}
               {activeTab === "payments" && <PaymentsSection />}
+              {activeTab === "invoices" && <ParentInvoicesSection />}
               {activeTab === "orders" && <OrdersSection />}
             </>
           )}

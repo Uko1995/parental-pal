@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { stableChildId } from "@/lib/booking-child-id";
 
 export interface BookingChildPrefill {
   name: string;
@@ -36,7 +36,7 @@ export function childPrefillToDefaults(
 
 export function prefillFirstChildOnly(
   children: BookingChildPrefill[],
-  createId: () => string = uuidv4,
+  createId: (index: number) => string = stableChildId,
 ) {
   if (children.length === 0) {
     return {
@@ -50,9 +50,9 @@ export function prefillFirstChildOnly(
 
 export function createPrefilledChildrenFromProfile(
   children: BookingChildPrefill[],
-  createId: () => string = uuidv4,
+  createId: (index: number) => string = stableChildId,
 ) {
-  const ids = children.map(() => createId());
+  const ids = children.map((_, index) => createId(index));
   const defaults: Record<string, ChildInfoDefaults> = {};
   const ages: Record<string, number> = {};
 
@@ -63,6 +63,27 @@ export function createPrefilledChildrenFromProfile(
   });
 
   return { ids, defaults, ages };
+}
+
+/** Build service-form child rows + defaults for every profile child. */
+export function buildChildrenRowsFromProfile<T>(
+  profileChildren: BookingChildPrefill[],
+  createEmptyRow: (id: string, index: number) => T,
+): {
+  rows: T[];
+  defaults: Record<string, ChildInfoDefaults>;
+  ages: Record<string, number>;
+} | null {
+  if (profileChildren.length === 0) return null;
+
+  const { ids, defaults, ages } =
+    createPrefilledChildrenFromProfile(profileChildren);
+
+  return {
+    rows: ids.map((id, index) => createEmptyRow(id, index)),
+    defaults,
+    ages,
+  };
 }
 
 export function applyFirstChildPrefillToRow(

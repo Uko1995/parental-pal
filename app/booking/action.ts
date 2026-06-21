@@ -23,6 +23,15 @@ import {
   getCampScheduleBounds,
   resolveBookingScheduleDates,
 } from "@/lib/booking-schedule";
+import { notifyAdminUnpaidBooking } from "@/lib/booking-admin-notifications";
+import { clampBillingPeriodMonths } from "@/lib/booking-payment-policy";
+import { computeBookingPaymentDueDate } from "@/lib/booking-payment-due";
+import { getHtrCamperEmailEntries } from "@/lib/camper-id";
+import {
+  getBillingPeriodEnd,
+  getWeekdayDatesInRange,
+  prorateMonthlyChildcareTotal,
+} from "@/lib/booking-proration";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
@@ -84,7 +93,9 @@ export async function registerChild(formData: FormData) {
 
   if (!session?.user) {
     // User is not authenticated, redirect to signin with callback URL
-    redirect("/auth/signin?callbackUrl=/booking&action=submit");
+    redirect(
+      `/auth/signin?callbackUrl=${encodeURIComponent("/booking?action=submit")}`,
+    );
   }
 
   // Clean up Next.js internal form data
@@ -245,6 +256,15 @@ export async function createBookingFromFormEntries(
     console.error("Failed to sync children to user profile:", error);
   }
 
+  if (
+    savedBooking.status === "confirmed" &&
+    savedBooking.payment?.status === "pending"
+  ) {
+    notifyAdminUnpaidBooking(savedBooking).catch((err) =>
+      console.error("Admin unpaid booking notification failed:", err),
+    );
+  }
+
   fetch(`${process.env.NEXTAUTH_URL}/api/email`, {
     method: "POST",
     headers: {
@@ -262,6 +282,11 @@ export async function createBookingFromFormEntries(
         children: savedBooking.children,
         status: savedBooking.status,
         pricing: savedBooking.pricing,
+        payment: savedBooking.payment,
+        campers: (() => {
+          const campers = getHtrCamperEmailEntries(savedBooking);
+          return campers.length > 0 ? campers : undefined;
+        })(),
       },
     }),
   }).catch((error) => {
@@ -328,6 +353,8 @@ export async function createBookingFromFormEntries(
     amount: savedBooking.pricing?.totalAmount || 0,
     currency: savedBooking.pricing?.currency || "NGN",
     email: user.userData.user.email || undefined,
+    requiresImmediatePayment: false,
+    paymentDueDate: savedBooking.payment?.paymentDueDate,
   };
 }
 
@@ -592,10 +619,24 @@ export async function parseFormDataToBooking(
         }
 
         const bookingStartDate = (cleanedData.startDate as string) || "";
+        const billingPeriodMonths = clampBillingPeriodMonths(
+          parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
+        );
         if (childData.schedule?.length && bookingStartDate) {
+          const periodEnd = getBillingPeriodEnd(
+            bookingStartDate,
+            billingPeriodMonths,
+          );
           childData.schedule = childData.schedule.map((block) => {
             if (block.startTime && block.day !== "month") {
-              const dates = getWeekdayDatesInMonth(block.day, bookingStartDate);
+              const dates =
+                billingPeriodMonths > 1
+                  ? getWeekdayDatesInRange(
+                      block.day,
+                      bookingStartDate,
+                      periodEnd,
+                    )
+                  : getWeekdayDatesInMonth(block.day, bookingStartDate);
               return {
                 ...block,
                 dates: dates.map((date) => ({
@@ -742,6 +783,7 @@ export async function parseFormDataToBooking(
       specialNeeds: string;
       educationalGoals: string;
       selectedTerm: string;
+      selectedTerms?: string[];
     }> = [];
 
     Array.from(childIds).forEach((childId) => {
@@ -750,6 +792,23 @@ export async function parseFormDataToBooking(
       const curriculum = cleanedData[`curriculum_${childId}`];
 
       if (subjects && gradeLevel) {
+        let selectedTerms: string[] = [];
+        const termsRaw = cleanedData[`selectedTerms_${childId}`];
+        if (termsRaw) {
+          try {
+            const parsed = JSON.parse(termsRaw as string);
+            if (Array.isArray(parsed)) {
+              selectedTerms = parsed.filter((t) => typeof t === "string");
+            }
+          } catch {
+            selectedTerms = [];
+          }
+        }
+        const singleTerm = cleanedData[`schoolTerm_${childId}`] || "";
+        if (!selectedTerms.length && singleTerm) {
+          selectedTerms = [singleTerm as string];
+        }
+
         childrenHomeschoolData.push({
           childId,
           selectedSubjects: JSON.parse(subjects),
@@ -758,7 +817,8 @@ export async function parseFormDataToBooking(
           learningStyle: cleanedData[`learningStyle_${childId}`] || "",
           specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",
           educationalGoals: cleanedData[`educationalGoals_${childId}`] || "",
-          selectedTerm: cleanedData[`schoolTerm_${childId}`] || "",
+          selectedTerm: selectedTerms[0] || "",
+          selectedTerms,
         });
       }
     });
@@ -862,10 +922,15 @@ export async function parseFormDataToBooking(
     serviceData.physicalRate = physicalRate;
     serviceData.hourlyRate = effectiveHourlyRate;
   } else if (serviceType === "homeschooling") {
-    // Each child pays the term rate
-    const childrenData = serviceData.childrenData as Array<{ childId: string }>;
+    const childrenData = serviceData.childrenData as Array<{
+      childId: string;
+      selectedTerms?: string[];
+    }>;
     const termRate = parseInt(cleanedData.termRate) || 150000;
-    totalAmount = childrenData.length * termRate;
+    totalAmount = childrenData.reduce((sum, child) => {
+      const termCount = Math.max(child.selectedTerms?.length || 1, 1);
+      return sum + termRate * termCount;
+    }, 0);
   } else if (serviceType === "kiddies-enrichment") {
     // Sum up hours from all children (single-day events)
     const childrenData = serviceData.childrenData as Array<{
@@ -876,9 +941,11 @@ export async function parseFormDataToBooking(
       0,
     );
     const hourlyRate = parseInt(cleanedData.hourlyRate) || 8000;
-    totalAmount = totalHours * hourlyRate;
+    const billingMonths = clampBillingPeriodMonths(
+      parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
+    );
+    totalAmount = totalHours * hourlyRate * billingMonths;
   } else if (serviceType === "childcare") {
-    // Calculate per child based on care type
     const childrenData = serviceData.childrenData as Array<{
       careType: string;
       totalDays: number;
@@ -886,13 +953,24 @@ export async function parseFormDataToBooking(
     }>;
     const dailyRate = parseInt(cleanedData.dailyRate) || 5000;
     const monthlyRate = parseInt(cleanedData.monthlyRate) || 127500;
+    const billingPeriodMonths = clampBillingPeriodMonths(
+      parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
+    );
+    const startDate =
+      (cleanedData.startDate as string) || new Date().toISOString().slice(0, 10);
 
     totalAmount = childrenData.reduce((sum, child) => {
       if (child.isMonthSelected || child.careType === "monthly") {
-        return sum + monthlyRate;
-      } else {
-        return sum + child.totalDays * dailyRate;
+        return (
+          sum +
+          prorateMonthlyChildcareTotal(
+            monthlyRate,
+            startDate,
+            billingPeriodMonths,
+          )
+        );
       }
+      return sum + child.totalDays * dailyRate * billingPeriodMonths;
     }, 0);
   } else if (serviceType === "holiday-camps") {
     const campSeasonId = resolveCampSeasonId(
@@ -985,6 +1063,10 @@ export async function parseFormDataToBooking(
         )
       : null;
 
+  const billingPeriodMonths = clampBillingPeriodMonths(
+    parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
+  );
+
   const preliminaryStart =
     campScheduleBounds?.startDate ||
     (cleanedData.startDate as string) ||
@@ -997,12 +1079,31 @@ export async function parseFormDataToBooking(
       startDate: preliminaryStart,
       endDate:
         campScheduleBounds?.endDate ||
-        (cleanedData.endDate as string) ||
+        (billingPeriodMonths > 1
+          ? getBillingPeriodEnd(preliminaryStart, billingPeriodMonths)
+          : (cleanedData.endDate as string)) ||
         undefined,
       weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
       isRecurring: weekdays.length > 0,
       frequency:
         (cleanedData.frequency as "daily" | "weekly" | "monthly") || "weekly",
+      billingPeriodMonths,
+    },
+  });
+
+  const paymentDueDate = computeBookingPaymentDueDate({
+    serviceType: serviceType as BookingInterface["serviceType"],
+    serviceData,
+    schedule: {
+      startDate: resolvedSchedule.startDate || preliminaryStart,
+      endDate:
+        resolvedSchedule.endDate ||
+        campScheduleBounds?.endDate ||
+        (cleanedData.endDate as string) ||
+        undefined,
+      weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
+      isRecurring: weekdays.length > 0,
+      billingPeriodMonths,
     },
   });
 
@@ -1029,6 +1130,7 @@ export async function parseFormDataToBooking(
       isRecurring: weekdays.length > 0,
       frequency:
         (cleanedData.frequency as "daily" | "weekly" | "monthly") || "weekly",
+      billingPeriodMonths,
     },
     pricing: {
       baseAmount: pricingBaseAmount || totalAmount,
@@ -1048,8 +1150,9 @@ export async function parseFormDataToBooking(
     payment: {
       status: "pending",
       paidAmount: 0,
+      paymentDueDate,
     },
-    status: "pending",
+    status: "confirmed",
     priority:
       (cleanedData.priority as "low" | "normal" | "high" | "urgent") ||
       "normal",
