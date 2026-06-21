@@ -3,6 +3,7 @@ import {
   confirmBookingPayment,
   validatePaystackWebhookSignature,
 } from "@/lib/booking-payment-confirm";
+import { confirmParentInvoicePayment } from "@/lib/parent-invoice-payment-confirm";
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       currency?: string;
       channel?: string;
       gateway_response?: string;
-      metadata?: { bookingId?: string; userId?: string };
+      metadata?: { bookingId?: string; userId?: string; parentInvoiceId?: string };
     };
   };
 
@@ -52,6 +53,17 @@ export async function POST(req: NextRequest) {
       metadata: event.data?.metadata,
     },
   };
+
+  if (event.data?.metadata?.parentInvoiceId) {
+    const invoiceResult = await confirmParentInvoicePayment({
+      reference,
+      paystackData,
+    });
+    if (!invoiceResult.success && !invoiceResult.alreadyPaid) {
+      console.error("Webhook invoice confirm failed:", invoiceResult.error, reference);
+    }
+    return NextResponse.json({ received: true });
+  }
 
   const result = await confirmBookingPayment({
     reference,

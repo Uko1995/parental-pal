@@ -72,6 +72,7 @@ export interface BookingInterface {
       learningStyle?: string;
       educationalGoals?: string;
       selectedTerm?: string;
+      selectedTerms?: string[];
       // Kiddies enrichment specific
       selectedPrograms?: string[];
       interests?: string;
@@ -148,6 +149,7 @@ export interface BookingInterface {
     }>;
     isRecurring: boolean;
     frequency?: "daily" | "weekly" | "monthly";
+    billingPeriodMonths?: number;
   };
 
   // Pricing breakdown
@@ -176,6 +178,7 @@ export interface BookingInterface {
     }>;
     paidAmount: number;
     paymentDate?: string;
+    paymentDueDate?: string;
     transactionId?: string;
   };
 

@@ -57,12 +57,20 @@ export interface BookingDetails {
   schedule?: {
     startDate?: string;
   };
-  children?: Array<{ name: string; age: number }>;
+  children?: Array<{ name: string; age?: number }>;
   status?: string;
   pricing?: {
     totalAmount?: number;
     currency?: string;
   };
+  payment?: {
+    status?: string;
+    paymentDueDate?: string;
+  };
+  campers?: Array<{
+    name: string;
+    camperId: string;
+  }>;
 }
 
 export interface PaymentDetails {
@@ -176,7 +184,39 @@ export const emailTemplates = {
   }),
 
   // Booking confirmation email
-  bookingConfirmation: (userName: string, bookingDetails: BookingDetails) => ({
+  bookingConfirmation: (userName: string, bookingDetails: BookingDetails) => {
+    const profileBookingsUrl = `${process.env.NEXTAUTH_URL || ""}/profile?tab=bookings`;
+    const childNames =
+      bookingDetails.children
+        ?.map((child) => child.name)
+        .filter(Boolean)
+        .join(", ") || "N/A";
+    const paymentDueDate = bookingDetails.payment?.paymentDueDate;
+    const unpaidPaymentCopy = paymentDueDate
+      ? `Please pay on or before ${new Date(paymentDueDate).toLocaleDateString()} from your profile. Payment is due 5 days before your last session.`
+      : "Please pay on or before your due date from your profile. Payment is due 5 days before your last session.";
+    const camperSection =
+      bookingDetails.campers && bookingDetails.campers.length > 0
+        ? `
+            <div style="background-color: #f0f7e6; border: 2px solid #90AC19; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <h3 style="color: #90AC19; margin-top: 0;">Camper ID(s)</h3>
+              ${bookingDetails.campers
+                .map(
+                  (camper) => `
+                <p style="margin: 8px 0;">
+                  <strong>${camper.name}:</strong>
+                  <span style="font-family: monospace; font-size: 18px; color: #90AC19; margin-left: 8px;">${camper.camperId}</span>
+                </p>`,
+                )
+                .join("")}
+            </div>`
+        : "";
+    const camperText =
+      bookingDetails.campers && bookingDetails.campers.length > 0
+        ? ` Camper ID(s): ${bookingDetails.campers.map((c) => `${c.name}: ${c.camperId}`).join("; ")}.`
+        : "";
+
+    return {
     subject: `Booking Confirmation - ${bookingDetails.serviceType} Service`,
     html: `
       <!DOCTYPE html>
@@ -233,9 +273,7 @@ export const emailTemplates = {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Children: </span>
-                <span class="detail-value">${
-                  bookingDetails.children?.length || 0
-                } child(ren)</span>
+                <span class="detail-value">${childNames}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Status: </span>
@@ -245,6 +283,8 @@ export const emailTemplates = {
               </div>
             </div>
 
+            ${camperSection}
+
             <div class="total-amount">
               Total Amount: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
@@ -252,10 +292,11 @@ export const emailTemplates = {
             </div>
 
             ${
-              bookingDetails.status === "confirmed"
+              bookingDetails.payment?.status === "paid"
                 ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt with your service schedule and line items is sent to this email address after payment.</p>`
-                : `<p>Your booking request has been received. You can proceed to make payment from your profile.</p>`
+                : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>`
             }
+            <p>View full booking details, payment status, and schedules anytime in your account under <a href="${profileBookingsUrl}">Profile → Bookings</a>.</p>
             <p>If you have any questions, please don't hesitate to contact us.</p>
           </div>
           <div class="footer">
@@ -268,10 +309,11 @@ export const emailTemplates = {
     `,
     text: `Booking confirmed for ${userName}! Service: ${
       bookingDetails.serviceType
-    }, Total: ${bookingDetails.pricing?.currency || "₦"}${
+    }, Children: ${childNames}, Total: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
-    }. Booking ID: #${bookingDetails._id || "N/A"}`,
-  }),
+    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText} View details in your profile: ${profileBookingsUrl}`,
+  };
+  },
 
   // Payment confirmation email
   paymentConfirmation: (userName: string, paymentDetails: PaymentDetails) => {

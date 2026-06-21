@@ -30,6 +30,7 @@ export async function GET() {
       method: booking.payment.method || undefined,
       transactionId: booking.payment.transactionId || undefined,
       paidDate: booking.payment.paymentDate || undefined,
+      paymentDueDate: booking.payment.paymentDueDate || undefined,
       createdAt: booking.createdAt,
       serviceType: booking.serviceType,
       description: `${

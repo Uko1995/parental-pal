@@ -15,6 +15,8 @@ import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
   parseJsonField,
+  childDefaultsFromFormEntries,
+  loadSchedulesWhenReady,
 } from "@/lib/rebook-form-utils";
 
 import {
@@ -23,12 +25,11 @@ import {
   CurrencyDollarIcon,
   InformationCircleIcon,
   TrashIcon,
-  CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
 import {
   applyParentContactPrefill,
-  applyFirstChildPrefillToRow,
+  buildChildrenRowsFromProfile,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
@@ -61,10 +62,12 @@ interface ChildTutoringData {
 
 interface TutoringFormProps {
   initialTemplate?: RebookFormEntries | null;
+  billingPeriodMonths?: number;
+  onBillingPeriodMonthsChange?: (months: number) => void;
 }
 
 const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
-  ({ initialTemplate }, ref) => {
+  ({ initialTemplate, billingPeriodMonths = 1, onBillingPeriodMonthsChange }, ref) => {
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [parentPhone, setParentPhone] = useState("");
@@ -106,6 +109,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   );
   const previousTutoringLocation = useRef<"virtual" | "physical">("physical");
   const templateAppliedRef = useRef(false);
+  const scheduleTemplateRef = useRef<RebookFormEntries | null>(null);
 
   useEffect(() => {
     if (!initialTemplate || templateAppliedRef.current) return;
@@ -113,6 +117,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
 
     const childIds = extractChildIdsFromFormEntries(initialTemplate);
     if (childIds.length > 0) {
+      setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
       setChildrenData(
         childIds.map((id, index) => ({
           id,
@@ -130,6 +135,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           >(initialTemplate[`schedule_${id}`], []),
         })),
       );
+      scheduleTemplateRef.current = initialTemplate;
     }
 
     if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
@@ -154,28 +160,43 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     if (initialTemplate.hourlyRate) {
       setHourlyRate(parseInt(initialTemplate.hourlyRate, 10) || 12000);
     }
+  }, [initialTemplate]);
 
-    const scheduleLoadTimer = window.setTimeout(() => {
-      childIds.forEach((id) => {
+  useEffect(() => {
+    const template = scheduleTemplateRef.current;
+    if (!template) return;
+
+    const childIds = extractChildIdsFromFormEntries(template);
+    if (
+      childIds.length === 0 ||
+      !childIds.every((id) => childrenData.some((child) => child.id === id))
+    ) {
+      return;
+    }
+
+    return loadSchedulesWhenReady(
+      childIds,
+      (id) => {
         const schedule = parseJsonField<ChildTutoringData["schedule"]>(
-          initialTemplate[`schedule_${id}`],
+          template[`schedule_${id}`],
           [],
         );
-        if (schedule.length > 0) {
-          scheduleRefs.current[id]?.loadSchedule(
-            schedule.map((s) => ({
-              day: s.day,
-              startTime: s.startTime || s.dates?.[0]?.startTime || "",
-              hours: s.hours || 1,
-              dates: s.dates,
-            })),
-          );
+        return schedule.map((s) => ({
+          day: s.day,
+          startTime: s.startTime || s.dates?.[0]?.startTime || "",
+          hours: s.hours || 1,
+          dates: s.dates,
+        }));
+      },
+      scheduleRefs,
+      20,
+      (allLoaded) => {
+        if (allLoaded) {
+          scheduleTemplateRef.current = null;
         }
-      });
-    }, 150);
-
-    return () => window.clearTimeout(scheduleLoadTimer);
-  }, [initialTemplate]);
+      },
+    );
+  }, [childrenData, initialTemplate]);
 
   const applyProfilePrefill = useCallback((profile: {
     parentName: string;
@@ -192,15 +213,22 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     });
 
     if (profile.children.length > 0) {
-      setChildrenData((prev) => {
-        if (prev.length === 0) return prev;
-        const { defaults } = applyFirstChildPrefillToRow(
-          profile.children,
-          prev[0].id,
-        );
-        setChildDefaults((d) => ({ ...d, ...defaults }));
-        return prev;
-      });
+      const built = buildChildrenRowsFromProfile(
+        profile.children,
+        (id, index) => ({
+          id,
+          index,
+          selectedSubjects: [],
+          academicLevel: "",
+          learningGoals: "",
+          totalHours: 0,
+          schedule: [],
+        }),
+      );
+      if (built) {
+        setChildDefaults(built.defaults);
+        setChildrenData(built.rows);
+      }
     }
   }, []);
 
@@ -530,26 +558,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
             />
           </div>
 
-          <div>
-            <label className="block mb-2">
-              <span className="text-sm font-medium text-gray-900 flex items-center gap-2 mb-1">
-                <CalendarIcon className="w-4 h-4 text-gray-700" />
-                Start Date <span className="text-red-500">*</span>
-              </span>
-              <span className="text-xs text-gray-600">
-                When should tutoring begin?
-              </span>
-            </label>
-            <input
-              type="date"
-              name="startDate"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              min={formatLocalDate(new Date())}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
-              required
-            />
-          </div>
         </div>
       </div>
 
@@ -824,6 +832,22 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                 handleScheduleChange(child.id, schedules)
               }
               startDate={startDate}
+              showStartDate={index === 0}
+              onStartDateChange={setStartDate}
+              minStartDate={formatLocalDate(new Date())}
+              initialSchedules={
+                child.schedule.length > 0
+                  ? child.schedule.map((s) => ({
+                      day: s.day,
+                      startTime: s.startTime || s.dates?.[0]?.startTime || "",
+                      hours: s.hours || 1,
+                      dates: s.dates,
+                    }))
+                  : undefined
+              }
+              billingPeriodMonths={billingPeriodMonths}
+              showBillingPeriodMonths={Boolean(onBillingPeriodMonthsChange)}
+              onBillingPeriodMonthsChange={onBillingPeriodMonthsChange}
             />
             <input
               type="hidden"

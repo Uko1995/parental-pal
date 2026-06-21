@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { initializeBookingPayment } from "@/lib/booking-payment";
+import { formatPaymentDueToastMessage } from "@/lib/booking-payment-due";
 
 interface RebookSummaryModalProps {
   bookingId: string;
@@ -25,8 +25,6 @@ export default function RebookSummaryModal({
   onClose,
 }: RebookSummaryModalProps) {
   const [loading, setLoading] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [savedBookingId, setSavedBookingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number, currency: string) => {
     if (currency === "NGN") return `₦${amount.toLocaleString()}`;
@@ -35,8 +33,6 @@ export default function RebookSummaryModal({
 
   const handleConfirm = async () => {
     setLoading(true);
-    setPaymentError(null);
-    setSavedBookingId(null);
     toast.loading("Creating your booking...", { id: "rebook-submit" });
 
     try {
@@ -45,37 +41,20 @@ export default function RebookSummaryModal({
       });
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok || !data.success || !data.bookingId) {
         toast.dismiss("rebook-submit");
         toast.error(data.error || "Re-book failed");
         return;
       }
 
-      toast.loading("Initializing payment...", { id: "rebook-submit" });
-
-      if (!data.success || !data.bookingId) {
-        toast.dismiss("rebook-submit");
-        toast.error("Re-book failed");
-        return;
-      }
-
-      const paymentResult = await initializeBookingPayment(
-        {
-          bookingId: data.bookingId,
-          userId: data.userId,
-          amount: data.amount,
-          currency: data.currency,
-          email: data.email,
-        },
-        { toastId: "rebook-submit", showToast: false },
+      toast.dismiss("rebook-submit");
+      toast.success(
+        data.paymentDueDate
+          ? formatPaymentDueToastMessage(data.paymentDueDate, "Re-book confirmed")
+          : "Re-book confirmed. Pay from Profile → Payments.",
+        { duration: 5000 },
       );
-
-      if (!paymentResult.ok) {
-        toast.dismiss("rebook-submit");
-        toast.error(paymentResult.error);
-        setPaymentError(paymentResult.error);
-        setSavedBookingId(data.bookingId);
-      }
+      window.location.href = "/profile?tab=bookings&rebooked=1";
     } catch (error) {
       console.error("Rebook confirm error:", error);
       toast.dismiss("rebook-submit");
@@ -103,58 +82,27 @@ export default function RebookSummaryModal({
             <dt className="text-base-content/70">Children</dt>
             <dd className="font-medium text-right">{childrenSummary}</dd>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-base-content/70">Month</dt>
-            <dd className="font-medium text-right">{targetMonthLabel}</dd>
-          </div>
           {scheduleSummary && (
             <div className="flex justify-between gap-4">
               <dt className="text-base-content/70">Schedule</dt>
               <dd className="font-medium text-right">{scheduleSummary}</dd>
             </div>
           )}
-          <div className="flex justify-between gap-4 border-t pt-2 mt-2">
-            <dt className="font-semibold">Total (recalculated)</dt>
-            <dd className="font-bold text-primary">
-              {formatCurrency(
-                pricePreview.totalAmount,
-                pricePreview.currency,
-              )}
+          <div className="flex justify-between gap-4 border-t border-base-300 pt-2 mt-2">
+            <dt className="text-base-content/70">Amount due</dt>
+            <dd className="font-bold text-lg">
+              {formatCurrency(pricePreview.totalAmount, pricePreview.currency)}
             </dd>
           </div>
         </dl>
 
-        {paymentError && (
-          <div
-            role="alert"
-            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
-          >
-            <p className="font-semibold mb-2">
-              Re-book saved, but payment could not start
-            </p>
-            <p>{paymentError}</p>
-            {savedBookingId && (
-              <p className="mt-2">
-                Booking reference: {savedBookingId}.{" "}
-                <Link
-                  href="/profile?tab=payments"
-                  className="font-semibold underline"
-                  onClick={onClose}
-                >
-                  Pay from Profile → Payments
-                </Link>
-              </p>
-            )}
-          </div>
-        )}
+        <p className="text-xs text-base-content/60 mb-4">
+          Your booking will be confirmed immediately. Pay anytime from Profile →
+          Payments before the due date.
+        </p>
 
         <div className="modal-action">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={onClose}
-            disabled={loading}
-          >
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>
           <button
@@ -166,17 +114,18 @@ export default function RebookSummaryModal({
             {loading ? (
               <span className="loading loading-spinner loading-sm" />
             ) : (
-              "Confirm & pay"
+              "Confirm re-book"
             )}
           </button>
         </div>
+
+        <p className="text-xs text-center mt-2">
+          <Link href="/profile?tab=payments" className="link link-primary">
+            View payments
+          </Link>
+        </p>
       </div>
-      <button
-        type="button"
-        className="modal-backdrop"
-        aria-label="Close"
-        onClick={onClose}
-      />
+      <div className="modal-backdrop" onClick={onClose} />
     </div>
   );
 }

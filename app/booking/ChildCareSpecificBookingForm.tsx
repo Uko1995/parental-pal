@@ -22,10 +22,12 @@ import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
   parseJsonField,
+  childDefaultsFromFormEntries,
+  loadSchedulesWhenReady,
 } from "@/lib/rebook-form-utils";
 import {
   applyParentContactPrefill,
-  applyFirstChildPrefillToRow,
+  buildChildrenRowsFromProfile,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
@@ -34,6 +36,7 @@ import {
   countChildcareMonthDays,
   formatLocalDate,
 } from "@/lib/booking-calendar";
+import { prorateMonthlyChildcareTotal } from "@/lib/booking-proration";
 
 export interface ChildCareSpecificBookingFormRef {
   resetForm: () => void;
@@ -54,12 +57,14 @@ interface ChildCareData {
 
 interface ChildCareFormProps {
   initialTemplate?: RebookFormEntries | null;
+  billingPeriodMonths?: number;
+  onBillingPeriodMonthsChange?: (months: number) => void;
 }
 
 const ChildCareSpecificBookingForm = forwardRef<
   ChildCareSpecificBookingFormRef,
   ChildCareFormProps
->(({ initialTemplate }, ref) => {
+>(({ initialTemplate, billingPeriodMonths = 1, onBillingPeriodMonthsChange }, ref) => {
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
     const [parentPhone, setParentPhone] = useState("");
@@ -92,6 +97,7 @@ const ChildCareSpecificBookingForm = forwardRef<
       {}
     );
     const templateAppliedRef = useRef(false);
+    const scheduleTemplateRef = useRef<RebookFormEntries | null>(null);
 
     useEffect(() => {
       if (!initialTemplate || templateAppliedRef.current) return;
@@ -99,6 +105,7 @@ const ChildCareSpecificBookingForm = forwardRef<
 
       const childIds = extractChildIdsFromFormEntries(initialTemplate);
       if (childIds.length > 0) {
+        setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
         setChildrenData(
           childIds.map((id, index) => {
             const careType = (initialTemplate[`careType_${id}`] || "") as
@@ -126,6 +133,7 @@ const ChildCareSpecificBookingForm = forwardRef<
             };
           }),
         );
+        scheduleTemplateRef.current = initialTemplate;
       }
 
       if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
@@ -145,26 +153,37 @@ const ChildCareSpecificBookingForm = forwardRef<
       if (initialTemplate.monthlyRate) {
         setMonthlyRate(parseInt(initialTemplate.monthlyRate, 10) || 110500);
       }
+    }, [initialTemplate]);
+
+    useEffect(() => {
+      const template = scheduleTemplateRef.current;
+      if (!template) return;
+
+      const childIds = extractChildIdsFromFormEntries(template);
+      if (
+        childIds.length === 0 ||
+        !childIds.every((id) => childrenData.some((child) => child.id === id))
+      ) {
+        return;
+      }
+
+      scheduleTemplateRef.current = null;
 
       const daySchedules = parseJsonField<
         Array<{ day: string; hours: number; startTime?: string }>
-      >(initialTemplate.daySchedules, []);
+      >(template.daySchedules, []);
 
-      const scheduleLoadTimer = window.setTimeout(() => {
-        const firstChildId = childIds[0];
-        if (firstChildId && daySchedules.length > 0) {
-          scheduleRefs.current[firstChildId]?.loadSchedule(
-            daySchedules.map((s) => ({
-              day: s.day,
-              startTime: s.startTime || "",
-              hours: s.hours || 1,
-            })),
-          );
-        }
-      }, 150);
-
-      return () => window.clearTimeout(scheduleLoadTimer);
-    }, [initialTemplate]);
+      return loadSchedulesWhenReady(
+        childIds.slice(0, 1),
+        () =>
+          daySchedules.map((s) => ({
+            day: s.day,
+            startTime: s.startTime || "",
+            hours: s.hours || 1,
+          })),
+        scheduleRefs,
+      );
+    }, [childrenData, initialTemplate]);
 
     const applyProfilePrefill = useCallback((profile: {
       parentName: string;
@@ -181,15 +200,23 @@ const ChildCareSpecificBookingForm = forwardRef<
       });
 
       if (profile.children.length > 0) {
-        setChildrenData((prev) => {
-          if (prev.length === 0) return prev;
-          const { defaults } = applyFirstChildPrefillToRow(
-            profile.children,
-            prev[0].id,
-          );
-          setChildDefaults((d) => ({ ...d, ...defaults }));
-          return prev;
-        });
+        const built = buildChildrenRowsFromProfile(
+          profile.children,
+          (id, index) => ({
+            id,
+            index,
+            careType: "" as "" | "daily" | "monthly",
+            totalDays: 0,
+            isMonthSelected: false,
+            dropoffTime: "",
+            pickupTime: "",
+            specialNeeds: "",
+          }),
+        );
+        if (built) {
+          setChildDefaults(built.defaults);
+          setChildrenData(built.rows);
+        }
       }
     }, []);
 
@@ -396,9 +423,17 @@ const ChildCareSpecificBookingForm = forwardRef<
     const calculateTotalCost = () => {
       return childrenData.reduce((total, child) => {
         if (child.careType === "monthly") {
-          return total + monthlyRate;
-        } else if (child.careType === "daily") {
-          return total + child.totalDays * dailyRate;
+          return (
+            total +
+            prorateMonthlyChildcareTotal(
+              monthlyRate,
+              startDate,
+              billingPeriodMonths,
+            )
+          );
+        }
+        if (child.careType === "daily") {
+          return total + child.totalDays * dailyRate * billingPeriodMonths;
         }
         return total;
       }, 0);
@@ -668,6 +703,9 @@ const ChildCareSpecificBookingForm = forwardRef<
                 }}
                 childcare={true}
                 startDate={startDate}
+                billingPeriodMonths={billingPeriodMonths}
+                showBillingPeriodMonths={Boolean(onBillingPeriodMonthsChange)}
+                onBillingPeriodMonthsChange={onBillingPeriodMonthsChange}
                 onDaysChange={(days) => handleOnDaysChange(child.id, days)}
                 onMonthSelected={(isMonth) => {
                   setChildrenData((prev) =>

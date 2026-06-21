@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx --test lib/booking-calendar.test.ts lib/booking-invoice.test.ts lib/camp-seasons.calendar.test.ts lib/camp-pricing.test.ts lib/booking-payment-confirm.test.ts lib/booking-payment-emails.test.ts lib/booking-revenue-stats.test.ts lib/booking-parent-email.test.ts lib/booking-schedule.test.ts",
+    "test": "npx tsx --test lib/booking-calendar.test.ts lib/booking-invoice.test.ts lib/camp-seasons.calendar.test.ts lib/camp-pricing.test.ts lib/booking-payment-confirm.test.ts lib/booking-payment-emails.test.ts lib/booking-revenue-stats.test.ts lib/booking-parent-email.test.ts lib/booking-schedule.test.ts lib/booking-form-fill-priority.test.ts",
     "init-db": "npx tsx lib/initialize-db.ts",
     "convert:webp": "imagemin 'public/**/*.{jpg,png}' --plugin=@vheemstra/imagemin-plugin-webp --out-dir=public"
   },

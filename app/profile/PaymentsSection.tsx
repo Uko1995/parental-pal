@@ -11,6 +11,10 @@ import toast from "react-hot-toast";
 import PaymentReceiptModal from "./PaymentReceiptModal";
 import PaymentDetailsModal from "./PaymentDetailsModal";
 import { initializeBookingPayment } from "@/lib/booking-payment";
+import {
+  formatPaymentDueDateLine,
+  isPaymentOverdue,
+} from "@/lib/booking-payment-due";
 import type { InvoiceLineItem } from "@/lib/booking-invoice";
 
 interface Payment {
@@ -22,6 +26,7 @@ interface Payment {
   method?: "card" | "bank_transfer" | "cash" | "installments";
   transactionId?: string;
   paidDate?: string;
+  paymentDueDate?: string;
   createdAt: string;
   serviceType: string;
   description: string;
@@ -306,6 +311,33 @@ export default function PaymentsSection() {
                     >
                       {payment.status}
                     </div>
+                    {payment.status === "pending" && payment.paymentDueDate && (
+                      <div
+                        className={`text-xs mt-1 max-w-[12rem] sm:max-w-none leading-snug break-words ${
+                          isPaymentOverdue(
+                            payment.paymentDueDate,
+                            payment.status,
+                          )
+                            ? "text-error font-medium"
+                            : "text-base-content/60"
+                        }`}
+                      >
+                        {isPaymentOverdue(
+                          payment.paymentDueDate,
+                          payment.status,
+                        )
+                          ? "Overdue"
+                          : formatPaymentDueDateLine(payment.paymentDueDate)}
+                        {!isPaymentOverdue(
+                          payment.paymentDueDate,
+                          payment.status,
+                        ) && (
+                          <span className="block text-base-content/50 mt-0.5">
+                            Due 5 days before your last session
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td>
                     <div className="text-xs font-mono">

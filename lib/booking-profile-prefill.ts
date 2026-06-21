@@ -65,6 +65,27 @@ export function createPrefilledChildrenFromProfile(
   return { ids, defaults, ages };
 }
 
+/** Build service-form child rows + defaults for every profile child. */
+export function buildChildrenRowsFromProfile<T>(
+  profileChildren: BookingChildPrefill[],
+  createEmptyRow: (id: string, index: number) => T,
+): {
+  rows: T[];
+  defaults: Record<string, ChildInfoDefaults>;
+  ages: Record<string, number>;
+} | null {
+  if (profileChildren.length === 0) return null;
+
+  const { ids, defaults, ages } =
+    createPrefilledChildrenFromProfile(profileChildren);
+
+  return {
+    rows: ids.map((id, index) => createEmptyRow(id, index)),
+    defaults,
+    ages,
+  };
+}
+
 export function applyFirstChildPrefillToRow(
   profileChildren: BookingChildPrefill[],
   existingChildId: string,
