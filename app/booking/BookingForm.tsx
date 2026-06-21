@@ -19,16 +19,20 @@ import {
   getFormData,
   clearFormData,
   extractFormDataForPersistence,
-  hasPersistedFormData,
-  getPersistedValueWithFallback,
+  snapshotBookingForm,
+  serviceFormDataToTemplate,
   restoreFormDataToElements,
+  shouldRestoreFormPersistence,
+  clearPendingAuthSubmit,
 } from "@/lib/form-persistence";
 import {
   getRebookTemplate,
   clearRebookTemplate,
   saveRebookTemplate,
 } from "@/lib/rebook-persistence";
-import { initializeBookingPayment } from "@/lib/booking-payment";
+import {
+  getSubmitButtonLabel,
+} from "@/lib/booking-payment-policy";
 import {
   scrollToField,
   validateBookingForm,
@@ -37,7 +41,9 @@ import {
 import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { resolveCampSeasonId, type CampSeasonId } from "@/lib/camp-seasons";
+import { formatPaymentDueToastMessage } from "@/lib/booking-payment-due";
 import { BookingProfileProvider } from "./BookingProfileContext";
 
 interface AboutUs {
@@ -62,6 +68,7 @@ interface BookingFormProps {
     amount?: number;
     currency?: string;
     email?: string;
+    paymentDueDate?: string;
   }>;
 }
 
@@ -77,7 +84,44 @@ type SubmitFeedback = {
   bookingId?: string;
 } | null;
 
+function readPersistedBookingFields(
+  urlService: string | null,
+  actionParam: string | null,
+) {
+  const data = getFormData();
+  if (!data || !shouldRestoreFormPersistence(data, actionParam)) {
+    return {
+      hasPersisted: false,
+      selectedService: urlService || "",
+      selectedHearAboutUs: "",
+      otherHearAboutUsText: "",
+      socialMediaPlatform: "",
+      referralName: "",
+      priority: "normal" as const,
+      followUpRequired: false,
+      isRepeatedCustomer: false,
+      billingPeriodMonths: 1,
+      template: null as RebookFormEntries | null,
+    };
+  }
+
+  return {
+    hasPersisted: true,
+    selectedService: urlService || data.selectedService || "",
+    selectedHearAboutUs: data.selectedHearAboutUs || "",
+    otherHearAboutUsText: data.otherHearAboutUsText || "",
+    socialMediaPlatform: data.socialMediaPlatform || "",
+    referralName: data.referralName || "",
+    priority: data.priority || ("normal" as const),
+    followUpRequired: data.followUpRequired || false,
+    isRepeatedCustomer: data.isRepeatedCustomer || false,
+    billingPeriodMonths: data.billingPeriodMonths ?? 1,
+    template: serviceFormDataToTemplate(data.serviceFormData),
+  };
+}
+
 export default function BookingForm({ submitAction }: BookingFormProps) {
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const urlService = searchParams.get("service");
   const campParam = searchParams.get("camp");
@@ -86,8 +130,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
 
   const campSeasonId: CampSeasonId = resolveCampSeasonId(campParam);
 
-  // State management
-  const [selectedService, setSelectedService] = useState("");
+  // State management — localStorage is read after mount (SSR has no window)
+  const [selectedService, setSelectedService] = useState(urlService || "");
   const [selectedHearAboutUs, setSelectedHearAboutUs] = useState("");
   const [otherHearAboutUsText, setOtherHearAboutUsText] = useState("");
   const [socialMediaPlatform, setSocialMediaPlatform] = useState("");
@@ -98,6 +142,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [isRepeatedCustomer, setIsRepeatedCustomer] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [billingPeriodMonths, setBillingPeriodMonths] = useState(1);
   const [services, setServices] = useState<BookingServiceOption[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [servicesLoadFailed, setServicesLoadFailed] = useState(false);
@@ -108,37 +153,82 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     useState<RebookFormEntries | null>(null);
   const [rebookSourceId, setRebookSourceId] = useState<string | null>(null);
   const [rebookMonthLabel, setRebookMonthLabel] = useState("");
+  const [persistedFormTemplate, setPersistedFormTemplate] =
+    useState<RebookFormEntries | null>(null);
+  const [formRestoreKey, setFormRestoreKey] = useState(0);
+  const [storageHydrated, setStorageHydrated] = useState(false);
+  const restoredFromPersistenceRef = useRef(false);
+  const skipNextAutoSaveRef = useRef(false);
+  const serviceFormTemplate = rebookTemplate ?? persistedFormTemplate;
+  const serviceFormKey = `${selectedService}-${formRestoreKey}`;
   const [repeatBooking, setRepeatBooking] = useState<{
     id: string;
     childrenSummary: string;
   } | null>(null);
 
-  // Load persisted data on client side and scroll to top on initial load
+  // Hydrate booking fields from localStorage after client mount
   useEffect(() => {
-    // Scroll to top when page loads (unless returning from auth)
+    const fields = readPersistedBookingFields(urlService, actionParam);
+    if (fields.hasPersisted) {
+      if (fields.selectedService) setSelectedService(fields.selectedService);
+      setSelectedHearAboutUs(fields.selectedHearAboutUs);
+      setOtherHearAboutUsText(fields.otherHearAboutUsText);
+      setSocialMediaPlatform(fields.socialMediaPlatform);
+      setReferralName(fields.referralName);
+      setPriority(fields.priority);
+      setFollowUpRequired(fields.followUpRequired);
+      setIsRepeatedCustomer(fields.isRepeatedCustomer);
+      setBillingPeriodMonths(fields.billingPeriodMonths);
+      setPersistedFormTemplate(fields.template);
+      setFormRestoreKey(Date.now());
+      restoredFromPersistenceRef.current = true;
+      skipNextAutoSaveRef.current = true;
+      clearPendingAuthSubmit();
+    } else if (urlService || campParam === "holidays-that-rock-2026") {
+      setSelectedService(urlService || "holiday-camps");
+    }
+    setStorageHydrated(true);
+  }, [urlService, campParam, actionParam]);
+
+  // Scroll to top on initial load (except when returning from sign-in)
+  useEffect(() => {
     if (actionParam !== "submit") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-
-    setSelectedService(getPersistedValueWithFallback("selectedService", ""));
-    setSelectedHearAboutUs(
-      getPersistedValueWithFallback("selectedHearAboutUs", ""),
-    );
-    setOtherHearAboutUsText(
-      getPersistedValueWithFallback("otherHearAboutUsText", ""),
-    );
-    setSocialMediaPlatform(
-      getPersistedValueWithFallback("socialMediaPlatform", ""),
-    );
-    setReferralName(getPersistedValueWithFallback("referralName", ""));
-    setPriority(getPersistedValueWithFallback("priority", "normal"));
-    setFollowUpRequired(
-      getPersistedValueWithFallback("followUpRequired", false),
-    );
-    setIsRepeatedCustomer(
-      getPersistedValueWithFallback("isRepeatedCustomer", false),
-    );
   }, [actionParam]);
+
+  // Post-login UX when returning with action=submit
+  useEffect(() => {
+    if (!storageHydrated || rebookParam || !restoredFromPersistenceRef.current) {
+      return;
+    }
+
+    if (actionParam === "submit") {
+      toast.success(
+        "Your form data has been restored. Please review and submit.",
+        { duration: 3000 },
+      );
+
+      setSubmitFeedback({
+        type: "info",
+        title: "Sign in required",
+        messages: [
+          "Please sign in to complete your booking.",
+          "Your form details have been restored — review them, then submit again.",
+        ],
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      setTimeout(() => {
+        submitButtonRef.current?.focus();
+        submitButtonRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 800);
+    }
+  }, [actionParam, storageHydrated, rebookParam]);
 
   useEffect(() => {
     const loadServices = async () => {
@@ -340,8 +430,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   };
 
   // Save form data to localStorage whenever form state changes
-  const saveCurrentFormData = () => {
-    saveFormData({
+  const saveCurrentFormData = useCallback(() => {
+    snapshotBookingForm({
       selectedService,
       selectedHearAboutUs,
       otherHearAboutUsText,
@@ -350,8 +440,55 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       priority,
       followUpRequired,
       isRepeatedCustomer,
+      billingPeriodMonths,
     });
-  };
+  }, [
+    selectedService,
+    selectedHearAboutUs,
+    otherHearAboutUsText,
+    socialMediaPlatform,
+    referralName,
+    priority,
+    followUpRequired,
+    isRepeatedCustomer,
+    billingPeriodMonths,
+  ]);
+
+  // Auto-save while the parent fills out the form (after storage hydration)
+  useEffect(() => {
+    if (!storageHydrated) return;
+
+    const form = document.getElementById("booking-form");
+    if (!form) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleSave = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => saveCurrentFormData(), 800);
+    };
+
+    form.addEventListener("input", scheduleSave, true);
+    form.addEventListener("change", scheduleSave, true);
+
+    const handleBeforeUnload = () => saveCurrentFormData();
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      form.removeEventListener("input", scheduleSave, true);
+      form.removeEventListener("change", scheduleSave, true);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      clearTimeout(timer);
+    };
+  }, [saveCurrentFormData, selectedService, storageHydrated]);
+
+  useEffect(() => {
+    if (!storageHydrated) return;
+    if (skipNextAutoSaveRef.current) {
+      skipNextAutoSaveRef.current = false;
+      return;
+    }
+    saveCurrentFormData();
+  }, [saveCurrentFormData, storageHydrated]);
 
   // Wrapper function to handle form reset after submission
   const handleFormSubmit = async (formData: FormData) => {
@@ -379,16 +516,15 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       priority,
       followUpRequired,
       isRepeatedCustomer,
+      billingPeriodMonths,
     });
-    saveFormData(persistenceData);
+    saveFormData({ ...persistenceData, pendingAuthSubmit: true });
 
     setIsSubmitting(true);
     toast.loading("Creating your booking...", { id: "booking-submit" });
 
     try {
       const bookingResult = await submitAction(formData);
-
-      toast.loading("Initializing payment...", { id: "booking-submit" });
 
       if (!bookingResult.success) {
         toast.dismiss("booking-submit");
@@ -400,37 +536,18 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         return;
       }
 
-      const paymentResult = await initializeBookingPayment(
-        {
-          bookingId: bookingResult.bookingId!,
-          userId: bookingResult.userId,
-          amount: bookingResult.amount || 0,
-          currency: bookingResult.currency,
-          email: bookingResult.email,
-        },
-        { toastId: "booking-submit", showToast: false },
+      toast.dismiss("booking-submit");
+      toast.success(
+        bookingResult.paymentDueDate
+          ? formatPaymentDueToastMessage(bookingResult.paymentDueDate)
+          : "Booking confirmed. Pay anytime from Profile → Payments.",
+        { duration: 5000 },
       );
-
-      if (!paymentResult.ok) {
-        toast.dismiss("booking-submit");
-        toast.error(paymentResult.error);
-        setSubmitFeedback({
-          type: "warning",
-          title: "Your booking was saved, but payment could not start",
-          messages: [
-            paymentResult.error,
-            `Booking reference: ${bookingResult.bookingId}`,
-            "You can complete payment anytime from Profile → Payments.",
-          ],
-          bookingId: bookingResult.bookingId,
-        });
-        scrollToField(submitButtonRef.current);
-        return;
-      }
 
       clearFormData();
       clearRebookTemplate();
       resetServiceForms();
+      setPersistedFormTemplate(null);
 
       setSelectedHearAboutUs("");
       setOtherHearAboutUsText("");
@@ -438,6 +555,9 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setFollowUpRequired(false);
       setIsRepeatedCustomer(false);
       setTotalAmount(0);
+      setBillingPeriodMonths(1);
+
+      window.location.href = "/profile?tab=bookings&booked=1";
     } catch (error: unknown) {
       toast.dismiss("booking-submit");
 
@@ -480,67 +600,6 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     }
   };
 
-  // Handle form data restoration and focus management after auth redirect
-  useEffect(() => {
-    // Check if we're returning from auth with action=submit
-    if (actionParam === "submit" && hasPersistedFormData()) {
-      // Restore form data from persistence
-      const persistedData = getFormData();
-      if (persistedData) {
-        // Restore form fields that aren't already set by URL
-        if (!urlService && persistedData.selectedService) {
-          setSelectedService(persistedData.selectedService);
-        }
-        if (persistedData.selectedHearAboutUs) {
-          setSelectedHearAboutUs(persistedData.selectedHearAboutUs);
-        }
-        if (persistedData.otherHearAboutUsText) {
-          setOtherHearAboutUsText(persistedData.otherHearAboutUsText);
-        }
-        if (persistedData.priority) {
-          setPriority(persistedData.priority);
-        }
-        setFollowUpRequired(persistedData.followUpRequired || false);
-        setIsRepeatedCustomer(persistedData.isRepeatedCustomer || false);
-
-        // Restore service-specific form fields
-        setTimeout(() => {
-          // Use the restoreFormDataToElements utility to restore all form fields
-          if (persistedData.serviceFormData) {
-            restoreFormDataToElements(persistedData);
-          }
-        }, 300); // Increased delay to ensure DOM is fully ready
-
-        // Show success toast to inform user their data was preserved
-        toast.success(
-          "Your form data has been restored. Please review and submit.",
-          { duration: 3000 },
-        );
-
-        setSubmitFeedback({
-          type: "info",
-          title: "Sign in required",
-          messages: [
-            "Please sign in to complete your booking.",
-            "Your form details have been restored — review them, then submit again.",
-          ],
-        });
-
-        // First scroll to top, then scroll to submit button after delay
-        window.scrollTo({ top: 0, behavior: "smooth" });
-
-        setTimeout(() => {
-          submitButtonRef.current?.focus();
-          submitButtonRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }, 800); // Increased delay to allow top scroll to complete first
-      }
-    } else if (urlService || campParam === "holidays-that-rock-2026") {
-      setSelectedService(urlService || "holiday-camps");
-    }
-  }, [urlService, campParam, actionParam]);
 
   useEffect(() => {
     const loadRebookTemplate = async () => {
@@ -647,33 +706,13 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
         toast.error(data.error || "Re-book failed");
         return;
       }
-      toast.loading("Initializing payment...", { id: "rebook-quick" });
-      const paymentResult = await initializeBookingPayment(
-        {
-          bookingId: data.bookingId,
-          userId: data.userId,
-          amount: data.amount,
-          currency: data.currency,
-          email: data.email,
-        },
-        { toastId: "rebook-quick", showToast: false },
+      toast.success(
+        data.paymentDueDate
+          ? formatPaymentDueToastMessage(data.paymentDueDate, "Re-book confirmed")
+          : "Re-book confirmed. Pay from Profile → Payments.",
+        { duration: 5000 },
       );
-
-      if (!paymentResult.ok) {
-        toast.dismiss("rebook-quick");
-        toast.error(paymentResult.error);
-        setSubmitFeedback({
-          type: "warning",
-          title: "Re-book saved, but payment could not start",
-          messages: [
-            paymentResult.error,
-            `Booking reference: ${data.bookingId}`,
-            "Complete payment from Profile → Payments.",
-          ],
-          bookingId: data.bookingId,
-        });
-        scrollToField(submitButtonRef.current);
-      }
+      window.location.href = "/profile?tab=bookings&rebooked=1";
     } catch (error) {
       console.error(error);
       toast.dismiss("rebook-quick");
@@ -748,45 +787,57 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     if (selectedService === "space-rental") {
       return (
         <EventBookingForm
+          key={serviceFormKey}
           ref={eventFormRef}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
         />
       );
     } else if (selectedService === "childcare") {
       return (
         <ChildCareSpecificBookingForm
+          key={serviceFormKey}
           ref={childCareFormRef}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
+          billingPeriodMonths={billingPeriodMonths}
+          onBillingPeriodMonthsChange={setBillingPeriodMonths}
         />
       );
     } else if (selectedService === "holiday-camps") {
       return (
         <HolidayCampForm
+          key={serviceFormKey}
           ref={holidayCampFormRef}
           campSeasonId={campSeasonId}
           onTotalChange={setTotalAmount}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
         />
       );
     } else if (selectedService === "homeschooling") {
       return (
         <HomeschoolingForm
+          key={serviceFormKey}
           ref={homeschoolingFormRef}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
         />
       );
     } else if (selectedService === "kiddies-enrichment") {
       return (
         <KiddiesEnrichmentForm
+          key={serviceFormKey}
           ref={kiddiesEnrichmentFormRef}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
+          billingPeriodMonths={billingPeriodMonths}
+          onBillingPeriodMonthsChange={setBillingPeriodMonths}
         />
       );
     } else if (selectedService === "tutoring") {
       return (
         <TutoringForm
+          key={serviceFormKey}
           ref={tutoringFormRef}
-          initialTemplate={rebookTemplate}
+          initialTemplate={serviceFormTemplate}
+          billingPeriodMonths={billingPeriodMonths}
+          onBillingPeriodMonthsChange={setBillingPeriodMonths}
         />
       );
     } else {
@@ -826,6 +877,20 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
               <span>
                 Services could not be loaded. Please refresh the page before
                 booking.
+              </span>
+            </div>
+          )}
+          <input
+            type="hidden"
+            name="billingPeriodMonths"
+            value={billingPeriodMonths}
+          />
+          {!session?.user && (
+            <div className="alert alert-info">
+              <span>
+                You can fill out this form without signing in. You&apos;ll be
+                asked to sign in when you submit — your answers are saved
+                automatically and restored after login.
               </span>
             </div>
           )}
@@ -1191,9 +1256,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
               {isSubmitting && (
                 <span className="loading loading-spinner loading-md" />
               )}
-              {totalAmount > 0
-                ? `Pay ${" "} ₦${totalAmount.toLocaleString()}`
-                : "Complete Booking & Continue to Payment"}
+              {getSubmitButtonLabel(totalAmount, billingPeriodMonths)}
             </button>
             <p className="text-xs sm:text-sm text-gray-500 text-center mt-4">
               By registering, you agree to our{" "}

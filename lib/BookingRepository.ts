@@ -66,6 +66,10 @@ export class BookingRepository {
           { serviceType: 1, status: 1 },
           { name: "idx_service_status" }
         );
+        await collection.createIndex(
+          { "payment.status": 1, "payment.paymentDueDate": 1 },
+          { name: "idx_payment_status_due_date" }
+        );
       } catch {
         console.log("Compound indexes may already exist");
       }
@@ -182,6 +186,37 @@ export class BookingRepository {
       .toArray()) as BookingInterface[];
   }
 
+  static async findUnpaidByPaymentDueDate(
+    dueDate: string,
+  ): Promise<BookingInterface[]> {
+    const collection = await getCollection(this.collectionName);
+    return (await collection
+      .find({
+        "payment.status": "pending",
+        "payment.paymentDueDate": dueDate,
+        status: { $nin: ["cancelled", "completed"] },
+        "pricing.totalAmount": { $gt: 0 },
+      })
+      .toArray()) as BookingInterface[];
+  }
+
+  static async markPaymentReminderSent(
+    id: string | ObjectId,
+    reminderType: "4_day" | "1_day",
+    sentAt: string,
+  ): Promise<void> {
+    const collection = await getCollection(this.collectionName);
+    const objectId = typeof id === "string" ? new ObjectId(id) : id;
+    const field =
+      reminderType === "4_day"
+        ? "paymentReminders.fourDaySentAt"
+        : "paymentReminders.oneDaySentAt";
+    await collection.updateOne(
+      { _id: objectId },
+      { $set: { [field]: sentAt, updatedAt: new Date() } },
+    );
+  }
+
   // Update booking
   static async updateBooking(
     id: string | ObjectId,
@@ -190,13 +225,27 @@ export class BookingRepository {
     const collection = await getCollection(this.collectionName);
     const objectId = typeof id === "string" ? new ObjectId(id) : id;
 
+    const existing = await collection.findOne({ _id: objectId });
+    const nextDueDate = updateData.payment?.paymentDueDate;
+    const dueDateChanged =
+      nextDueDate !== undefined &&
+      nextDueDate !== existing?.payment?.paymentDueDate;
+
+    const setPayload: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    const unsetPayload: Record<string, ""> = {};
+    if (dueDateChanged) {
+      unsetPayload["paymentReminders.fourDaySentAt"] = "";
+      unsetPayload["paymentReminders.oneDaySentAt"] = "";
+    }
+
     const result = await collection.findOneAndUpdate(
       { _id: objectId },
       {
-        $set: {
-          ...updateData,
-          updatedAt: new Date(),
-        },
+        $set: setPayload,
+        ...(Object.keys(unsetPayload).length ? { $unset: unsetPayload } : {}),
       },
       { returnDocument: "after" }
     );

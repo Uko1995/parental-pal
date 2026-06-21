@@ -1,53 +1,9 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { fetchServicePricingMap } from "@/lib/service-pricing-server";
 
 export async function GET() {
   try {
-    const db = await getDb();
-    const servicesCollection = db.collection("services");
-
-    // Fetch all active services with their pricing
-    const services = await servicesCollection
-      .find(
-        { status: "active" },
-        {
-          projection: {
-            type: 1,
-            name: 1,
-            pricing: 1,
-          },
-        }
-      )
-      .toArray();
-
-    // Transform into a pricing map
-    const pricingMap: Record<
-      string,
-      {
-        baseRate: number;
-        currency: string;
-        billingType: string;
-        virtualRate?: number;
-        physicalRate?: number;
-      }
-    > = {};
-
-    services.forEach((service) => {
-      pricingMap[service.type] = {
-        baseRate: service.pricing.baseRate,
-        currency: service.pricing.currency,
-        billingType: service.pricing.billingType,
-      };
-
-      // Add location-specific rates for tutoring
-      if (service.type === "tutoring" && service.pricing.locationRates) {
-        pricingMap[service.type].virtualRate =
-          service.pricing.locationRates.virtual || 13000;
-        pricingMap[service.type].physicalRate =
-          service.pricing.locationRates.physical || 12000;
-      }
-    });
-
+    const pricingMap = await fetchServicePricingMap();
     return NextResponse.json({
       success: true,
       data: pricingMap,
@@ -59,7 +15,7 @@ export async function GET() {
         success: false,
         error: "Failed to fetch service pricing",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

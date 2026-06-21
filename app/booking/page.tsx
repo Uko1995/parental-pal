@@ -1,37 +1,15 @@
 import { registerChild } from "./action";
 import BookingForm from "./BookingForm";
 import { Suspense } from "react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { isHolidayCampServiceActive } from "@/app/services/actions";
+import { redirect } from "next/navigation";
 
 interface BookingPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function Page({ searchParams }: BookingPageProps) {
-  const session = await auth();
   const params = await searchParams;
-
-  // Require authentication before users see the booking form
-  // This prevents users from filling out long forms and only finding out they must log in at checkout.
-  if (!session?.user) {
-    const serviceParam = Array.isArray(params?.service)
-      ? params.service[0]
-      : params?.service;
-    const campParamValue = Array.isArray(params?.camp)
-      ? params.camp[0]
-      : params?.camp;
-
-    const callbackUrl =
-      serviceParam === "holiday-camps" && campParamValue
-        ? `/booking?service=holiday-camps&camp=${encodeURIComponent(campParamValue)}`
-        : serviceParam
-          ? `/booking?service=${encodeURIComponent(serviceParam)}`
-          : "/booking";
-
-    redirect(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-  }
 
   const serviceParam = Array.isArray(params?.service)
     ? params.service[0]

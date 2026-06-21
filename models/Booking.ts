@@ -72,6 +72,7 @@ export interface BookingInterface {
       learningStyle?: string;
       educationalGoals?: string;
       selectedTerm?: string;
+      selectedTerms?: string[];
       // Kiddies enrichment specific
       selectedPrograms?: string[];
       interests?: string;
@@ -148,6 +149,7 @@ export interface BookingInterface {
     }>;
     isRecurring: boolean;
     frequency?: "daily" | "weekly" | "monthly";
+    billingPeriodMonths?: number;
   };
 
   // Pricing breakdown
@@ -176,7 +178,13 @@ export interface BookingInterface {
     }>;
     paidAmount: number;
     paymentDate?: string;
+    paymentDueDate?: string;
     transactionId?: string;
+  };
+
+  paymentReminders?: {
+    fourDaySentAt?: string;
+    oneDaySentAt?: string;
   };
 
   // Booking status and management
@@ -486,7 +494,16 @@ export const BookingSchema = {
             },
             paidAmount: { bsonType: "number", minimum: 0 },
             paymentDate: { bsonType: "string" },
+            paymentDueDate: { bsonType: "string" },
             transactionId: { bsonType: "string" },
+          },
+        },
+
+        paymentReminders: {
+          bsonType: "object",
+          properties: {
+            fourDaySentAt: { bsonType: "string" },
+            oneDaySentAt: { bsonType: "string" },
           },
         },
 

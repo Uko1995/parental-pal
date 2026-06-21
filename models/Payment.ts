@@ -46,4 +46,5 @@ export interface PaymentInterface {
   createdAt: Date;
   updatedAt: Date;
   idempotencyKey: string;
+  parentInvoiceId?: ObjectId;
 }

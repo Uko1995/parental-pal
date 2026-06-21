@@ -233,6 +233,9 @@ export function bookingToFormEntries(
   entries.parentAddress = booking.parentAddress || "";
   entries.startDate = targetMonthStart;
   entries.childrenCount = String(booking.children.length);
+  if (booking.schedule.billingPeriodMonths) {
+    entries.billingPeriodMonths = String(booking.schedule.billingPeriodMonths);
+  }
   entries.priority = booking.priority || "normal";
   entries.isRepeatedCustomer = "true";
   entries.followUpRequired = booking.followUpRequired ? "true" : "false";
@@ -348,8 +351,14 @@ export function bookingToFormEntries(
       if (cd.educationalGoals) {
         entries[`educationalGoals_${childId}`] = cd.educationalGoals as string;
       }
-      if (cd.selectedTerm) {
+      if (cd.selectedTerms && Array.isArray(cd.selectedTerms)) {
+        entries[`selectedTerms_${childId}`] = JSON.stringify(cd.selectedTerms);
+        if ((cd.selectedTerms as string[])[0]) {
+          entries[`schoolTerm_${childId}`] = (cd.selectedTerms as string[])[0];
+        }
+      } else if (cd.selectedTerm) {
         entries[`schoolTerm_${childId}`] = cd.selectedTerm as string;
+        entries[`selectedTerms_${childId}`] = JSON.stringify([cd.selectedTerm]);
       }
     });
   }

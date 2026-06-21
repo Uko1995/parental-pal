@@ -11,6 +11,9 @@ export interface FormPersistenceData {
   priority: "low" | "normal" | "high" | "urgent";
   followUpRequired: boolean;
   isRepeatedCustomer: boolean;
+  billingPeriodMonths?: number;
+  /** Set when submit was interrupted by auth redirect; gates restore on return */
+  pendingAuthSubmit?: boolean;
   // Service-specific form data
   serviceFormData?: Record<string, string | string[]>;
   // Timestamp to handle expiration
@@ -43,6 +46,7 @@ export function saveFormData(data: Partial<FormPersistenceData>): void {
       priority: "normal",
       followUpRequired: false,
       isRepeatedCustomer: false,
+      pendingAuthSubmit: false,
       timestamp: Date.now(),
       ...data,
     };
@@ -115,12 +119,58 @@ export function updateFormData(updates: Partial<FormPersistenceData>): void {
   }
 }
 
+/** Whether stored data should hydrate the booking form (auth redirect recovery only). */
+export function shouldRestoreFormPersistence(
+  data: FormPersistenceData,
+  actionParam: string | null,
+): boolean {
+  return data.pendingAuthSubmit === true || actionParam === "submit";
+}
+
+/** Clear the auth-interrupted flag after a successful restore. */
+export function clearPendingAuthSubmit(): void {
+  updateFormData({ pendingAuthSubmit: false });
+}
+
+/**
+ * Convert persisted service form data into the template shape service forms expect.
+ */
+export function serviceFormDataToTemplate(
+  data?: Record<string, string | string[]>,
+): Record<string, string> | null {
+  if (!data || !Object.keys(data).length) return null;
+
+  const entries: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      entries[key] = value.length === 1 ? value[0] : JSON.stringify(value);
+    } else {
+      entries[key] = value;
+    }
+  }
+  return entries;
+}
+
+/**
+ * Snapshot the booking form DOM + parent field overrides into localStorage.
+ */
+export function snapshotBookingForm(
+  additionalData: Partial<FormPersistenceData> = {},
+): void {
+  if (!isClientSide()) return;
+
+  const formEl = document.getElementById("booking-form");
+  const formData =
+    formEl instanceof HTMLFormElement ? new FormData(formEl) : new FormData();
+  saveFormData(extractFormDataForPersistence(formData, additionalData));
+}
+
 /**
  * Extract form data from FormData object for persistence
  */
 export function extractFormDataForPersistence(
   formData: FormData,
-  additionalData: Partial<FormPersistenceData> = {}
+  additionalData: Partial<FormPersistenceData> = {},
 ): Partial<FormPersistenceData> {
   const extracted: Record<string, string | string[]> = {};
 
@@ -143,11 +193,14 @@ export function extractFormDataForPersistence(
     }
   }
 
-  // Also capture all form inputs not in FormData (for controlled inputs)
+  // Also capture all form inputs not in FormData (scoped to booking form)
   if (typeof document !== "undefined") {
-    const inputs = document.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >("input, select, textarea");
+    const formRoot = document.getElementById("booking-form");
+    const inputs = (
+      formRoot ?? document
+    ).querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      "input, select, textarea",
+    );
 
     inputs.forEach((element) => {
       if (element.name && !element.name.startsWith("$ACTION_ID")) {

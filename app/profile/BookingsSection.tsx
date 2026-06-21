@@ -8,6 +8,12 @@ import { isRebookEligibleBooking } from "@/lib/booking-rebook-eligibility";
 import { bookingBelongsToUser } from "@/lib/booking-ownership";
 import { saveRebookTemplate } from "@/lib/rebook-persistence";
 import RebookSummaryModal from "./RebookSummaryModal";
+import { initializeBookingPayment } from "@/lib/booking-payment";
+import {
+  formatPaymentDueDateLine,
+  isPaymentOverdue,
+} from "@/lib/booking-payment-due";
+import { canParentCancelBooking } from "@/lib/booking-cancellation";
 
 interface Booking {
   _id: string;
@@ -29,6 +35,7 @@ interface Booking {
   payment?: {
     status?: "pending" | "paid" | "refunded";
     paidAmount?: number;
+    paymentDueDate?: string;
   };
   children?: Array<{
     id?: string;
@@ -182,6 +189,9 @@ export default function BookingsSection() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [rebookModal, setRebookModal] = useState<RebookModalState | null>(null);
   const [rebookLoadingId, setRebookLoadingId] = useState<string | null>(null);
+  const [paymentInProgress, setPaymentInProgress] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchBookings();
@@ -220,8 +230,10 @@ export default function BookingsSection() {
       });
 
       if (response.ok) {
-        toast.success("Booking cancelled and deleted successfully");
+        const data = await response.json();
+        toast.success(data.message || "Booking cancelled successfully");
         setBookingToCancel(null);
+        setSelectedBooking(null);
         await fetchBookings();
       } else {
         const errorData = await response.json();
@@ -261,6 +273,33 @@ export default function BookingsSection() {
       .map((w) => `${w.day} (${w.hours}h)`)
       .join(", ");
   };
+
+  const handlePayNow = async (booking: Booking) => {
+    const amount = booking.pricing?.totalAmount ?? 0;
+    if (!amount) {
+      toast.error("No amount due for this booking");
+      return;
+    }
+    setPaymentInProgress(booking._id);
+    try {
+      const result = await initializeBookingPayment(
+        { bookingId: booking._id, amount, currency: booking.pricing?.currency || "NGN" },
+        { toastId: `pay-booking-${booking._id}` },
+      );
+      if (!result.ok) setPaymentInProgress(null);
+    } catch {
+      toast.error("Failed to start payment");
+      setPaymentInProgress(null);
+    }
+  };
+
+  const canPayBooking = (booking: Booking) =>
+    booking.status === "confirmed" &&
+    booking.payment?.status === "pending" &&
+    (booking.pricing?.totalAmount ?? 0) > 0;
+
+  const canCancelBooking = (booking: Booking) =>
+    canParentCancelBooking(booking);
 
   const handleQuickRebook = async (booking: Booking) => {
     setRebookLoadingId(booking._id);
@@ -430,20 +469,49 @@ export default function BookingsSection() {
                             booking.pricing?.currency ?? "NGN",
                           )}
                         </p>
-                        <p>
-                          <span className="font-medium">Payment Status:</span>
-                          <span
-                            className={`ml-2 badge badge-sm ${
-                              booking.payment?.status === "paid"
-                                ? "badge-success"
-                                : booking.payment?.status === "pending"
-                                ? "badge-warning"
-                                : "badge-error"
-                            }`}
-                          >
-                            {booking.payment?.status ?? "unknown"}
-                          </span>
-                        </p>
+                        <div>
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="font-medium">Payment Status:</span>
+                            <span
+                              className={`badge ${
+                                booking.payment?.status === "paid"
+                                  ? "badge-success"
+                                  : booking.payment?.status === "pending"
+                                    ? "badge-warning"
+                                    : "badge-error"
+                              } badge-sm`}
+                            >
+                              {booking.payment?.status ?? "unknown"}
+                            </span>
+                            {booking.payment?.status === "pending" &&
+                              booking.payment?.paymentDueDate &&
+                              isPaymentOverdue(
+                                booking.payment.paymentDueDate,
+                                booking.payment.status,
+                              ) && (
+                                <span className="badge badge-error badge-sm">
+                                  Overdue
+                                </span>
+                              )}
+                          </p>
+                          {booking.payment?.status === "pending" &&
+                            booking.payment?.paymentDueDate &&
+                            !isPaymentOverdue(
+                              booking.payment.paymentDueDate,
+                              booking.payment.status,
+                            ) && (
+                              <>
+                                <p className="mt-1 text-xs leading-snug text-base-content/70 break-words max-w-full">
+                                  {formatPaymentDueDateLine(
+                                    booking.payment.paymentDueDate,
+                                  )}
+                                </p>
+                                <p className="mt-0.5 text-xs leading-snug text-base-content/50 break-words max-w-full">
+                                  Due 5 days before your last session
+                                </p>
+                              </>
+                            )}
+                        </div>
                       </div>
                     </div>
 
@@ -475,6 +543,21 @@ export default function BookingsSection() {
                       View Details
                     </button>
 
+                    {canPayBooking(booking) && (
+                      <button
+                        type="button"
+                        onClick={() => handlePayNow(booking)}
+                        className="btn btn-primary btn-sm"
+                        disabled={paymentInProgress === booking._id}
+                      >
+                        {paymentInProgress === booking._id ? (
+                          <span className="loading loading-spinner loading-xs" />
+                        ) : (
+                          "Pay now"
+                        )}
+                      </button>
+                    )}
+
                     {canRebook(booking) && (
                       <>
                         <button
@@ -500,12 +583,13 @@ export default function BookingsSection() {
                       </>
                     )}
 
-                    {booking.status === "pending" && (
+                    {canCancelBooking(booking) && (
                       <button
+                        type="button"
                         onClick={() => setBookingToCancel(booking)}
-                        className="btn btn-error btn-sm"
+                        className="btn btn-error btn-outline btn-sm"
                       >
-                        Cancel
+                        Cancel booking
                       </button>
                     )}
                   </div>
@@ -542,14 +626,22 @@ export default function BookingsSection() {
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Cancel Booking</h3>
             <p className="py-4">
-              Are you sure you want to cancel and permanently delete this
-              booking for{" "}
+              Are you sure you want to cancel this booking for{" "}
               <span className="font-semibold">
                 {SERVICE_TYPE_LABELS[
                   bookingToCancel.serviceType as keyof typeof SERVICE_TYPE_LABELS
                 ] || bookingToCancel.serviceType}
               </span>
-              ? This action cannot be undone.
+              ?
+              {bookingToCancel.status === "pending"
+                ? " It will be removed from your account."
+                : " It will be marked as cancelled."}
+              {bookingToCancel.payment?.status === "paid" && (
+                <span className="block mt-2 text-sm text-base-content/70">
+                  You have already paid for this booking. Contact us if you
+                  need a refund.
+                </span>
+              )}
             </p>
             <div className="modal-action">
               <button
@@ -564,7 +656,7 @@ export default function BookingsSection() {
                 className="btn btn-error"
                 disabled={cancelLoading}
               >
-                {cancelLoading ? "Cancelling..." : "Yes, Cancel & Delete"}
+                {cancelLoading ? "Cancelling..." : "Yes, cancel booking"}
               </button>
             </div>
           </div>

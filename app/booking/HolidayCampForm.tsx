@@ -21,10 +21,12 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import {
   extractChildIdsFromFormEntries,
   parseJsonField,
+  childDefaultsFromFormEntries,
 } from "@/lib/rebook-form-utils";
 import {
   type CampLocation,
@@ -41,7 +43,7 @@ import {
 } from "@/lib/camp-pricing";
 import {
   applyParentContactPrefill,
-  applyFirstChildPrefillToRow,
+  buildChildrenRowsFromProfile,
   type ChildInfoDefaults,
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
@@ -66,14 +68,16 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
   ({ campSeasonId, onTotalChange, initialTemplate }, ref) => {
     const season = getCampSeason(campSeasonId);
     const isSummer = season.isSummer;
+    const allSeasonWeekNumbers = season.weeks.map((week) => week.weekNumber);
 
     const [parentName, setParentName] = useState("");
     const [parentEmail, setParentEmail] = useState("");
     const [parentPhone, setParentPhone] = useState("");
     const [parentAddress, setParentAddress] = useState("");
     const [location, setLocation] = useState<CampLocation>("gbagada");
+    const [initialChild] = useState(() => ({ id: INITIAL_CHILD_ID }));
     const [childrenData, setChildrenData] = useState<ChildCampData[]>([
-      { id: uuidv4() },
+      initialChild,
     ]);
     const [childAges, setChildAges] = useState<Record<string, number>>({});
     const [boardingByChild, setBoardingByChild] = useState<
@@ -81,7 +85,9 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     >({});
     const [selectedWeeksByChild, setSelectedWeeksByChild] = useState<
       Record<string, number[]>
-    >({});
+    >(() => ({
+      [initialChild.id]: allSeasonWeekNumbers,
+    }));
     const [childDefaults, setChildDefaults] = useState<
       Record<string, ChildInfoDefaults>
     >({});
@@ -95,6 +101,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
 
       const childIds = extractChildIdsFromFormEntries(initialTemplate);
       if (childIds.length > 0) {
+        setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
         setChildrenData(childIds.map((id) => ({ id })));
         const weeksByChild: Record<string, number[]> = {};
         const ages: Record<string, number> = {};
@@ -145,35 +152,28 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       });
 
       if (profile.children.length > 0) {
-        setChildrenData((prev) => {
-          if (prev.length === 0) return prev;
-          const { defaults, ages } = applyFirstChildPrefillToRow(
-            profile.children,
-            prev[0].id,
+        const built = buildChildrenRowsFromProfile(
+          profile.children,
+          (id) => ({ id }),
+        );
+        if (built) {
+          setChildDefaults(built.defaults);
+          setChildAges(built.ages);
+          setChildrenData(built.rows);
+          setSelectedWeeksByChild(
+            Object.fromEntries(
+              built.rows.map((child) => [child.id, allSeasonWeekNumbers]),
+            ),
           );
-          setChildDefaults((d) => ({ ...d, ...defaults }));
-          setChildAges((a) => ({ ...a, ...ages }));
-          return prev;
-        });
+        }
       }
-    }, []);
+    }, [allSeasonWeekNumbers]);
 
     useBookingProfilePrefill({
       initialTemplate,
       templateAppliedRef,
       onApply: applyProfilePrefill,
     });
-
-    useEffect(() => {
-      setSelectedWeeksByChild((prev) => {
-        const next: Record<string, number[]> = {};
-        childrenData.forEach((child) => {
-          next[child.id] =
-            prev[child.id] || season.weeks.map((week) => week.weekNumber);
-        });
-        return next;
-      });
-    }, [childrenData, season.weeks]);
 
     useEffect(() => {
       if (location === "lekki") {
@@ -232,7 +232,12 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     }, []);
 
     const addChild = () => {
-      setChildrenData((prev) => [...prev, { id: uuidv4() }]);
+      const newId = uuidv4();
+      setChildrenData((prev) => [...prev, { id: newId }]);
+      setSelectedWeeksByChild((prev) => ({
+        ...prev,
+        [newId]: allSeasonWeekNumbers,
+      }));
     };
 
     const removeChild = (id: string) => {
@@ -256,10 +261,10 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     };
 
     const resetForm = () => {
-      const firstChildId = uuidv4();
+      const firstChildId = INITIAL_CHILD_ID;
       setChildrenData([{ id: firstChildId }]);
       setSelectedWeeksByChild({
-        [firstChildId]: season.weeks.map((week) => week.weekNumber),
+        [firstChildId]: allSeasonWeekNumbers,
       });
       setChildAges({});
       setBoardingByChild({});

@@ -200,9 +200,12 @@ export function buildInvoiceLineItems(
         const weeks = childData.campWeeks || [];
         const weekLabels = weeks.map((w) => formatWeekRange(w)).join("; ");
         const boarding = childData.boarding ? " + Boarding" : "";
+        const camperIdSuffix = childData.camperId
+          ? ` — Camper ID: ${childData.camperId}`
+          : "";
 
         items.push({
-          description: `Holiday camp — ${childName}${location ? ` (${location})` : ""}${boarding}${weekLabels ? ` — ${weekLabels}` : ""}`,
+          description: `Holiday camp — ${childName}${location ? ` (${location})` : ""}${boarding}${weekLabels ? ` — ${weekLabels}` : ""}${camperIdSuffix}`,
           quantity: weeks.length || 1,
           unitPrice: weeklyRate,
           total: (weeks.length || 1) * weeklyRate,
@@ -406,7 +409,7 @@ export function buildServiceSummary(booking: BookingInterface): string {
           .map((w) => formatWeekRange(w))
           .join("; ");
         lines.push(
-          `${name}: ${weeks || "No weeks"}${childData.boarding ? " (boarding)" : ""}`,
+          `${name}: ${weeks || "No weeks"}${childData.boarding ? " (boarding)" : ""}${childData.camperId ? ` — Camper ID: ${childData.camperId}` : ""}`,
         );
       });
       break;
