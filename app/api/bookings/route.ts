@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const bookingUser = data.userId
-        ? await UserRepository.findById(data.userId)
+        ? await UserRepository.findById(String(data.userId))
         : currentUser;
       if (bookingUser) {
         await ensureHtrDriveFolderForBooking(booking, bookingUser);
