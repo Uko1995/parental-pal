@@ -7,6 +7,7 @@ import { rateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { getSessionUser } from "@/lib/session-user";
 import { logSecurityEvent, AuditEventType } from "@/lib/audit-logger-mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 
 export async function GET() {
   try {
@@ -191,6 +192,20 @@ export async function POST(request: NextRequest) {
     // Create new booking using the correct method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const booking = await BookingRepository.createBooking(bookingData as any);
+
+    try {
+      const bookingUser = data.userId
+        ? await UserRepository.findById(data.userId)
+        : currentUser;
+      if (bookingUser) {
+        await ensureHtrDriveFolderForBooking(booking, bookingUser);
+      }
+    } catch (driveError) {
+      console.error("HTR Drive folder provisioning failed:", {
+        driveError,
+        bookingId: booking._id?.toString(),
+      });
+    }
 
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.BOOKINGS);

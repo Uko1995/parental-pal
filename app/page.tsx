@@ -42,9 +42,9 @@ export default function Page() {
       <Suspense fallback={<div className="h-96" />}>
         <MiniProducts />
       </Suspense>
-      <Suspense fallback={<div className="h-96" />}>
+      {/* <Suspense fallback={<div className="h-96" />}>
         <MiniBlog />
-      </Suspense>
+      </Suspense> */}
       <Suspense fallback={<div className="h-64" />}>
         <Statistics />
       </Suspense>

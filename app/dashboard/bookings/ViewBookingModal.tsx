@@ -8,6 +8,8 @@ import {
   EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 import PaymentReconciliationSection from "./PaymentReconciliationSection";
+import HtrDriveFolderSection from "./HtrDriveFolderSection";
+import { isHtrSummerCampBooking } from "@/lib/htr-camp";
 
 interface Child {
   id?: string;
@@ -167,6 +169,9 @@ interface Booking {
     paymentDate?: string;
   };
   pricing?: { totalAmount?: number };
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  driveFolderName?: string;
 }
 
 interface ViewBookingModalProps {
@@ -174,6 +179,7 @@ interface ViewBookingModalProps {
   onClose: () => void;
   booking: Booking | null;
   onPaymentConfirmed?: () => void;
+  onBookingUpdated?: () => void;
 }
 
 export default function ViewBookingModal({
@@ -181,6 +187,7 @@ export default function ViewBookingModal({
   onClose,
   booking,
   onPaymentConfirmed,
+  onBookingUpdated,
 }: ViewBookingModalProps) {
   if (!isOpen || !booking) return null;
 
@@ -1124,6 +1131,20 @@ export default function ViewBookingModal({
                       })}
                     </div>
                   </div>
+
+                  {isHtrSummerCampBooking(
+                    booking.serviceType,
+                    booking.serviceData?.campSeasonId,
+                  ) ? (
+                    <HtrDriveFolderSection
+                      bookingId={booking._id}
+                      initialDriveFolderUrl={booking.driveFolderUrl}
+                      initialDriveFolderName={booking.driveFolderName}
+                      onSuccess={() => {
+                        onBookingUpdated?.();
+                      }}
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

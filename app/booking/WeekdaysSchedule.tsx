@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useImperativeHandle, forwardRef, useRef } from "react";
 import { CalendarIcon } from "@heroicons/react/24/outline";
-import { formatLocalDate, getWeekdayDatesInMonth, parseDateString } from "@/lib/booking-calendar";
+import {
+  formatLocalDate,
+  getWeekdayDatesInMonth,
+  parseDateString,
+} from "@/lib/booking-calendar";
 import {
   getBillingPeriodEnd,
   getWeekdayDatesInRange,

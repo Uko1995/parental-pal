@@ -57,6 +57,7 @@ function emptyLine(
 }
 
 interface ParentInvoiceBuilderProps {
+  pastOnly?: boolean;
   linkedBookingId?: string;
   bookingContext?: BookingPricingContext;
   initialLineItems?: ParentInvoiceLineItem[];
@@ -111,15 +112,16 @@ function LineRowFields({
   item,
   index,
   pricing,
+  bookingCtx,
   tutoringLocation,
   onUpdate,
   onRemove,
   canRemove,
-  showDate,
 }: {
   item: ParentInvoiceLineItem;
   index: number;
   pricing: ServicePricingMap | null;
+  bookingCtx?: BookingPricingContext;
   tutoringLocation: "virtual" | "physical";
   onUpdate: (
     index: number,
@@ -128,29 +130,22 @@ function LineRowFields({
   ) => void;
   onRemove: (index: number) => void;
   canRemove: boolean;
-  showDate: boolean;
 }) {
   const isTutoring = item.serviceType === "tutoring";
-  const isPast = item.sessionKind === "past";
-  const quantityLabel = isPast ? "No. of sessions" : "Hours / units";
-  const unitPriceLabel = isPast ? "Price per session" : "Price per unit";
 
   return (
   <tr className="align-top">
-    {showDate && (
-      <td className="min-w-[8rem]">
-        <label className="text-xs font-medium text-base-content/70 lg:hidden">
-          Session date
-        </label>
-        <input
-          type="date"
-          className="input input-bordered input-sm w-full min-w-0"
-          value={item.date}
-          onChange={(e) => onUpdate(index, "date", e.target.value)}
-          required={item.sessionKind === "future"}
-        />
-      </td>
-    )}
+    <td className="min-w-[8rem]">
+      <label className="text-xs font-medium text-base-content/70 lg:hidden">
+        Session date
+      </label>
+      <input
+        type="date"
+        className="input input-bordered input-sm w-full min-w-0"
+        value={item.date}
+        onChange={(e) => onUpdate(index, "date", e.target.value)}
+      />
+    </td>
     <td className="min-w-[8rem]">
       <label className="text-xs font-medium text-base-content/70 lg:hidden">
         Child name
@@ -181,13 +176,11 @@ function LineRowFields({
     </td>
     <td className="min-w-[12rem]">
       <label className="text-xs font-medium text-base-content/70 lg:hidden">
-        {isPast ? "Notes (optional)" : "Session details"}
+        Session details
       </label>
       <input
         type="text"
-        placeholder={
-          isPast ? "Optional notes" : "e.g. Monday session (2h)"
-        }
+        placeholder="e.g. Monday session (2h)"
         className="input input-bordered input-sm w-full min-w-0"
         value={item.description}
         onChange={(e) => onUpdate(index, "description", e.target.value)}
@@ -195,7 +188,7 @@ function LineRowFields({
     </td>
     <td className="min-w-[5rem]">
       <label className="text-xs font-medium text-base-content/70 lg:hidden">
-        {quantityLabel}
+        Hours / units
       </label>
       <input
         type="number"
@@ -209,7 +202,7 @@ function LineRowFields({
     </td>
     <td className="min-w-[6rem]">
       <label className="text-xs font-medium text-base-content/70 lg:hidden">
-        {unitPriceLabel}
+        Price per unit
       </label>
       <input
         type="number"
@@ -275,6 +268,7 @@ function LineRowFields({
 }
 
 export default function ParentInvoiceBuilder({
+  pastOnly = false,
   linkedBookingId,
   bookingContext,
   initialLineItems,
@@ -298,9 +292,7 @@ export default function ParentInvoiceBuilder({
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   const resolvedBookingCtx = resolveBookingPricingContext(
-    (bookingContext?.serviceData ?? bookingContext) as
-      | Record<string, unknown>
-      | undefined,
+    bookingContext?.serviceData ?? bookingContext,
   );
 
   useEffect(() => {
@@ -321,7 +313,7 @@ export default function ParentInvoiceBuilder({
       }
     };
     fetchPricing();
-  }, [initialLineItems?.length]);
+  }, [initialLineItems?.length, tutoringLocation]);
 
   useEffect(() => {
     if (bookingContext?.tutoringLocation) {
@@ -347,12 +339,6 @@ export default function ParentInvoiceBuilder({
       prev.map((item, i) => {
         if (i !== index) return item;
         let next = { ...item, [field]: value };
-
-        if (field === "sessionKind") {
-          if (value === "past") {
-            next.date = "";
-          }
-        }
 
         if (field === "serviceType" && pricing) {
           next = applyServiceDefaultsToLine(next, pricing, {
@@ -391,7 +377,7 @@ export default function ParentInvoiceBuilder({
           next.total = qty * price;
         }
 
-        if (field === "description" && pricing && next.sessionKind !== "past") {
+        if (field === "description" && pricing) {
           next = applyServiceDefaultsToLine(next, pricing, {
             tutoringLocation: next.tutoringLocation ?? tutoringLocation,
             bookingHourlyRate:
@@ -580,25 +566,15 @@ export default function ParentInvoiceBuilder({
         </p>
       ) : (
         <div className="overflow-x-auto -mx-1 px-1">
-          <table
-            className={`table table-sm w-full ${
-              sessionKind === "past" ? "min-w-[48rem]" : "min-w-[56rem]"
-            }`}
-          >
+          <table className="table table-sm w-full min-w-[56rem]">
             <thead>
               <tr className="text-xs text-base-content/70">
-                {sessionKind === "future" && <th>Session date</th>}
+                <th>Session date</th>
                 <th>Child name</th>
                 <th>Service</th>
-                <th>
-                  {sessionKind === "past" ? "Notes (optional)" : "Session details"}
-                </th>
-                <th>
-                  {sessionKind === "past" ? "No. of sessions" : "Hours / units"}
-                </th>
-                <th>
-                  {sessionKind === "past" ? "Price per session" : "Price per unit"}
-                </th>
+                <th>Session details</th>
+                <th>Hours / units</th>
+                <th>Price per unit</th>
                 <th>Line total</th>
                 <th>Timing</th>
                 {pricing && <th className="hidden xl:table-cell">Mode</th>}
@@ -612,11 +588,11 @@ export default function ParentInvoiceBuilder({
                   item={lineItems[index]}
                   index={index}
                   pricing={pricing}
+                  bookingCtx={bookingContext}
                   tutoringLocation={tutoringLocation}
                   onUpdate={updateLine}
                   onRemove={removeLine}
                   canRemove={lineItems.length > 1}
-                  showDate={sessionKind === "future"}
                 />
               ))}
             </tbody>
@@ -690,7 +666,7 @@ export default function ParentInvoiceBuilder({
         </div>
       )}
 
-      {linkedBookingId && (
+      {linkedBookingId && !pastOnly && (
         <button
           type="button"
           className="btn btn-outline btn-sm"
@@ -707,17 +683,18 @@ export default function ParentInvoiceBuilder({
 
       {renderSection(
         "Past sessions",
-        "Sessions your child has already attended. Enter the number of sessions — no date needed.",
+        "Sessions your child has already attended. Add each session manually.",
         pastIndices,
         "past",
       )}
 
-      {renderSection(
-        "Future sessions",
-        "Upcoming sessions not yet attended. Each line needs a date and session details. Link a booking to import.",
-        futureIndices,
-        "future",
-      )}
+      {!pastOnly &&
+        renderSection(
+          "Future sessions",
+          "Upcoming sessions not yet attended. Link a booking to import, or add manually.",
+          futureIndices,
+          "future",
+        )}
 
       <div className="flex flex-wrap gap-2">
         <button

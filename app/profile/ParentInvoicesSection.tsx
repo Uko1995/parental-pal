@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import ParentInvoiceBuilder, {
   type BookingPricingContext,
-} from "./ParentInvoiceBuilder";
+} from "@/components/parent-invoices/ParentInvoiceBuilder";
 import ParentInvoiceDetailsModal, {
   type ParentInvoiceDetails,
 } from "./ParentInvoiceDetailsModal";
@@ -19,8 +19,8 @@ import type {
   ParentInvoiceStatus,
 } from "@/models/ParentInvoice";
 
-interface ParentInvoice extends ParentInvoiceDetails {
-  approval?: { rejectionReason?: string };
+interface ParentInvoice extends Omit<ParentInvoiceDetails, "status"> {
+  status: ParentInvoiceStatus;
 }
 
 interface BookingOption {
@@ -106,16 +106,17 @@ export default function ParentInvoicesSection() {
     fetchBookings();
   }, []);
 
-  const activeBookingId =
-    editingId
-      ? invoices.find((i) => i._id === editingId)?.linkedBookingId
-      : selectedBookingId || undefined;
+  const activeBookingId = editingId
+    ? invoices.find((i) => i._id === editingId)?.linkedBookingId
+    : selectedBookingId || undefined;
 
   const selectedBooking = bookings.find((b) => b._id === activeBookingId);
 
   const bookingContext: BookingPricingContext | undefined = selectedBooking
     ? {
-        hourlyRate: selectedBooking.serviceData?.hourlyRate as number | undefined,
+        hourlyRate: selectedBooking.serviceData?.hourlyRate as
+          | number
+          | undefined,
         tutoringLocation: selectedBooking.serviceData?.tutoringLocation as
           | "virtual"
           | "physical"
@@ -134,9 +135,7 @@ export default function ParentInvoicesSection() {
     lineItems: ParentInvoiceLineItem[],
     linkedBookingId?: string,
     invoiceId?: string,
-    options?: { closeOnSuccess?: boolean },
   ) => {
-    const closeOnSuccess = options?.closeOnSuccess ?? true;
     setSaving(true);
     try {
       const url = invoiceId
@@ -155,13 +154,11 @@ export default function ParentInvoicesSection() {
         toast.error(data.errors?.join(", ") || data.error || "Save failed");
         return false;
       }
-      if (closeOnSuccess) {
-        toast.success("Invoice saved");
-        setShowBuilder(false);
-        setEditingId(null);
-        setSelectedBookingId("");
-        await fetchInvoices();
-      }
+      toast.success("Invoice saved");
+      setShowBuilder(false);
+      setEditingId(null);
+      setSelectedBookingId("");
+      await fetchInvoices();
       return true;
     } finally {
       setSaving(false);
@@ -192,12 +189,7 @@ export default function ParentInvoicesSection() {
       }
       id = data.invoice?._id;
     } else {
-      const saved = await saveInvoice(
-        lineItems,
-        linkedBookingId,
-        id,
-        { closeOnSuccess: false },
-      );
+      const saved = await saveInvoice(lineItems, linkedBookingId, id);
       if (!saved) return;
     }
 
@@ -253,7 +245,7 @@ export default function ParentInvoicesSection() {
     : null;
 
   const viewingInvoice = viewingInvoiceId
-    ? invoices.find((i) => i._id === viewingInvoiceId) ?? null
+    ? (invoices.find((i) => i._id === viewingInvoiceId) ?? null)
     : null;
 
   if (loading) {
@@ -272,9 +264,9 @@ export default function ParentInvoicesSection() {
             Session Invoices
           </h2>
           <p className="text-sm text-base-content/70 mt-1 max-w-2xl">
-            Add <strong>past sessions</strong> by child, service, and number of
-            sessions (no date required). Add <strong>future sessions</strong> with
-            a date and details — link a booking to import upcoming sessions — then
+            Add <strong>past sessions</strong> your child has already attended,
+            and <strong>future sessions</strong> that are coming up. Link a
+            booking to import upcoming sessions and use your booked rates, then
             submit and pay.
           </p>
         </div>
@@ -307,6 +299,7 @@ export default function ParentInvoicesSection() {
               className="select select-bordered select-sm w-full"
               value={editingInvoice?.linkedBookingId ?? selectedBookingId}
               onChange={(e) => setSelectedBookingId(e.target.value)}
+              disabled={!!editingInvoice?.linkedBookingId && !!editingId}
             >
               <option value="">No linked booking</option>
               {bookings.map((b) => (
@@ -327,11 +320,11 @@ export default function ParentInvoicesSection() {
             initialLineItems={editingInvoice?.lineItems}
             saving={saving}
             onSave={async (items, linkedId) => {
-              await saveInvoice(items, linkedId, editingInvoice?._id);
+              await saveInvoice(items, linkedId, editingId ?? undefined);
             }}
-            onSubmitInvoice={async (items, linkedId) => {
-              await submitInvoice(items, linkedId, editingInvoice?._id);
-            }}
+            onSubmitInvoice={(items, linkedId) =>
+              submitInvoice(items, linkedId, editingId ?? undefined)
+            }
           />
           <button
             type="button"
@@ -353,7 +346,7 @@ export default function ParentInvoicesSection() {
         </p>
       ) : (
         <div className="space-y-4">
-          {invoices.map((invoice) => (
+          {invoices.map((invoice: ParentInvoice) => (
             <div
               key={invoice._id}
               className="bg-base-100 border border-base-300 rounded-xl p-5"
@@ -388,12 +381,7 @@ export default function ParentInvoicesSection() {
                       )}
                     </div>
                   )}
-                  {invoice.status === "rejected" &&
-                    invoice.approval?.rejectionReason && (
-                      <p className="text-sm text-error mt-2">
-                        Rejected: {invoice.approval.rejectionReason}
-                      </p>
-                    )}
+                  
                 </div>
                 <span
                   className={`badge ${STATUS_BADGE[invoice.status] || "badge-ghost"}`}
@@ -410,8 +398,7 @@ export default function ParentInvoicesSection() {
                 >
                   View
                 </button>
-                {(invoice.status === "draft" ||
-                  invoice.status === "rejected") && (
+                {(invoice.status === "draft") && (
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
@@ -423,9 +410,7 @@ export default function ParentInvoicesSection() {
                     Edit
                   </button>
                 )}
-                {(invoice.status === "pending_payment" ||
-                  invoice.status === "approved" ||
-                  invoice.status === "pending_approval") && (
+                {(invoice.status === "pending_payment") && (
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
@@ -439,9 +424,7 @@ export default function ParentInvoicesSection() {
                     )}
                   </button>
                 )}
-                {canParentCancelInvoice({
-                  status: invoice.status as ParentInvoiceStatus,
-                }) && (
+                {canParentCancelInvoice({ status: invoice.status }) && (
                   <button
                     type="button"
                     className="btn btn-outline btn-error btn-sm"

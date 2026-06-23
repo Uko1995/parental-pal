@@ -44,6 +44,26 @@ Create `.env.local` with at least:
 
 For full functionality add: `GOOGLE_ID`, `GOOGLE_SECRET`, Cloudinary (`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`), `PAYSTACK_SECRET_KEY`, and email (`EMAIL_USER`/`EMAIL_PASSWORD` or `SMTP_*`).
 
+For **Holidays That Rock** Google Drive folder provisioning, also set:
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_DRIVE_ENABLED` | Set to `true` to enable automatic folder creation |
+| `GOOGLE_DRIVE_PARENT_FOLDER_ID` | Parent Drive folder ID (HOTR campers root) |
+| `GOOGLE_DRIVE_REFRESH_TOKEN` | **OAuth (no service account):** refresh token from one-time setup script |
+
+**OAuth setup (uses your existing `GOOGLE_ID` / `GOOGLE_SECRET`):**
+
+1. Enable **Google Drive API** in GCP (same project as your OAuth client).
+2. On the OAuth client, add redirect URI: `http://localhost:3333/oauth2callback`
+3. If the consent screen is in **Testing**, add your Google account as a test user.
+4. Run: `npx tsx lib/google-drive-oauth-setup.ts` — sign in with the Google account that **owns** the HOTR parent folder.
+5. Copy the printed `GOOGLE_DRIVE_REFRESH_TOKEN` into `.env.local`.
+
+**Service account (optional alternative):** `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`, with the parent folder shared to that account as Editor.
+
+Place handbook PDFs in the repo `handbook/` directory.
+
 ## Scripts
 
 | Command | Description |
@@ -52,6 +72,7 @@ For full functionality add: `GOOGLE_ID`, `GOOGLE_SECRET`, Cloudinary (`NEXT_PUBL
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run init-db` | Initialize/seed database |
+| `npx tsx lib/google-drive-oauth-setup.ts` | One-time OAuth refresh token for Drive (no service account) |
 | `npm run convert:webp` | Convert public images to WebP |
 
 ## Features

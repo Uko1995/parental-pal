@@ -57,4 +57,16 @@ describe("booking-calendar", () => {
     assert.equal(parsed.getMonth(), 3);
     assert.equal(parsed.getDate(), 7);
   });
+
+  it("floors every selected weekday at a mid-month start date (no past dates)", () => {
+    // Mon Mar 16 2026 start applies to all selected days, never before it.
+    const monday = getWeekdayDatesInMonth("monday", "2026-03-16");
+    assert.deepEqual(monday, ["2026-03-16", "2026-03-23", "2026-03-30"]);
+
+    const tuesday = getWeekdayDatesInMonth("tuesday", "2026-03-16");
+    assert.deepEqual(tuesday, ["2026-03-17", "2026-03-24", "2026-03-31"]);
+
+    const friday = getWeekdayDatesInMonth("friday", "2026-03-16");
+    assert.deepEqual(friday, ["2026-03-20", "2026-03-27"]);
+  });
 });

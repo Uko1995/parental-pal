@@ -253,6 +253,38 @@ export class BookingRepository {
     return result as BookingInterface | null;
   }
 
+  static async updateDriveFolderIfAbsent(
+    id: string | ObjectId,
+    driveFolder: {
+      driveFolderId: string;
+      driveFolderUrl: string;
+      driveFolderName: string;
+    },
+  ): Promise<BookingInterface | null> {
+    const collection = await getCollection(this.collectionName);
+    const objectId = typeof id === "string" ? new ObjectId(id) : id;
+
+    const result = await collection.findOneAndUpdate(
+      {
+        _id: objectId,
+        $or: [
+          { driveFolderId: { $exists: false } },
+          { driveFolderId: null },
+          { driveFolderId: "" },
+        ],
+      },
+      {
+        $set: {
+          ...driveFolder,
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" },
+    );
+
+    return result as BookingInterface | null;
+  }
+
   // Update booking status
   static async updateStatus(
     id: string | ObjectId,

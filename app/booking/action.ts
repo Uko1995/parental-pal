@@ -27,6 +27,7 @@ import { notifyAdminUnpaidBooking } from "@/lib/booking-admin-notifications";
 import { clampBillingPeriodMonths } from "@/lib/booking-payment-policy";
 import { computeBookingPaymentDueDate } from "@/lib/booking-payment-due";
 import { getHtrCamperEmailEntries } from "@/lib/camper-id";
+import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 import {
   getBillingPeriodEnd,
   getWeekdayDatesInRange,
@@ -250,6 +251,19 @@ export async function createBookingFromFormEntries(
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
 
+  let driveFolderUrl: string | undefined;
+  try {
+    const folder = await ensureHtrDriveFolderForBooking(savedBooking, user);
+    driveFolderUrl = folder?.folderUrl;
+  } catch (error) {
+    console.error("HTR Drive folder provisioning failed:", {
+      error,
+      bookingId: savedBooking._id?.toString(),
+      userId: user._id?.toString(),
+      parentName: savedBooking.parentName,
+    });
+  }
+
   try {
     await syncChildrenFromBooking(user._id!, bookingData);
   } catch (error) {
@@ -287,6 +301,7 @@ export async function createBookingFromFormEntries(
           const campers = getHtrCamperEmailEntries(savedBooking);
           return campers.length > 0 ? campers : undefined;
         })(),
+        driveFolderUrl,
       },
     }),
   }).catch((error) => {

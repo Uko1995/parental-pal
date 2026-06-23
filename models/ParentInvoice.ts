@@ -2,12 +2,9 @@ import { ObjectId } from "mongodb";
 
 export type ParentInvoiceStatus =
   | "draft"
-  | "pending_approval"
-  | "approved"
-  | "rejected"
-  | "pending_payment"
   | "paid"
-  | "cancelled";
+  | "cancelled"
+  | "pending_payment";
 
 export type ParentInvoiceSessionKind = "past" | "future";
 
