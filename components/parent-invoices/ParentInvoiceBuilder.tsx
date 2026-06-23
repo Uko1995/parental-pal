@@ -292,7 +292,8 @@ export default function ParentInvoiceBuilder({
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   const resolvedBookingCtx = resolveBookingPricingContext(
-    bookingContext?.serviceData ?? bookingContext,
+    bookingContext?.serviceData ??
+      (bookingContext as Record<string, unknown> | undefined),
   );
 
   useEffect(() => {

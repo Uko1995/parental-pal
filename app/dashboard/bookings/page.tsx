@@ -20,7 +20,13 @@ interface Booking {
   parentName: string;
   parentEmail: string;
   parentPhone: string;
-  serviceType: string;
+  serviceType:
+    | "childcare"
+    | "tutoring"
+    | "homeschooling"
+    | "holiday-camps"
+    | "space-rental"
+    | "kiddies-enrichment";
   status: "pending" | "confirmed" | "cancelled" | "completed";
   totalCost: number;
   createdAt: string;

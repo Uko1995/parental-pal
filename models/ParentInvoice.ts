@@ -4,7 +4,12 @@ export type ParentInvoiceStatus =
   | "draft"
   | "paid"
   | "cancelled"
-  | "pending_payment";
+  | "pending_payment"
+  // Legacy approval-workflow statuses (no longer part of the active flow,
+  // retained so existing/legacy invoices and routes type-check).
+  | "pending_approval"
+  | "approved"
+  | "rejected";
 
 export type ParentInvoiceSessionKind = "past" | "future";
 
