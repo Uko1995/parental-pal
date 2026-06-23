@@ -33,7 +33,10 @@ export function validateParentInvoiceLineItems(
 
   lineItems.forEach((item, index) => {
     const row = index + 1;
-    if (!item.date) errors.push(`Line ${row}: date is required`);
+    // Past sessions are already completed, so a date is optional. Future
+    // sessions still need a date to compute the payment due date.
+    if (item.sessionKind === "future" && !item.date)
+      errors.push(`Line ${row}: date is required`);
     if (!item.childName?.trim())
       errors.push(`Line ${row}: child name is required`);
     if (!item.serviceType?.trim())

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireAdminUser, resolveParentByEmail } from "@/lib/admin-parent-invoice";
 import { ParentInvoiceRepository } from "@/lib/ParentInvoiceRepository";
+import { UserRepository } from "@/lib/UserRepository";
 import {
   calculateParentInvoiceTotals,
   generateParentInvoiceNumber,
@@ -15,6 +16,49 @@ function normalizeLineItems(raw: unknown): ParentInvoiceLineItem[] {
   return raw.map((item) =>
     normalizeParentInvoiceLineItem(item as Partial<ParentInvoiceLineItem>),
   );
+}
+
+export async function GET() {
+  const adminResult = await requireAdminUser();
+  if (!adminResult.ok) {
+    return NextResponse.json(
+      { error: adminResult.error },
+      { status: adminResult.status },
+    );
+  }
+
+  const invoices = await ParentInvoiceRepository.findAll();
+
+  const uniqueUserIds = Array.from(
+    new Set(invoices.map((inv) => inv.userId.toString())),
+  );
+  const parentEntries = await Promise.all(
+    uniqueUserIds.map(async (id) => {
+      const parent = await UserRepository.findById(id);
+      return [
+        id,
+        {
+          name: parent?.userData?.user?.name?.trim() || "",
+          email: parent?.userData?.user?.email?.trim() || "",
+        },
+      ] as const;
+    }),
+  );
+  const parentMap = new Map(parentEntries);
+
+  return NextResponse.json({
+    invoices: invoices.map((inv) => {
+      const parent = parentMap.get(inv.userId.toString());
+      return {
+        ...inv,
+        _id: inv._id?.toString(),
+        userId: inv.userId.toString(),
+        linkedBookingId: inv.linkedBookingId?.toString(),
+        parentName: parent?.name || "",
+        parentEmail: parent?.email || "",
+      };
+    }),
+  });
 }
 
 export async function POST(req: NextRequest) {

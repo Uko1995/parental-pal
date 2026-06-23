@@ -432,7 +432,7 @@ export async function parseFormDataToBooking(
   const childIds = new Set<string>();
   Object.keys(cleanedData).forEach((key) => {
     // Match fields like childName_uuid, childAge_uuid, etc.
-    const match = key.match(/^child\w+_([a-f0-9-]+)$/);
+    const match = key.match(/^child\w+_([\w-]+)$/);
     if (match) {
       childIds.add(match[1]);
     }

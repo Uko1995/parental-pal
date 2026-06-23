@@ -137,7 +137,7 @@ function LineRowFields({
   <tr className="align-top">
     <td className="min-w-[8rem]">
       <label className="text-xs font-medium text-base-content/70 lg:hidden">
-        Session date
+        Session date{item.sessionKind === "past" ? " (optional)" : ""}
       </label>
       <input
         type="date"
@@ -569,7 +569,15 @@ export default function ParentInvoiceBuilder({
           <table className="table table-sm w-full min-w-[56rem]">
             <thead>
               <tr className="text-xs text-base-content/70">
-                <th>Session date</th>
+                <th>
+                  Session date
+                  {sessionKind === "past" && (
+                    <span className="font-normal text-base-content/50">
+                      {" "}
+                      (optional)
+                    </span>
+                  )}
+                </th>
                 <th>Child name</th>
                 <th>Service</th>
                 <th>Session details</th>
@@ -683,7 +691,7 @@ export default function ParentInvoiceBuilder({
 
       {renderSection(
         "Past sessions",
-        "Sessions your child has already attended. Add each session manually.",
+        "Sessions your child has already attended. Add each session manually. Session date is optional.",
         pastIndices,
         "past",
       )}

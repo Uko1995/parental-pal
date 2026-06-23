@@ -34,6 +34,13 @@ export class ParentInvoiceRepository {
       .toArray();
   }
 
+  static async findAll(): Promise<ParentInvoiceInterface[]> {
+    const collection = await getCollection<ParentInvoiceInterface>(
+      this.collectionName,
+    );
+    return collection.find({}).sort({ createdAt: -1 }).toArray();
+  }
+
   static async findPendingApproval(): Promise<ParentInvoiceInterface[]> {
     const collection = await getCollection<ParentInvoiceInterface>(
       this.collectionName,

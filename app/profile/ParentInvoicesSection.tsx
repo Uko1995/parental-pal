@@ -362,19 +362,13 @@ export default function ParentInvoicesSection() {
                   {invoice.paymentDueDate && invoice.status !== "paid" && (
                     <div
                       className={`text-xs mt-1 leading-snug break-words max-w-full ${
-                        isPaymentOverdue(
-                          invoice.paymentDueDate,
-                          invoice.status === "paid" ? "paid" : "pending",
-                        )
+                        isPaymentOverdue(invoice.paymentDueDate, "pending")
                           ? "text-error font-medium"
                           : "text-base-content/60"
                       }`}
                     >
                       {formatPaymentDueDateLine(invoice.paymentDueDate)}
-                      {!isPaymentOverdue(
-                        invoice.paymentDueDate,
-                        invoice.status === "paid" ? "paid" : "pending",
-                      ) && (
+                      {!isPaymentOverdue(invoice.paymentDueDate, "pending") && (
                         <span className="block text-base-content/50 mt-0.5">
                           Due 5 days before your last session
                         </span>

@@ -6,7 +6,7 @@ export function extractChildIdsFromFormEntries(
 ): string[] {
   const ids = new Set<string>();
   Object.keys(entries).forEach((key) => {
-    const match = key.match(/^child\w+_([a-f0-9-]+)$/);
+    const match = key.match(/^child\w+_([\w-]+)$/);
     if (match) ids.add(match[1]);
   });
   return Array.from(ids);
