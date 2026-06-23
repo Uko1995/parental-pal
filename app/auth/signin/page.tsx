@@ -40,7 +40,7 @@ function SignInContent() {
   });
   const [isFormValid, setIsFormValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword]= useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [otpRequested, setOtpRequested] = useState(false);
@@ -918,7 +918,7 @@ function SignInContent() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => setShowPassword(showPassword)}
                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                       >
                         {showPassword ? (

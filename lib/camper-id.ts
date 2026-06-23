@@ -1,8 +1,10 @@
 import { getDb } from "@/lib/mongodb";
+import { HTR26_SEASON_ID, isHtrSummerCampBooking } from "@/lib/htr-camp";
 import type { BookingInterface } from "@/models/Booking";
 
 const HTR26_COUNTER_KEY = "htr26-camper-seq";
-const HTR26_SEASON_ID = "holidays-that-rock-2026";
+
+export { HTR26_SEASON_ID, isHtrSummerCampBooking };
 
 export interface CampChildWithWeeks {
   childId: string;
@@ -32,15 +34,6 @@ async function reserveHtrCamperSequence(count: number): Promise<number> {
 
   const endSeq = result?.seq ?? count;
   return endSeq - count + 1;
-}
-
-export function isHtrSummerCampBooking(
-  serviceType: string | undefined,
-  campSeasonId: string | undefined,
-): boolean {
-  return (
-    serviceType === "holiday-camps" && campSeasonId === HTR26_SEASON_ID
-  );
 }
 
 export interface HtrCamperEmailEntry {

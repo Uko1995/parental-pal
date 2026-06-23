@@ -1,5 +1,7 @@
-import type { ParentInvoiceLineItem } from "@/models/ParentInvoice";
-import type { ParentInvoiceInterface } from "@/models/ParentInvoice";
+import type {
+  ParentInvoiceInterface,
+  ParentInvoiceLineItem,
+} from "@/models/ParentInvoice";
 import { computeInvoicePaymentDueDate } from "@/lib/booking-payment-due";
 
 export function generateParentInvoiceNumber(): string {
@@ -31,31 +33,41 @@ export function validateParentInvoiceLineItems(
 
   lineItems.forEach((item, index) => {
     const row = index + 1;
-    const isPast = item.sessionKind === "past";
-    const isFuture = item.sessionKind === "future";
-
-    if (isFuture && !item.date) {
-      errors.push(`Line ${row}: session date is required for future sessions`);
-    }
+    // Past sessions are already completed, so a date is optional. Future
+    // sessions still need a date to compute the payment due date.
+    if (item.sessionKind === "future" && !item.date)
+      errors.push(`Line ${row}: date is required`);
     if (!item.childName?.trim())
       errors.push(`Line ${row}: child name is required`);
     if (!item.serviceType?.trim())
       errors.push(`Line ${row}: service type is required`);
-    if (isFuture && !item.description?.trim()) {
-      errors.push(`Line ${row}: session details are required for future sessions`);
-    }
-    if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
-      errors.push(
-        isPast
-          ? `Line ${row}: number of sessions must be greater than 0`
-          : `Line ${row}: quantity must be greater than 0`,
-      );
-    }
+    if (!item.description?.trim())
+      errors.push(`Line ${row}: description is required`);
+    if (!Number.isFinite(item.quantity) || item.quantity <= 0)
+      errors.push(`Line ${row}: quantity must be greater than 0`);
     if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0)
       errors.push(`Line ${row}: unit price is invalid`);
     const expectedTotal = item.quantity * item.unitPrice;
     if (Math.abs(item.total - expectedTotal) > 0.01) {
       errors.push(`Line ${row}: total must equal quantity × unit price`);
+    }
+  });
+
+  return { ok: errors.length === 0, errors };
+}
+
+export function validatePastOnlyLineItems(
+  lineItems: ParentInvoiceLineItem[],
+): { ok: boolean; errors: string[] } {
+  const base = validateParentInvoiceLineItems(lineItems);
+  if (!base.ok) {
+    return base;
+  }
+
+  const errors: string[] = [];
+  lineItems.forEach((item, index) => {
+    if (item.sessionKind !== "past") {
+      errors.push(`Line ${index + 1}: only past sessions are allowed`);
     }
   });
 
@@ -76,19 +88,14 @@ export function normalizeParentInvoiceLineItem(
     unitPrice,
     total: quantity * unitPrice,
     sessionKind: raw.sessionKind === "future" ? "future" : "past",
-    tutoringLocation:
-      raw.tutoringLocation === "virtual" || raw.tutoringLocation === "physical"
-        ? raw.tutoringLocation
-        : undefined,
   };
 }
 
 const CANCELLABLE_INVOICE_STATUSES = new Set([
   "draft",
   "pending_payment",
-  "approved",
-  "pending_approval",
-  "rejected",
+  "paid",
+  "cancelled",
 ]);
 
 export function canParentCancelInvoice(

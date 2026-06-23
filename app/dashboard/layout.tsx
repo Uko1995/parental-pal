@@ -326,7 +326,7 @@ export default function DashboardLayout({
                   className="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-52"
                 >
                   <li>
-                    <Link href="/dashboard/profile">Profile</Link>
+                    <Link href="/profile">Profile</Link>
                   </li>
                   <li>
                     <Link href="/dashboard/settings">Settings</Link>

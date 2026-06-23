@@ -9,7 +9,7 @@ import ProfileDetails from "./ProfileDetails";
 import ChildrenSection from "./ChildrenSection";
 import BookingsSection from "./BookingsSection";
 import PaymentsSection from "./PaymentsSection";
-import ParentInvoicesSection from "./ParentInvoicesSection";
+import ParentInvoicesSection from "@/app/profile/ParentInvoicesSection";
 import OrdersSection from "./OrdersSection";
 import Link from "next/link";
 import {

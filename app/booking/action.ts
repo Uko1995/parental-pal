@@ -27,6 +27,7 @@ import { notifyAdminUnpaidBooking } from "@/lib/booking-admin-notifications";
 import { clampBillingPeriodMonths } from "@/lib/booking-payment-policy";
 import { computeBookingPaymentDueDate } from "@/lib/booking-payment-due";
 import { getHtrCamperEmailEntries } from "@/lib/camper-id";
+import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 import {
   getBillingPeriodEnd,
   getWeekdayDatesInRange,
@@ -250,6 +251,19 @@ export async function createBookingFromFormEntries(
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
 
+  let driveFolderUrl: string | undefined;
+  try {
+    const folder = await ensureHtrDriveFolderForBooking(savedBooking, user);
+    driveFolderUrl = folder?.folderUrl;
+  } catch (error) {
+    console.error("HTR Drive folder provisioning failed:", {
+      error,
+      bookingId: savedBooking._id?.toString(),
+      userId: user._id?.toString(),
+      parentName: savedBooking.parentName,
+    });
+  }
+
   try {
     await syncChildrenFromBooking(user._id!, bookingData);
   } catch (error) {
@@ -287,6 +301,7 @@ export async function createBookingFromFormEntries(
           const campers = getHtrCamperEmailEntries(savedBooking);
           return campers.length > 0 ? campers : undefined;
         })(),
+        driveFolderUrl,
       },
     }),
   }).catch((error) => {
@@ -417,7 +432,7 @@ export async function parseFormDataToBooking(
   const childIds = new Set<string>();
   Object.keys(cleanedData).forEach((key) => {
     // Match fields like childName_uuid, childAge_uuid, etc.
-    const match = key.match(/^child\w+_([a-f0-9-]+)$/);
+    const match = key.match(/^child\w+_([\w-]+)$/);
     if (match) {
       childIds.add(match[1]);
     }
@@ -563,18 +578,20 @@ export async function parseFormDataToBooking(
   const serviceData: Record<string, string | number | boolean | object> = {};
 
   if (serviceType === "tutoring") {
-    // NEW: Parse per-child tutoring data with individual schedules
+    // Per-child tutoring data: sessions-based pricing
     const childrenTutoringData: Array<{
       childId: string;
       subjects: string[];
       academicLevel: string;
       learningGoals: string;
+      numberOfSessions: number;
       totalHours: number;
+      startDate: string;
+      endDate: string;
       schedule?: Array<{
         day: string;
         hours: number;
         startTime?: string;
-        dates?: Array<{ date: string; startTime: string }>;
       }>;
     }> = [];
 
@@ -582,78 +599,44 @@ export async function parseFormDataToBooking(
       const subjects = cleanedData[`subjects_${childId}`];
       const academicLevel = cleanedData[`academicLevel_${childId}`];
       const learningGoals = cleanedData[`learningGoals_${childId}`];
-      const totalHours = parseFloat(cleanedData[`totalHours_${childId}`]) || 0;
+      const numberOfSessions =
+        parseInt(cleanedData[`numberOfSessions_${childId}`]) ||
+        parseFloat(cleanedData[`totalHours_${childId}`]) ||
+        0;
+      const childStartDate = (cleanedData[`startDate_${childId}`] as string) || "";
+      const childEndDate = (cleanedData[`endDate_${childId}`] as string) || "";
       const scheduleJson = cleanedData[`schedule_${childId}`];
 
       if (subjects && academicLevel) {
-        const childData: {
-          childId: string;
-          subjects: string[];
-          academicLevel: string;
-          learningGoals: string;
-          totalHours: number;
-          schedule?: Array<{
-            day: string;
-            hours: number;
-            startTime?: string;
-            dates?: Array<{ date: string; startTime: string }>;
-          }>;
-        } = {
+        const childData: (typeof childrenTutoringData)[0] = {
           childId,
           subjects: JSON.parse(subjects),
           academicLevel,
           learningGoals: learningGoals || "",
-          totalHours,
+          numberOfSessions,
+          totalHours: numberOfSessions,
+          startDate: childStartDate,
+          endDate: childEndDate,
         };
 
-        // Parse schedule if available
+        // Parse informational schedule (no date generation)
         if (scheduleJson) {
           try {
-            childData.schedule = JSON.parse(scheduleJson);
+            const rawSchedule = JSON.parse(scheduleJson) as Array<{
+              day: string;
+              hours?: number;
+              startTime?: string;
+            }>;
+            childData.schedule = rawSchedule.map((block) => ({
+              day: block.day,
+              hours: block.hours || 1,
+              startTime: block.startTime,
+            }));
           } catch (error) {
             console.warn(
               `Failed to parse schedule for child ${childId}:`,
               error,
             );
-          }
-        }
-
-        const bookingStartDate = (cleanedData.startDate as string) || "";
-        const billingPeriodMonths = clampBillingPeriodMonths(
-          parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
-        );
-        if (childData.schedule?.length && bookingStartDate) {
-          const periodEnd = getBillingPeriodEnd(
-            bookingStartDate,
-            billingPeriodMonths,
-          );
-          childData.schedule = childData.schedule.map((block) => {
-            if (block.startTime && block.day !== "month") {
-              const dates =
-                billingPeriodMonths > 1
-                  ? getWeekdayDatesInRange(
-                      block.day,
-                      bookingStartDate,
-                      periodEnd,
-                    )
-                  : getWeekdayDatesInMonth(block.day, bookingStartDate);
-              return {
-                ...block,
-                dates: dates.map((date) => ({
-                  date,
-                  startTime: block.startTime || "09:00",
-                })),
-              };
-            }
-            return block;
-          });
-          const recomputedHours = childData.schedule.reduce(
-            (sum, block) =>
-              sum + (block.dates?.length || 0) * (block.hours || 1),
-            0,
-          );
-          if (recomputedHours > 0) {
-            childData.totalHours = recomputedHours;
           }
         }
 
@@ -1063,12 +1046,33 @@ export async function parseFormDataToBooking(
         )
       : null;
 
+  // For tutoring, derive booking-level start/end from per-child dates
+  const tutoringScheduleBounds =
+    serviceType === "tutoring"
+      ? (() => {
+          const childDates = (
+            serviceData.childrenData as Array<{
+              startDate?: string;
+              endDate?: string;
+            }>
+          ) ?? [];
+          const starts = childDates.map((c) => c.startDate).filter(Boolean) as string[];
+          const ends = childDates.map((c) => c.endDate).filter(Boolean) as string[];
+          if (!starts.length) return null;
+          return {
+            startDate: [...starts].sort()[0],
+            endDate: [...ends].sort().at(-1) ?? [...starts].sort().at(-1) ?? starts[0],
+          };
+        })()
+      : null;
+
   const billingPeriodMonths = clampBillingPeriodMonths(
     parseInt(String(cleanedData.billingPeriodMonths || "1"), 10) || 1,
   );
 
   const preliminaryStart =
     campScheduleBounds?.startDate ||
+    tutoringScheduleBounds?.startDate ||
     (cleanedData.startDate as string) ||
     new Date().toISOString().split("T")[0];
 
@@ -1079,6 +1083,7 @@ export async function parseFormDataToBooking(
       startDate: preliminaryStart,
       endDate:
         campScheduleBounds?.endDate ||
+        tutoringScheduleBounds?.endDate ||
         (billingPeriodMonths > 1
           ? getBillingPeriodEnd(preliminaryStart, billingPeriodMonths)
           : (cleanedData.endDate as string)) ||
@@ -1099,6 +1104,7 @@ export async function parseFormDataToBooking(
       endDate:
         resolvedSchedule.endDate ||
         campScheduleBounds?.endDate ||
+        tutoringScheduleBounds?.endDate ||
         (cleanedData.endDate as string) ||
         undefined,
       weekdays: weekdays as BookingInterface["schedule"]["weekdays"],
@@ -1124,6 +1130,7 @@ export async function parseFormDataToBooking(
       endDate:
         resolvedSchedule.endDate ||
         campScheduleBounds?.endDate ||
+        tutoringScheduleBounds?.endDate ||
         (cleanedData.endDate as string) ||
         undefined,
       weekdays: weekdays as BookingInterface["schedule"]["weekdays"],

@@ -294,8 +294,9 @@ export default function BookingsSection() {
   };
 
   const canPayBooking = (booking: Booking) =>
-    booking.status === "confirmed" &&
-    booking.payment?.status === "pending" &&
+    (booking.status === "pending" || booking.status === "confirmed") &&
+    booking.payment?.status !== "paid" &&
+    booking.payment?.status !== "refunded" &&
     (booking.pricing?.totalAmount ?? 0) > 0;
 
   const canCancelBooking = (booking: Booking) =>

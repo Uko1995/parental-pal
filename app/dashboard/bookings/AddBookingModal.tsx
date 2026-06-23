@@ -1,250 +1,130 @@
 "use client";
 
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useState, forwardRef, useImperativeHandle, useRef } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import PhoneInput from "@/components/PhoneInput";
+import ParentInvoiceBuilder from "@/components/parent-invoices/ParentInvoiceBuilder";
+import ParentSearchCombobox, {
+  type ParentSearchOption,
+} from "@/components/admin/ParentSearchCombobox";
+import AdminBookingForm from "./AdminBookingForm";
+import type { ParentInvoiceLineItem } from "@/models/ParentInvoice";
+import {
+  toastErrorOnce,
+  toastSuccessOnce,
+} from "@/lib/toast-once";
 
-interface Child {
-  name: string;
-  age: number;
-  gender: "male" | "female";
-  class?: string;
-  schoolName?: string;
-}
-
-interface Schedule {
-  startDate: string;
-  endDate?: string;
-  weekdays?: Array<{
-    day:
-      | "monday"
-      | "tuesday"
-      | "wednesday"
-      | "thursday"
-      | "friday"
-      | "saturday"
-      | "sunday";
-    hours: number;
-    startTime?: string;
-    endTime?: string;
-  }>;
-  isRecurring: boolean;
-  frequency?: "daily" | "weekly" | "monthly";
-}
-
-interface BookingData {
-  parentName: string;
-  parentEmail: string;
-  parentPhone: string;
-  serviceType:
-    | "childcare"
-    | "tutoring"
-    | "homeschooling"
-    | "holiday-camps"
-    | "space-rental"
-    | "kiddies-enrichment";
-  totalCost: number;
-  children: Child[];
-  schedule?: Schedule;
-  specialRequests?: string;
-}
+type ModalMode = "booking" | "past-invoice";
 
 interface AddBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (options?: { keepOpen?: boolean }) => void;
 }
 
 const AddBookingModal = forwardRef<
   { resetForm: () => void },
   AddBookingModalProps
 >(({ isOpen, onClose, onSuccess }, ref) => {
-  const [formData, setFormData] = useState<BookingData>({
-    parentName: "",
-    parentEmail: "",
-    parentPhone: "",
-    serviceType: "childcare",
-    totalCost: 0,
-    children: [{ name: "", age: 5, gender: "male" }],
-    specialRequests: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("booking");
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [createdParentEmail, setCreatedParentEmail] = useState("");
   const [showInvoiceOption, setShowInvoiceOption] = useState(false);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
 
+  const [invoiceParentEmail, setInvoiceParentEmail] = useState("");
+  const [selectedParent, setSelectedParent] = useState<ParentSearchOption | null>(
+    null,
+  );
+  const [resolvedParentName, setResolvedParentName] = useState<string | null>(
+    null,
+  );
+  const [draftInvoiceId, setDraftInvoiceId] = useState<string | null>(null);
+  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+
+  const [bookingFormKey, setBookingFormKey] = useState(0);
+  const sendingInvoiceRef = useRef(false);
+  const savingInvoiceRef = useRef(false);
+
   const resetForm = () => {
-    setFormData({
-      parentName: "",
-      parentEmail: "",
-      parentPhone: "",
-      serviceType: "childcare",
-      totalCost: 0,
-      children: [{ name: "", age: 5, gender: "male" }],
-      specialRequests: "",
-    });
+    setModalMode("booking");
     setCreatedBookingId(null);
+    setCreatedParentEmail("");
     setShowInvoiceOption(false);
+    setInvoiceParentEmail("");
+    setSelectedParent(null);
+    setResolvedParentName(null);
+    setDraftInvoiceId(null);
+    setBookingFormKey((k) => k + 1);
   };
 
   useImperativeHandle(ref, () => ({
     resetForm,
   }));
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "totalCost" ? parseFloat(value) || 0 : value,
-    }));
+  const handleParentSelect = (parent: ParentSearchOption | null) => {
+    setSelectedParent(parent);
+    setInvoiceParentEmail(parent?.email ?? "");
+    setResolvedParentName(parent?.name ?? null);
+    setDraftInvoiceId(null);
+    setBookingFormKey((k) => k + 1);
   };
 
-  const handleChildChange = (
-    index: number,
-    field: keyof Child,
-    value: string | number
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      children: prev.children.map((child, i) =>
-        i === index ? { ...child, [field]: value } : child
-      ),
-    }));
-  };
-
-  const addChild = () => {
-    setFormData((prev) => ({
-      ...prev,
-      children: [...prev.children, { name: "", age: 5, gender: "male" }],
-    }));
-  };
-
-  const removeChild = (index: number) => {
-    if (formData.children.length > 1) {
-      setFormData((prev) => ({
-        ...prev,
-        children: prev.children.filter((_, i) => i !== index),
-      }));
-    }
-  };
-
-  const calculateCost = () => {
-    const baseCosts = {
-      childcare: 5000,
-      tutoring: 12000, // Physical tutoring default
-      "tutoring-virtual": 11000,
-      homeschooling: 10000,
-      "holiday-camps": 30000,
-      "space-rental": 250000,
-      "kiddies-enrichment": 8000,
-    };
-
-    let cost = baseCosts[formData.serviceType as keyof typeof baseCosts] || 0;
-
-    // Use location-based rate for tutoring
-    if (formData.serviceType === "tutoring") {
-      cost = 12000; // Default to physical rate
-    }
-
-    const childrenCount = formData.children.length;
-
-    let totalCost = cost;
-    if (
-      formData.serviceType === "tutoring" ||
-      formData.serviceType === "childcare"
-    ) {
-      totalCost = cost * childrenCount;
-    }
-
-    setFormData((prev) => ({ ...prev, totalCost }));
-  };
-
-  const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const serviceType = e.target.value as BookingData["serviceType"];
-    setFormData((prev) => ({ ...prev, serviceType }));
-
-    // Recalculate cost when service type changes
-    setTimeout(calculateCost, 0);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (
-      !formData.parentName ||
-      !formData.parentEmail ||
-      !formData.serviceType
-    ) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast.success("Booking created successfully!");
-        setCreatedBookingId(result._id || result.id);
-        setShowInvoiceOption(true);
-        onSuccess();
-      } else {
-        const error = await response.json();
-        toast.error(error.message || "Failed to create booking");
-      }
-    } catch {
-      toast.error("Error creating booking");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleBookingCreated = ({
+    bookingId,
+    parentEmail,
+  }: {
+    bookingId: string;
+    parentEmail: string;
+  }) => {
+    setCreatedBookingId(bookingId);
+    setCreatedParentEmail(parentEmail);
+    setShowInvoiceOption(true);
+    onSuccess({ keepOpen: true });
   };
 
   const handleGenerateInvoice = async () => {
     if (!createdBookingId) {
-      toast.error("No booking ID available");
+      toastErrorOnce("No booking ID available", "admin-booking-invoice-id");
       return;
     }
+    if (sendingInvoiceRef.current) return;
 
+    sendingInvoiceRef.current = true;
     setIsSendingInvoice(true);
 
     try {
       const response = await fetch(
         `/api/bookings/${createdBookingId}/invoice`,
-        {
-          method: "POST",
-        }
+        { method: "POST" },
       );
 
       if (response.ok) {
         const result = await response.json();
         const docType =
           result.documentType === "receipt" ? "Receipt" : "Invoice";
-        toast.success(
-          `${docType} ${result.documentNumber} sent to ${result.sentTo}!`
+        toastSuccessOnce(
+          `${docType} ${result.documentNumber} sent to ${result.sentTo}!`,
+          "admin-booking-invoice-sent",
         );
         setShowInvoiceOption(false);
         resetForm();
         onClose();
+        onSuccess();
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to generate document");
+        toastErrorOnce(
+          error.error || "Failed to generate document",
+          "admin-booking-invoice-error",
+        );
       }
     } catch {
-      toast.error("Error generating document");
+      toastErrorOnce(
+        "Error generating document",
+        "admin-booking-invoice-error",
+      );
     } finally {
+      sendingInvoiceRef.current = false;
       setIsSendingInvoice(false);
     }
   };
@@ -253,252 +133,222 @@ const AddBookingModal = forwardRef<
     setShowInvoiceOption(false);
     resetForm();
     onClose();
+    onSuccess();
+  };
+
+  const savePastSessionInvoice = async (
+    lineItems: ParentInvoiceLineItem[],
+    options?: { closeOnSuccess?: boolean },
+  ): Promise<string | null> => {
+    if (savingInvoiceRef.current) return null;
+
+    const closeOnSuccess = options?.closeOnSuccess ?? true;
+    const email = invoiceParentEmail.trim();
+    if (!email) {
+      toastErrorOnce(
+        "Select a parent account first",
+        "admin-past-invoice-email",
+      );
+      return null;
+    }
+
+    savingInvoiceRef.current = true;
+    setIsSavingInvoice(true);
+    try {
+      const url = draftInvoiceId
+        ? `/api/admin/parent-invoices/${draftInvoiceId}`
+        : "/api/admin/parent-invoices";
+      const res = await fetch(url, {
+        method: draftInvoiceId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parentEmail: email, lineItems }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toastErrorOnce(
+          data.error || data.errors?.join(", ") || "Failed to save invoice",
+          "admin-past-invoice-save-error",
+        );
+        return null;
+      }
+
+      const invoiceId = data.invoice?._id as string | undefined;
+      if (invoiceId) {
+        setDraftInvoiceId(invoiceId);
+      }
+      if (data.parentName) {
+        setResolvedParentName(data.parentName);
+      }
+
+      if (closeOnSuccess) {
+        toastSuccessOnce(
+          "Invoice saved as draft",
+          "admin-past-invoice-saved",
+        );
+        resetForm();
+        onClose();
+        onSuccess();
+      }
+
+      return invoiceId ?? draftInvoiceId;
+    } finally {
+      savingInvoiceRef.current = false;
+      setIsSavingInvoice(false);
+    }
+  };
+
+  const submitPastSessionInvoice = async (
+    lineItems: ParentInvoiceLineItem[],
+  ) => {
+    if (savingInvoiceRef.current) return;
+
+    const email = invoiceParentEmail.trim();
+    if (!email) {
+      toastErrorOnce(
+        "Select a parent account first",
+        "admin-past-invoice-email",
+      );
+      return;
+    }
+
+    let invoiceId = draftInvoiceId;
+    if (!invoiceId) {
+      invoiceId = await savePastSessionInvoice(lineItems, {
+        closeOnSuccess: false,
+      });
+      if (!invoiceId) return;
+    } else {
+      savingInvoiceRef.current = true;
+      setIsSavingInvoice(true);
+      try {
+        const patchRes = await fetch(`/api/admin/parent-invoices/${invoiceId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ parentEmail: email, lineItems }),
+        });
+        const patchData = await patchRes.json();
+        if (!patchRes.ok) {
+          toastErrorOnce(
+            patchData.error ||
+              patchData.errors?.join(", ") ||
+              "Failed to update invoice",
+            "admin-past-invoice-save-error",
+          );
+          return;
+        }
+        if (patchData.parentName) {
+          setResolvedParentName(patchData.parentName);
+        }
+      } finally {
+        savingInvoiceRef.current = false;
+        setIsSavingInvoice(false);
+      }
+    }
+
+    savingInvoiceRef.current = true;
+    setIsSavingInvoice(true);
+    try {
+      const res = await fetch(`/api/admin/parent-invoices/${invoiceId}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parentEmail: email }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toastErrorOnce(
+          data.error || data.errors?.join(", ") || "Failed to submit invoice",
+          "admin-past-invoice-submit-error",
+        );
+        return;
+      }
+
+      const invoiceNumber = data.invoice?.invoiceNumber || "invoice";
+      toastSuccessOnce(
+        `Invoice ${invoiceNumber} submitted — parent can pay from their profile`,
+        "admin-past-invoice-submitted",
+      );
+      resetForm();
+      onClose();
+      onSuccess();
+    } finally {
+      savingInvoiceRef.current = false;
+      setIsSavingInvoice(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg">Add New Booking</h3>
-          <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>
+      <div className="modal-box max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <div className="flex justify-between items-start gap-4 mb-5">
+          <div>
+            <h3 className="font-bold text-lg">Add New Booking</h3>
+            <p className="text-sm text-base-content/60 mt-1">
+              Create a booking or bill past sessions for a parent.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-circle btn-ghost shrink-0"
+            onClick={onClose}
+          >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Parent Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Parent Name *</span>
-              </label>
-              <input
-                type="text"
-                name="parentName"
-                className="input input-bordered"
-                value={formData.parentName}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+        <div className="rounded-xl border border-base-300 bg-base-100 p-4 mb-6">
+          <ParentSearchCombobox
+            value={selectedParent}
+            onSelect={handleParentSelect}
+            disabled={isSavingInvoice || isSendingInvoice}
+          />
+        </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Parent Email *</span>
-              </label>
-              <input
-                type="email"
-                name="parentEmail"
-                className="input input-bordered"
-                value={formData.parentEmail}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <PhoneInput
-              label="Parent Phone"
-              value={formData.parentPhone}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, parentPhone: value }))
-              }
-              wrapperClassName="form-control"
-              inputClassName="input input-bordered rounded-r-lg rounded-l-none"
-              selectClassName="select select-bordered rounded-r-none border-r-0"
-              showPreview={false}
-            />
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Service Type *</span>
-              </label>
-              <select
-                name="serviceType"
-                className="select select-bordered"
-                value={formData.serviceType}
-                onChange={handleServiceChange}
-                required
-              >
-                <option value="">Select Service</option>
-                <option value="childcare">Childcare</option>
-                <option value="tutoring">Tutoring</option>
-                <option value="homeschooling">Homeschooling</option>
-                <option value="holiday-camps">Holiday Camps</option>
-                <option value="space-rental">Space Rental</option>
-                <option value="kiddies-enrichment">Kiddies Enrichment</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Children Information */}
-          <div className="divider">Children Information</div>
-
-          {formData.children.map((child, index) => (
-            <div key={index} className="card bg-base-200 p-4">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold">Child {index + 1}</h4>
-                {formData.children.length > 1 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-error btn-outline"
-                    onClick={() => removeChild(index)}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered input-sm"
-                    value={child.name}
-                    onChange={(e) =>
-                      handleChildChange(index, "name", e.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Age</span>
-                  </label>
-                  <input
-                    type="number"
-                    className="input input-bordered input-sm"
-                    min="1"
-                    max="18"
-                    value={child.age}
-                    onChange={(e) =>
-                      handleChildChange(index, "age", parseInt(e.target.value))
-                    }
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Class</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered input-sm"
-                    placeholder="e.g., Grade 3, JSS 1"
-                    value={child.class || ""}
-                    onChange={(e) =>
-                      handleChildChange(index, "class", e.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">School Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered input-sm"
-                    placeholder="Name of school"
-                    value={child.schoolName || ""}
-                    onChange={(e) =>
-                      handleChildChange(index, "schoolName", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-
+        <div role="tablist" className="tabs tabs-boxed mb-6 w-full sm:w-fit">
           <button
             type="button"
-            className="btn btn-outline btn-sm"
-            onClick={addChild}
+            role="tab"
+            className={`tab flex-1 sm:flex-none ${modalMode === "booking" ? "tab-active" : ""}`}
+            onClick={() => setModalMode("booking")}
           >
-            Add Another Child
+            New Booking
           </button>
+          <button
+            type="button"
+            role="tab"
+            className={`tab flex-1 sm:flex-none ${modalMode === "past-invoice" ? "tab-active" : ""}`}
+            onClick={() => setModalMode("past-invoice")}
+          >
+            Past Session Invoice
+          </button>
+        </div>
 
-          {/* Additional Information */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Total Cost</span>
-            </label>
-            <input
-              type="number"
-              name="totalCost"
-              className="input input-bordered"
-              value={formData.totalCost}
-              onChange={handleInputChange}
-              min="0"
-              step="0.01"
-            />
-          </div>
+        {modalMode === "booking" ? (
+          <>
+            {!showInvoiceOption && (
+              <AdminBookingForm
+                key={bookingFormKey}
+                parentPrefill={selectedParent}
+                onClose={onClose}
+                onSuccess={({ bookingId, parentEmail }) =>
+                  handleBookingCreated({ bookingId, parentEmail })
+                }
+              />
+            )}
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Special Requests</span>
-            </label>
-            <textarea
-              name="specialRequests"
-              className="textarea textarea-bordered"
-              rows={3}
-              placeholder="Any additional requirements or special requests"
-              value={formData.specialRequests}
-              onChange={handleInputChange}
-            ></textarea>
-          </div>
-
-          <div className="modal-action">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`btn btn-primary ${isSubmitting ? "loading" : ""}`}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create Booking"}
-            </button>
-          </div>
-        </form>
-
-        {/* Invoice Generation Option */}
-        {showInvoiceOption && (
-          <div className="mt-6 p-4 bg-[#90AC19]/10 border-2 border-[#90AC19] rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="shrink-0">
-                <svg
-                  className="w-6 h-6 text-[#90AC19]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
+            {showInvoiceOption && (
+              <div className="p-4 bg-[#90AC19]/10 border-2 border-[#90AC19] rounded-lg">
                 <h4 className="font-bold text-gray-900 mb-2">
-                  📋 Generate Invoice
+                  Generate Invoice
                 </h4>
                 <p className="text-sm text-gray-700 mb-4">
-                  Would you like to generate and send an invoice to the
-                  parent&apos;s email ({formData.parentEmail})?
+                  Would you like to generate and send an invoice to{" "}
+                  {createdParentEmail || "the parent"}?
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={handleGenerateInvoice}
@@ -521,6 +371,52 @@ const AddBookingModal = forwardRef<
                   </button>
                 </div>
               </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-5">
+            {selectedParent && (
+              <div className="rounded-xl border border-base-300 bg-base-100 p-4">
+                <div className="form-control max-w-md">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Parent</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full bg-base-200"
+                    value={resolvedParentName || selectedParent.name}
+                    readOnly
+                  />
+                </div>
+              </div>
+            )}
+
+            {!selectedParent ? (
+              <p className="text-sm text-warning px-1">
+                Select a parent account above before adding past session lines.
+              </p>
+            ) : (
+              <ParentInvoiceBuilder
+                pastOnly
+                saving={isSavingInvoice}
+                onSave={async (lineItems) => {
+                  await savePastSessionInvoice(lineItems);
+                }}
+                onSubmitInvoice={async (lineItems) => {
+                  await submitPastSessionInvoice(lineItems);
+                }}
+              />
+            )}
+
+            <div className="modal-action mt-2 pt-2 border-t border-base-300">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={onClose}
+                disabled={isSavingInvoice}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}

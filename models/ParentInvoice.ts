@@ -2,12 +2,14 @@ import { ObjectId } from "mongodb";
 
 export type ParentInvoiceStatus =
   | "draft"
+  | "paid"
+  | "cancelled"
+  | "pending_payment"
+  // Legacy approval-workflow statuses (no longer part of the active flow,
+  // retained so existing/legacy invoices and routes type-check).
   | "pending_approval"
   | "approved"
-  | "rejected"
-  | "pending_payment"
-  | "paid"
-  | "cancelled";
+  | "rejected";
 
 export type ParentInvoiceSessionKind = "past" | "future";
 

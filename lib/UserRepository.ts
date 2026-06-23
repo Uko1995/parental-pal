@@ -233,6 +233,54 @@ export class UserRepository {
     return await collection.find({ role }).sort({ createdAt: -1 }).toArray();
   }
 
+  static async searchParents(
+    query: string,
+    limit = 8,
+  ): Promise<
+    Array<{
+      _id: string;
+      name: string;
+      email: string;
+      phone?: string;
+      address?: string;
+      children?: UserInterface["children"];
+    }>
+  > {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      return [];
+    }
+
+    const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "i");
+    const collection = await getCollection<UserInterface>(this.collectionName);
+
+    const users = await collection
+      .find({
+        role: "parent",
+        isActive: true,
+        $or: [
+          { "userData.user.name": regex },
+          { "userData.user.email": regex },
+        ],
+      })
+      .sort({ "userData.user.name": 1 })
+      .limit(Math.min(Math.max(limit, 1), 20))
+      .toArray();
+
+    return users.map((user) => {
+      const mapped = mapUserDocument(user)!;
+      return {
+        _id: mapped._id!.toString(),
+        name: mapped.userData.user.name || "",
+        email: mapped.userData.user.email || "",
+        phone: mapped.phone,
+        address: mapped.address,
+        children: mapped.children,
+      };
+    });
+  }
+
   // Update user
   static async updateUser(
     id: string | ObjectId,

@@ -41,6 +41,9 @@ export interface BookingInterface {
       academicLevel?: string;
       learningGoals?: string;
       totalHours?: number;
+      numberOfSessions?: number;
+      startDate?: string;
+      endDate?: string;
       schedule?: Array<{
         day: string;
         hours: number;
@@ -225,6 +228,11 @@ export interface BookingInterface {
   followUpDate?: Date;
   isRepeatedCustomer?: boolean;
   previousBookingIds?: ObjectId[];
+
+  // Google Drive folder (HTR camp handbooks + photos)
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  driveFolderName?: string;
 }
 
 // MongoDB schema validation
@@ -555,6 +563,10 @@ export const BookingSchema = {
           bsonType: "array",
           items: { bsonType: "objectId" },
         },
+
+        driveFolderId: { bsonType: "string" },
+        driveFolderUrl: { bsonType: "string" },
+        driveFolderName: { bsonType: "string" },
       },
     },
   },

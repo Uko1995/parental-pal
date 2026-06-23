@@ -50,6 +50,9 @@ interface ChildTutoringData {
   academicLevel: string;
   learningGoals: string;
   totalHours: number;
+  numberOfSessions: number;
+  startDate: string;
+  endDate: string;
   schedule: Array<{
     day: string;
     hours: number;
@@ -85,6 +88,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
       academicLevel: "",
       learningGoals: "",
       totalHours: 0,
+      numberOfSessions: 0,
+      startDate: "",
+      endDate: "",
       schedule: [],
     },
   ]);
@@ -102,7 +108,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     "idle" | "checking" | "applied" | "invalid"
   >("idle");
   const [promoMessage, setPromoMessage] = useState("");
-  const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
 
   // Create refs for each child's WeekdaysSchedule
   const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
@@ -120,21 +125,27 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     if (childIds.length > 0) {
       setChildDefaults(childDefaultsFromFormEntries(initialTemplate, childIds));
       setChildrenData(
-        childIds.map((id, index) => ({
-          id,
-          index,
-          selectedSubjects: parseJsonField<string[]>(
-            initialTemplate[`subjects_${id}`],
-            [],
-          ),
-          academicLevel: initialTemplate[`academicLevel_${id}`] || "",
-          learningGoals: initialTemplate[`learningGoals_${id}`] || "",
-          totalHours:
-            parseInt(initialTemplate[`totalHours_${id}`] || "0", 10) || 0,
-          schedule: parseJsonField<
-            ChildTutoringData["schedule"]
-          >(initialTemplate[`schedule_${id}`], []),
-        })),
+        childIds.map((id, index) => {
+          const sessions =
+            parseInt(initialTemplate[`numberOfSessions_${id}`] || "0", 10) || 0;
+          return {
+            id,
+            index,
+            selectedSubjects: parseJsonField<string[]>(
+              initialTemplate[`subjects_${id}`],
+              [],
+            ),
+            academicLevel: initialTemplate[`academicLevel_${id}`] || "",
+            learningGoals: initialTemplate[`learningGoals_${id}`] || "",
+            totalHours: sessions || parseInt(initialTemplate[`totalHours_${id}`] || "0", 10) || 0,
+            numberOfSessions: sessions,
+            startDate: initialTemplate[`startDate_${id}`] || "",
+            endDate: initialTemplate[`endDate_${id}`] || "",
+            schedule: parseJsonField<
+              ChildTutoringData["schedule"]
+            >(initialTemplate[`schedule_${id}`], []),
+          };
+        }),
       );
       scheduleTemplateRef.current = initialTemplate;
     }
@@ -147,7 +158,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         initialTemplate.parentAddress || initialTemplate.address || "",
       );
     }
-    if (initialTemplate.startDate) setStartDate(initialTemplate.startDate);
     if (initialTemplate.tutoringLocation === "virtual") {
       setTutoringLocation("virtual");
       previousTutoringLocation.current = "virtual";
@@ -223,6 +233,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           academicLevel: "",
           learningGoals: "",
           totalHours: 0,
+          numberOfSessions: 0,
+          startDate: "",
+          endDate: "",
           schedule: [],
         }),
       );
@@ -385,6 +398,44 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     );
   }, []);
 
+  const handleSessionsChange = useCallback(
+    (childId: string, sessions: number) => {
+      setChildrenData((prev) =>
+        prev.map((child) =>
+          child.id === childId
+            ? { ...child, numberOfSessions: sessions, totalHours: sessions }
+            : child,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleStartDateChange = useCallback(
+    (childId: string, date: string) => {
+      setChildrenData((prev) =>
+        prev.map((child) =>
+          child.id === childId
+            ? {
+                ...child,
+                startDate: date,
+                endDate: child.endDate && child.endDate < date ? "" : child.endDate,
+              }
+            : child,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleEndDateChange = useCallback((childId: string, date: string) => {
+    setChildrenData((prev) =>
+      prev.map((child) =>
+        child.id === childId ? { ...child, endDate: date } : child,
+      ),
+    );
+  }, []);
+
   const handleScheduleChange = useCallback(
     (
       childId: string,
@@ -414,6 +465,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         academicLevel: "",
         learningGoals: "",
         totalHours: 0,
+        numberOfSessions: 0,
+        startDate: "",
+        endDate: "",
         schedule: [],
       },
     ]);
@@ -436,6 +490,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         academicLevel: "",
         learningGoals: "",
         totalHours: 0,
+        numberOfSessions: 0,
+        startDate: "",
+        endDate: "",
         schedule: [],
       },
     ]);
@@ -465,8 +522,17 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           `Child ${index + 1}: Please describe learning goals and objectives`,
         );
       }
-      if (child.totalHours === 0) {
-        errors.push(`Child ${index + 1}: Please select tutoring schedule`);
+      if (!child.startDate) {
+        errors.push(`Child ${index + 1}: Please select a start date`);
+      }
+      if (!child.endDate) {
+        errors.push(`Child ${index + 1}: Please select an end date`);
+      }
+      if (child.startDate && child.endDate && child.endDate < child.startDate) {
+        errors.push(`Child ${index + 1}: End date must be after start date`);
+      }
+      if (child.numberOfSessions < 1) {
+        errors.push(`Child ${index + 1}: Please enter the number of sessions`);
       }
     });
 
@@ -485,7 +551,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   // Calculate total cost for all children
   const calculateTotalCost = () => {
     return childrenData.reduce((total, child) => {
-      return total + child.totalHours * hourlyRate;
+      return total + child.numberOfSessions * hourlyRate;
     }, 0);
   };
 
@@ -819,41 +885,103 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
             />
           </div>
 
-          {/* Schedule for this child */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">
-              Weekly Tutoring Schedule
+          {/* Tutoring dates & sessions for this child */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 space-y-4">
+            <h4 className="text-lg font-semibold text-gray-900">
+              Tutoring Period & Sessions
             </h4>
-            <WeekdaysSchedule
-              ref={(el) => {
-                scheduleRefs.current[child.id] = el;
-              }}
-              onHoursChange={(hours) => handleHoursChange(child.id, hours)}
-              onScheduleChange={(schedules) =>
-                handleScheduleChange(child.id, schedules)
-              }
-              startDate={startDate}
-              showStartDate={index === 0}
-              onStartDateChange={setStartDate}
-              minStartDate={formatLocalDate(new Date())}
-              initialSchedules={
-                child.schedule.length > 0
-                  ? child.schedule.map((s) => ({
-                      day: s.day,
-                      startTime: s.startTime || s.dates?.[0]?.startTime || "",
-                      hours: s.hours || 1,
-                      dates: s.dates,
-                    }))
-                  : undefined
-              }
-              billingPeriodMonths={billingPeriodMonths}
-              showBillingPeriodMonths={Boolean(onBillingPeriodMonthsChange)}
-              onBillingPeriodMonthsChange={onBillingPeriodMonthsChange}
-            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900 block mb-1">
+                    Start Date <span className="text-red-500">*</span>
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  name={`startDate_${child.id}`}
+                  value={child.startDate}
+                  min={formatLocalDate(new Date())}
+                  onChange={(e) => handleStartDateChange(child.id, e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900 block mb-1">
+                    End Date <span className="text-red-500">*</span>
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  name={`endDate_${child.id}`}
+                  value={child.endDate}
+                  min={child.startDate || formatLocalDate(new Date())}
+                  onChange={(e) => handleEndDateChange(child.id, e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2">
+                <span className="text-sm font-medium text-gray-900 block mb-1">
+                  Number of Sessions <span className="text-red-500">*</span>
+                </span>
+                <span className="text-xs text-gray-600">
+                  Each session is 1 hour. Price = sessions × ₦{hourlyRate.toLocaleString()}/hr
+                </span>
+              </label>
+              <input
+                type="number"
+                name={`numberOfSessions_${child.id}`}
+                value={child.numberOfSessions || ""}
+                min={1}
+                step={1}
+                onChange={(e) =>
+                  handleSessionsChange(child.id, parseInt(e.target.value) || 0)
+                }
+                className="w-full md:w-48 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 bg-white transition-colors"
+                placeholder="e.g. 8"
+                required
+              />
+            </div>
+
+            {/* Informational weekly schedule */}
+            <div>
+              <h5 className="text-sm font-medium text-gray-900 mb-2">
+                Preferred Weekly Schedule{" "}
+                <span className="text-xs font-normal text-gray-500">
+                  (informational — for scheduling reference only)
+                </span>
+              </h5>
+              <WeekdaysSchedule
+                ref={(el) => {
+                  scheduleRefs.current[child.id] = el;
+                }}
+                onScheduleChange={(schedules) =>
+                  handleScheduleChange(child.id, schedules)
+                }
+                informationalOnly
+                initialSchedules={
+                  child.schedule.length > 0
+                    ? child.schedule.map((s) => ({
+                        day: s.day,
+                        startTime: s.startTime || s.dates?.[0]?.startTime || "",
+                        hours: s.hours || 1,
+                      }))
+                    : undefined
+                }
+              />
+            </div>
+
             <input
               type="hidden"
               name={`totalHours_${child.id}`}
-              value={child.totalHours}
+              value={child.numberOfSessions}
             />
             <input
               type="hidden"
@@ -863,7 +991,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           </div>
 
           {/* Subtotal for this child */}
-          {child.totalHours > 0 && (
+          {child.numberOfSessions > 0 && (
               <div className="bg-[#90AC19]/5 border border-[#90AC19]/20 rounded-lg p-4 sm:p-6">
                 <div className="flex justify-between items-center">
                   <div>
@@ -871,16 +999,12 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                       Subtotal for Child #{index + 1}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {child.schedule.reduce(
-                        (sum, block) => sum + (block.dates?.length || 0),
-                        0,
-                      )}{" "}
-                      sessions • {child.totalHours} total session hours • ₦
-                      {hourlyRate.toLocaleString()}/hour
+                      {child.numberOfSessions} session{child.numberOfSessions !== 1 ? "s" : ""} × ₦
+                      {hourlyRate.toLocaleString()}/session
                     </p>
                   </div>
                   <p className="text-2xl font-bold text-[#90AC19]">
-                    ₦{(child.totalHours * hourlyRate).toLocaleString()}
+                    ₦{(child.numberOfSessions * hourlyRate).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -898,7 +1022,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
       <input type="hidden" name="promoCode" value={promoCode} />
 
       {/* Final Payment Summary */}
-      {childrenData.some((child) => child.totalHours > 0) && (
+      {childrenData.some((child) => child.numberOfSessions > 0) && (
         <div className="bg-base-100 border border-base-300 rounded-lg shadow-sm p-6 sm:p-8">
           <h3 className="text-xl sm:text-2xl font-semibold flex items-center text-base-content mb-6">
             <CurrencyDollarIcon className="w-6 h-6 mr-2 text-base-content/70" />
@@ -908,7 +1032,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
           {/* Individual child costs */}
           <div className="space-y-3 mb-6">
             {childrenData.map((child, index) => {
-              if (child.totalHours > 0) {
+              if (child.numberOfSessions > 0) {
                 return (
                   <div
                     key={child.id}
@@ -920,16 +1044,15 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                           Child #{index + 1}
                         </p>
                         <p className="text-sm text-base-content/70">
-                          {child.schedule.reduce(
-                            (sum, block) => sum + (block.dates?.length || 0),
-                            0,
-                          )}{" "}
-                          sessions • {child.totalHours} total session hours •{" "}
+                          {child.numberOfSessions} session{child.numberOfSessions !== 1 ? "s" : ""} •{" "}
                           {child.selectedSubjects.length} subject(s)
+                          {child.startDate && child.endDate
+                            ? ` • ${child.startDate} to ${child.endDate}`
+                            : ""}
                         </p>
                       </div>
                       <p className="text-xl font-bold text-base-content">
-                        ₦{(child.totalHours * hourlyRate).toLocaleString()}
+                        ₦{(child.numberOfSessions * hourlyRate).toLocaleString()}
                       </p>
                     </div>
                   </div>

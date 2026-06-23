@@ -8,6 +8,8 @@ import {
   EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 import PaymentReconciliationSection from "./PaymentReconciliationSection";
+import HtrDriveFolderSection from "./HtrDriveFolderSection";
+import { isHtrSummerCampBooking } from "@/lib/htr-camp";
 
 interface Child {
   id?: string;
@@ -71,6 +73,9 @@ interface Booking {
       academicLevel?: string;
       learningGoals?: string;
       totalHours?: number;
+      numberOfSessions?: number;
+      startDate?: string;
+      endDate?: string;
       schedule?: Array<{
         day: string;
         hours: number;
@@ -167,6 +172,9 @@ interface Booking {
     paymentDate?: string;
   };
   pricing?: { totalAmount?: number };
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  driveFolderName?: string;
 }
 
 interface ViewBookingModalProps {
@@ -174,6 +182,7 @@ interface ViewBookingModalProps {
   onClose: () => void;
   booking: Booking | null;
   onPaymentConfirmed?: () => void;
+  onBookingUpdated?: () => void;
 }
 
 export default function ViewBookingModal({
@@ -181,6 +190,7 @@ export default function ViewBookingModal({
   onClose,
   booking,
   onPaymentConfirmed,
+  onBookingUpdated,
 }: ViewBookingModalProps) {
   if (!isOpen || !booking) return null;
 
@@ -449,51 +459,36 @@ export default function ViewBookingModal({
                                 {childData.academicLevel}
                               </p>
                             )}
+                            {(childData.startDate || childData.endDate) && (
+                              <p>
+                                <span className="font-medium">Period:</span>{" "}
+                                {childData.startDate || "—"} → {childData.endDate || "—"}
+                              </p>
+                            )}
+                            {childData.numberOfSessions != null &&
+                              childData.numberOfSessions > 0 && (
+                                <p>
+                                  <span className="font-medium">Sessions:</span>{" "}
+                                  {childData.numberOfSessions}
+                                </p>
+                              )}
                             {childData.schedule &&
                               childData.schedule.length > 0 && (
                                 <div>
-                                  <p className="font-medium mb-2">Schedule:</p>
-                                  <div className="space-y-2">
+                                  <p className="font-medium mb-1">Preferred weekly schedule:</p>
+                                  <div className="flex flex-wrap gap-1">
                                     {childData.schedule.map(
                                       (daySchedule, didx) => (
-                                        <div key={didx}>
-                                          <div className="flex justify-between items-center bg-base-200 p-2 rounded">
-                                            <span className="capitalize font-medium">
-                                              {daySchedule.day}
-                                            </span>
-                                            <span className="text-xs">
-                                              {daySchedule.startTime} •{" "}
-                                              {daySchedule.hours}h
-                                            </span>
-                                          </div>
-                                          {daySchedule.dates &&
-                                            daySchedule.dates.length > 0 && (
-                                              <div className="ml-4 mt-1">
-                                                <div className="flex flex-wrap gap-1">
-                                                  {daySchedule.dates.map(
-                                                    (dateInfo, daidx) => (
-                                                      <span
-                                                        key={daidx}
-                                                        className="badge badge-ghost badge-xs"
-                                                      >
-                                                        {new Date(
-                                                          dateInfo.date
-                                                        ).toLocaleDateString(
-                                                          "en-US",
-                                                          {
-                                                            month: "short",
-                                                            day: "numeric",
-                                                          }
-                                                        )}{" "}
-                                                        {dateInfo.startTime}
-                                                      </span>
-                                                    )
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )}
-                                        </div>
-                                      )
+                                        <span
+                                          key={didx}
+                                          className="badge badge-ghost badge-sm capitalize"
+                                        >
+                                          {daySchedule.day}
+                                          {daySchedule.startTime
+                                            ? ` ${daySchedule.startTime}`
+                                            : ""}
+                                        </span>
+                                      ),
                                     )}
                                   </div>
                                 </div>
@@ -1124,6 +1119,20 @@ export default function ViewBookingModal({
                       })}
                     </div>
                   </div>
+
+                  {isHtrSummerCampBooking(
+                    booking.serviceType,
+                    booking.serviceData?.campSeasonId,
+                  ) ? (
+                    <HtrDriveFolderSection
+                      bookingId={booking._id}
+                      initialDriveFolderUrl={booking.driveFolderUrl}
+                      initialDriveFolderName={booking.driveFolderName}
+                      onSuccess={() => {
+                        onBookingUpdated?.();
+                      }}
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

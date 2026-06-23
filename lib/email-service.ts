@@ -71,6 +71,7 @@ export interface BookingDetails {
     name: string;
     camperId: string;
   }>;
+  driveFolderUrl?: string;
 }
 
 export interface PaymentDetails {
@@ -215,6 +216,21 @@ export const emailTemplates = {
       bookingDetails.campers && bookingDetails.campers.length > 0
         ? ` Camper ID(s): ${bookingDetails.campers.map((c) => `${c.name}: ${c.camperId}`).join("; ")}.`
         : "";
+    const driveFolderSection = bookingDetails.driveFolderUrl
+      ? `
+            <div style="background-color: #eef6ff; border: 2px solid #4285f4; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <h3 style="color: #4285f4; margin-top: 0;">Holiday Camp Folder</h3>
+              <p style="margin: 0 0 12px;">Access your handbook, camp materials, and photos here:</p>
+              <p style="margin: 0;">
+                <a href="${bookingDetails.driveFolderUrl}" style="color: #4285f4; font-weight: bold; word-break: break-all;">
+                  ${bookingDetails.driveFolderUrl}
+                </a>
+              </p>
+            </div>`
+      : "";
+    const driveFolderText = bookingDetails.driveFolderUrl
+      ? ` Holiday Camp Folder: ${bookingDetails.driveFolderUrl}.`
+      : "";
 
     return {
     subject: `Booking Confirmation - ${bookingDetails.serviceType} Service`,
@@ -285,6 +301,8 @@ export const emailTemplates = {
 
             ${camperSection}
 
+            ${driveFolderSection}
+
             <div class="total-amount">
               Total Amount: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
@@ -311,7 +329,7 @@ export const emailTemplates = {
       bookingDetails.serviceType
     }, Children: ${childNames}, Total: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
-    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText} View details in your profile: ${profileBookingsUrl}`,
+    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} View details in your profile: ${profileBookingsUrl}`,
   };
   },
 

@@ -7,9 +7,11 @@ import {
   EyeIcon,
   TrashIcon,
   EllipsisVerticalIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import InvoiceModal from "./InvoiceModal";
+import { isHtrSummerCampBooking } from "@/lib/htr-camp";
 
 interface Child {
   name: string;
@@ -62,6 +64,10 @@ interface Booking {
     transactionId?: string;
     method?: string;
   };
+  serviceData?: {
+    campSeasonId?: string;
+  };
+  driveFolderUrl?: string;
 }
 
 interface BookingsTableProps {
@@ -101,6 +107,12 @@ export default function BookingsTable({
     const timestamp = new Date(booking.createdAt).getTime();
     return Number.isFinite(timestamp) ? timestamp : 0;
   };
+
+  const isMissingHtrDriveFolder = (booking: Booking) =>
+    isHtrSummerCampBooking(
+      booking.serviceType,
+      booking.serviceData?.campSeasonId,
+    ) && !booking.driveFolderUrl;
 
   // Get unique services and statuses for filters
   const uniqueServices = [...new Set(bookings.map((b) => b.serviceType))];
@@ -386,7 +398,19 @@ export default function BookingsTable({
                       </div>
                     </div>
                   </td>
-                  <td>{booking.serviceType}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <span>{booking.serviceType}</span>
+                      {isMissingHtrDriveFolder(booking) ? (
+                        <span
+                          className="tooltip tooltip-warning"
+                          data-tip="Drive folder missing"
+                        >
+                          <ExclamationTriangleIcon className="w-4 h-4 text-warning" />
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td>{getStatusBadge(booking.status)}</td>
                   <td className="font-semibold">
                     {formatCurrency(booking.totalCost)}
