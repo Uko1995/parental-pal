@@ -39,6 +39,8 @@ interface WeekdaysScheduleProps {
   showBillingPeriodMonths?: boolean;
   onBillingPeriodMonthsChange?: (months: number) => void;
   weekendsOnly?: boolean;
+  /** When true, weekdays/times are for reference only — no session-date generation and no cost impact. */
+  informationalOnly?: boolean;
 }
 
 export interface WeekdaysScheduleRef {
@@ -78,6 +80,7 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
       showBillingPeriodMonths,
       onBillingPeriodMonthsChange,
       weekendsOnly,
+      informationalOnly = false,
     },
     ref,
   ) => {
@@ -90,6 +93,7 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
     };
 
     const updateDatesForSchedule = (schedule: DaySchedule): DaySchedule => {
+      if (informationalOnly) return schedule;
       if (!childcare && startDate && schedule.startTime) {
         const dates =
           billingPeriodMonths > 1
@@ -134,7 +138,7 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
     }, [initialSchedules, startDate, billingPeriodMonths]);
 
     useEffect(() => {
-      if (childcare || !startDate) return;
+      if (informationalOnly || childcare || !startDate) return;
 
       setDaySchedules((prev) => {
         if (!prev.length) return prev;
@@ -300,7 +304,9 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
         {!childcare && daySchedules.length > 0 && (
           <div className="animate-in slide-in-from-top-2 duration-300 space-y-4">
             <label className="block text-sm font-medium text-gray-800 mb-3">
-              Set Schedule for Each Day *
+              {informationalOnly
+                ? "Set preferred times for each day"
+                : "Set Schedule for Each Day *"}
             </label>
 
             <div className="grid md:grid-cols-3 gap-3">
@@ -343,43 +349,61 @@ const WeekdaysSchedule = forwardRef<WeekdaysScheduleRef, WeekdaysScheduleProps>(
               ))}
             </div>
 
-            <div className="text-sm bg-base-200 text-base-content p-3 rounded-lg border border-base-300">
-              <p className="font-semibold text-base-content">
-                Summary: {daySchedules.length} day(s) selected •{" "}
-                {calculateTotalHours(daySchedules)} total session hours
-                {periodEndLabel
-                  ? ` (${billingPeriodMonths}-month period through ${formatSessionDateLabel(periodEndLabel)})`
-                  : " (this month)"}
-              </p>
-              {daySchedules.length > 0 && (
-                <ul className="mt-3 space-y-3 text-base-content/90">
-                  {daySchedules.map((schedule) => (
-                    <li key={schedule.day}>
-                      <p className="font-medium capitalize">
-                        {weekdayLabel(schedule.day)} —{" "}
-                        {schedule.startTime || "Time not set"}
-                      </p>
-                      {schedule.dates && schedule.dates.length > 0 ? (
-                        <ul className="mt-1 ml-4 space-y-0.5 text-sm">
-                          {schedule.dates.map((session) => (
-                            <li key={`${schedule.day}-${session.date}`}>
-                              • {formatSessionDateLabel(session.date)} at{" "}
-                              {session.startTime || schedule.startTime || "Time not set"}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="ml-4 text-xs text-base-content/70 mt-1">
-                          Set a start time to see session dates.
+            {informationalOnly ? (
+              <div className="text-sm bg-base-200 text-base-content p-3 rounded-lg border border-base-300">
+                <p className="font-semibold text-base-content">
+                  Preferred days: {daySchedules.map((s) => weekdayLabel(s.day)).join(", ")}
+                </p>
+                {daySchedules.some((s) => s.startTime) && (
+                  <ul className="mt-2 space-y-1 text-base-content/80">
+                    {daySchedules.map((schedule) => (
+                      <li key={schedule.day} className="capitalize">
+                        {weekdayLabel(schedule.day)}
+                        {schedule.startTime ? ` — ${schedule.startTime}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm bg-base-200 text-base-content p-3 rounded-lg border border-base-300">
+                <p className="font-semibold text-base-content">
+                  Summary: {daySchedules.length} day(s) selected •{" "}
+                  {calculateTotalHours(daySchedules)} total session hours
+                  {periodEndLabel
+                    ? ` (${billingPeriodMonths}-month period through ${formatSessionDateLabel(periodEndLabel)})`
+                    : " (this month)"}
+                </p>
+                {daySchedules.length > 0 && (
+                  <ul className="mt-3 space-y-3 text-base-content/90">
+                    {daySchedules.map((schedule) => (
+                      <li key={schedule.day}>
+                        <p className="font-medium capitalize">
+                          {weekdayLabel(schedule.day)} —{" "}
+                          {schedule.startTime || "Time not set"}
                         </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                        {schedule.dates && schedule.dates.length > 0 ? (
+                          <ul className="mt-1 ml-4 space-y-0.5 text-sm">
+                            {schedule.dates.map((session) => (
+                              <li key={`${schedule.day}-${session.date}`}>
+                                • {formatSessionDateLabel(session.date)} at{" "}
+                                {session.startTime || schedule.startTime || "Time not set"}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="ml-4 text-xs text-base-content/70 mt-1">
+                            Set a start time to see session dates.
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
-            {showBillingPeriodMonths && onBillingPeriodMonthsChange && (
+            {!informationalOnly && showBillingPeriodMonths && onBillingPeriodMonthsChange && (
               <BillingPeriodMonthsField
                 value={billingPeriodMonths}
                 onChange={onBillingPeriodMonthsChange}

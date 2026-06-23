@@ -123,15 +123,22 @@ export function buildInvoiceLineItems(
 
       childrenData.forEach((childData, index) => {
         const childName = children[index]?.name || `Child ${index + 1}`;
-        const sessionCount = countTutoringSessions(childData.schedule);
-        const quantity =
-          sessionCount > 0 ? sessionCount : childData.totalHours || 1;
+        const sessionCount =
+          (childData.numberOfSessions as number) ||
+          countTutoringSessions(childData.schedule) ||
+          childData.totalHours ||
+          0;
+        const quantity = sessionCount > 0 ? sessionCount : 1;
         const unitPrice = hourlyRate;
         const subjects = childData.subjects?.join(", ") || "Tutoring";
         const scheduleSummary = formatTutoringScheduleSummary(childData.schedule);
+        const periodParts: string[] = [];
+        if (childData.startDate) periodParts.push(formatDateLabel(childData.startDate as string));
+        if (childData.endDate) periodParts.push(formatDateLabel(childData.endDate as string));
+        const periodLabel = periodParts.length ? ` (${periodParts.join(" – ")})` : "";
 
         items.push({
-          description: `${subjects} — ${childName} (${location})${scheduleSummary ? ` — ${scheduleSummary}` : ""}`,
+          description: `${subjects} — ${childName} (${location})${periodLabel}${scheduleSummary ? ` — ${scheduleSummary}` : ""}`,
           quantity,
           unitPrice,
           total: quantity * unitPrice,
@@ -375,18 +382,21 @@ export function buildServiceSummary(booking: BookingInterface): string {
     case "tutoring":
       (sd.childrenData || []).forEach((childData, index) => {
         const name = booking.children?.[index]?.name || `Child ${index + 1}`;
-        const sessions = countTutoringSessions(childData.schedule);
+        const sessions =
+          (childData.numberOfSessions as number) ||
+          countTutoringSessions(childData.schedule) ||
+          childData.totalHours ||
+          0;
+        const periodParts: string[] = [];
+        if (childData.startDate) periodParts.push(`from ${formatDateLabel(childData.startDate as string)}`);
+        if (childData.endDate) periodParts.push(`to ${formatDateLabel(childData.endDate as string)}`);
         lines.push(
-          `${name}: ${sessions} session${sessions === 1 ? "" : "s"}, ${childData.totalHours || 0} total hours`,
+          `${name}: ${sessions} session${sessions === 1 ? "" : "s"}${periodParts.length ? ` ${periodParts.join(" ")}` : ""}`,
         );
         childData.schedule?.forEach((block) => {
-          if (block.dates?.length) {
-            lines.push(`  ${formatTutoringScheduleBlock(block)}`);
-          } else {
-            lines.push(
-              `  ${formatWeekdayLabel(block.day)} @ ${formatSessionTime(block.startTime)}`,
-            );
-          }
+          lines.push(
+            `  ${formatWeekdayLabel(block.day)} @ ${formatSessionTime(block.startTime)}`,
+          );
         });
       });
       break;

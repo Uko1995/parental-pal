@@ -41,6 +41,9 @@ export interface BookingInterface {
       academicLevel?: string;
       learningGoals?: string;
       totalHours?: number;
+      numberOfSessions?: number;
+      startDate?: string;
+      endDate?: string;
       schedule?: Array<{
         day: string;
         hours: number;
