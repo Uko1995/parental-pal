@@ -11,9 +11,12 @@ import { getDb } from "@/lib/mongodb";
 import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 import {
   type CampLocation,
+  canChildBoard,
   resolveCampSeasonId,
 } from "@/lib/camp-seasons";
 import { calculateCampPricing } from "@/lib/camp-pricing";
+import { assertBoardingCapacityAvailable } from "@/lib/boarding-capacity";
+import { resolveAppliedHotr26PromoCode } from "@/lib/camp-promotions";
 import { isHolidayCampServiceActive } from "@/app/services/actions";
 import {
   countChildcareMonthDays,
@@ -727,9 +730,15 @@ export async function parseFormDataToBooking(
         }
       }
 
+      const childAge =
+        parseInt(cleanedData[`childAge_${childId}`] as string, 10) || 0;
+      const requestedBoarding = cleanedData[`boarding_${childId}`] === "true";
+      const boardingAllowed =
+        campLocation === "gbagada" && canChildBoard(childAge);
+
       childrenCampData.push({
         childId,
-        boarding: cleanedData[`boarding_${childId}`] === "true",
+        boarding: requestedBoarding && boardingAllowed,
         campWeeks:
           parsedCampWeeks && parsedCampWeeks.length > 0
             ? parsedCampWeeks
@@ -742,6 +751,18 @@ export async function parseFormDataToBooking(
               ],
       });
     });
+
+    const requestedBoardingChildren = childrenCampData.filter(
+      (child) => child.boarding,
+    ).length;
+
+    if (requestedBoardingChildren > 0 && campLocation) {
+      await assertBoardingCapacityAvailable({
+        campSeasonId,
+        campLocation,
+        requestedBoardingChildren,
+      });
+    }
 
     serviceData.campSeasonId = campSeasonId;
     if (campLocation) {
@@ -982,13 +1003,23 @@ export async function parseFormDataToBooking(
       campSeasonId,
       campLocation ?? null,
       pricingInputs,
+      undefined,
+      {
+        promoCode: resolveAppliedHotr26PromoCode({
+          seasonId: campSeasonId,
+          location: campLocation,
+          code: (cleanedData.promoCode || "").toString(),
+        }),
+      },
     );
 
     pricingBaseAmount = campPricing.subtotal;
     pricingDiscount = campPricing.discount;
-    pricingDiscountReason = campPricing.discount
-      ? `Full-season discount (${campPricing.discountPercent}% per child, 6 weeks)`
-      : undefined;
+    if (campPricing.promoCode) {
+      pricingDiscountReason = `Promo code: ${campPricing.promoCode} (package pricing)`;
+    } else if (campPricing.discount) {
+      pricingDiscountReason = `Full-season discount (${campPricing.discountPercent}% per child, 6 weeks)`;
+    }
     totalAmount = campPricing.total;
 
     serviceData.weeklyRate = pricingInputs[0]
@@ -997,7 +1028,9 @@ export async function parseFormDataToBooking(
     serviceData.campFee = serviceData.weeklyRate;
     serviceData.totalWeeks = campPricing.totalWeeks;
     serviceData.promoDiscount = campPricing.discount;
-    if (campPricing.discount > 0) {
+    if (campPricing.promoCode) {
+      serviceData.promoCode = campPricing.promoCode;
+    } else if (campPricing.discount > 0) {
       serviceData.promoCode = "FULL-SUMMER-7";
     }
   } else if (serviceType === "space-rental") {

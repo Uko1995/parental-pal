@@ -239,6 +239,19 @@ export default function AdminBookingForm({
       return;
     }
 
+    if (selectedService === "holiday-camps") {
+      const boardingCheck =
+        await holidayCampFormRef.current?.confirmBoardingFromDb();
+      if (boardingCheck && !boardingCheck.ok) {
+        toastErrorOnce(
+          boardingCheck.error ||
+            "Boarding is no longer available. Please update your selections.",
+          "admin-booking-boarding-capacity",
+        );
+        return;
+      }
+    }
+
     submittingRef.current = true;
     setIsSubmitting(true);
     toastLoadingOnce("Creating booking...", "admin-booking-create");

@@ -555,6 +555,40 @@ export class BookingRepository {
       .sort({ priority: 1, createdAt: 1 })
       .toArray()) as BookingInterface[];
   }
+
+  static async countBoardingChildren(
+    campSeasonId: string,
+    campLocation: string,
+    excludeBookingId?: string,
+  ): Promise<number> {
+    const collection = await getCollection(this.collectionName);
+
+    const matchStage: Record<string, unknown> = {
+      serviceType: "holiday-camps",
+      "serviceData.campSeasonId": campSeasonId,
+      "serviceData.campLocation": campLocation,
+      status: { $nin: ["cancelled", "completed"] },
+    };
+
+    if (excludeBookingId) {
+      matchStage._id = { $ne: new ObjectId(excludeBookingId) };
+    }
+
+    const result = await collection
+      .aggregate<{ count: number }>([
+        { $match: matchStage },
+        { $unwind: "$serviceData.childrenData" },
+        {
+          $match: {
+            "serviceData.childrenData.boarding": true,
+          },
+        },
+        { $count: "count" },
+      ])
+      .toArray();
+
+    return result[0]?.count ?? 0;
+  }
 }
 
 export default BookingRepository;

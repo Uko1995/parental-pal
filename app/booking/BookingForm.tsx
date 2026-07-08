@@ -506,6 +506,18 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       return;
     }
 
+    if (selectedService === "holiday-camps") {
+      const boardingCheck =
+        await holidayCampFormRef.current?.confirmBoardingFromDb();
+      if (boardingCheck && !boardingCheck.ok) {
+        showValidationFailure([
+          boardingCheck.error ||
+            "Boarding is no longer available. Please update your selections.",
+        ]);
+        return;
+      }
+    }
+
     // Save form data before submission in case of auth redirect
     const persistenceData = extractFormDataForPersistence(formData, {
       selectedService,
