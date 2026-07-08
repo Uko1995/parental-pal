@@ -52,6 +52,7 @@ import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 export interface HolidayCampFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
+  confirmBoardingFromDb: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 interface ChildCampData {
@@ -91,6 +92,21 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     const [childDefaults, setChildDefaults] = useState<
       Record<string, ChildInfoDefaults>
     >({});
+    const [promoCodeInput, setPromoCodeInput] = useState("");
+    const [appliedPromoCode, setAppliedPromoCode] = useState("");
+    const [promoStatus, setPromoStatus] = useState<
+      "idle" | "checking" | "applied" | "error"
+    >("idle");
+    const [promoMessage, setPromoMessage] = useState("");
+    const [boardingAvailability, setBoardingAvailability] = useState<{
+      capacity: number;
+      used: number;
+      remaining: number;
+      isFull: boolean;
+    } | null>(null);
+    const [boardingAvailabilityLoading, setBoardingAvailabilityLoading] =
+      useState(false);
+    const [boardingCapacityMessage, setBoardingCapacityMessage] = useState("");
 
     const templateAppliedRef = useRef(false);
     const easterWeeklyRate = getEasterWeeklyRate();
@@ -178,8 +194,246 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     useEffect(() => {
       if (location === "lekki") {
         setBoardingByChild({});
+        if (appliedPromoCode) {
+          setAppliedPromoCode("");
+          setPromoCodeInput("");
+          setPromoStatus("idle");
+          setPromoMessage("");
+        }
       }
-    }, [location]);
+    }, [location, appliedPromoCode]);
+
+    const countRequestedBoardingChildren = useCallback(
+      (boardingState: Record<string, boolean> = boardingByChild) =>
+        childrenData.reduce((count, child) => {
+          const age =
+            childAges[child.id] ?? childDefaults[child.id]?.age ?? 0;
+          if (
+            boardingState[child.id] &&
+            location === "gbagada" &&
+            canChildBoard(age)
+          ) {
+            return count + 1;
+          }
+          return count;
+        }, 0),
+      [childrenData, childAges, childDefaults, boardingByChild, location],
+    );
+
+    const refreshBoardingAvailabilityFromDb = useCallback(
+      async (requestedBoardingChildren?: number) => {
+        if (!isSummer || location !== "gbagada") {
+          setBoardingAvailability(null);
+          setBoardingCapacityMessage("");
+          return null;
+        }
+
+        const requested =
+          requestedBoardingChildren ?? countRequestedBoardingChildren();
+
+        setBoardingAvailabilityLoading(true);
+        try {
+          const response = await fetch("/api/camp/boarding-availability", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({
+              campSeasonId,
+              campLocation: location,
+              requestedBoardingChildren: requested,
+            }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            setBoardingCapacityMessage(
+              data.error || "Unable to confirm boarding availability.",
+            );
+            return null;
+          }
+
+          setBoardingAvailability(data.status);
+          setBoardingCapacityMessage(data.error ?? "");
+
+          if (!data.allowed && requested > 0) {
+            setBoardingByChild({});
+          }
+
+          return data as {
+            status: {
+              capacity: number;
+              used: number;
+              remaining: number;
+              isFull: boolean;
+            };
+            allowed: boolean;
+            error: string | null;
+          };
+        } catch {
+          setBoardingCapacityMessage("Unable to confirm boarding availability.");
+          return null;
+        } finally {
+          setBoardingAvailabilityLoading(false);
+        }
+      },
+      [
+        campSeasonId,
+        countRequestedBoardingChildren,
+        isSummer,
+        location,
+      ],
+    );
+
+    useEffect(() => {
+      if (!isSummer || location !== "gbagada") {
+        setBoardingAvailability(null);
+        setBoardingCapacityMessage("");
+        return;
+      }
+
+      void refreshBoardingAvailabilityFromDb(0);
+    }, [isSummer, location, campSeasonId, refreshBoardingAvailabilityFromDb]);
+
+    useEffect(() => {
+      if (!isSummer || location !== "gbagada") {
+        return;
+      }
+
+      void refreshBoardingAvailabilityFromDb();
+    }, [boardingByChild, isSummer, location, refreshBoardingAvailabilityFromDb]);
+
+    useEffect(() => {
+      if (!isSummer || location !== "gbagada") {
+        return;
+      }
+
+      const handleFocus = () => {
+        void refreshBoardingAvailabilityFromDb();
+      };
+
+      window.addEventListener("focus", handleFocus);
+      return () => window.removeEventListener("focus", handleFocus);
+    }, [isSummer, location, refreshBoardingAvailabilityFromDb]);
+
+    const confirmBoardingFromDb = useCallback(async () => {
+      if (!isSummer || location !== "gbagada") {
+        return { ok: true as const };
+      }
+
+      const requested = countRequestedBoardingChildren();
+      const result = await refreshBoardingAvailabilityFromDb(requested);
+
+      if (requested === 0) {
+        return { ok: true as const };
+      }
+
+      if (!result?.allowed) {
+        return {
+          ok: false as const,
+          error:
+            result?.error ||
+            "Boarding is no longer available. Please select day camp only.",
+        };
+      }
+
+      return { ok: true as const };
+    }, [
+      countRequestedBoardingChildren,
+      isSummer,
+      location,
+      refreshBoardingAvailabilityFromDb,
+    ]);
+
+    const handleSelectBoarding = useCallback(
+      async (childId: string) => {
+        const childAge =
+          childAges[childId] ?? childDefaults[childId]?.age ?? 0;
+
+        if (
+          boardingAvailabilityLoading ||
+          !isSummer ||
+          location !== "gbagada" ||
+          !canChildBoard(childAge)
+        ) {
+          return;
+        }
+
+        const projectedBoarding = {
+          ...boardingByChild,
+          [childId]: true,
+        };
+        const requested = countRequestedBoardingChildren(projectedBoarding);
+
+        setBoardingCapacityMessage("");
+        setBoardingAvailabilityLoading(true);
+        try {
+          const response = await fetch("/api/camp/boarding-availability", {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              campSeasonId,
+              campLocation: location,
+              requestedBoardingChildren: requested,
+            }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            setBoardingCapacityMessage(
+              data.error || "Unable to confirm boarding availability.",
+            );
+            return;
+          }
+
+          setBoardingAvailability(data.status);
+          if (data.allowed) {
+            setBoardingByChild(projectedBoarding);
+            setBoardingCapacityMessage("");
+          } else {
+            setBoardingCapacityMessage(
+              data.error ||
+                "Boarding is not available. Please select day camp only.",
+            );
+          }
+        } catch {
+          setBoardingCapacityMessage("Unable to confirm boarding availability.");
+        } finally {
+          setBoardingAvailabilityLoading(false);
+        }
+      },
+      [
+        boardingAvailabilityLoading,
+        boardingByChild,
+        campSeasonId,
+        childAges,
+        childDefaults,
+        countRequestedBoardingChildren,
+        isSummer,
+        location,
+      ],
+    );
+
+    const handleDeselectBoarding = useCallback(
+      (childId: string) => {
+        setBoardingByChild((prev) => ({ ...prev, [childId]: false }));
+        setBoardingCapacityMessage("");
+        void refreshBoardingAvailabilityFromDb(
+          countRequestedBoardingChildren({ ...boardingByChild, [childId]: false }),
+        );
+      },
+      [
+        boardingByChild,
+        countRequestedBoardingChildren,
+        refreshBoardingAvailabilityFromDb,
+      ],
+    );
+
+    const boardingSelectedInForm = useMemo(
+      () => countRequestedBoardingChildren(),
+      [countRequestedBoardingChildren],
+    );
+    const boardingSlotsRemaining = boardingAvailability?.remaining ?? null;
 
     const pricingInputs = useMemo(
       () =>
@@ -198,9 +452,56 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           campSeasonId,
           isSummer ? location : null,
           pricingInputs,
+          undefined,
+          { promoCode: appliedPromoCode },
         ),
-      [campSeasonId, isSummer, location, pricingInputs],
+      [campSeasonId, isSummer, location, pricingInputs, appliedPromoCode],
     );
+
+    const packageDiscountTotal =
+      pricing.packageDiscounts?.reduce((sum, entry) => sum + entry.amount, 0) ??
+      0;
+    const autoDiscountTotal = pricing.discount - packageDiscountTotal;
+
+    const applyPromoCode = async () => {
+      if (!promoCodeInput.trim()) {
+        setPromoStatus("error");
+        setPromoMessage("Enter a promo code first.");
+        return;
+      }
+
+      setPromoStatus("checking");
+      setPromoMessage("");
+
+      try {
+        const response = await fetch("/api/promotions/hotr26/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: promoCodeInput.trim(),
+            campSeasonId,
+            campLocation: location,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          setAppliedPromoCode("");
+          setPromoStatus("error");
+          setPromoMessage(result.error || "Invalid promo code.");
+          return;
+        }
+
+        setAppliedPromoCode(result.data.promoCode);
+        setPromoCodeInput(result.data.promoCode);
+        setPromoStatus("applied");
+        setPromoMessage(result.data.message || "Promo applied.");
+      } catch {
+        setAppliedPromoCode("");
+        setPromoStatus("error");
+        setPromoMessage("Unable to validate promo code right now.");
+      }
+    };
 
     useEffect(() => {
       onTotalChange?.(pricing.total);
@@ -269,6 +570,10 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
       setChildAges({});
       setBoardingByChild({});
       setLocation("gbagada");
+      setPromoCodeInput("");
+      setAppliedPromoCode("");
+      setPromoStatus("idle");
+      setPromoMessage("");
     };
 
     const validate = (): { isValid: boolean; errors: string[] } => {
@@ -307,6 +612,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
     useImperativeHandle(ref, () => ({
       resetForm,
       validate,
+      confirmBoardingFromDb,
     }));
 
     const formatNaira = (amount: number) => `₦${amount.toLocaleString()}`;
@@ -319,7 +625,14 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
         {isSummer && (
           <input type="hidden" name="campLocation" value={location} />
         )}
-        <input type="hidden" name="promoCode" value={pricing.discount > 0 ? "FULL-SUMMER-7" : ""} />
+        <input
+          type="hidden"
+          name="promoCode"
+          value={
+            pricing.promoCode ||
+            (autoDiscountTotal > 0 ? "FULL-SUMMER-7" : appliedPromoCode)
+          }
+        />
         <input type="hidden" name="promoDiscount" value={pricing.discount} />
         <input type="hidden" name="totalWeeks" value={pricing.totalWeeks} />
         <input
@@ -502,6 +815,82 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           </div>
         )}
 
+        {isSummer && location === "gbagada" && (
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8">
+            <label className="block mb-2">
+              <span className="text-sm font-medium text-gray-900 block mb-1">
+                Promo Code
+              </span>
+              <span className="text-xs text-gray-600">
+                Apply your promo code for Gbagada package pricing.
+              </span>
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={promoCodeInput}
+                onChange={(e) => {
+                  setPromoCodeInput(e.target.value.toUpperCase());
+                  if (promoStatus !== "checking") {
+                    setPromoStatus("idle");
+                    setPromoMessage("");
+                    setAppliedPromoCode("");
+                  }
+                }}
+                className="w-full md:w-80 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary text-gray-900 bg-white transition-colors"
+                placeholder="Enter promo code"
+                maxLength={30}
+              />
+              <button
+                type="button"
+                onClick={applyPromoCode}
+                disabled={promoStatus === "checking"}
+                className="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-medium hover:bg-brand-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {promoStatus === "checking" ? "Applying..." : "Apply Promo"}
+              </button>
+            </div>
+            {promoMessage && (
+              <p
+                className={`mt-2 text-sm ${
+                  promoStatus === "applied" ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {promoMessage}
+              </p>
+            )}
+          </div>
+        )}
+
+        {isSummer && location === "gbagada" && (
+          <div className="rounded-xl border border-base-300 bg-base-200 px-4 py-3 text-sm text-base-content">
+            {boardingAvailabilityLoading && !boardingAvailability ? (
+              <span>Checking boarding availability...</span>
+            ) : boardingAvailability ? (
+              boardingAvailability.isFull ? (
+                <span>
+                  Boarding is fully booked ({boardingAvailability.capacity}/
+                  {boardingAvailability.capacity}). Day camp is still available.
+                </span>
+              ) : (
+                <span>
+                  {boardingAvailability.remaining} boarding spot
+                  {boardingAvailability.remaining === 1 ? "" : "s"} remaining
+                  (confirmed from current bookings).
+                </span>
+              )
+            ) : (
+              <span>Unable to load boarding availability. Try again shortly.</span>
+            )}
+          </div>
+        )}
+
+        {boardingCapacityMessage && (
+          <p className="text-sm text-red-600 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            {boardingCapacityMessage}
+          </p>
+        )}
+
         <div className="flex items-center justify-between py-2">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             Children Registered for Camp
@@ -523,11 +912,21 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
           const boardingEligible =
             isSummer && location === "gbagada" && canChildBoard(childAge);
           const boardingSelected = boardingByChild[child.id] ?? false;
+          const otherBoardingSelected =
+            boardingSelectedInForm - (boardingSelected ? 1 : 0);
+          const canSelectBoarding =
+            !boardingAvailabilityLoading &&
+            boardingSlotsRemaining !== null &&
+            boardingSlotsRemaining > otherBoardingSelected;
           const boardingDisabled =
+            boardingAvailabilityLoading ||
             !isSummer ||
             location !== "gbagada" ||
             childAge === 0 ||
-            !canChildBoard(childAge);
+            !canChildBoard(childAge) ||
+            boardingSlotsRemaining === null ||
+            (boardingSlotsRemaining !== null && boardingSlotsRemaining <= 0) ||
+            (!boardingSelected && !canSelectBoarding);
           const boardingDisabledReason =
             location !== "gbagada"
               ? "Weekday boarding is only available at Gbagada (Mainland) for children aged 6–14."
@@ -535,7 +934,14 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                 ? "Enter your child's age above to enable boarding."
                 : !canChildBoard(childAge)
                   ? "Boarding at Gbagada (Mainland) is for ages 6–14 only. Children aged 0–5 attend day camp."
-                  : null;
+                  : boardingSlotsRemaining !== null &&
+                      boardingSlotsRemaining <= 0
+                    ? `Boarding is fully booked (${boardingAvailability?.capacity ?? 20}/${boardingAvailability?.capacity ?? 20}). Day camp is still available.`
+                    : boardingSlotsRemaining !== null &&
+                        !boardingSelected &&
+                        !canSelectBoarding
+                      ? `Only ${boardingSlotsRemaining} boarding spot(s) remaining.`
+                      : null;
 
           return (
             <div
@@ -581,12 +987,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() =>
-                        setBoardingByChild((prev) => ({
-                          ...prev,
-                          [child.id]: false,
-                        }))
-                      }
+                      onClick={() => handleDeselectBoarding(child.id)}
                       className={`text-left rounded-xl border-2 p-4 transition-all ${
                         !boardingSelected
                           ? "border-brand-primary bg-brand-primary/5 shadow-sm"
@@ -605,11 +1006,7 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                       type="button"
                       disabled={boardingDisabled}
                       onClick={() => {
-                        if (boardingDisabled) return;
-                        setBoardingByChild((prev) => ({
-                          ...prev,
-                          [child.id]: true,
-                        }));
+                        void handleSelectBoarding(child.id);
                       }}
                       className={`text-left rounded-xl border-2 p-4 transition-all ${
                         boardingDisabled
@@ -768,12 +1165,26 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                 <span>{formatNaira(pricing.boardingFees)}</span>
               </div>
             )}
-            {pricing.discount > 0 && (
+            {pricing.packageDiscounts?.map((entry) => (
+              <div
+                key={`${entry.childId}-${entry.packageName}`}
+                className="flex justify-between text-brand-secondary font-medium"
+              >
+                <span>
+                  {entry.packageName === "builder"
+                    ? "Builder Package (3 weeks)"
+                    : "Champion Package (6 weeks)"}
+                </span>
+                <span>-{formatNaira(entry.amount)}</span>
+              </div>
+            ))}
+            {autoDiscountTotal > 0 && (
               <div className="flex justify-between text-brand-secondary font-medium">
                 <span>
-                  {pricing.discountPercent}% full-season discount (6 weeks per child)
+                  {pricing.discountPercent}% full-season discount (6 weeks per
+                  child)
                 </span>
-                <span>-{formatNaira(pricing.discount)}</span>
+                <span>-{formatNaira(autoDiscountTotal)}</span>
               </div>
             )}
           </div>

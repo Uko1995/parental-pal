@@ -2,9 +2,15 @@ import {
   CampLocation,
   CampSeasonId,
   EASTER_CAMP_RATES,
+  HOTR26_PROMO_CODE,
   SUMMER_CAMP_RATES,
   getCampSeason,
 } from "@/lib/camp-seasons";
+import {
+  type Hotr26PackageName,
+  getHotr26PackageCampTotal,
+  isHotr26PromoCode,
+} from "@/lib/camp-promotions";
 
 export interface ChildCampPricingInput {
   childId: string;
@@ -23,6 +29,16 @@ export interface ChildCampPricingLine {
   lineSubtotal: number;
 }
 
+export interface CampPackageDiscount {
+  childId: string;
+  packageName: Hotr26PackageName;
+  amount: number;
+}
+
+export interface CampPricingOptions {
+  promoCode?: string;
+}
+
 export interface CampPricingResult {
   campFees: number;
   boardingFees: number;
@@ -32,6 +48,8 @@ export interface CampPricingResult {
   total: number;
   totalWeeks: number;
   lines: ChildCampPricingLine[];
+  promoCode?: string;
+  packageDiscounts?: CampPackageDiscount[];
 }
 
 export function isEasterEarlyBirdActive(now: Date = new Date()): boolean {
@@ -61,6 +79,7 @@ export function calculateCampPricing(
   location: CampLocation | null,
   children: ChildCampPricingInput[],
   now: Date = new Date(),
+  options?: CampPricingOptions,
 ): CampPricingResult {
   const season = getCampSeason(seasonId);
   const lines: ChildCampPricingLine[] = [];
@@ -109,8 +128,14 @@ export function calculateCampPricing(
     };
   }
 
+  const hotrPromoActive =
+    location === "gbagada" &&
+    isHotr26PromoCode(options?.promoCode ?? "");
+
   let campFees = 0;
   let boardingFees = 0;
+  const packageDiscounts: CampPackageDiscount[] = [];
+  const packageChildIds = new Set<string>();
 
   for (const child of children) {
     const campFeePerWeek = getSummerWeeklyCampRate(location, child.age);
@@ -122,6 +147,24 @@ export function calculateCampPricing(
       child.age <= 14
         ? child.weekCount * SUMMER_CAMP_RATES.boardingWeekly
         : 0;
+
+    if (hotrPromoActive) {
+      const packagePricing = getHotr26PackageCampTotal(
+        child.age,
+        child.weekCount,
+      );
+      if (packagePricing) {
+        const packageSavings = campSubtotal - packagePricing.total;
+        if (packageSavings > 0) {
+          packageDiscounts.push({
+            childId: child.childId,
+            packageName: packagePricing.packageName,
+            amount: packageSavings,
+          });
+          packageChildIds.add(child.childId);
+        }
+      }
+    }
 
     campFees += campSubtotal;
     boardingFees += boardingSubtotal;
@@ -140,22 +183,33 @@ export function calculateCampPricing(
   const subtotal = campFees + boardingFees;
   const totalWeeks = children.reduce((sum, c) => sum + c.weekCount, 0);
 
-  let discount = 0;
-  let anyChildQualifies = false;
+  const packageDiscountTotal = packageDiscounts.reduce(
+    (sum, entry) => sum + entry.amount,
+    0,
+  );
+
+  let autoDiscount = 0;
+  let anyChildQualifiesForAuto = false;
 
   for (const child of children) {
-    if (child.weekCount >= SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks) {
-      anyChildQualifies = true;
-      const line = lines.find((l) => l.childId === child.childId);
-      if (line) {
-        discount += Math.round(
-          (line.lineSubtotal * SUMMER_CAMP_RATES.multiWeekDiscountPercent) / 100,
-        );
-      }
+    if (packageChildIds.has(child.childId)) {
+      continue;
+    }
+    if (child.weekCount < SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks) {
+      continue;
+    }
+
+    anyChildQualifiesForAuto = true;
+    const line = lines.find((l) => l.childId === child.childId);
+    if (line) {
+      autoDiscount += Math.round(
+        (line.lineSubtotal * SUMMER_CAMP_RATES.multiWeekDiscountPercent) / 100,
+      );
     }
   }
 
-  const discountPercent = anyChildQualifies
+  const discount = packageDiscountTotal + autoDiscount;
+  const discountPercent = anyChildQualifiesForAuto
     ? SUMMER_CAMP_RATES.multiWeekDiscountPercent
     : 0;
   const total = Math.max(0, subtotal - discount);
@@ -169,5 +223,11 @@ export function calculateCampPricing(
     total,
     totalWeeks,
     lines,
+    promoCode:
+      hotrPromoActive && packageDiscountTotal > 0
+        ? HOTR26_PROMO_CODE
+        : undefined,
+    packageDiscounts:
+      packageDiscounts.length > 0 ? packageDiscounts : undefined,
   };
 }

@@ -145,6 +145,7 @@ export const SUMMER_CAMP_RATES = {
   gbagadaOlderWeekly: 65_000,
   lekkiWeekly: 100_000,
   boardingWeekly: 65_000,
+  boardingCapacity: 20,
   multiWeekDiscountPercent: 7,
   multiWeekDiscountMinWeeks: 6,
 } as const;
@@ -153,6 +154,13 @@ export const EASTER_CAMP_RATES = {
   earlyBirdWeekly: 25_000,
   regularWeekly: 30_000,
   earlyBirdEndIso: "2026-04-01T00:00:00",
+} as const;
+
+export const HOTR26_PROMO_CODE = "HOTR'26";
+
+export const HOTR26_PACKAGES = {
+  builder: { weeks: 3, youngTotal: 100_000, olderTotal: 180_000 },
+  champion: { weeks: 6, youngTotal: 220_000, olderTotal: 360_000 },
 } as const;
 
 export function getCampSeason(id?: string | null): CampSeason {
