@@ -35,6 +35,8 @@ import {
   canChildBoard,
   SUMMER_CAMP_RATES,
   EASTER_CAMP_RATES,
+  ENABLED_SUMMER_CAMP_LOCATIONS,
+  isEnabledSummerCampLocation,
 } from "@/lib/camp-seasons";
 import {
   calculateCampPricing,
@@ -139,9 +141,11 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
         setBoardingByChild(boarding);
       }
 
-      if (initialTemplate.campLocation === "lekki" ||
-        initialTemplate.campLocation === "gbagada") {
+      if (isEnabledSummerCampLocation(initialTemplate.campLocation)) {
         setLocation(initialTemplate.campLocation);
+      } else if (initialTemplate.campLocation) {
+        // Disabled campuses (e.g. lekki) coerce to Gbagada for rebook
+        setLocation("gbagada");
       }
       if (initialTemplate.parentName) setParentName(initialTemplate.parentName);
       if (initialTemplate.parentEmail) setParentEmail(initialTemplate.parentEmail);
@@ -744,7 +748,13 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
               Weekly camp fees depend on location and your child&apos;s age. Prices
               below are per child, per week.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              className={`grid grid-cols-1 gap-4 ${
+                ENABLED_SUMMER_CAMP_LOCATIONS.length > 1
+                  ? "md:grid-cols-2"
+                  : "max-w-xl"
+              }`}
+            >
               {(
                 [
                   {
@@ -764,23 +774,30 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                       {
                         label: "Boarding add-on (ages 6–14 only)",
                         price: SUMMER_CAMP_RATES.boardingWeekly,
-                        note: "Gbagada only · weekday boarding",
+                        note: "Weekday boarding",
                       },
                     ],
                   },
-                  {
-                    id: "lekki" as CampLocation,
-                    title: "Lekki",
-                    tiers: [
-                      {
-                        label: "Ages 0–14",
-                        price: SUMMER_CAMP_RATES.lekkiWeekly,
-                        note: "Day camp only — no boarding",
-                      },
-                    ],
-                  },
+                  // Lekki campus temporarily unavailable — keep entry for easy re-enable
+                  // {
+                  //   id: "lekki" as CampLocation,
+                  //   title: "Lekki",
+                  //   tiers: [
+                  //     {
+                  //       label: "Ages 0–14",
+                  //       price: SUMMER_CAMP_RATES.lekkiWeekly,
+                  //       note: "Day camp only — no boarding",
+                  //     },
+                  //   ],
+                  // },
                 ] as const
-              ).map((option) => (
+              )
+                .filter((option) =>
+                  (
+                    ENABLED_SUMMER_CAMP_LOCATIONS as readonly CampLocation[]
+                  ).includes(option.id),
+                )
+                .map((option) => (
                 <button
                   key={option.id}
                   type="button"
@@ -981,8 +998,8 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                     Day camp or boarding?
                   </p>
                   <p className="text-xs text-gray-600">
-                    Boarding is only available at Gbagada (Mainland) for ages
-                    6–14. Lekki and ages 0–5 are day camp only.
+                    Boarding is available at Gbagada (Mainland) for ages 6–14.
+                    Ages 0–5 are day camp only.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
@@ -996,10 +1013,10 @@ const HolidayCampForm = forwardRef<HolidayCampFormRef, HolidayCampFormProps>(
                     >
                       <p className="font-semibold text-gray-900">Day camp only</p>
                       <p className="text-sm text-gray-600 mt-1">
-                        Drop-off and pick-up each day at your selected campus
+                        Drop-off and pick-up each day at the Gbagada campus
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        All locations · ages 0–14
+                        Ages 0–14
                       </p>
                     </button>
                     <button

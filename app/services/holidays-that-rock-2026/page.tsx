@@ -7,7 +7,7 @@ import HolidaysThatRockContent from "./HolidaysThatRockContent";
 export const metadata: Metadata = genMeta({
   title: "Holidays That Rock 2026 — Summer Holiday Camp",
   description:
-    "Join Holidays That Rock 2026 in Lekki and Gbagada. Hands-on learning for ages 0–14. July 20 – August 29, 2026. Register now.",
+    "Join Holidays That Rock 2026 in Gbagada. Hands-on learning for ages 0–14. July 20 – August 29, 2026. Register now.",
   path: "/services/holidays-that-rock-2026",
   keywords: [
     "summer camp Lagos",

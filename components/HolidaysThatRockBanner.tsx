@@ -49,7 +49,7 @@ export default function HolidaysThatRockBanner({
                 </span>
               </div>
               <p className="mt-1 text-sm text-white leading-snug">
-                July 20 – Aug 29 · Ages 0–14 · Lekki & Gbagada
+                July 20 – Aug 29 · Ages 0–14 · Gbagada
               </p>
             </div>
             <span className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white text-brand-primary font-semibold text-sm shadow-sm group-hover:scale-[1.02] group-active:scale-[0.98] transition-transform shrink-0">

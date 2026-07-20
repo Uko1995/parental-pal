@@ -4,6 +4,21 @@ export type CampSeasonId =
 
 export type CampLocation = "gbagada" | "lekki";
 
+/** Active summer campuses shown in booking UI. Lekki kept in CampLocation for historical bookings. */
+export const ENABLED_SUMMER_CAMP_LOCATIONS = ["gbagada"] as const;
+
+export type EnabledSummerCampLocation =
+  (typeof ENABLED_SUMMER_CAMP_LOCATIONS)[number];
+
+export function isEnabledSummerCampLocation(
+  location: string | null | undefined,
+): location is EnabledSummerCampLocation {
+  return (
+    !!location &&
+    (ENABLED_SUMMER_CAMP_LOCATIONS as readonly string[]).includes(location)
+  );
+}
+
 export interface CampWeek {
   weekNumber: number;
   startDate: string;
@@ -126,7 +141,7 @@ export const CAMP_SEASONS: Record<CampSeasonId, CampSeason> = {
     startDate: "2026-07-20",
     endDate: "2026-08-29",
     dateLabel: "July 20 – August 29, 2026",
-    registrationDeadline: "2026-07-10",
+    registrationDeadline: "2026-08-29",
     showcaseDates: "August 28 – 29, 2026",
     weeks: SUMMER_WEEKS,
     promoBannerStart: "2026-04-26",
