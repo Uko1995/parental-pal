@@ -12,6 +12,8 @@ import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 import {
   type CampLocation,
   canChildBoard,
+  getCampSeason,
+  isEnabledSummerCampLocation,
   resolveCampSeasonId,
 } from "@/lib/camp-seasons";
 import { calculateCampPricing } from "@/lib/camp-pricing";
@@ -699,7 +701,16 @@ export async function parseFormDataToBooking(
     const campSeasonId = resolveCampSeasonId(
       (cleanedData.campSeasonId as string) || null,
     );
+    const season = getCampSeason(campSeasonId);
     const campLocation = cleanedData.campLocation as CampLocation | undefined;
+
+    if (season.isSummer) {
+      if (!campLocation || !isEnabledSummerCampLocation(campLocation)) {
+        throw new Error(
+          "The selected campus is not available. Please book at the Gbagada campus.",
+        );
+      }
+    }
 
     const childrenCampData: Array<{
       childId: string;

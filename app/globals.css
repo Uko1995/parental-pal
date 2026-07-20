@@ -536,3 +536,48 @@ div[class*="go"][class*="207"] {
   color: transparent;
   animation: htr-shimmer 4s linear infinite;
 }
+
+/*
+ * HTR landing uses cream/light surfaces. Global dark-mode remaps of
+ * text-gray-* / bg-white would wash out contrast — keep this page light-readable.
+ */
+.htr-landing {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  .htr-landing .text-gray-900,
+  .htr-landing .text-gray-800,
+  .htr-landing .text-gray-700 {
+    color: #111827;
+  }
+
+  .htr-landing .text-gray-600,
+  .htr-landing .text-gray-500 {
+    color: #4b5563;
+  }
+
+  .htr-landing .text-gray-400 {
+    color: #6b7280;
+  }
+
+  .htr-landing .bg-white {
+    background-color: #ffffff;
+  }
+
+  .htr-landing .bg-white\/80 {
+    background-color: rgb(255 255 255 / 0.8);
+  }
+
+  .htr-landing .bg-white\/95 {
+    background-color: rgb(255 255 255 / 0.95);
+  }
+
+  .htr-landing .border-gray-100 {
+    border-color: #e5e7eb;
+  }
+
+  .htr-landing .text-base-content\/70 {
+    color: rgb(55 65 81 / 0.85);
+  }
+}

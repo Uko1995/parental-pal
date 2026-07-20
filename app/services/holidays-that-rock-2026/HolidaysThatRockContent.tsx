@@ -45,7 +45,7 @@ const BRAND = {
 
 const marqueeItems = [
   "Ages 0 to 14 welcome",
-  "Lekki and Gbagada campuses",
+  "Gbagada campus",
   "Coding, robotics and web dev",
   "Arts, sports and entrepreneurship",
   "Pizza excursion",
@@ -59,25 +59,25 @@ const highlights = [
     title: "Pizza excursion",
     desc: "A fun outing the kids talk about all summer.",
     icon: Pizza,
-    color: BRAND.secondary,
+    color: "#9a5a0c",
   },
   {
     title: "Trade fair",
     desc: "Showcase projects and celebrate wins with parents.",
     icon: Trophy,
-    color: BRAND.primary,
+    color: "#5a7210",
   },
   {
     title: "Certificates and awards",
     desc: "Every child leaves proud of what they built.",
     icon: Star,
-    color: BRAND.accent,
+    color: "#7a3f72",
   },
   {
     title: "Indoor and outdoor learning",
     desc: "Structured days with movement, play and discovery.",
     icon: Sun,
-    color: BRAND.secondary,
+    color: "#9a5a0c",
   },
 ];
 
@@ -92,11 +92,11 @@ const faqs = [
   },
   {
     q: "Is boarding available?",
-    a: "Weekday boarding is available at Gbagada only, for children aged 6 to 14. Lekki is day camp only.",
+    a: "Weekday boarding is available at Gbagada for children aged 6 to 14. Ages 0 to 5 attend day camp.",
   },
   {
     q: "How does pricing work?",
-    a: "Gbagada: ₦40,000/week (ages 0 to 5) or ₦65,000/week (ages 6 to 14). Lekki: ₦100,000/week (all ages). Boarding add-on at Gbagada is ₦65,000/week. Each child who books all 6 weeks receives 7% off that child's fees.",
+    a: "Gbagada: ₦40,000/week (ages 0 to 5) or ₦65,000/week (ages 6 to 14). Boarding add-on is ₦65,000/week. Each child who books all 6 weeks receives 7% off that child's fees.",
   },
   {
     q: "Are meals included?",
@@ -104,7 +104,7 @@ const faqs = [
   },
   {
     q: "When is registration deadline?",
-    a: "Registration closes July 10, 2026. Spaces are limited.",
+    a: "Registration stays open through August 29, 2026 (end of camp). Spaces are limited — book early to secure your preferred weeks.",
   },
 ];
 
@@ -215,15 +215,15 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   const accentStyles = [
     {
       border: "border-brand-primary",
-      badge: "bg-brand-primary/15 text-brand-primary",
+      badge: "bg-brand-primary/20 text-[#5a7210]",
     },
     {
       border: "border-brand-secondary",
-      badge: "bg-brand-secondary/15 text-brand-secondary",
+      badge: "bg-brand-secondary/20 text-[#9a5a0c]",
     },
     {
       border: "border-brand-accent",
-      badge: "bg-brand-accent/15 text-brand-accent",
+      badge: "bg-brand-accent/20 text-[#7a3f72]",
     },
   ][index % 3];
 
@@ -249,7 +249,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
           {q}
         </span>
         <CaretDown
-          className={`w-5 h-5 shrink-0 text-brand-accent transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          className={`w-5 h-5 shrink-0 text-[#7a3f72] transition-transform duration-300 ${open ? "rotate-180" : ""}`}
           weight="bold"
         />
       </button>
@@ -290,7 +290,10 @@ function StatPill({
 
 export default function HolidaysThatRockContent() {
   return (
-    <div className="min-h-screen bg-brand-cream overflow-x-hidden">
+    <div
+      className="htr-landing min-h-screen bg-brand-cream overflow-x-hidden"
+      data-theme="light"
+    >
       {/* Hero */}
       <section className="relative min-h-[90vh] h-screen flex items-center overflow-hidden">
         <Image
@@ -352,7 +355,7 @@ export default function HolidaysThatRockContent() {
               {season.dateLabel}
               <span className="hidden sm:inline text-white/50">|</span>
               <MapPin className="w-5 h-5 text-brand-secondary" weight="fill" />
-              Lekki and Gbagada
+              Gbagada
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
@@ -382,7 +385,7 @@ export default function HolidaysThatRockContent() {
             className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl"
           >
             <StatPill label="Ages" value="0 to 14" color={BRAND.primary} />
-            <StatPill label="Locations" value="2" color={BRAND.secondary} />
+            <StatPill label="Campus" value="Gbagada" color={BRAND.secondary} />
             <StatPill label="Weeks" value="6" color={BRAND.accent} />
             <StatPill label="Full-season discount" value="7% per child" color={BRAND.primary} />
           </motion.div>
@@ -419,7 +422,7 @@ export default function HolidaysThatRockContent() {
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
                 This summer, give your child an experience they will{" "}
-                <span className="text-brand-primary">never forget</span>
+                <span className="text-[#5a7210]">never forget</span>
               </h2>
               <p className="mt-6 text-lg text-gray-700 leading-relaxed">
                 Six weeks of creativity, skills, friendships and hands-on
@@ -480,12 +483,12 @@ export default function HolidaysThatRockContent() {
       <section className="py-20 sm:py-28 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <AnimateOnScroll className="text-center mb-14">
-            <p className="text-brand-secondary font-bold uppercase tracking-widest text-sm">
+            <p className="text-[#9a5a0c] font-bold uppercase tracking-widest text-sm">
               Programmes by age
             </p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-gray-900">
               What your child will{" "}
-              <span className="text-brand-accent">learn and love</span>
+              <span className="text-[#7a3f72]">learn and love</span>
             </h2>
           </AnimateOnScroll>
 
@@ -514,10 +517,10 @@ export default function HolidaysThatRockContent() {
                     <div className="flex items-start justify-between gap-4 mb-6">
                       <div className="flex items-center gap-3">
                         <div className="p-3 rounded-2xl bg-brand-cream">
-                          <Icon className="w-7 h-7 text-brand-primary" weight="fill" />
+                          <Icon className="w-7 h-7 text-[#5a7210]" weight="fill" />
                         </div>
                         <div>
-                          <span className="text-xs font-bold uppercase tracking-wide text-brand-secondary">
+                          <span className="text-xs font-bold uppercase tracking-wide text-[#9a5a0c]">
                             {badge}
                           </span>
                           <h3 className="text-xl font-extrabold text-gray-900">
@@ -537,7 +540,7 @@ export default function HolidaysThatRockContent() {
                           className="flex items-start gap-2 text-gray-700 text-sm font-medium"
                         >
                           <CheckCircle
-                            className="w-5 h-5 text-brand-primary shrink-0 mt-0.5"
+                            className="w-5 h-5 text-[#5a7210] shrink-0 mt-0.5"
                             weight="fill"
                           />
                           {item}
@@ -558,15 +561,15 @@ export default function HolidaysThatRockContent() {
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
           <AnimateOnScroll className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-              Choose your <span className="text-brand-primary">campus</span>
+              Our <span className="text-[#5a7210]">campus</span>
             </h2>
             <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-              Transparent pricing. Extended care until 5 PM and pick-up or
-              drop-off included at no extra charge.
+              Transparent pricing at Gbagada. Extended care until 5 PM and
+              pick-up or drop-off included at no extra charge.
             </p>
           </AnimateOnScroll>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-1 gap-8 max-w-xl mx-auto">
             <AnimateOnScroll variants={scaleIn}>
               <div className="relative rounded-3xl overflow-hidden shadow-2xl group hover:-translate-y-1 transition-transform">
                 <div className="absolute inset-0 bg-linear-to-br from-brand-primary to-[#6B8212]" />
@@ -598,6 +601,7 @@ export default function HolidaysThatRockContent() {
               </div>
             </AnimateOnScroll>
 
+            {/* Lekki campus temporarily unavailable
             <AnimateOnScroll variants={scaleIn}>
               <div className="relative rounded-3xl overflow-hidden shadow-2xl group hover:-translate-y-1 transition-transform">
                 <div className="absolute inset-0 bg-linear-to-br from-brand-accent to-[#7A4572]" />
@@ -621,14 +625,15 @@ export default function HolidaysThatRockContent() {
                 </div>
               </div>
             </AnimateOnScroll>
+            */}
           </div>
 
           <AnimateOnScroll className="mt-10">
-            <div className="rounded-2xl bg-brand-secondary/15 border-2 border-brand-secondary/30 p-6 text-center">
-              <p className="text-brand-secondary font-extrabold text-lg">
+            <div className="rounded-2xl bg-[#FFF4E0] border-2 border-[#E8931A]/50 p-6 text-center">
+              <p className="text-[#8a4f0a] font-extrabold text-lg">
                 Book all 6 weeks for a child and receive 7% off that child&apos;s fees
               </p>
-              <p className="text-base-content/70 text-sm mt-2">
+              <p className="text-gray-700 text-sm mt-2">
                 Each child qualifies independently — partial weeks are charged at the regular rate.
               </p>
             </div>
@@ -679,8 +684,8 @@ export default function HolidaysThatRockContent() {
                     key={text}
                     className="flex items-center gap-3 text-gray-800 font-medium"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary/10">
-                      <Icon className="w-5 h-5 text-brand-primary" />
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#90AC19]/15">
+                      <Icon className="w-5 h-5 text-[#5a7210]" weight="fill" />
                     </span>
                     {text}
                   </li>
@@ -719,13 +724,13 @@ export default function HolidaysThatRockContent() {
               <h2 className="text-3xl sm:text-4xl font-extrabold">
                 Give your child a holiday that rocks
               </h2>
-              <p className="mt-4 text-white/90 max-w-xl mx-auto text-lg">
-                Spaces are limited. Register before {season.registrationDeadline}.
+              <p className="mt-4 text-white/95 max-w-xl mx-auto text-lg font-medium">
+                Spaces are limited. Register before August 29, 2026.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
                   href={bookingUrl}
-                  className="inline-flex px-10 py-4 rounded-2xl bg-white text-brand-primary font-extrabold text-lg shadow-xl hover:scale-105 transition-transform"
+                  className="inline-flex px-10 py-4 rounded-2xl bg-white text-[#5a7210] font-extrabold text-lg shadow-xl hover:scale-105 transition-transform"
                 >
                   Register now
                 </Link>
