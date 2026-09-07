@@ -38,7 +38,7 @@ export function isValidBoardingChild(
 
 export function evaluateBoardingCapacity(
   used: number,
-  requestedBoardingChildren = 0,
+  _requestedBoardingChildren = 0,
 ): BoardingCapacityStatus {
   const capacity = SUMMER_CAMP_RATES.boardingCapacity;
   const remaining = Math.max(0, capacity - used);

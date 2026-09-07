@@ -49,7 +49,6 @@ function SignInContent() {
     confirmPassword: "",
   });
   const [isFormValid, setIsFormValid] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword]= useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
@@ -144,16 +143,6 @@ function SignInContent() {
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    // Calculate password strength for progress bar
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (hasUppercase) strength++;
-    if (hasLowercase) strength++;
-    if (hasNumber) strength++;
-    if (hasSpecialChar) strength++;
-
-    setPasswordStrength(strength);
 
     if (!hasUppercase)
       return "Password must contain at least one uppercase letter";

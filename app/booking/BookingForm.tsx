@@ -295,7 +295,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     null,
   );
 
-  const getServiceFormRef = (): ServiceFormValidationRef | null => {
+  const getServiceFormRef = useCallback((): ServiceFormValidationRef | null => {
     switch (selectedService) {
       case "tutoring":
         return tutoringFormRef.current;
@@ -312,7 +312,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       default:
         return null;
     }
-  };
+  }, [selectedService]);
 
   const showValidationFailure = (
     errors: string[],
@@ -361,6 +361,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     referralName,
     isLoadingServices,
     servicesLoadFailed,
+    getServiceFormRef,
   ]);
 
   // Re-run validation after a failed submit so errors update as the parent fixes fields

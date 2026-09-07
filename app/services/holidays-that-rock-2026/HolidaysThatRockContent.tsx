@@ -9,7 +9,6 @@ import {
   MapPin,
   ShieldCheck,
   GraduationCap,
-  Sparkle,
   WhatsappLogo,
   Clock,
   Users,
@@ -21,7 +20,6 @@ import {
   Trophy,
   Star,
   RocketLaunch,
-  Heart,
   Sun,
 } from "@phosphor-icons/react";
 import {
@@ -182,10 +180,10 @@ function AnimateOnScroll({
 }
 
 function Countdown() {
-  const deadline = new Date(`${season.registrationDeadline}T23:59:59`);
   const [remaining, setRemaining] = useState("");
 
   useEffect(() => {
+    const deadline = new Date(`${season.registrationDeadline}T23:59:59`);
     const tick = () => {
       const diff = deadline.getTime() - Date.now();
       if (diff <= 0) {

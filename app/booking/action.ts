@@ -20,10 +20,7 @@ import { calculateCampPricing } from "@/lib/camp-pricing";
 import { assertBoardingCapacityAvailable } from "@/lib/boarding-capacity";
 import { resolveAppliedHotr26PromoCode } from "@/lib/camp-promotions";
 import { isHolidayCampServiceActive } from "@/app/services/actions";
-import {
-  countChildcareMonthDays,
-  getWeekdayDatesInMonth,
-} from "@/lib/booking-calendar";
+import { countChildcareMonthDays } from "@/lib/booking-calendar";
 import {
   getCampScheduleBounds,
   resolveBookingScheduleDates,
@@ -35,7 +32,6 @@ import { getHtrCamperEmailEntries } from "@/lib/camper-id";
 import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 import {
   getBillingPeriodEnd,
-  getWeekdayDatesInRange,
   prorateMonthlyChildcareTotal,
 } from "@/lib/booking-proration";
 import {
@@ -1015,9 +1011,9 @@ export async function parseFormDataToBooking(
 
     // First Kiddies Hub booking for this parent: development levy is compulsory
     // for preschool / grade-school tracks.
-    if (user._id) {
+    if (userId) {
       const priorHomeschooling = (
-        await BookingRepository.findByUserId(user._id)
+        await BookingRepository.findByUserId(userId)
       ).some((booking) => booking.serviceType === "homeschooling");
 
       if (!priorHomeschooling) {

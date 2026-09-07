@@ -113,7 +113,6 @@ function LineRowFields({
   item,
   index,
   pricing,
-  bookingCtx,
   tutoringLocation,
   onUpdate,
   onRemove,

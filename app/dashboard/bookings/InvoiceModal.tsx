@@ -51,19 +51,22 @@ export default function InvoiceModal({
   const [loadingItems, setLoadingItems] = useState(false);
   const [sendToEmail, setSendToEmail] = useState("");
 
+  const bookingId = booking?._id;
+  const bookingParentEmail = booking?.parentEmail;
+
   useEffect(() => {
-    if (!isOpen || !booking) {
+    if (!isOpen || !bookingId) {
       setInvoiceItems([]);
       setSendToEmail("");
       return;
     }
 
-    setSendToEmail(booking.parentEmail || "");
+    setSendToEmail(bookingParentEmail || "");
 
     let cancelled = false;
     setLoadingItems(true);
 
-    fetch(`/api/bookings/${booking._id}`)
+    fetch(`/api/bookings/${bookingId}`)
       .then((response) => response.json())
       .then((data: { booking?: BookingInterface }) => {
         if (!cancelled && data.booking) {
@@ -80,7 +83,7 @@ export default function InvoiceModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, booking?._id]);
+  }, [isOpen, bookingId, bookingParentEmail]);
 
   if (!isOpen || !booking) return null;
 
