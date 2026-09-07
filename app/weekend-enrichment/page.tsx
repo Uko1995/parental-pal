@@ -162,7 +162,7 @@ export default function WeekendEnrichmentPage() {
                 Register Now
               </Link>
               <Link
-                href="/services#weekend-enrichment"
+                href="/services/kiddies-enrichment"
                 className="rounded-xl bg-white/10 border border-white/30 hover:bg-white/15 text-white px-6 py-3 font-bold text-center transition-colors"
               >
                 Learn more

@@ -1,7 +1,10 @@
 "use server";
 
 import { getCollection } from "@/lib/mongodb";
-import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
+import {
+  isPublicServiceType,
+  sortServicesWithEduvantaFirst,
+} from "@/lib/service-utils";
 import { ServiceInterface } from "@/models/Service";
 import {
   getActivePromoCampSeason,
@@ -35,6 +38,15 @@ export async function getVisiblePromoCampSeason(): Promise<CampSeasonId | null> 
   return isActive ? season : null;
 }
 
+function serializeService(
+  service: ServiceInterface,
+): ClientServiceForDisplay {
+  return {
+    ...service,
+    _id: service._id?.toString(),
+  };
+}
+
 export async function getPublicServices(): Promise<ClientServiceForDisplay[]> {
   try {
     const collection = await getCollection("services");
@@ -44,15 +56,36 @@ export async function getPublicServices(): Promise<ClientServiceForDisplay[]> {
       .sort({ createdAt: -1 })
       .toArray()) as ServiceInterface[];
 
-    // Convert ObjectIds to strings for client components
-    const serialized = services.map((service) => ({
-      ...service,
-      _id: service._id?.toString(),
-    }));
-
-    return sortServicesWithEduvantaFirst(serialized);
+    return sortServicesWithEduvantaFirst(services.map(serializeService));
   } catch (error) {
     console.error("Error fetching public services:", error);
     return [];
   }
+}
+
+export async function getPublicServiceByType(
+  type: string,
+): Promise<ClientServiceForDisplay[]> {
+  if (!isPublicServiceType(type)) return [];
+
+  try {
+    const collection = await getCollection("services");
+    const services = (await collection
+      .find({ type, status: "active" })
+      .sort({ createdAt: -1 })
+      .toArray()) as ServiceInterface[];
+
+    return sortServicesWithEduvantaFirst(services.map(serializeService));
+  } catch (error) {
+    console.error("Error fetching public service by type:", error);
+    return [];
+  }
+}
+
+export async function getRelatedPublicServices(
+  type: string,
+  limit = 3,
+): Promise<ClientServiceForDisplay[]> {
+  const services = await getPublicServices();
+  return services.filter((service) => service.type !== type).slice(0, limit);
 }

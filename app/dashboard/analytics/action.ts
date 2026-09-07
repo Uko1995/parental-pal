@@ -3,6 +3,7 @@
 import { unstable_cache } from "next/cache";
 import { CACHE_TIMES, CACHE_TAGS } from "@/lib/cache-config";
 import { getCollection } from "@/lib/mongodb";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 interface AnalyticsData {
   totalUsers: number;
@@ -294,7 +295,7 @@ export const getServicePerformanceData = unstable_cache(
     const serviceNames: { [key: string]: string } = {
       tutoring: "Academic Tutoring",
       childcare: "Daily Childcare",
-      homeschooling: "Homeschooling Support",
+      homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
       "holiday-camps": "Holiday Camp",
       "space-rental": "Event Space Rental",
       "kiddies-enrichment": "Kids Enrichment",

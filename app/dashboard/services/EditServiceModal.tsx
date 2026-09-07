@@ -11,6 +11,13 @@ import Image from "next/image";
 import { ServiceInterface } from "@/models/Service";
 import { ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
+import HomeschoolRatesEditor from "./HomeschoolRatesEditor";
+import { resolveHomeschoolRates } from "@/lib/homeschool-pricing";
+import {
+  DEFAULT_HOMESCHOOL_RATES,
+  HOMESCHOOL_PROGRAM_SHORT_NAME,
+  type HomeschoolRates,
+} from "@/lib/homeschool-program";
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -22,7 +29,7 @@ interface EditServiceModalProps {
 const serviceTypes = [
   { value: "childcare", label: "Childcare" },
   { value: "tutoring", label: "Tutoring" },
-  { value: "homeschooling", label: "Homeschooling" },
+  { value: "homeschooling", label: HOMESCHOOL_PROGRAM_SHORT_NAME },
   { value: "holiday-camps", label: "Holiday Camps" },
   { value: "space-rental", label: "Space Rental" },
   { value: "kiddies-enrichment", label: "Kids Enrichment" },
@@ -84,6 +91,7 @@ export default function EditServiceModal({
       discountPercentage: number;
       minimumSessions?: number;
     }>,
+    homeschool: DEFAULT_HOMESCHOOL_RATES as HomeschoolRates,
   });
 
   // Populate form data when service prop changes
@@ -108,6 +116,7 @@ export default function EditServiceModal({
         ageGroup: service.requirements?.ageGroup || "",
         venueTypes: service.requirements?.venueTypes || [],
         packages: service.pricing?.packages || [],
+        homeschool: resolveHomeschoolRates(service.pricing?.homeschool),
       });
     }
   }, [service, isOpen]);
@@ -293,6 +302,8 @@ export default function EditServiceModal({
                 }
               : undefined,
           packages: formData.packages.filter((pkg) => pkg.name.trim()),
+          homeschool:
+            formData.type === "homeschooling" ? formData.homeschool : undefined,
         },
         requirements: {
           ageGroup: formData.ageGroup,
@@ -609,6 +620,15 @@ export default function EditServiceModal({
                     </div>
                   </div>
                 </div>
+              )}
+
+              {formData.type === "homeschooling" && (
+                <HomeschoolRatesEditor
+                  value={formData.homeschool}
+                  onChange={(homeschool) =>
+                    setFormData((prev) => ({ ...prev, homeschool }))
+                  }
+                />
               )}
             </div>
           </div>

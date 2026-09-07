@@ -5,19 +5,28 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   getPublicServices,
+  getVisiblePromoCampSeason,
   ClientServiceForDisplay,
 } from "@/app/services/actions";
+import { getPublicServiceHref } from "@/lib/service-utils";
+import type { CampSeasonId } from "@/lib/camp-seasons";
 
 export default function MiniServices() {
   const [services, setServices] = useState<ClientServiceForDisplay[]>([]);
+  const [promoSeasonId, setPromoSeasonId] = useState<CampSeasonId | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const allServices = await getPublicServices();
-        // Limit to 6 services for the mini display
+        const [allServices, season] = await Promise.all([
+          getPublicServices(),
+          getVisiblePromoCampSeason(),
+        ]);
         setServices(allServices.slice(0, 6));
+        setPromoSeasonId(season);
       } catch (error) {
         console.error("Error fetching services:", error);
       } finally {
@@ -86,7 +95,10 @@ export default function MiniServices() {
                   </p>
 
                   {/* CTA Link */}
-                  <Link href="/services" passHref className="mt-auto">
+                  <Link
+                    href={getPublicServiceHref(service, promoSeasonId)}
+                    className="mt-auto"
+                  >
                     <button className="text-[#90AC19] cursor-pointer font-medium hover:text-[#7A9216] transition-colors duration-300 flex items-center group">
                       Learn More
                       <svg

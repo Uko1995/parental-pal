@@ -19,6 +19,16 @@ interface Provider {
 
 type ProvidersType = Record<string, Provider> | null;
 
+function getRedirectReasonMessage(reason: string): string {
+  switch (reason) {
+    case "booking-auth-required":
+      return "Please sign in or create an account to book a service.";
+    case "auth-required":
+    default:
+      return "Please sign in to continue.";
+  }
+}
+
 function SignInContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -63,6 +73,7 @@ function SignInContent() {
 
   const redirectTo = searchParams.get("callbackUrl");
   const error = searchParams.get("error");
+  const reason = searchParams.get("reason");
   const newTutor = searchParams.get("newTutor");
   const emailParam = searchParams.get("email");
   const nameParam = searchParams.get("name");
@@ -102,11 +113,19 @@ function SignInContent() {
     if (error) {
       toast.error(getErrorMessage(error));
     }
+    // Explain why the user was redirected here from a protected route
+    if (reason) {
+      toast(getRedirectReasonMessage(reason), {
+        id: "auth-redirect-reason",
+        icon: "🔒",
+        duration: 6000,
+      });
+    }
     // Show toast for successful login if redirected back
     if (searchParams.get("success")) {
       toast.success("Signed in successfully!");
     }
-  }, [error, searchParams, newTutor, emailParam, nameParam]);
+  }, [error, reason, searchParams, newTutor, emailParam, nameParam]);
 
   // Validation functions
   const validateEmail = (email: string): string => {

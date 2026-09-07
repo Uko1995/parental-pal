@@ -149,4 +149,106 @@ describe("booking-invoice", () => {
     assert.match(items[0].description, /Jul 20/);
     assert.match(items[0].description, /Jul 27/);
   });
+
+  it("rebuilds homeschool invoice lines from the stored price breakdown", () => {
+    const booking = baseBooking({
+      serviceType: "homeschooling",
+      pricing: { baseAmount: 680000, totalAmount: 680000, currency: "₦" },
+      children: [{ name: "Zara", age: 7 }],
+      serviceData: {
+        childrenData: [{ childId: "child-1", track: "gradeSchool" }],
+        homeschoolLines: [
+          {
+            childId: "child-1",
+            childName: "Child #1",
+            track: "gradeSchool",
+            code: "tuition",
+            description: "Grade School tuition — Child #1",
+            quantity: 2,
+            unitPrice: 300000,
+            total: 600000,
+          },
+          {
+            childId: "child-1",
+            childName: "Child #1",
+            track: "gradeSchool",
+            code: "learningMaterials",
+            description: "Learning materials — Child #1",
+            quantity: 1,
+            unitPrice: 80000,
+            total: 80000,
+          },
+        ],
+      },
+    });
+
+    const items = buildInvoiceLineItems(booking);
+    assert.equal(items.length, 2);
+    assert.equal(items[0].quantity, 2);
+    assert.equal(items[0].total, 600000);
+    assert.match(items[0].description, /Zara/);
+    assert.equal(items[1].total, 80000);
+    assert.equal(
+      items.reduce((sum, item) => sum + item.total, 0),
+      booking.pricing.totalAmount,
+    );
+  });
+
+  it("multiplies legacy homeschool bookings by their term count", () => {
+    const booking = baseBooking({
+      serviceType: "homeschooling",
+      pricing: { baseAmount: 500000, totalAmount: 500000, currency: "₦" },
+      children: [{ name: "Zara", age: 7 }],
+      serviceData: {
+        termRate: 250000,
+        childrenData: [
+          {
+            childId: "child-1",
+            selectedSubjects: ["Mathematics"],
+            gradeLevel: "Primary 1-3 (Ages 6-9)",
+            selectedTerms: ["first", "second"],
+          },
+        ],
+      },
+    });
+
+    const items = buildInvoiceLineItems(booking);
+    assert.equal(items[0].quantity, 2);
+    assert.equal(items[0].total, 500000);
+  });
+
+  it("prices creche care by cadence from the stored breakdown", () => {
+    const booking = baseBooking({
+      serviceType: "homeschooling",
+      pricing: { baseAmount: 75000, totalAmount: 75000, currency: "₦" },
+      children: [{ name: "Tobi", age: 2 }],
+      serviceData: {
+        childrenData: [
+          {
+            childId: "child-1",
+            track: "creche",
+            crecheCadence: "week",
+            crecheQuantity: 3,
+          },
+        ],
+        homeschoolLines: [
+          {
+            childId: "child-1",
+            childName: "Child #1",
+            track: "creche",
+            code: "crecheCare",
+            description: "Creche care — Child #1 (3 weeks)",
+            quantity: 3,
+            unitPrice: 25000,
+            total: 75000,
+          },
+        ],
+      },
+    });
+
+    const items = buildInvoiceLineItems(booking);
+    assert.equal(items[0].quantity, 3);
+    assert.equal(items[0].unitPrice, 25000);
+    assert.match(items[0].description, /Tobi/);
+  });
 });

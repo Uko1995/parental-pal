@@ -14,11 +14,12 @@ import {
   suggestSummerCampDiscountLine,
 } from "@/lib/parent-invoice-pricing";
 import type { ServicePricingMap } from "@/lib/service-pricing";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 const SERVICE_OPTIONS = [
   { value: "tutoring", label: "Tutoring" },
   { value: "childcare", label: "Childcare" },
-  { value: "homeschooling", label: "Homeschooling" },
+  { value: "homeschooling", label: HOMESCHOOL_PROGRAM_SHORT_NAME },
   { value: "holiday-camps", label: "Holiday Camps" },
   { value: "space-rental", label: "Space Rental" },
   { value: "kiddies-enrichment", label: "Kiddies Enrichment" },

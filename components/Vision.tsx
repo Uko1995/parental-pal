@@ -105,9 +105,9 @@ export default function Vision() {
       ),
     },
     {
-      category: "Homeschooling Programs",
+      category: "Creche, Preschool, Grade School & Afterschool",
       description:
-        "Comprehensive educational programs for complete learning experience",
+        "Comprehensive learning and care programmes, including support for neuro-divergent children",
       services: [
         {
           type: "In your Home ",

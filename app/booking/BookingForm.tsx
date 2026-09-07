@@ -898,11 +898,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
             value={billingPeriodMonths}
           />
           {!session?.user && (
-            <div className="alert alert-info">
+            <div className="alert alert-warning">
               <span>
-                You can fill out this form without signing in. You&apos;ll be
-                asked to sign in when you submit — your answers are saved
-                automatically and restored after login.
+                Your session has expired. Sign in again to submit this booking —
+                your answers are saved automatically and restored after login.
               </span>
             </div>
           )}

@@ -1,18 +1,9 @@
 import { getDb } from "@/lib/mongodb";
 import {
   buildServicePricingMap,
+  type ServiceDoc,
   type ServicePricingMap,
 } from "@/lib/service-pricing";
-
-type ServiceDoc = {
-  type: string;
-  pricing?: {
-    baseRate?: number;
-    currency?: string;
-    billingType?: string;
-    locationRates?: { virtual?: number; physical?: number };
-  };
-};
 
 export async function fetchServicePricingMap(): Promise<ServicePricingMap> {
   const db = await getDb();

@@ -38,6 +38,20 @@ import {
   getWeekdayDatesInRange,
   prorateMonthlyChildcareTotal,
 } from "@/lib/booking-proration";
+import {
+  calculateHomeschoolPricing,
+  resolveHomeschoolRates,
+  type HomeschoolChildSelection,
+} from "@/lib/homeschool-pricing";
+import {
+  inferTrackFromGradeLevel,
+  isCrecheCadence,
+  isHomeschoolTrack,
+  isTermTrack,
+  type CrecheCadence,
+  type HomeschoolRates,
+  type HomeschoolTrack,
+} from "@/lib/homeschool-program";
 
 const EDUVANTA_PROMO_CODE = "ONBOARD";
 const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
@@ -93,6 +107,16 @@ async function getTutoringRatesFromService() {
   };
 }
 
+async function getHomeschoolRatesFromService(): Promise<HomeschoolRates> {
+  const db = await getDb();
+  const service = await db.collection("services").findOne(
+    { type: "homeschooling", status: "active" },
+    { projection: { pricing: 1 } },
+  );
+
+  return resolveHomeschoolRates(service?.pricing?.homeschool);
+}
+
 export async function registerChild(formData: FormData) {
   // Check authentication status
   const session = await auth();
@@ -100,7 +124,7 @@ export async function registerChild(formData: FormData) {
   if (!session?.user) {
     // User is not authenticated, redirect to signin with callback URL
     redirect(
-      `/auth/signin?callbackUrl=${encodeURIComponent("/booking?action=submit")}`,
+      `/auth/signin?callbackUrl=${encodeURIComponent("/booking?action=submit")}&reason=booking-auth-required`,
     );
   }
 
@@ -788,9 +812,10 @@ export async function parseFormDataToBooking(
     serviceData.promoDiscount =
       parseInt(cleanedData.promoDiscount as string) || 0;
   } else if (serviceType === "homeschooling") {
-    // NEW: Parse per-child homeschooling data
+    // Per-child Kiddies Hub programme data across all four tracks
     const childrenHomeschoolData: Array<{
       childId: string;
+      track: HomeschoolTrack;
       selectedSubjects: string[];
       gradeLevel: string;
       curriculum: string;
@@ -799,47 +824,95 @@ export async function parseFormDataToBooking(
       educationalGoals: string;
       selectedTerm: string;
       selectedTerms?: string[];
+      isNewIntake?: boolean;
+      learningMaterials?: boolean;
+      transport?: boolean;
+      selectedEcas?: string[];
+      crecheCadence?: CrecheCadence;
+      crecheQuantity?: number;
+      afterschoolMonths?: number;
     }> = [];
 
     Array.from(childIds).forEach((childId) => {
       const subjects = cleanedData[`subjects_${childId}`];
-      const gradeLevel = cleanedData[`gradeLevel_${childId}`];
+      const gradeLevel = cleanedData[`gradeLevel_${childId}`] || "";
       const curriculum = cleanedData[`curriculum_${childId}`];
+      const rawTrack = cleanedData[`track_${childId}`];
+      const track: HomeschoolTrack = isHomeschoolTrack(rawTrack)
+        ? rawTrack
+        : inferTrackFromGradeLevel(gradeLevel);
 
-      if (subjects && gradeLevel) {
-        let selectedTerms: string[] = [];
-        const termsRaw = cleanedData[`selectedTerms_${childId}`];
-        if (termsRaw) {
-          try {
-            const parsed = JSON.parse(termsRaw as string);
-            if (Array.isArray(parsed)) {
-              selectedTerms = parsed.filter((t) => typeof t === "string");
-            }
-          } catch {
-            selectedTerms = [];
+      // Term tracks still require subjects + grade; care tracks do not.
+      if (isTermTrack(track) && !(subjects && gradeLevel)) return;
+
+      let selectedTerms: string[] = [];
+      const termsRaw = cleanedData[`selectedTerms_${childId}`];
+      if (termsRaw) {
+        try {
+          const parsed = JSON.parse(termsRaw as string);
+          if (Array.isArray(parsed)) {
+            selectedTerms = parsed.filter((t) => typeof t === "string");
           }
+        } catch {
+          selectedTerms = [];
         }
-        const singleTerm = cleanedData[`schoolTerm_${childId}`] || "";
-        if (!selectedTerms.length && singleTerm) {
-          selectedTerms = [singleTerm as string];
-        }
-
-        childrenHomeschoolData.push({
-          childId,
-          selectedSubjects: JSON.parse(subjects),
-          gradeLevel,
-          curriculum: curriculum || "",
-          learningStyle: cleanedData[`learningStyle_${childId}`] || "",
-          specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",
-          educationalGoals: cleanedData[`educationalGoals_${childId}`] || "",
-          selectedTerm: selectedTerms[0] || "",
-          selectedTerms,
-        });
       }
+      const singleTerm = cleanedData[`schoolTerm_${childId}`] || "";
+      if (!selectedTerms.length && singleTerm) {
+        selectedTerms = [singleTerm as string];
+      }
+
+      let selectedEcas: string[] = [];
+      const ecasRaw = cleanedData[`selectedEcas_${childId}`];
+      if (ecasRaw) {
+        try {
+          const parsed = JSON.parse(ecasRaw as string);
+          if (Array.isArray(parsed)) {
+            selectedEcas = parsed.filter((e) => typeof e === "string");
+          }
+        } catch {
+          selectedEcas = [];
+        }
+      }
+
+      let parsedSubjects: string[] = [];
+      if (subjects) {
+        try {
+          const parsed = JSON.parse(subjects as string);
+          if (Array.isArray(parsed)) parsedSubjects = parsed;
+        } catch {
+          parsedSubjects = [];
+        }
+      }
+
+      const rawCadence = cleanedData[`crecheCadence_${childId}`];
+
+      childrenHomeschoolData.push({
+        childId,
+        track,
+        selectedSubjects: parsedSubjects,
+        gradeLevel,
+        curriculum: curriculum || "",
+        learningStyle: cleanedData[`learningStyle_${childId}`] || "",
+        specialNeeds: cleanedData[`specialNeeds_${childId}`] || "",
+        educationalGoals: cleanedData[`educationalGoals_${childId}`] || "",
+        selectedTerm: selectedTerms[0] || "",
+        selectedTerms,
+        isNewIntake: cleanedData[`isNewIntake_${childId}`] === "true",
+        learningMaterials:
+          cleanedData[`learningMaterials_${childId}`] === "true",
+        transport: cleanedData[`transport_${childId}`] === "true",
+        selectedEcas,
+        crecheCadence: isCrecheCadence(rawCadence) ? rawCadence : "month",
+        crecheQuantity:
+          parseInt(cleanedData[`crecheQuantity_${childId}`] as string, 10) || 1,
+        afterschoolMonths:
+          parseInt(cleanedData[`afterschoolMonths_${childId}`] as string, 10) ||
+          1,
+      });
     });
 
     serviceData.childrenData = childrenHomeschoolData;
-    serviceData.termRate = parseInt(cleanedData.termRate) || 150000;
   } else if (serviceType === "kiddies-enrichment") {
     // Parse per-child enrichment data (single-day events)
     const childrenEnrichmentData: Array<{
@@ -937,15 +1010,19 @@ export async function parseFormDataToBooking(
     serviceData.physicalRate = physicalRate;
     serviceData.hourlyRate = effectiveHourlyRate;
   } else if (serviceType === "homeschooling") {
-    const childrenData = serviceData.childrenData as Array<{
-      childId: string;
-      selectedTerms?: string[];
-    }>;
-    const termRate = parseInt(cleanedData.termRate) || 150000;
-    totalAmount = childrenData.reduce((sum, child) => {
-      const termCount = Math.max(child.selectedTerms?.length || 1, 1);
-      return sum + termRate * termCount;
-    }, 0);
+    const childrenData =
+      serviceData.childrenData as HomeschoolChildSelection[];
+    // Rates always come from the service record, never from the submitted form.
+    const homeschoolRates = await getHomeschoolRatesFromService();
+    const homeschoolPricing = calculateHomeschoolPricing(
+      childrenData,
+      homeschoolRates,
+    );
+
+    totalAmount = homeschoolPricing.totalAmount;
+    serviceData.homeschoolRates = homeschoolRates;
+    serviceData.homeschoolLines = homeschoolPricing.lines;
+    serviceData.termRate = homeschoolRates.tuitionByBand.preschool;
   } else if (serviceType === "kiddies-enrichment") {
     // Sum up hours from all children (single-day events)
     const childrenData = serviceData.childrenData as Array<{

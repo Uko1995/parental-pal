@@ -1,9 +1,13 @@
+import { resolveHomeschoolRates } from "@/lib/homeschool-pricing";
+import type { HomeschoolRates } from "@/lib/homeschool-program";
+
 export interface ServicePricingEntry {
   baseRate: number;
   currency: string;
   billingType: string;
   virtualRate?: number;
   physicalRate?: number;
+  homeschool?: HomeschoolRates;
 }
 
 export type ServicePricingMap = Record<string, ServicePricingEntry>;
@@ -11,13 +15,14 @@ export type ServicePricingMap = Record<string, ServicePricingEntry>;
 export const TUTORING_VIRTUAL_FALLBACK = 13000;
 export const TUTORING_PHYSICAL_FALLBACK = 15000;
 
-type ServiceDoc = {
+export type ServiceDoc = {
   type: string;
   pricing?: {
     baseRate?: number;
     currency?: string;
     billingType?: string;
     locationRates?: { virtual?: number; physical?: number };
+    homeschool?: Parameters<typeof resolveHomeschoolRates>[0];
   };
 };
 
@@ -41,6 +46,23 @@ export function buildServicePricingMap(
       pricingMap[service.type].physicalRate =
         service.pricing.locationRates.physical ?? TUTORING_PHYSICAL_FALLBACK;
     }
+
+    if (service.type === "homeschooling") {
+      pricingMap[service.type].homeschool = resolveHomeschoolRates(
+        service.pricing.homeschool,
+      );
+    }
+  }
+
+  if (!pricingMap.homeschooling) {
+    pricingMap.homeschooling = {
+      baseRate: resolveHomeschoolRates(null).tuitionByBand.preschool,
+      currency: "NGN",
+      billingType: "term",
+      homeschool: resolveHomeschoolRates(null),
+    };
+  } else if (!pricingMap.homeschooling.homeschool) {
+    pricingMap.homeschooling.homeschool = resolveHomeschoolRates(null);
   }
 
   if (!pricingMap.tutoring) {

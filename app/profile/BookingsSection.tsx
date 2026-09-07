@@ -14,6 +14,7 @@ import {
   isPaymentOverdue,
 } from "@/lib/booking-payment-due";
 import { canParentCancelBooking } from "@/lib/booking-cancellation";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 interface Booking {
   _id: string;
@@ -155,7 +156,7 @@ interface Booking {
 const SERVICE_TYPE_LABELS = {
   childcare: "Childcare",
   tutoring: "Tutoring",
-  homeschooling: "Homeschooling",
+  homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
   "holiday-camps": "Holiday Camps",
   "space-rental": "Space Rental",
   "kiddies-enrichment": "Kiddies Enrichment",

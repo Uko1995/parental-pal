@@ -5,12 +5,12 @@ export default function Footer() {
 
   const footerLinks = {
     services: [
-      { name: "Childcare Services", href: "/services" },
-      { name: "Home Schooling", href: "/services" },
-      { name: "Academic Tutoring", href: "/services" },
-      { name: "Space Rentals", href: "/services" },
-      { name: "Kiddies Parties", href: "/services" },
-      { name: "Kiddies Enrichment Sessions", href: "/services" },
+      { name: "Childcare Services", href: "/services/childcare" },
+      { name: "Home Schooling", href: "/services/homeschooling" },
+      { name: "Academic Tutoring", href: "/services/tutoring" },
+      { name: "Space Rentals", href: "/services/space-rental" },
+      { name: "Kiddies Parties", href: "/services/space-rental" },
+      { name: "Kiddies Enrichment Sessions", href: "/services/kiddies-enrichment" },
     ],
     company: [
       { name: "About Us", href: "/about" },

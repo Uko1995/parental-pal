@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getCollection } from "@/lib/mongodb";
-import { sortServicesWithEduvantaFirst } from "@/lib/service-utils";
+import {
+  getPublicServiceRevalidatePaths,
+  sortServicesWithEduvantaFirst,
+} from "@/lib/service-utils";
 import { ServiceInterface } from "@/models/Service";
 import { auth } from "@/auth";
 import { UserRepository } from "@/lib/UserRepository";
@@ -109,7 +112,11 @@ export async function POST(request: NextRequest) {
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
-    revalidatePath("/services");
+    for (const path of getPublicServiceRevalidatePaths(
+      typeof serviceData.type === "string" ? serviceData.type : undefined,
+    )) {
+      revalidatePath(path);
+    }
     revalidatePath("/");
 
     return NextResponse.json({
@@ -153,7 +160,9 @@ export async function PUT(request: NextRequest) {
     if (result.matchedCount > 0) {
       revalidateTag(CACHE_TAGS.SERVICES);
       revalidateTag(CACHE_TAGS.DASHBOARD);
-      revalidatePath("/services");
+      for (const path of getPublicServiceRevalidatePaths(serviceData?.type)) {
+        revalidatePath(path);
+      }
       revalidatePath("/");
       revalidatePath("/dashboard/services");
 

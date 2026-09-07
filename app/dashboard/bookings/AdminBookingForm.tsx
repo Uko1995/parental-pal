@@ -33,11 +33,12 @@ import toast from "react-hot-toast";
 import type { ParentSearchOption } from "@/components/admin/ParentSearchCombobox";
 import type { RebookFormEntries } from "@/lib/booking-rebook";
 import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 const SERVICE_OPTIONS = [
   { value: "childcare", label: "Childcare" },
   { value: "tutoring", label: "Tutoring" },
-  { value: "homeschooling", label: "Homeschooling" },
+  { value: "homeschooling", label: HOMESCHOOL_PROGRAM_SHORT_NAME },
   { value: "holiday-camps", label: "Holiday Camps" },
   { value: "space-rental", label: "Space Rental" },
   { value: "kiddies-enrichment", label: "Kiddies Enrichment" },

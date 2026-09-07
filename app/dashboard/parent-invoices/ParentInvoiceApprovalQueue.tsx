@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import type { ParentInvoiceLineItem } from "@/models/ParentInvoice";
 import { formatPaymentDueLabel } from "@/lib/booking-payment-due";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 interface SubmittedInvoice {
   _id: string;
@@ -19,7 +20,7 @@ interface SubmittedInvoice {
 const SERVICE_LABELS: Record<string, string> = {
   tutoring: "Tutoring",
   childcare: "Childcare",
-  homeschooling: "Homeschooling",
+  homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
   "holiday-camps": "Holiday Camps",
   "space-rental": "Space Rental",
   "kiddies-enrichment": "Kiddies Enrichment",

@@ -1,10 +1,15 @@
 import { MetadataRoute } from "next";
+import {
+  getPublicServices,
+  getVisiblePromoCampSeason,
+} from "@/app/services/actions";
+import { getCampSeason } from "@/lib/camp-seasons";
+import { getPublicServicePath } from "@/lib/service-utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://parentalpal.org";
   const currentDate = new Date();
 
-  // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -74,15 +79,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // TODO: Add dynamic pages from database (blog posts, tutor profiles, etc.)
-  // Example:
-  // const posts = await fetchBlogPosts();
-  // const blogPages = posts.map((post) => ({
-  //   url: `${baseUrl}/blog/${post.slug}`,
-  //   lastModified: post.updatedAt,
-  //   changeFrequency: "monthly" as const,
-  //   priority: 0.7,
-  // }));
+  const [services, promoSeason] = await Promise.all([
+    getPublicServices(),
+    getVisiblePromoCampSeason(),
+  ]);
 
-  return [...staticPages];
+  const seenTypes = new Set<string>();
+  const servicePages: MetadataRoute.Sitemap = [];
+
+  for (const service of services) {
+    if (seenTypes.has(service.type)) continue;
+    seenTypes.add(service.type);
+    servicePages.push({
+      url: `${baseUrl}${getPublicServicePath(service.type)}`,
+      lastModified: service.updatedAt
+        ? new Date(service.updatedAt)
+        : currentDate,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    });
+  }
+
+  if (promoSeason) {
+    const landingPath = getCampSeason(promoSeason).landingPath;
+    if (landingPath.startsWith("/services/")) {
+      servicePages.push({
+        url: `${baseUrl}${landingPath}`,
+        lastModified: currentDate,
+        changeFrequency: "weekly",
+        priority: 0.85,
+      });
+    }
+  }
+
+  return [...staticPages, ...servicePages];
 }
