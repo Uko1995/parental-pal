@@ -10,7 +10,6 @@ import {
 const Vision = lazy(() => import("../components/Vision"));
 const MiniServices = lazy(() => import("../components/MiniServices"));
 const MiniProducts = lazy(() => import("../components/MiniProducts"));
-const MiniBlog = lazy(() => import("../components/MiniBlog"));
 const Statistics = lazy(() => import("../components/Statistics"));
 const Contact = lazy(() => import("../components/Contact"));
 

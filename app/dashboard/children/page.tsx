@@ -12,6 +12,7 @@ import {
   BuildingOfficeIcon,
 } from "@heroicons/react/24/outline";
 
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 import ChildrenTable from "./ChildrenTable";
 import ChildrenCharts from "./ChildrenCharts";
 import AddChildModal from "./AddChildModal";
@@ -383,12 +384,14 @@ export default function ChildrenPage() {
           <div className="stat-figure text-orange-500">
             <HomeIcon className="w-8 h-8" />
           </div>
-          <div className="stat-title">Homeschooling</div>
+          <div className="stat-title">{HOMESCHOOL_PROGRAM_SHORT_NAME}</div>
           <div className="stat-value text-orange-500">
             {serviceStats.find((s) => s.serviceType === "homeschooling")
               ?.childrenCount || 0}
           </div>
-          <div className="stat-desc">Home education</div>
+          <div className="stat-desc">
+            Creche, preschool, grade school &amp; afterschool
+          </div>
         </div>
 
         <div className="stat bg-base-100 shadow rounded-2xl">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import PhoneInput from "@/components/PhoneInput";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -164,7 +165,7 @@ export default function Contact() {
     "Academic Tutoring",
     "Childcare Services",
     "Holiday Camps",
-    "Homeschooling",
+    HOMESCHOOL_PROGRAM_SHORT_NAME,
     "Events & Parties",
     "Membership Information",
     "Support & Technical",

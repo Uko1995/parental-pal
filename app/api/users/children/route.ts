@@ -106,8 +106,13 @@ export async function GET() {
     });
 
     // Return children data with services
+    const hasPriorHomeschoolingBooking = bookings.some(
+      (booking) => booking.serviceType === "homeschooling",
+    );
+
     return NextResponse.json({
       children: allChildren,
+      hasPriorHomeschoolingBooking,
     });
   } catch (error) {
     console.error("Error fetching children:", error);

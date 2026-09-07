@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Define protected routes
-const protectedRoutes = ["/dashboard", "/api/analytics", "/api/dashboard"];
+const protectedRoutes = [
+  "/booking",
+  "/dashboard",
+  "/api/analytics",
+  "/api/dashboard",
+];
 
 const adminOnlyRoutes = [
   "/dashboard",
@@ -14,6 +19,7 @@ const adminOnlyRoutes = [
   "/dashboard/payments",
   "/dashboard/services",
   "/dashboard/blog",
+  "/dashboard/audit",
   "/dashboard/settings",
   "/api/analytics",
   "/api/dashboard",
@@ -29,6 +35,16 @@ const publicRoutes = [
   "/auth/error",
   "/api/auth",
 ];
+
+/**
+ * `/` must match exactly — as a prefix it swallows every path and would let
+ * the auth checks below be skipped for protected routes.
+ */
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some((route) =>
+    route === "/" ? pathname === "/" : pathname.startsWith(route),
+  );
+}
 
 /**
  * Add security headers to response
@@ -102,6 +118,17 @@ function addSecurityHeaders(
   return response;
 }
 
+/** Sign-in URL that preserves the target route and explains why auth is needed. */
+function buildSignInUrl(request: NextRequest, reason?: string): URL {
+  const { pathname, search } = request.nextUrl;
+  const signInUrl = new URL("/auth/signin", request.url);
+  signInUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
+  if (reason) {
+    signInUrl.searchParams.set("reason", reason);
+  }
+  return signInUrl;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -111,7 +138,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow public routes and API auth routes
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (isPublicRoute(pathname)) {
     const response = NextResponse.next();
     return addSecurityHeaders(response, request);
   }
@@ -119,18 +146,28 @@ export async function middleware(request: NextRequest) {
   // For Edge Runtime compatibility, we'll use cookies to check session
   const sessionToken =
     request.cookies.get("next-auth.session-token") ||
-    request.cookies.get("__Secure-next-auth.session-token");
+    request.cookies.get("__Secure-next-auth.session-token") ||
+    request.cookies.get("authjs.session-token") ||
+    request.cookies.get("__Secure-authjs.session-token");
 
   // Check if user has session cookie
   const hasSession = !!sessionToken?.value;
 
   // Check if route requires authentication
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
-    // No session - redirect to sign in
+    // No session - redirect pages to sign in, answer API calls with 401
     if (!hasSession) {
-      const signInUrl = new URL("/auth/signin", request.url);
-      signInUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(signInUrl);
+      if (pathname.startsWith("/api/")) {
+        return addSecurityHeaders(
+          NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+          request,
+        );
+      }
+
+      const reason = pathname.startsWith("/booking")
+        ? "booking-auth-required"
+        : "auth-required";
+      return NextResponse.redirect(buildSignInUrl(request, reason));
     }
 
     // For admin-only routes, we'll let the API routes handle the detailed authorization
@@ -138,9 +175,7 @@ export async function middleware(request: NextRequest) {
     if (adminOnlyRoutes.some((route) => pathname.startsWith(route))) {
       // Just ensure they have a session, detailed role checking happens in API routes
       if (!hasSession) {
-        const signInUrl = new URL("/auth/signin", request.url);
-        signInUrl.searchParams.set("callbackUrl", pathname);
-        return NextResponse.redirect(signInUrl);
+        return NextResponse.redirect(buildSignInUrl(request, "auth-required"));
       }
     }
   }
@@ -169,7 +204,6 @@ export async function middleware(request: NextRequest) {
     const adminApiRoutes = [
       "/api/analytics",
       "/api/dashboard",
-      "/api/users",
       "/api/parents-data",
       "/api/children-data",
       "/api/tutors-data",
@@ -184,6 +218,22 @@ export async function middleware(request: NextRequest) {
         return addSecurityHeaders(response, request);
       }
       // Let the API route itself handle role-based authorization
+    }
+
+    // Parent (or any authenticated user) API routes
+    const authenticatedUserApiRoutes = [
+      "/api/users",
+      "/api/audit-logs",
+    ];
+
+    if (authenticatedUserApiRoutes.some((route) => pathname.startsWith(route))) {
+      if (!hasSession) {
+        const response = NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 },
+        );
+        return addSecurityHeaders(response, request);
+      }
     }
 
     // Protected API routes require authentication

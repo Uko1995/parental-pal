@@ -11,7 +11,7 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
-import { formatBillingSuffix } from "@/lib/service-utils";
+import { formatBillingSuffix, getServiceDisplayName } from "@/lib/service-utils";
 
 interface ServiceDetailsModalProps {
   service: ClientServiceInterface | null;
@@ -58,7 +58,7 @@ export default function ServiceDetailsModal({
           <div className="mt-6 mb-6 relative">
             <Image
               src={service.image}
-              alt={service.name}
+              alt={getServiceDisplayName(service)}
               width={600}
               height={300}
               className="w-full h-64 object-cover rounded-lg shadow-sm"
@@ -71,7 +71,7 @@ export default function ServiceDetailsModal({
             <div className="absolute bottom-3 right-3 left-3">
               <div className="flex items-center justify-between ">
                 <h2 className="text-2xl font-bold text-gray-50">
-                  {service.name}
+                  {getServiceDisplayName(service)}
                 </h2>
                 <div className="flex items-center space-x-2 mt-1">
                   <span className="badge badge-primary">

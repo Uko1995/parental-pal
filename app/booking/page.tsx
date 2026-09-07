@@ -1,6 +1,7 @@
 import { registerChild } from "./action";
 import BookingForm from "./BookingForm";
 import { Suspense } from "react";
+import { auth } from "@/auth";
 import { isHolidayCampServiceActive } from "@/app/services/actions";
 import { redirect } from "next/navigation";
 
@@ -8,8 +9,33 @@ interface BookingPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+function buildBookingCallbackUrl(params: {
+  [key: string]: string | string[] | undefined;
+}): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") {
+      query.set(key, value);
+    } else if (Array.isArray(value) && value[0]) {
+      query.set(key, value[0]);
+    }
+  }
+  const search = query.toString();
+  return search ? `/booking?${search}` : "/booking";
+}
+
 export default async function Page({ searchParams }: BookingPageProps) {
   const params = await searchParams;
+
+  // Booking requires an account: the middleware cookie check is a fast path,
+  // this verifies the session itself before any form is rendered.
+  const session = await auth();
+  if (!session?.user) {
+    const callbackUrl = encodeURIComponent(buildBookingCallbackUrl(params));
+    redirect(
+      `/auth/signin?callbackUrl=${callbackUrl}&reason=booking-auth-required`,
+    );
+  }
 
   const serviceParam = Array.isArray(params?.service)
     ? params.service[0]

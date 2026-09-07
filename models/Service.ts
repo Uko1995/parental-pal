@@ -45,6 +45,27 @@ export interface ServiceInterface {
       discountPercentage: number;
       minimumSessions?: number;
     }>;
+
+    // Kiddies Hub learning programme catalog (homeschooling service only)
+    homeschool?: {
+      creche: { day: number; week: number; month: number };
+      afterschool: { month: number };
+      tuitionByBand: { preschool: number; gradeSchool: number };
+      fees: Array<{
+        code: string;
+        label: string;
+        amount: number;
+        cadence: "onceNewIntake" | "oncePerYear" | "perTerm";
+        appliesTo: Array<"preschool" | "gradeSchool">;
+        note?: string;
+      }>;
+      ecas: Array<{
+        code: string;
+        label: string;
+        day: string;
+        amount: number;
+      }>;
+    };
   };
 
   // Key features
@@ -205,6 +226,66 @@ export const ServiceSchema = {
                   amount: { bsonType: "number", minimum: 0 },
                   required: { bsonType: "bool" },
                   recurring: { bsonType: "bool" },
+                },
+              },
+            },
+            homeschool: {
+              bsonType: "object",
+              properties: {
+                creche: {
+                  bsonType: "object",
+                  properties: {
+                    day: { bsonType: "number", minimum: 0 },
+                    week: { bsonType: "number", minimum: 0 },
+                    month: { bsonType: "number", minimum: 0 },
+                  },
+                },
+                afterschool: {
+                  bsonType: "object",
+                  properties: {
+                    month: { bsonType: "number", minimum: 0 },
+                  },
+                },
+                tuitionByBand: {
+                  bsonType: "object",
+                  properties: {
+                    preschool: { bsonType: "number", minimum: 0 },
+                    gradeSchool: { bsonType: "number", minimum: 0 },
+                  },
+                },
+                fees: {
+                  bsonType: "array",
+                  items: {
+                    bsonType: "object",
+                    required: ["code", "label", "amount", "cadence"],
+                    properties: {
+                      code: { bsonType: "string" },
+                      label: { bsonType: "string" },
+                      amount: { bsonType: "number", minimum: 0 },
+                      cadence: {
+                        bsonType: "string",
+                        enum: ["onceNewIntake", "oncePerYear", "perTerm"],
+                      },
+                      appliesTo: {
+                        bsonType: "array",
+                        items: { bsonType: "string" },
+                      },
+                      note: { bsonType: "string" },
+                    },
+                  },
+                },
+                ecas: {
+                  bsonType: "array",
+                  items: {
+                    bsonType: "object",
+                    required: ["code", "label", "amount"],
+                    properties: {
+                      code: { bsonType: "string" },
+                      label: { bsonType: "string" },
+                      day: { bsonType: "string" },
+                      amount: { bsonType: "number", minimum: 0 },
+                    },
+                  },
                 },
               },
             },

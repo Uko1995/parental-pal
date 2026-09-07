@@ -66,12 +66,13 @@ interface ChildTutoringData {
 
 interface TutoringFormProps {
   initialTemplate?: RebookFormEntries | null;
+  /** Accepted for parity with the other booking forms; tutoring bills per session. */
   billingPeriodMonths?: number;
   onBillingPeriodMonthsChange?: (months: number) => void;
 }
 
 const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
-  ({ initialTemplate, billingPeriodMonths = 1, onBillingPeriodMonthsChange }, ref) => {
+  ({ initialTemplate }, ref) => {
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [parentPhone, setParentPhone] = useState("");
@@ -389,14 +390,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     },
     []
   );
-
-  const handleHoursChange = useCallback((childId: string, hours: number) => {
-    setChildrenData((prev) =>
-      prev.map((child) =>
-        child.id === childId ? { ...child, totalHours: hours } : child
-      )
-    );
-  }, []);
 
   const handleSessionsChange = useCallback(
     (childId: string, sessions: number) => {

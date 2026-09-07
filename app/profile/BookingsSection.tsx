@@ -14,6 +14,15 @@ import {
   isPaymentOverdue,
 } from "@/lib/booking-payment-due";
 import { canParentCancelBooking } from "@/lib/booking-cancellation";
+import {
+  getTrackLabel,
+  HOMESCHOOL_PROGRAM_SHORT_NAME,
+} from "@/lib/homeschool-program";
+import {
+  buildInvoiceLineItems,
+  buildServiceSummary,
+} from "@/lib/booking-invoice";
+import type { BookingInterface } from "@/models/Booking";
 
 interface Booking {
   _id: string;
@@ -100,6 +109,15 @@ interface Booking {
       learningStyle?: string;
       educationalGoals?: string;
       selectedTerm?: string;
+      selectedTerms?: string[];
+      track?: "creche" | "preschool" | "gradeSchool" | "afterschool";
+      isNewIntake?: boolean;
+      learningMaterials?: boolean;
+      transport?: boolean;
+      selectedEcas?: string[];
+      crecheCadence?: "day" | "week" | "month";
+      crecheQuantity?: number;
+      afterschoolMonths?: number;
       // Kiddies enrichment specific
       selectedPrograms?: string[];
       interests?: string;
@@ -115,10 +133,20 @@ interface Booking {
     learningGoals?: string;
     hourlyRate?: number;
 
-    // Homeschooling specific
+    // Homeschooling / Kiddies Hub
     curriculum?: string;
     learningStyle?: string;
     termRate?: number;
+    homeschoolLines?: Array<{
+      childId: string;
+      childName?: string;
+      track: string;
+      code: string;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
 
     // Childcare specific
     careType?: "daily" | "monthly";
@@ -155,7 +183,7 @@ interface Booking {
 const SERVICE_TYPE_LABELS = {
   childcare: "Childcare",
   tutoring: "Tutoring",
-  homeschooling: "Homeschooling",
+  homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
   "holiday-camps": "Holiday Camps",
   "space-rental": "Space Rental",
   "kiddies-enrichment": "Kiddies Enrichment",
@@ -1187,93 +1215,171 @@ function BookingDetailsModal({ booking, onClose }: BookingDetailsModalProps) {
                   </div>
                 )}
 
-              {/* Homeschooling Details */}
+              {/* Homeschooling / Kiddies Hub Details */}
               {booking.serviceType === "homeschooling" &&
                 booking.serviceData && (
                   <div className="space-y-4">
-                    {booking.children?.map((child, index) => {
-                      // Find matching childData from childrenData array
-                      const childData = booking.serviceData?.childrenData?.find(
-                        (cd) => cd.childId === child.id
-                      );
+                    {(() => {
+                      const bookingAsInvoice =
+                        booking as unknown as BookingInterface;
+                      const summary = buildServiceSummary(bookingAsInvoice);
+                      const lineItems = buildInvoiceLineItems(bookingAsInvoice);
+                      const total =
+                        booking.pricing?.totalAmount ??
+                        lineItems.reduce((sum, line) => sum + line.total, 0);
 
                       return (
-                        <div key={index} className="bg-base-200 p-3 rounded-lg">
-                          <h6 className="font-semibold text-sm mb-2">
-                            {child.name} (Age {child.age})
-                          </h6>
-                          <div className="space-y-2">
-                            {childData?.selectedSubjects &&
-                              childData.selectedSubjects.length > 0 && (
-                                <div>
-                                  <p className="font-medium text-sm mb-2">
-                                    Subjects:
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {childData.selectedSubjects.map(
-                                      (subject, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="badge badge-primary badge-sm"
-                                        >
-                                          {subject}
-                                        </span>
-                                      )
+                        <>
+                          {summary && (
+                            <div className="bg-base-100 p-3 rounded-lg border border-base-300 text-sm whitespace-pre-wrap">
+                              {summary}
+                            </div>
+                          )}
+
+                          {booking.children?.map((child, index) => {
+                            const childData =
+                              booking.serviceData?.childrenData?.find(
+                                (cd) => cd.childId === child.id,
+                              );
+
+                            return (
+                              <div
+                                key={child.id || index}
+                                className="bg-base-100 p-3 rounded-lg border border-base-300"
+                              >
+                                <h6 className="font-semibold text-sm mb-2">
+                                  {child.name} (Age {child.age})
+                                </h6>
+                                <div className="space-y-1 text-sm">
+                                  {childData?.track && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Programme:
+                                      </span>{" "}
+                                      {getTrackLabel(childData.track)}
+                                    </p>
+                                  )}
+                                  {(childData?.gradeLevel || child.class) && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Grade Level:
+                                      </span>{" "}
+                                      {childData?.gradeLevel || child.class}
+                                    </p>
+                                  )}
+                                  {(childData?.selectedTerms?.length ||
+                                    childData?.selectedTerm) && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Terms:
+                                      </span>{" "}
+                                      {(
+                                        childData.selectedTerms ||
+                                        (childData.selectedTerm
+                                          ? [childData.selectedTerm]
+                                          : [])
+                                      ).join(", ")}
+                                    </p>
+                                  )}
+                                  {childData?.crecheCadence && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Creche:
+                                      </span>{" "}
+                                      {childData.crecheQuantity || 1} ×{" "}
+                                      {childData.crecheCadence}
+                                    </p>
+                                  )}
+                                  {childData?.afterschoolMonths && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Afterschool:
+                                      </span>{" "}
+                                      {childData.afterschoolMonths} month
+                                      {childData.afterschoolMonths === 1
+                                        ? ""
+                                        : "s"}
+                                    </p>
+                                  )}
+                                  {(childData?.isNewIntake ||
+                                    childData?.learningMaterials ||
+                                    childData?.transport) && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Fees:
+                                      </span>{" "}
+                                      {[
+                                        childData.isNewIntake &&
+                                          "Development levy",
+                                        childData.learningMaterials &&
+                                          "Learning materials",
+                                        childData.transport && "Transport",
+                                      ]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </p>
+                                  )}
+                                  {childData?.selectedEcas &&
+                                    childData.selectedEcas.length > 0 && (
+                                      <p>
+                                        <span className="font-medium">
+                                          ECAs:
+                                        </span>{" "}
+                                        {childData.selectedEcas.join(", ")}
+                                      </p>
                                     )}
-                                  </div>
+                                  {childData?.educationalGoals && (
+                                    <p>
+                                      <span className="font-medium">
+                                        Goals:
+                                      </span>{" "}
+                                      {childData.educationalGoals}
+                                    </p>
+                                  )}
                                 </div>
-                              )}
-                            {(childData?.gradeLevel || child.class) && (
-                              <p className="text-sm">
-                                <span className="font-medium">
-                                  Grade Level:
-                                </span>{" "}
-                                {childData?.gradeLevel || child.class}
+                              </div>
+                            );
+                          })}
+
+                          {lineItems.length > 0 && (
+                            <div className="bg-base-100 p-3 rounded-lg border border-base-300 overflow-x-auto">
+                              <h6 className="font-semibold text-sm mb-2">
+                                Price breakdown
+                              </h6>
+                              <table className="table table-sm">
+                                <thead>
+                                  <tr>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Unit</th>
+                                    <th>Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {lineItems.map((line, idx) => (
+                                    <tr key={`${line.description}-${idx}`}>
+                                      <td className="text-xs">
+                                        {line.description}
+                                      </td>
+                                      <td>{line.quantity}</td>
+                                      <td>
+                                        ₦{line.unitPrice.toLocaleString()}
+                                      </td>
+                                      <td className="font-medium">
+                                        ₦{line.total.toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300 text-right">
+                                Booking total: ₦{total.toLocaleString()}
                               </p>
-                            )}
-                            {childData?.curriculum && (
-                              <p className="text-sm">
-                                <span className="font-medium">Curriculum:</span>{" "}
-                                {childData.curriculum}
-                              </p>
-                            )}
-                            {childData?.learningStyle && (
-                              <p className="text-sm">
-                                <span className="font-medium">
-                                  Learning Style:
-                                </span>{" "}
-                                {childData.learningStyle}
-                              </p>
-                            )}
-                            {childData?.selectedTerm && (
-                              <p className="text-sm">
-                                <span className="font-medium">
-                                  Selected Term:
-                                </span>{" "}
-                                {childData.selectedTerm}
-                              </p>
-                            )}
-                            {childData?.educationalGoals && (
-                              <p className="text-sm">
-                                <span className="font-medium">
-                                  Educational Goals:
-                                </span>{" "}
-                                {childData.educationalGoals}
-                              </p>
-                            )}
-                            {booking.serviceData?.termRate && (
-                              <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300">
-                                Cost: ₦
-                                {booking.serviceData.termRate.toLocaleString()}
-                                <span className="text-xs font-normal text-base-content/70 ml-1">
-                                  (per term)
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                            </div>
+                          )}
+                        </>
                       );
-                    })}
+                    })()}
                   </div>
                 )}
 

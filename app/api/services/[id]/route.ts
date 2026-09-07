@@ -11,6 +11,7 @@ import {
   AuditEventType,
 } from "@/lib/audit-logger-mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import { getPublicServiceRevalidatePaths } from "@/lib/service-utils";
 
 export async function GET(
   request: NextRequest,
@@ -137,7 +138,11 @@ export async function PATCH(
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
-    revalidatePath("/services");
+    for (const path of getPublicServiceRevalidatePaths(
+      typeof updateData.type === "string" ? updateData.type : undefined,
+    )) {
+      revalidatePath(path);
+    }
     revalidatePath("/");
     revalidatePath("/dashboard/services");
 
@@ -208,6 +213,7 @@ export async function DELETE(
     }
 
     const collection = await getCollection("services");
+    const existing = await collection.findOne({ _id: new ObjectId(id) });
     const result = await collection.deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
@@ -226,7 +232,11 @@ export async function DELETE(
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.SERVICES);
     revalidateTag(CACHE_TAGS.DASHBOARD);
-    revalidatePath("/services");
+    for (const path of getPublicServiceRevalidatePaths(
+      typeof existing?.type === "string" ? existing.type : undefined,
+    )) {
+      revalidatePath(path);
+    }
     revalidatePath("/");
     revalidatePath("/dashboard/services");
 

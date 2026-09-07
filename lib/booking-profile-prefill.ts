@@ -14,6 +14,8 @@ export interface BookingProfilePrefill {
   parentPhone: string;
   parentAddress: string;
   children: BookingChildPrefill[];
+  /** True when this parent already has at least one Kiddies Hub / homeschooling booking. */
+  hasPriorHomeschoolingBooking?: boolean;
 }
 
 export interface ChildInfoDefaults {

@@ -44,6 +44,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { resolveCampSeasonId, type CampSeasonId } from "@/lib/camp-seasons";
 import { formatPaymentDueToastMessage } from "@/lib/booking-payment-due";
+import { getServiceDisplayName } from "@/lib/service-utils";
 import { BookingProfileProvider } from "./BookingProfileContext";
 
 interface AboutUs {
@@ -260,7 +261,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           )
           .map((service: { type: string; name: string }) => ({
             value: service.type,
-            label: service.name,
+            label: getServiceDisplayName(service),
           }))
           .filter(
             (service: BookingServiceOption, index: number, arr: BookingServiceOption[]) =>
@@ -294,7 +295,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     null,
   );
 
-  const getServiceFormRef = (): ServiceFormValidationRef | null => {
+  const getServiceFormRef = useCallback((): ServiceFormValidationRef | null => {
     switch (selectedService) {
       case "tutoring":
         return tutoringFormRef.current;
@@ -311,7 +312,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       default:
         return null;
     }
-  };
+  }, [selectedService]);
 
   const showValidationFailure = (
     errors: string[],
@@ -360,6 +361,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     referralName,
     isLoadingServices,
     servicesLoadFailed,
+    getServiceFormRef,
   ]);
 
   // Re-run validation after a failed submit so errors update as the parent fixes fields
@@ -898,11 +900,10 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
             value={billingPeriodMonths}
           />
           {!session?.user && (
-            <div className="alert alert-info">
+            <div className="alert alert-warning">
               <span>
-                You can fill out this form without signing in. You&apos;ll be
-                asked to sign in when you submit — your answers are saved
-                automatically and restored after login.
+                Your session has expired. Sign in again to submit this booking —
+                your answers are saved automatically and restored after login.
               </span>
             </div>
           )}

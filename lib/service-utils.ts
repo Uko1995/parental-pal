@@ -1,4 +1,100 @@
+import { getCampSeason, type CampSeasonId } from "@/lib/camp-seasons";
+import { HOMESCHOOL_PROGRAM_NAME } from "@/lib/homeschool-program";
 import { ServiceInterface } from "@/models/Service";
+
+export const PUBLIC_SERVICE_TYPES = [
+  "childcare",
+  "tutoring",
+  "homeschooling",
+  "holiday-camps",
+  "space-rental",
+  "kiddies-enrichment",
+] as const;
+
+export type PublicServiceType = (typeof PUBLIC_SERVICE_TYPES)[number];
+
+export function isPublicServiceType(
+  value: string,
+): value is PublicServiceType {
+  return (PUBLIC_SERVICE_TYPES as readonly string[]).includes(value);
+}
+
+export function getPublicServicePath(type: string): string {
+  return `/services/${type}`;
+}
+
+export function getPublicServiceRevalidatePaths(type?: string): string[] {
+  if (type && isPublicServiceType(type)) {
+    return ["/services", getPublicServicePath(type)];
+  }
+  return ["/services", ...PUBLIC_SERVICE_TYPES.map(getPublicServicePath)];
+}
+
+/** Canonical public URL. Holiday camps use the active promo landing when provided. */
+export function getPublicServiceHref(
+  service: { type: string },
+  promoSeasonId?: CampSeasonId | null,
+): string {
+  if (service.type === "holiday-camps" && promoSeasonId) {
+    return getCampSeason(promoSeasonId).landingPath;
+  }
+  return getPublicServicePath(service.type);
+}
+
+export function formatCurrency(
+  amount: number,
+  currency: string = "NGN",
+): string {
+  const currencySymbol = currency === "NGN" ? "₦" : "$";
+  const formattedAmount = Number(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+  return `${currencySymbol}${formattedAmount}`;
+}
+
+export function formatPricing(service: {
+  type: string;
+  name?: string | null;
+  pricing: {
+    baseRate: string | number;
+    currency: string;
+    billingType: string;
+  };
+}): string {
+  const { baseRate, currency, billingType } = service.pricing;
+  const currencySymbol = currency === "NGN" ? "₦" : "$";
+  const isEduvantaTutoring =
+    service.type === "tutoring" && isEduvantaService(service);
+  const isJunePromoWindow = new Date().getMonth() === 5;
+  const effectiveRate =
+    isEduvantaTutoring && isJunePromoWindow ? 11000 : Number(baseRate);
+  const billingSuffix = formatBillingSuffix(billingType);
+  const formattedRate = effectiveRate.toLocaleString("en-US");
+  return `${currencySymbol}${formattedRate}${billingSuffix}`;
+}
+
+export function getPackageDisplayPrice(
+  service: { type: string; pricing: { baseRate: string | number } },
+  pkg: { discountPercentage: number },
+): number {
+  const basePrice = Number(service.pricing.baseRate) || 0;
+  if (service.type === "childcare") {
+    return basePrice * 26 * (1 - pkg.discountPercentage / 100);
+  }
+  if (service.type === "space-rental") {
+    return basePrice * 2 * (1 - pkg.discountPercentage / 100);
+  }
+  return basePrice;
+}
+
+export function formatAvailability(
+  availability: string | string[] | undefined | null,
+): string {
+  if (!availability) return "";
+  if (Array.isArray(availability)) return availability.filter(Boolean).join(", ");
+  return String(availability);
+}
 
 // Normalize values that may have been saved incorrectly (e.g., "hourly" instead of "hour").
 // This ensures the frontend uses consistent billing types even if the DB contains legacy values.
@@ -56,6 +152,49 @@ export function formatBillingTypeLabel(raw?: string | null): string {
 export function formatBillingSuffix(raw?: string | null): string {
   const label = formatBillingTypeLabel(raw);
   return label ? `/${label.replace(/^per\s+/i, "")}` : "";
+}
+
+/**
+ * Legacy / generic DB names for the homeschooling service. Until an admin sets
+ * an explicit Kiddies Hub name, show the programme brand everywhere.
+ */
+const LEGACY_HOMESCHOOL_NAMES = new Set([
+  "homeschooling",
+  "homeschooling support",
+  "homeschooling program",
+  "homeschooling programme",
+  "homeschooling services",
+  "comprehensive homeschooling program",
+  "comprehensive homeschooling programme",
+  "comprehensive home schooling program",
+  "comprehensive home schooling programme",
+  "home schooling",
+  "home schooling program",
+  "home schooling programme",
+]);
+
+function isLegacyHomeschoolName(name: string): boolean {
+  const normalized = name.toLowerCase().trim().replace(/\s+/g, " ");
+  if (!normalized) return true;
+  if (normalized.includes("kiddies hub")) return false;
+  if (LEGACY_HOMESCHOOL_NAMES.has(normalized)) return true;
+  // Catch remaining DB variants like "Comprehensive Homeschooling…"
+  return (
+    normalized.includes("homeschool") || normalized.includes("home school")
+  );
+}
+
+export function getServiceDisplayName(service: {
+  type: string;
+  name?: string | null;
+}): string {
+  const name = (service.name || "").trim();
+
+  if (service.type === "homeschooling" && isLegacyHomeschoolName(name)) {
+    return HOMESCHOOL_PROGRAM_NAME;
+  }
+
+  return name;
 }
 
 export const EDUVANTA_SERVICE_NAME = "Eduvanta Tutoring and Prep";

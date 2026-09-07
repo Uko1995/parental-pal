@@ -10,6 +10,15 @@ import {
 import PaymentReconciliationSection from "./PaymentReconciliationSection";
 import HtrDriveFolderSection from "./HtrDriveFolderSection";
 import { isHtrSummerCampBooking } from "@/lib/htr-camp";
+import {
+  getTrackLabel,
+  HOMESCHOOL_PROGRAM_SHORT_NAME,
+} from "@/lib/homeschool-program";
+import {
+  buildInvoiceLineItems,
+  buildServiceSummary,
+} from "@/lib/booking-invoice";
+import type { BookingInterface } from "@/models/Booking";
 
 interface Child {
   id?: string;
@@ -100,13 +109,22 @@ interface Booking {
       }>;
       camperId?: string;
       boarding?: boolean;
-      // Homeschooling specific
+      // Homeschooling / Kiddies Hub specific
       selectedSubjects?: string[];
       gradeLevel?: string;
       curriculum?: string;
       learningStyle?: string;
       educationalGoals?: string;
       selectedTerm?: string;
+      selectedTerms?: string[];
+      track?: "creche" | "preschool" | "gradeSchool" | "afterschool";
+      isNewIntake?: boolean;
+      learningMaterials?: boolean;
+      transport?: boolean;
+      selectedEcas?: string[];
+      crecheCadence?: "day" | "week" | "month";
+      crecheQuantity?: number;
+      afterschoolMonths?: number;
       // Kiddies enrichment specific
       selectedPrograms?: string[];
       interests?: string;
@@ -125,10 +143,20 @@ interface Booking {
     virtualRate?: number;
     physicalRate?: number;
 
-    // Homeschooling specific
+    // Homeschooling / Kiddies Hub
     curriculum?: string;
     learningStyle?: string;
     termRate?: number;
+    homeschoolLines?: Array<{
+      childId: string;
+      childName?: string;
+      track: string;
+      code: string;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
 
     // Childcare specific
     careType?: "daily" | "monthly";
@@ -823,129 +851,156 @@ export default function ViewBookingModal({
             </div>
           )}
 
-          {/* Homeschooling Service Details */}
+          {/* Homeschooling / Kiddies Hub Service Details */}
           {booking.serviceType === "homeschooling" && booking.serviceData && (
             <div className="card bg-base-200">
               <div className="card-body">
                 <h5 className="card-title text-lg mb-4">
-                  Homeschooling Service Details
+                  {HOMESCHOOL_PROGRAM_SHORT_NAME} Details
                 </h5>
 
-                <div className="space-y-4">
-                  {booking.children?.map((child, index) => {
-                    // Find matching childData from childrenData array
-                    const childData = booking.serviceData?.childrenData?.find(
-                      (cd) => cd.childId === child.id
-                    );
+                {(() => {
+                  const bookingAsInvoice =
+                    booking as unknown as BookingInterface;
+                  const summary = buildServiceSummary(bookingAsInvoice);
+                  const lineItems = buildInvoiceLineItems(bookingAsInvoice);
+                  const total =
+                    booking.pricing?.totalAmount ??
+                    lineItems.reduce((sum, line) => sum + line.total, 0);
 
-                    return (
-                      <div key={index} className="bg-base-100 p-4 rounded-lg">
-                        <h6 className="font-semibold text-base mb-3">
-                          {child.name} (Age {child.age})
-                        </h6>
+                  return (
+                    <div className="space-y-4">
+                      {summary && (
+                        <div className="bg-base-100 p-3 rounded-lg text-sm whitespace-pre-wrap">
+                          {summary}
+                        </div>
+                      )}
 
-                        <div className="space-y-3">
-                          {/* Subjects */}
-                          {childData?.selectedSubjects &&
-                            childData.selectedSubjects.length > 0 && (
-                              <div>
-                                <div className="text-sm text-gray-600 mb-2">
-                                  Subjects
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {childData.selectedSubjects.map(
-                                    (subject: string, idx: number) => (
-                                      <span
-                                        key={idx}
-                                        className="badge badge-primary"
-                                      >
-                                        {subject}
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                      {booking.children?.map((child, index) => {
+                        const childData =
+                          booking.serviceData?.childrenData?.find(
+                            (cd) => cd.childId === child.id,
+                          );
 
-                          {/* Grade Level */}
-                          {(childData?.gradeLevel || child.class) && (
-                            <div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                Grade Level
-                              </div>
-                              <div className="badge badge-outline badge-lg">
-                                {childData?.gradeLevel || child.class}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Curriculum */}
-                          {childData?.curriculum && (
-                            <div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                Curriculum
-                              </div>
-                              <div className="badge badge-secondary badge-lg">
-                                {childData.curriculum}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Learning Style */}
-                          {childData?.learningStyle && (
-                            <div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                Learning Style
-                              </div>
-                              <div className="badge badge-accent badge-lg">
-                                {childData.learningStyle}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Selected Term */}
-                          {childData?.selectedTerm && (
-                            <div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                Selected Term
-                              </div>
-                              <div className="badge badge-info badge-lg">
-                                {childData.selectedTerm}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Educational Goals */}
-                          {childData?.educationalGoals && (
-                            <div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                Educational Goals
-                              </div>
-                              <div className="bg-base-200 p-3 rounded">
-                                <p className="text-sm whitespace-pre-wrap">
+                        return (
+                          <div
+                            key={child.id || index}
+                            className="bg-base-100 p-4 rounded-lg"
+                          >
+                            <h6 className="font-semibold text-base mb-3">
+                              {child.name} (Age {child.age})
+                            </h6>
+                            <div className="space-y-2 text-sm">
+                              {childData?.track && (
+                                <p>
+                                  <span className="font-medium">Programme:</span>{" "}
+                                  {getTrackLabel(String(childData.track))}
+                                </p>
+                              )}
+                              {(childData?.gradeLevel || child.class) && (
+                                <p>
+                                  <span className="font-medium">
+                                    Grade Level:
+                                  </span>{" "}
+                                  {childData?.gradeLevel || child.class}
+                                </p>
+                              )}
+                              {(childData?.selectedTerms?.length ||
+                                childData?.selectedTerm) && (
+                                <p>
+                                  <span className="font-medium">Terms:</span>{" "}
+                                  {(
+                                    childData.selectedTerms ||
+                                    (childData.selectedTerm
+                                      ? [childData.selectedTerm]
+                                      : [])
+                                  ).join(", ")}
+                                </p>
+                              )}
+                              {childData?.crecheCadence && (
+                                <p>
+                                  <span className="font-medium">Creche:</span>{" "}
+                                  {childData.crecheQuantity || 1} ×{" "}
+                                  {childData.crecheCadence}
+                                </p>
+                              )}
+                              {childData?.afterschoolMonths && (
+                                <p>
+                                  <span className="font-medium">
+                                    Afterschool:
+                                  </span>{" "}
+                                  {childData.afterschoolMonths} month
+                                  {childData.afterschoolMonths === 1 ? "" : "s"}
+                                </p>
+                              )}
+                              {(childData?.isNewIntake ||
+                                childData?.learningMaterials ||
+                                childData?.transport) && (
+                                <p>
+                                  <span className="font-medium">Fees:</span>{" "}
+                                  {[
+                                    childData.isNewIntake && "Development levy",
+                                    childData.learningMaterials &&
+                                      "Learning materials",
+                                    childData.transport && "Transport",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </p>
+                              )}
+                              {childData?.selectedEcas &&
+                                childData.selectedEcas.length > 0 && (
+                                  <p>
+                                    <span className="font-medium">ECAs:</span>{" "}
+                                    {childData.selectedEcas.join(", ")}
+                                  </p>
+                                )}
+                              {childData?.educationalGoals && (
+                                <p>
+                                  <span className="font-medium">Goals:</span>{" "}
                                   {childData.educationalGoals}
                                 </p>
-                              </div>
+                              )}
                             </div>
-                          )}
+                          </div>
+                        );
+                      })}
 
-                          {/* Cost Calculation for this child */}
-                          {booking.serviceData?.termRate && (
-                            <div className="mt-3 pt-3 border-t border-base-300">
-                              <div className="text-sm font-semibold text-primary">
-                                Cost: ₦
-                                {booking.serviceData.termRate.toLocaleString()}
-                                <span className="text-xs font-normal text-gray-600 ml-2">
-                                  (per term)
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                      {lineItems.length > 0 && (
+                        <div className="bg-base-100 p-4 rounded-lg overflow-x-auto">
+                          <h6 className="font-semibold text-sm mb-2">
+                            Price breakdown
+                          </h6>
+                          <table className="table table-sm">
+                            <thead>
+                              <tr>
+                                <th>Item</th>
+                                <th>Qty</th>
+                                <th>Unit</th>
+                                <th>Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lineItems.map((line, idx) => (
+                                <tr key={`${line.description}-${idx}`}>
+                                  <td className="text-xs">{line.description}</td>
+                                  <td>{line.quantity}</td>
+                                  <td>₦{line.unitPrice.toLocaleString()}</td>
+                                  <td className="font-medium">
+                                    ₦{line.total.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <p className="text-sm font-semibold mt-2 pt-2 border-t border-base-300 text-right text-primary">
+                            Booking total: ₦{total.toLocaleString()}
+                          </p>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -331,12 +331,27 @@ export function bookingToFormEntries(
   }
 
   if (booking.serviceType === "homeschooling") {
-    entries.termRate = String(
-      (sd as { termRate?: number }).termRate || 150000,
-    );
     childrenData?.forEach((cd, i) => {
       const childId = childIds[i];
       if (!childId) return;
+      if (cd.track) entries[`track_${childId}`] = cd.track as string;
+      if (cd.isNewIntake) entries[`isNewIntake_${childId}`] = "true";
+      if (cd.learningMaterials) {
+        entries[`learningMaterials_${childId}`] = "true";
+      }
+      if (cd.transport) entries[`transport_${childId}`] = "true";
+      if (cd.selectedEcas && Array.isArray(cd.selectedEcas)) {
+        entries[`selectedEcas_${childId}`] = JSON.stringify(cd.selectedEcas);
+      }
+      if (cd.crecheCadence) {
+        entries[`crecheCadence_${childId}`] = cd.crecheCadence as string;
+      }
+      if (cd.crecheQuantity) {
+        entries[`crecheQuantity_${childId}`] = String(cd.crecheQuantity);
+      }
+      if (cd.afterschoolMonths) {
+        entries[`afterschoolMonths_${childId}`] = String(cd.afterschoolMonths);
+      }
       if (cd.selectedSubjects) {
         entries[`subjects_${childId}`] = JSON.stringify(cd.selectedSubjects);
       }

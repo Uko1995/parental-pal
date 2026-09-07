@@ -9,10 +9,7 @@ import {
 import { useRef } from "react";
 import Image from "next/image";
 
-import {
-  buildInvoiceLineItems,
-  type InvoiceLineItem,
-} from "@/lib/booking-invoice";
+import { type InvoiceLineItem } from "@/lib/booking-invoice";
 
 interface Payment {
   _id: string;

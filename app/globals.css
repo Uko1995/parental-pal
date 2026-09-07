@@ -12,19 +12,20 @@ html {
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
   --surface-elevated: #ffffff;
   --surface-muted: #f3f4f6;
   --surface-cream: rgb(255 234 207 / 0.35);
   --border-default: #d1d5db;
   --border-subtle: #e5e7eb;
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  /* Deeper body copy for WCAG-friendly contrast on cream/white surfaces */
+  --text-primary: #0f172a;
+  --text-secondary: #1f2937;
+  --text-muted: #374151;
   --input-bg: #ffffff;
-  --input-text: #111827;
+  --input-text: #0f172a;
   --toast-bg: #ffffff;
-  --toast-text: #363636;
+  --toast-text: #1f2937;
   --toast-border: #e5e7eb;
 
   /* Custom brand colors for DaisyUI */
@@ -162,6 +163,55 @@ body {
   overflow-x: hidden;
 }
 
+/*
+ * Light mode: deepen common muted body/paragraph utilities so copy stays
+ * readable on cream and white surfaces across marketing + dashboard.
+ * Scoped so dark-mode remaps above still win under prefers-color-scheme: dark.
+ */
+@media (prefers-color-scheme: light) {
+  .text-gray-600,
+  .text-gray-500 {
+    color: var(--text-secondary);
+  }
+
+  .text-gray-400 {
+    color: var(--text-muted);
+  }
+
+  /*
+   * DaisyUI muted body copy — raise effective opacity so paragraphs stay
+   * readable. Prefer the theme token; fall back to slate-900 channels.
+   */
+  .text-base-content\/70 {
+    color: color-mix(
+      in srgb,
+      var(--color-base-content, #0f172a) 90%,
+      transparent
+    );
+  }
+
+  .text-base-content\/60 {
+    color: color-mix(
+      in srgb,
+      var(--color-base-content, #0f172a) 82%,
+      transparent
+    );
+  }
+
+  .text-base-content\/50 {
+    color: color-mix(
+      in srgb,
+      var(--color-base-content, #0f172a) 74%,
+      transparent
+    );
+  }
+
+  p.text-base-content\/70,
+  .prose p {
+    color: var(--text-secondary);
+  }
+}
+
 /* Global form control visibility baseline */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 select,
@@ -273,7 +323,9 @@ div[class*="go"][class*="207"] {
   --b1: 255 255 255;
   --b2: 243 244 246;
   --b3: 229 231 235;
-  --bc: 23 23 23;
+  /* Deeper base content so /70 opacity text stays readable */
+  --color-base-content: #0f172a;
+  --bc: 15 23 42;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -554,11 +606,11 @@ div[class*="go"][class*="207"] {
 
   .htr-landing .text-gray-600,
   .htr-landing .text-gray-500 {
-    color: #4b5563;
+    color: #1f2937;
   }
 
   .htr-landing .text-gray-400 {
-    color: #6b7280;
+    color: #374151;
   }
 
   .htr-landing .bg-white {
@@ -578,6 +630,6 @@ div[class*="go"][class*="207"] {
   }
 
   .htr-landing .text-base-content\/70 {
-    color: rgb(55 65 81 / 0.85);
+    color: rgb(31 41 55 / 0.92);
   }
 }

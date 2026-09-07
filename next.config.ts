@@ -4,8 +4,17 @@ import path from "path";
 const nextConfig: NextConfig = {
   /* config options here */
   outputFileTracingRoot: path.join(process.cwd()),
+  // Keep heavy Node-only SDKs out of the bundler graph; they blew the build heap.
+  serverExternalPackages: [
+    "mongodb",
+    "googleapis",
+    "nodemailer",
+    "cloudinary",
+    "bcryptjs",
+  ],
   experimental: {
     middlewareClientMaxBodySize: "50mb",
+    webpackMemoryOptimizations: true,
   },
   images: {
     formats: ["image/avif", "image/webp"],

@@ -100,7 +100,7 @@ export function prorateMonthlyChildcareTotal(
   const clamped = clampBillingPeriodMonths(months);
   if (clamped <= 1) {
     const fullMonthDays = countChildcareMonthDays(startDate);
-    const { first, last } = getMonthBounds(startDate);
+    const { last } = getMonthBounds(startDate);
     const effectiveDays = getWeekdayDatesInRange("monday", startDate, last)
       .length;
     if (fullMonthDays <= 0) return monthlyRate;
@@ -109,7 +109,6 @@ export function prorateMonthlyChildcareTotal(
 
   let total = 0;
   for (let i = 0; i < clamped; i++) {
-    const monthAnchor = addCalendarMonths(startDate, i);
     const monthRate = monthlyRate;
     if (i === 0) {
       const fullMonthDays = countChildcareMonthDays(startDate);

@@ -105,9 +105,9 @@ export default function Vision() {
       ),
     },
     {
-      category: "Homeschooling Programs",
+      category: "Creche, Preschool, Grade School & Afterschool",
       description:
-        "Comprehensive educational programs for complete learning experience",
+        "Kiddies Hub learning programmes — creche, preschool, grade school (incl. neuro-divergent support) and afterschool",
       services: [
         {
           type: "In your Home ",

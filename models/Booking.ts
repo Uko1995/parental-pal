@@ -68,7 +68,7 @@ export interface BookingInterface {
       }>;
       boarding?: boolean;
       camperId?: string;
-      // Homeschooling specific
+      // Homeschooling / Kiddies Hub programme specific
       selectedSubjects?: string[];
       gradeLevel?: string;
       curriculum?: string;
@@ -76,6 +76,14 @@ export interface BookingInterface {
       educationalGoals?: string;
       selectedTerm?: string;
       selectedTerms?: string[];
+      track?: "creche" | "preschool" | "gradeSchool" | "afterschool";
+      isNewIntake?: boolean;
+      learningMaterials?: boolean;
+      transport?: boolean;
+      selectedEcas?: string[];
+      crecheCadence?: "day" | "week" | "month";
+      crecheQuantity?: number;
+      afterschoolMonths?: number;
       // Kiddies enrichment specific
       selectedPrograms?: string[];
       interests?: string;
@@ -90,6 +98,37 @@ export interface BookingInterface {
     // Homeschooling specific
     curriculum?: string;
     learningStyle?: string;
+    termRate?: number;
+    /** Rate catalog snapshot taken at booking time so invoices never drift. */
+    homeschoolRates?: {
+      creche: { day: number; week: number; month: number };
+      afterschool: { month: number };
+      tuitionByBand: { preschool: number; gradeSchool: number };
+      fees: Array<{
+        code: string;
+        label: string;
+        amount: number;
+        cadence: "onceNewIntake" | "oncePerYear" | "perTerm";
+        appliesTo: Array<"preschool" | "gradeSchool">;
+        note?: string;
+      }>;
+      ecas: Array<{
+        code: string;
+        label: string;
+        day: string;
+        amount: number;
+      }>;
+    };
+    homeschoolLines?: Array<{
+      childId: string;
+      childName?: string;
+      track: string;
+      code: string;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
 
     // Childcare specific
     careType?: "daily" | "monthly";

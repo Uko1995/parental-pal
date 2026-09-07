@@ -5,19 +5,28 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   getPublicServices,
+  getVisiblePromoCampSeason,
   ClientServiceForDisplay,
 } from "@/app/services/actions";
+import { getPublicServiceHref, getServiceDisplayName } from "@/lib/service-utils";
+import type { CampSeasonId } from "@/lib/camp-seasons";
 
 export default function MiniServices() {
   const [services, setServices] = useState<ClientServiceForDisplay[]>([]);
+  const [promoSeasonId, setPromoSeasonId] = useState<CampSeasonId | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const allServices = await getPublicServices();
-        // Limit to 6 services for the mini display
+        const [allServices, season] = await Promise.all([
+          getPublicServices(),
+          getVisiblePromoCampSeason(),
+        ]);
         setServices(allServices.slice(0, 6));
+        setPromoSeasonId(season);
       } catch (error) {
         console.error("Error fetching services:", error);
       } finally {
@@ -70,7 +79,7 @@ export default function MiniServices() {
                 <div className="w-full h-48 md:h-52 relative overflow-hidden shrink-0">
                   <Image
                     src={service.image || "/default-service.jpg"}
-                    alt={service.name}
+                    alt={getServiceDisplayName(service)}
                     fill
                     className="object-cover transition-transform duration-300"
                   />
@@ -79,14 +88,17 @@ export default function MiniServices() {
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-1 min-h-0">
                   <h3 className="text-xl font-semibold text-base-content mb-3">
-                    {service.name}
+                    {getServiceDisplayName(service)}
                   </h3>
                   <p className="text-gray-600 mb-4 leading-relaxed">
                     {service.shortDescription || service.description}
                   </p>
 
                   {/* CTA Link */}
-                  <Link href="/services" passHref className="mt-auto">
+                  <Link
+                    href={getPublicServiceHref(service, promoSeasonId)}
+                    className="mt-auto"
+                  >
                     <button className="text-[#90AC19] cursor-pointer font-medium hover:text-[#7A9216] transition-colors duration-300 flex items-center group">
                       Learn More
                       <svg

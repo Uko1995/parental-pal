@@ -10,6 +10,11 @@ import Image from "next/image";
 import { ServiceInterface } from "@/models/Service";
 import { createService, ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
+import {
+  HOMESCHOOL_PROGRAM_NAME,
+  HOMESCHOOL_PROGRAM_SHORT_NAME,
+} from "@/lib/homeschool-program";
+import { getServiceDisplayName } from "@/lib/service-utils";
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -20,7 +25,7 @@ interface AddServiceModalProps {
 const serviceTypes = [
   { value: "childcare", label: "Childcare" },
   { value: "tutoring", label: "Tutoring" },
-  { value: "homeschooling", label: "Homeschooling" },
+  { value: "homeschooling", label: HOMESCHOOL_PROGRAM_SHORT_NAME },
   { value: "holiday-camps", label: "Holiday Camps" },
   { value: "space-rental", label: "Space Rental" },
   { value: "kiddies-enrichment", label: "Kids Enrichment" },
@@ -82,17 +87,32 @@ export default function AddServiceModal({
     >,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "baseRate" ||
-        name === "virtualRate" ||
-        name === "physicalRate" ||
-        name === "minimumAge" ||
-        name === "maximumAge"
-          ? parseInt(value) || 0
-          : value,
-    }));
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]:
+          name === "baseRate" ||
+          name === "virtualRate" ||
+          name === "physicalRate" ||
+          name === "minimumAge" ||
+          name === "maximumAge"
+            ? parseInt(value) || 0
+            : value,
+      };
+
+      // Prefill the branded programme name when creating a homeschooling service
+      if (
+        name === "type" &&
+        value === "homeschooling" &&
+        (!prev.name.trim() ||
+          getServiceDisplayName({ type: "homeschooling", name: prev.name }) !==
+            prev.name)
+      ) {
+        next.name = HOMESCHOOL_PROGRAM_NAME;
+      }
+
+      return next;
+    });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

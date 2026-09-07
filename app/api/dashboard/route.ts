@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCollection } from "@/lib/mongodb";
 import { BookingInterface } from "@/models/Booking";
 import { UserInterface } from "@/models/User";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 interface DashboardStats {
   totalRevenue: number;
@@ -399,7 +400,7 @@ function getServiceDisplayName(serviceType: string): string {
   const serviceNames: { [key: string]: string } = {
     tutoring: "Academic Tutoring",
     childcare: "Daily Childcare",
-    homeschooling: "Homeschooling Support",
+    homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
     "holiday-camps": "Holiday Camp",
     "space-rental": "Event Space Rental",
     "kiddies-enrichment": "Kids Enrichment",

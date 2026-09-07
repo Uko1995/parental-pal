@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import PhoneInput from "@/components/PhoneInput";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 interface Child {
   name: string;
@@ -239,7 +240,9 @@ export default function EditBookingModal({
                 <option value="">Select Service</option>
                 <option value="childcare">Childcare</option>
                 <option value="tutoring">Tutoring</option>
-                <option value="homeschooling">Homeschooling</option>
+                <option value="homeschooling">
+                  {HOMESCHOOL_PROGRAM_SHORT_NAME}
+                </option>
                 <option value="holiday-camps">Holiday Camps</option>
                 <option value="space-rental">Space Rental</option>
                 <option value="kiddies-enrichment">Kiddies Enrichment</option>

@@ -14,6 +14,7 @@ import {
   isPaymentOverdue,
 } from "@/lib/booking-payment-due";
 import { canParentCancelInvoice } from "@/lib/parent-invoice";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 import type {
   ParentInvoiceLineItem,
   ParentInvoiceStatus,
@@ -38,7 +39,7 @@ interface BookingOption {
 const SERVICE_LABELS: Record<string, string> = {
   tutoring: "Tutoring",
   childcare: "Childcare",
-  homeschooling: "Homeschooling",
+  homeschooling: HOMESCHOOL_PROGRAM_SHORT_NAME,
   "holiday-camps": "Holiday Camps",
   "space-rental": "Space Rental",
   "kiddies-enrichment": "Kiddies Enrichment",

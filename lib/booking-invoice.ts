@@ -1,5 +1,6 @@
 import type { BookingInterface } from "@/models/Booking";
 import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
+import { getTermLabel, getTrackLabel } from "@/lib/homeschool-program";
 
 export interface InvoiceLineItem {
   description: string;
@@ -231,18 +232,53 @@ export function buildInvoiceLineItems(
     }
 
     case "homeschooling": {
-      const termRate = (sd as { termRate?: number }).termRate || 0;
+      const storedLines = sd.homeschoolLines || [];
+
+      if (storedLines.length > 0) {
+        // Rebuild from the snapshot captured when the booking was priced.
+        storedLines.forEach((line, index) => {
+          const childIndex = childrenData.findIndex(
+            (child) => child.childId === line.childId,
+          );
+          const childName =
+            children[childIndex >= 0 ? childIndex : index]?.name ||
+            line.childName ||
+            `Child ${index + 1}`;
+
+          items.push({
+            description: line.description.replace(
+              /—\s*(Child #?\d+|.*?)$/,
+              `— ${childName}`,
+            ),
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            total: line.total,
+          });
+        });
+        break;
+      }
+
+      // Legacy bookings priced before the programme rate catalog existed.
+      const termRate = sd.termRate || 0;
 
       childrenData.forEach((childData, index) => {
         const childName = children[index]?.name || `Child ${index + 1}`;
         const subjects = childData.selectedSubjects?.join(", ") || "Homeschooling";
-        const term = childData.selectedTerm || "Term";
+        const terms = childData.selectedTerms?.length
+          ? childData.selectedTerms
+          : childData.selectedTerm
+            ? [childData.selectedTerm]
+            : [];
+        const termCount = Math.max(terms.length, 1);
+        const termLabel = terms.length
+          ? terms.map(getTermLabel).join(", ")
+          : "Term";
 
         items.push({
-          description: `${subjects} — ${childName} (${term}, ${childData.gradeLevel || "Grade N/A"})`,
-          quantity: 1,
+          description: `${subjects} — ${childName} (${termLabel}, ${childData.gradeLevel || "Grade N/A"})`,
+          quantity: termCount,
           unitPrice: termRate,
-          total: termRate,
+          total: termCount * termRate,
         });
       });
 
@@ -427,8 +463,43 @@ export function buildServiceSummary(booking: BookingInterface): string {
     case "homeschooling":
       (sd.childrenData || []).forEach((childData, index) => {
         const name = booking.children?.[index]?.name || `Child ${index + 1}`;
+        const track = childData.track || "preschool";
+
+        if (track === "creche") {
+          const unit = childData.crecheCadence || "month";
+          const qty = childData.crecheQuantity || 1;
+          lines.push(
+            `${name}: Creche — ${qty} ${unit}${qty === 1 ? "" : "s"}`,
+          );
+          return;
+        }
+
+        if (track === "afterschool") {
+          const months = childData.afterschoolMonths || 1;
+          lines.push(
+            `${name}: Afterschool care — ${months} month${months === 1 ? "" : "s"}`,
+          );
+          return;
+        }
+
+        const terms = childData.selectedTerms?.length
+          ? childData.selectedTerms
+          : childData.selectedTerm
+            ? [childData.selectedTerm]
+            : [];
+        const termLabel = terms.length
+          ? terms.map(getTermLabel).join(", ")
+          : "Term";
+        const extras: string[] = [];
+        if (childData.isNewIntake) extras.push("development levy");
+        if (childData.learningMaterials) extras.push("learning materials");
+        if (childData.transport) extras.push("transport");
+        if (childData.selectedEcas?.length) {
+          extras.push(`${childData.selectedEcas.length} ECA(s)`);
+        }
+
         lines.push(
-          `${name}: ${childData.selectedTerm || "Term"}, ${childData.selectedSubjects?.join(", ") || ""}`,
+          `${name}: ${getTrackLabel(track)} — ${termLabel}, ${childData.selectedSubjects?.join(", ") || ""}${extras.length ? ` (+ ${extras.join(", ")})` : ""}`,
         );
       });
       break;
