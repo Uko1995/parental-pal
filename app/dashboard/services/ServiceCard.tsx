@@ -9,7 +9,7 @@ import {
 import { ClientServiceInterface } from "./action";
 import toast from "react-hot-toast";
 import Image from "next/image";
-import { formatBillingSuffix } from "@/lib/service-utils";
+import { formatBillingSuffix, getServiceDisplayName } from "@/lib/service-utils";
 
 interface ServiceCardProps {
   service: ClientServiceInterface;
@@ -75,7 +75,7 @@ export default function ServiceCard({
         <div className="relative mb-1 overflow-hidden rounded-t-lg bg-gray-100">
           <Image
             src={service.image}
-            alt={service.name}
+            alt={getServiceDisplayName(service)}
             width={400}
             height={200}
             className="w-full h-70 object-cover"
@@ -87,7 +87,7 @@ export default function ServiceCard({
           {/* Header */}
           <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between mb-1">
             <h3 className="card-title text-lg font-bold text-gray-50 ">
-              {service.name}
+              {getServiceDisplayName(service)}
             </h3>
             <div className="flex font-semibold gap-2">
               <span

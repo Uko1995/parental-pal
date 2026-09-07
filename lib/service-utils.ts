@@ -155,8 +155,8 @@ export function formatBillingSuffix(raw?: string | null): string {
 }
 
 /**
- * Legacy homeschooling services were named generically. Until an admin renames
- * the record, show the explicit programme name so parents know what is offered.
+ * Legacy / generic DB names for the homeschooling service. Until an admin sets
+ * an explicit Kiddies Hub name, show the programme brand everywhere.
  */
 const LEGACY_HOMESCHOOL_NAMES = new Set([
   "homeschooling",
@@ -164,7 +164,25 @@ const LEGACY_HOMESCHOOL_NAMES = new Set([
   "homeschooling program",
   "homeschooling programme",
   "homeschooling services",
+  "comprehensive homeschooling program",
+  "comprehensive homeschooling programme",
+  "comprehensive home schooling program",
+  "comprehensive home schooling programme",
+  "home schooling",
+  "home schooling program",
+  "home schooling programme",
 ]);
+
+function isLegacyHomeschoolName(name: string): boolean {
+  const normalized = name.toLowerCase().trim().replace(/\s+/g, " ");
+  if (!normalized) return true;
+  if (normalized.includes("kiddies hub")) return false;
+  if (LEGACY_HOMESCHOOL_NAMES.has(normalized)) return true;
+  // Catch remaining DB variants like "Comprehensive Homeschooling…"
+  return (
+    normalized.includes("homeschool") || normalized.includes("home school")
+  );
+}
 
 export function getServiceDisplayName(service: {
   type: string;
@@ -172,10 +190,7 @@ export function getServiceDisplayName(service: {
 }): string {
   const name = (service.name || "").trim();
 
-  if (
-    service.type === "homeschooling" &&
-    (!name || LEGACY_HOMESCHOOL_NAMES.has(name.toLowerCase()))
-  ) {
+  if (service.type === "homeschooling" && isLegacyHomeschoolName(name)) {
     return HOMESCHOOL_PROGRAM_NAME;
   }
 

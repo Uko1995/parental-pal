@@ -44,6 +44,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { resolveCampSeasonId, type CampSeasonId } from "@/lib/camp-seasons";
 import { formatPaymentDueToastMessage } from "@/lib/booking-payment-due";
+import { getServiceDisplayName } from "@/lib/service-utils";
 import { BookingProfileProvider } from "./BookingProfileContext";
 
 interface AboutUs {
@@ -260,7 +261,7 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
           )
           .map((service: { type: string; name: string }) => ({
             value: service.type,
-            label: service.name,
+            label: getServiceDisplayName(service),
           }))
           .filter(
             (service: BookingServiceOption, index: number, arr: BookingServiceOption[]) =>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -6,7 +7,7 @@ export default function Footer() {
   const footerLinks = {
     services: [
       { name: "Childcare Services", href: "/services/childcare" },
-      { name: "Home Schooling", href: "/services/homeschooling" },
+      { name: HOMESCHOOL_PROGRAM_SHORT_NAME, href: "/services/homeschooling" },
       { name: "Academic Tutoring", href: "/services/tutoring" },
       { name: "Space Rentals", href: "/services/space-rental" },
       { name: "Kiddies Parties", href: "/services/space-rental" },

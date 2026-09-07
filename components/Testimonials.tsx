@@ -29,11 +29,11 @@ export default function Testimonials() {
     {
       id: 3,
       name: "Emily Rodriguez",
-      role: "Homeschooling Mom",
+      role: "Kiddies Hub Parent",
       rating: 4,
       image: "/teacher3.webp",
-      text: "The homeschooling program resources and support network have been invaluable. My children are thriving academically and socially. The curriculum guidance saved me countless hours of research.",
-      service: "Home Schooling Program",
+      text: "The Kiddies Hub learning programme has been invaluable. My children are thriving academically and socially — creche through grade school support, including for neuro-divergent learners, under one roof.",
+      service: "Kiddies Hub Learning Programme",
     },
     {
       id: 4,

@@ -207,11 +207,13 @@ export async function logSecurityEvent(
  */
 export async function queryAuditLogs(filters: {
   userId?: string;
+  userEmail?: string;
   eventType?: AuditEventType;
   startDate?: Date;
   endDate?: Date;
   limit?: number;
-}): Promise<AuditLog[]> {
+  skip?: number;
+}): Promise<{ logs: AuditLog[]; total: number }> {
   try {
     const collection = await getAuditLogsCollection();
 
@@ -219,6 +221,13 @@ export async function queryAuditLogs(filters: {
 
     if (filters.userId) {
       query.userId = filters.userId;
+    }
+
+    if (filters.userEmail) {
+      query.userEmail = {
+        $regex: filters.userEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      };
     }
 
     if (filters.eventType) {
@@ -235,14 +244,23 @@ export async function queryAuditLogs(filters: {
       }
     }
 
-    return await collection
-      .find(query)
-      .sort({ timestamp: -1 })
-      .limit(filters.limit || 100)
-      .toArray();
+    const limit = Math.min(Math.max(filters.limit || 20, 1), 100);
+    const skip = Math.max(filters.skip || 0, 0);
+
+    const [logs, total] = await Promise.all([
+      collection
+        .find(query)
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      collection.countDocuments(query),
+    ]);
+
+    return { logs, total };
   } catch (error) {
     console.error("Error querying audit logs:", error);
-    return [];
+    return { logs: [], total: 0 };
   }
 }
 
@@ -250,8 +268,9 @@ export async function queryAuditLogs(filters: {
  * Get recent security events (for monitoring)
  */
 export async function getRecentSecurityEvents(
-  limit: number = 50
-): Promise<AuditLog[]> {
+  limit: number = 20,
+  skip: number = 0,
+): Promise<{ events: AuditLog[]; total: number }> {
   try {
     const collection = await getAuditLogsCollection();
 
@@ -265,15 +284,26 @@ export async function getRecentSecurityEvents(
       AuditEventType.FILE_UPLOAD_REJECTED,
     ];
 
-    return await collection
-      .find({
-        eventType: { $in: securityEventTypes },
-      })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .toArray();
+    const query = {
+      eventType: { $in: securityEventTypes },
+    };
+
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safeSkip = Math.max(skip, 0);
+
+    const [events, total] = await Promise.all([
+      collection
+        .find(query)
+        .sort({ timestamp: -1 })
+        .skip(safeSkip)
+        .limit(safeLimit)
+        .toArray(),
+      collection.countDocuments(query),
+    ]);
+
+    return { events, total };
   } catch (error) {
     console.error("Error getting security events:", error);
-    return [];
+    return { events: [], total: 0 };
   }
 }

@@ -1010,8 +1010,24 @@ export async function parseFormDataToBooking(
     serviceData.physicalRate = physicalRate;
     serviceData.hourlyRate = effectiveHourlyRate;
   } else if (serviceType === "homeschooling") {
-    const childrenData =
+    let childrenData =
       serviceData.childrenData as HomeschoolChildSelection[];
+
+    // First Kiddies Hub booking for this parent: development levy is compulsory
+    // for preschool / grade-school tracks.
+    if (user._id) {
+      const priorHomeschooling = (
+        await BookingRepository.findByUserId(user._id)
+      ).some((booking) => booking.serviceType === "homeschooling");
+
+      if (!priorHomeschooling) {
+        childrenData = childrenData.map((child) =>
+          isTermTrack(child.track) ? { ...child, isNewIntake: true } : child,
+        );
+        serviceData.childrenData = childrenData;
+      }
+    }
+
     // Rates always come from the service record, never from the submitted form.
     const homeschoolRates = await getHomeschoolRatesFromService();
     const homeschoolPricing = calculateHomeschoolPricing(

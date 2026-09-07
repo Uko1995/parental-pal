@@ -20,6 +20,7 @@ import {
   BookOpenIcon,
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
+  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -58,6 +59,11 @@ const navigation: NavigationItem[] = [
   },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBagIcon },
   { name: "Blog", href: "/dashboard/blog", icon: DocumentTextIcon },
+  {
+    name: "Audit Trail",
+    href: "/dashboard/audit",
+    icon: ClipboardDocumentListIcon,
+  },
   { name: "Settings", href: "/dashboard/settings", icon: Cog6ToothIcon },
 ];
 
@@ -136,7 +142,7 @@ export default function DashboardLayout({
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50">
-        <div className="flex flex-col grow bg-base-100 shadow-xl border-r border-base-300">
+        <div className="flex h-full min-h-0 flex-col grow bg-base-100 shadow-xl border-r border-base-300">
           {/* Logo */}
           <div className="shrink-0">
             <Link href="/" className="flex items-center justify-center h-16">
@@ -151,7 +157,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 min-h-0 px-4 py-4 space-y-2 overflow-y-auto overscroll-contain">
             {navigation.map((item) => {
               const isActive = isActivePath(item.href);
               return (
@@ -216,9 +222,9 @@ export default function DashboardLayout({
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
           {/* Mobile header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-base-100 border-b border-base-300">
+          <div className="flex items-center justify-between px-6 py-4 bg-base-100 border-b border-base-300 shrink-0">
             <Link href="/" className="shrink-0">
               <Image
                 src="/parentalpalLOGO.webp"
@@ -237,7 +243,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Mobile Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="flex-1 min-h-0 px-4 py-6 space-y-2 overflow-y-auto overscroll-contain">
             {navigation.map((item) => {
               const isActive = isActivePath(item.href);
               return (

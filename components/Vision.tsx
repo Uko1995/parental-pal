@@ -107,7 +107,7 @@ export default function Vision() {
     {
       category: "Creche, Preschool, Grade School & Afterschool",
       description:
-        "Comprehensive learning and care programmes, including support for neuro-divergent children",
+        "Kiddies Hub learning programmes — creche, preschool, grade school (incl. neuro-divergent support) and afterschool",
       services: [
         {
           type: "In your Home ",

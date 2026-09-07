@@ -35,6 +35,7 @@ import {
 } from "@/lib/booking-profile-prefill";
 import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
+import { useBookingProfile } from "./BookingProfileContext";
 import {
   CRECHE_CADENCE_LABELS,
   DEFAULT_HOMESCHOOL_RATES,
@@ -82,7 +83,11 @@ interface HomeschoolingFormProps {
   initialTemplate?: RebookFormEntries | null;
 }
 
-function createChildRow(id: string, index: number): ChildHomeschoolData {
+function createChildRow(
+  id: string,
+  index: number,
+  options?: { forceNewIntake?: boolean },
+): ChildHomeschoolData {
   return {
     id,
     index,
@@ -94,7 +99,7 @@ function createChildRow(id: string, index: number): ChildHomeschoolData {
     specialNeeds: "",
     educationalGoals: "",
     selectedTerms: [],
-    isNewIntake: false,
+    isNewIntake: Boolean(options?.forceNewIntake),
     learningMaterials: false,
     transport: false,
     selectedEcas: [],
@@ -120,6 +125,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
 
   // Admin-managed rate catalog; falls back to the versioned programme defaults.
   const [rates, setRates] = useState<HomeschoolRates>(DEFAULT_HOMESCHOOL_RATES);
+  const [levyRequired, setLevyRequired] = useState(false);
   const templateAppliedRef = useRef(false);
 
   useEffect(() => {
@@ -188,6 +194,7 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
     parentPhone: string;
     parentAddress: string;
     children: Array<{ name: string; age: number; gender?: string }>;
+    hasPriorHomeschoolingBooking?: boolean;
   }) => {
     applyParentContactPrefill(profile, {
       setParentName,
@@ -196,15 +203,26 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
       setParentAddress,
     });
 
+    const forceNewIntake = !profile.hasPriorHomeschoolingBooking;
+    setLevyRequired(forceNewIntake);
+
     if (profile.children.length > 0) {
       const built = buildChildrenRowsFromProfile(
         profile.children,
-        (id, index) => createChildRow(id, index),
+        (id, index) => createChildRow(id, index, { forceNewIntake }),
       );
       if (built) {
         setChildDefaults(built.defaults);
         setChildrenData(built.rows);
       }
+    } else if (forceNewIntake) {
+      setChildrenData((prev) =>
+        prev.map((child) =>
+          isTermTrack(child.track)
+            ? { ...child, isNewIntake: true }
+            : child,
+        ),
+      );
     }
   }, []);
 
@@ -213,6 +231,22 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
     templateAppliedRef,
     onApply: applyProfilePrefill,
   });
+
+  // If profile loads after the default row, still force levy for first-time parents.
+  const { profile: bookingProfile, loaded: profileLoaded } = useBookingProfile();
+  useEffect(() => {
+    if (!profileLoaded || !bookingProfile || initialTemplate) return;
+    if (bookingProfile.hasPriorHomeschoolingBooking) {
+      setLevyRequired(false);
+      return;
+    }
+    setLevyRequired(true);
+    setChildrenData((prev) =>
+      prev.map((child) =>
+        isTermTrack(child.track) ? { ...child, isNewIntake: true } : child,
+      ),
+    );
+  }, [profileLoaded, bookingProfile, initialTemplate]);
 
   // Fetch the live rate catalog from the homeschooling service record
   useEffect(() => {
@@ -341,7 +375,11 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
               : "",
             selectedTerms: isTermTrack(track) ? child.selectedTerms : [],
             selectedEcas: isTermTrack(track) ? child.selectedEcas : [],
-            isNewIntake: isTermTrack(track) ? child.isNewIntake : false,
+            isNewIntake: isTermTrack(track)
+              ? levyRequired
+                ? true
+                : child.isNewIntake
+              : false,
             learningMaterials: isTermTrack(track)
               ? child.learningMaterials
               : false,
@@ -350,11 +388,14 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
         }),
       );
     },
-    [],
+    [levyRequired],
   );
 
   const addChild = () => {
-    setChildrenData((prev) => [...prev, createChildRow(uuidv4(), prev.length)]);
+    setChildrenData((prev) => [
+      ...prev,
+      createChildRow(uuidv4(), prev.length, { forceNewIntake: levyRequired }),
+    ]);
   };
 
   const removeChild = (id: string) => {
@@ -915,6 +956,8 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                       const checked = Boolean(
                         child[field as keyof ChildHomeschoolData],
                       );
+                      const levyLocked =
+                        fee.code === "developmentLevy" && levyRequired;
                       const cadenceLabel =
                         fee.cadence === "perTerm"
                           ? "per term"
@@ -925,23 +968,42 @@ const HomeschoolingForm = forwardRef<HomeschoolingFormRef, HomeschoolingFormProp
                       return (
                         <label
                           key={fee.code}
-                          className="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors"
+                          className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-colors ${
+                            levyLocked
+                              ? "border-[#90AC19] bg-[#90AC19]/5 cursor-not-allowed"
+                              : "border-gray-300 cursor-pointer hover:bg-gray-100 hover:border-gray-400"
+                          }`}
                         >
                           <input
                             type="checkbox"
-                            checked={checked}
-                            onChange={() =>
-                              handleFieldChange(child.id, field as keyof ChildHomeschoolData, !checked)
-                            }
+                            checked={levyLocked ? true : checked}
+                            disabled={levyLocked}
+                            onChange={() => {
+                              if (levyLocked) return;
+                              handleFieldChange(
+                                child.id,
+                                field as keyof ChildHomeschoolData,
+                                !checked,
+                              );
+                            }}
                             className="checkbox border-gray-400"
                           />
                           <div className="flex-1">
                             <div className="font-medium text-gray-800">
                               {fee.label}
+                              {levyLocked && (
+                                <span className="ml-2 text-xs font-semibold text-[#5f7211]">
+                                  Required
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-600">
                               ₦{fee.amount.toLocaleString()} {cadenceLabel}
-                              {fee.note ? ` • ${fee.note}` : ""}
+                              {levyLocked
+                                ? " • Compulsory for first Kiddies Hub enrolment"
+                                : fee.note
+                                  ? ` • ${fee.note}`
+                                  : ""}
                             </div>
                           </div>
                         </label>

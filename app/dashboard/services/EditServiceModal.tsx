@@ -18,6 +18,7 @@ import {
   HOMESCHOOL_PROGRAM_SHORT_NAME,
   type HomeschoolRates,
 } from "@/lib/homeschool-program";
+import { getServiceDisplayName } from "@/lib/service-utils";
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export default function EditServiceModal({
   useEffect(() => {
     if (service && isOpen) {
       setFormData({
-        name: service.name || "",
+        name: getServiceDisplayName(service),
         type: service.type || "childcare",
         description: service.description || "",
         shortDescription: service.shortDescription || "",

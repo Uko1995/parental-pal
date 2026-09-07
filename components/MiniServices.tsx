@@ -8,7 +8,7 @@ import {
   getVisiblePromoCampSeason,
   ClientServiceForDisplay,
 } from "@/app/services/actions";
-import { getPublicServiceHref } from "@/lib/service-utils";
+import { getPublicServiceHref, getServiceDisplayName } from "@/lib/service-utils";
 import type { CampSeasonId } from "@/lib/camp-seasons";
 
 export default function MiniServices() {
@@ -79,7 +79,7 @@ export default function MiniServices() {
                 <div className="w-full h-48 md:h-52 relative overflow-hidden shrink-0">
                   <Image
                     src={service.image || "/default-service.jpg"}
-                    alt={service.name}
+                    alt={getServiceDisplayName(service)}
                     fill
                     className="object-cover transition-transform duration-300"
                   />
@@ -88,7 +88,7 @@ export default function MiniServices() {
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-1 min-h-0">
                   <h3 className="text-xl font-semibold text-base-content mb-3">
-                    {service.name}
+                    {getServiceDisplayName(service)}
                   </h3>
                   <p className="text-gray-600 mb-4 leading-relaxed">
                     {service.shortDescription || service.description}

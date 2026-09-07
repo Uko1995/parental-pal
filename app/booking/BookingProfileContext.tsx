@@ -20,6 +20,13 @@ const BookingProfileContext = createContext<BookingProfileContextValue>({
   loaded: false,
 });
 
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
 export function BookingProfileProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<BookingProfilePrefill | null>(null);
@@ -35,29 +42,46 @@ export function BookingProfileProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
 
     const loadProfile = async () => {
       try {
         const [profileRes, childrenRes] = await Promise.all([
-          fetch("/api/users/profile"),
-          fetch("/api/users/children"),
+          fetch("/api/users/profile", {
+            credentials: "same-origin",
+            signal: controller.signal,
+          }),
+          fetch("/api/users/children", {
+            credentials: "same-origin",
+            signal: controller.signal,
+          }),
         ]);
 
         const profileData = profileRes.ok ? await profileRes.json() : null;
         const childrenData = childrenRes.ok ? await childrenRes.json() : null;
 
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
 
         const apiChildren = Array.isArray(childrenData?.children)
           ? childrenData.children
           : [];
 
+        const hasPriorHomeschoolingBooking =
+          typeof childrenData?.hasPriorHomeschoolingBooking === "boolean"
+            ? childrenData.hasPriorHomeschoolingBooking
+            : apiChildren.some(
+                (child: {
+                  services?: Array<{ serviceType?: string }>;
+                }) =>
+                  Array.isArray(child.services) &&
+                  child.services.some(
+                    (service) => service.serviceType === "homeschooling",
+                  ),
+              );
+
         setProfile({
-          parentName:
-            profileData?.name || session.user.name || "",
-          parentEmail:
-            profileData?.email || session.user.email || "",
+          parentName: profileData?.name || session.user.name || "",
+          parentEmail: profileData?.email || session.user.email || "",
           parentPhone: profileData?.phone || "",
           parentAddress: profileData?.address || "",
           children: apiChildren
@@ -80,20 +104,24 @@ export function BookingProfileProvider({ children }: { children: ReactNode }) {
                 schoolName: child.schoolName,
               }),
             ),
+          hasPriorHomeschoolingBooking,
         });
       } catch (error) {
-        console.error("Failed to load booking profile prefill:", error);
-        if (!cancelled) {
-          setProfile({
-            parentName: session.user?.name || "",
-            parentEmail: session.user?.email || "",
-            parentPhone: "",
-            parentAddress: "",
-            children: [],
-          });
+        if (isAbortError(error) || controller.signal.aborted) {
+          return;
         }
+        // Soft fallback — avoid noisy Next overlay for transient network blips
+        console.warn("Booking profile prefill unavailable; using session only.");
+        setProfile({
+          parentName: session.user?.name || "",
+          parentEmail: session.user?.email || "",
+          parentPhone: "",
+          parentAddress: "",
+          children: [],
+          hasPriorHomeschoolingBooking: false,
+        });
       } finally {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setLoaded(true);
         }
       }
@@ -102,7 +130,7 @@ export function BookingProfileProvider({ children }: { children: ReactNode }) {
     loadProfile();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [session, status]);
 

@@ -19,6 +19,7 @@ const adminOnlyRoutes = [
   "/dashboard/payments",
   "/dashboard/services",
   "/dashboard/blog",
+  "/dashboard/audit",
   "/dashboard/settings",
   "/api/analytics",
   "/api/dashboard",
@@ -145,7 +146,9 @@ export async function middleware(request: NextRequest) {
   // For Edge Runtime compatibility, we'll use cookies to check session
   const sessionToken =
     request.cookies.get("next-auth.session-token") ||
-    request.cookies.get("__Secure-next-auth.session-token");
+    request.cookies.get("__Secure-next-auth.session-token") ||
+    request.cookies.get("authjs.session-token") ||
+    request.cookies.get("__Secure-authjs.session-token");
 
   // Check if user has session cookie
   const hasSession = !!sessionToken?.value;
@@ -201,7 +204,6 @@ export async function middleware(request: NextRequest) {
     const adminApiRoutes = [
       "/api/analytics",
       "/api/dashboard",
-      "/api/users",
       "/api/parents-data",
       "/api/children-data",
       "/api/tutors-data",
@@ -216,6 +218,22 @@ export async function middleware(request: NextRequest) {
         return addSecurityHeaders(response, request);
       }
       // Let the API route itself handle role-based authorization
+    }
+
+    // Parent (or any authenticated user) API routes
+    const authenticatedUserApiRoutes = [
+      "/api/users",
+      "/api/audit-logs",
+    ];
+
+    if (authenticatedUserApiRoutes.some((route) => pathname.startsWith(route))) {
+      if (!hasSession) {
+        const response = NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 },
+        );
+        return addSecurityHeaders(response, request);
+      }
     }
 
     // Protected API routes require authentication
