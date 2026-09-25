@@ -37,6 +37,7 @@ import {
 import CloudinaryImage from "@/components/CloudinaryImage";
 import { TutorFormData } from "./TutorRegistrationForm";
 import PhoneInput from "@/components/PhoneInput";
+import { isValidInternationalPhone } from "@/lib/phone";
 
 interface PersonalInfoTabProps {
   formData: TutorFormData;
@@ -63,8 +64,7 @@ export default function PersonalInfoTab({
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
-    const phoneRegex = /^\+\d{7,15}$/;
-    return phoneRegex.test(phone);
+    return isValidInternationalPhone(phone);
   };
 
   const validateName = (name: string): boolean => {
