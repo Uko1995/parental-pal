@@ -1,12 +1,14 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   buildInvoiceLineItems,
   type InvoiceLineItem,
 } from "@/lib/booking-invoice";
+import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
+import { downloadHtmlDocument } from "@/lib/download-html-document";
 import type { BookingInterface } from "@/models/Booking";
 
 interface Child {
@@ -50,6 +52,7 @@ export default function InvoiceModal({
   const [invoiceItems, setInvoiceItems] = useState<InvoiceLineItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [sendToEmail, setSendToEmail] = useState("");
+  const documentRef = useRef<HTMLDivElement>(null);
 
   const bookingId = booking?._id;
   const bookingParentEmail = booking?.parentEmail;
@@ -88,8 +91,7 @@ export default function InvoiceModal({
   if (!isOpen || !booking) return null;
 
   // Check if payment is confirmed
-  const isPaymentConfirmed =
-    booking.status === "confirmed" || booking.payment?.status === "paid";
+  const isPaymentConfirmed = isBookingPaymentReceived(booking);
   const documentType = isPaymentConfirmed ? "Receipt" : "Invoice";
 
   const formatCurrency = (amount: number) => {
@@ -154,7 +156,9 @@ export default function InvoiceModal({
       } else {
         const error = await response.json();
         toast.error(
-          error.error || `Failed to send ${documentType.toLowerCase()}`
+          error.details ||
+            error.error ||
+            `Failed to send ${documentType.toLowerCase()}`,
         );
       }
     } catch {
@@ -167,6 +171,7 @@ export default function InvoiceModal({
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div ref={documentRef}>
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -372,6 +377,7 @@ export default function InvoiceModal({
             </div>
           )}
         </div>
+        </div>
 
         <div className="form-control mt-4">
           <label className="label py-1">
@@ -396,6 +402,23 @@ export default function InvoiceModal({
         <div className="modal-action">
           <button className="btn btn-ghost" onClick={onClose}>
             Close
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => {
+              if (!documentRef.current) return;
+              const number = isPaymentConfirmed
+                ? invoiceNumber.replace("INV", "RCT")
+                : invoiceNumber;
+              downloadHtmlDocument(
+                `${documentType}-${number}.html`,
+                `${documentType} ${number}`,
+                documentRef.current.innerHTML,
+              );
+            }}
+          >
+            Download {documentType}
           </button>
           <button
             className={`btn ${

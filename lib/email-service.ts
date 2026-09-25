@@ -41,8 +41,14 @@ function createEmailTransporter() {
   });
 }
 
-// Create reusable transporter object
-const transporter = createEmailTransporter();
+function emailIsConfigured(): boolean {
+  return Boolean(
+    (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) ||
+      (process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASSWORD),
+  );
+}
 
 export interface EmailOptions {
   to: string;
@@ -88,13 +94,21 @@ export interface PaymentDetails {
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   try {
-    // Skip sending emails if no email configuration is provided (development mode)
-    if (!process.env.EMAIL_USER && !process.env.SMTP_HOST) {
+    // A transporter created at import time keeps the unconfigured stream
+    // fallback even after EMAIL_* is available, so mail looks sent and never leaves.
+    if (!emailIsConfigured()) {
+      if (process.env.NODE_ENV === "production") {
+        const error =
+          "Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD, or SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.";
+        console.error("❌", error, { to, subject });
+        return { success: false, error };
+      }
       console.log("📧 Email (Development Mode):", { to, subject });
       console.log("📧 Email content:", text || "HTML content provided");
       return { success: true, messageId: "dev-mode-" + Date.now() };
     }
 
+    const transporter = createEmailTransporter();
     const mailOptions = {
       from: `"ParentalPal" <${
         process.env.EMAIL_USER ||

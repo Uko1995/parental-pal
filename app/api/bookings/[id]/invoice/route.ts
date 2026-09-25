@@ -15,6 +15,7 @@ import {
 } from "@/lib/booking-parent-email";
 import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
 import validator from "validator";
+import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
 
 // Generate a unique invoice number
 function generateInvoiceNumber(): string {
@@ -73,8 +74,7 @@ export async function POST(
     }
 
     // Check if booking is confirmed or payment is completed
-    const isPaymentConfirmed =
-      booking.status === "confirmed" || booking.payment?.status === "paid";
+    const isPaymentConfirmed = isBookingPaymentReceived(booking);
 
     // Get parent name and email (booking email matches invoice modal display)
     const parentName = resolveBookingParentName(booking, parent);
