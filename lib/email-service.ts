@@ -1698,5 +1698,3 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
     `,
   }),
 };
-
-export default transporter;
