@@ -8,7 +8,7 @@ import {
   type InvoiceLineItem,
 } from "@/lib/booking-invoice";
 import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
-import { downloadHtmlDocument } from "@/lib/download-html-document";
+import { downloadElementAsPdf } from "@/lib/download-html-document";
 import type { BookingInterface } from "@/models/Booking";
 
 interface Child {
@@ -411,10 +411,9 @@ export default function InvoiceModal({
               const number = isPaymentConfirmed
                 ? invoiceNumber.replace("INV", "RCT")
                 : invoiceNumber;
-              downloadHtmlDocument(
-                `${documentType}-${number}.html`,
-                `${documentType} ${number}`,
-                documentRef.current.innerHTML,
+              void downloadElementAsPdf(
+                documentRef.current,
+                `${documentType}-${number}.pdf`,
               );
             }}
           >

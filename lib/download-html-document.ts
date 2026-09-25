@@ -1,33 +1,41 @@
-export function buildDownloadDocumentHtml(title: string, bodyHtml: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${title}</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #111; padding: 24px; }
-    img { max-width: 80px; height: auto; }
-  </style>
-</head>
-<body>
-${bodyHtml}
-</body>
-</html>`;
+export function pdfFilename(filename: string): string {
+  const base = filename.replace(/\.(html|pdf)$/i, "");
+  return `${base}.pdf`;
 }
 
-export function downloadHtmlDocument(
+export async function downloadElementAsPdf(
+  element: HTMLElement,
   filename: string,
-  title: string,
-  bodyHtml: string,
-): void {
-  const html = buildDownloadDocumentHtml(title, bodyHtml);
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename.endsWith(".html") ? filename : `${filename}.html`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+): Promise<void> {
+  const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas-pro"),
+  ]);
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+  });
+  const image = canvas.toDataURL("image/jpeg", 0.92);
+  const pdf = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 24;
+  const imageWidth = pageWidth - margin * 2;
+  const imageHeight = (canvas.height * imageWidth) / canvas.width;
+
+  let heightLeft = imageHeight;
+  let position = margin;
+
+  pdf.addImage(image, "JPEG", margin, position, imageWidth, imageHeight);
+  heightLeft -= pageHeight - margin * 2;
+
+  while (heightLeft > 0) {
+    position = margin - (imageHeight - heightLeft);
+    pdf.addPage();
+    pdf.addImage(image, "JPEG", margin, position, imageWidth, imageHeight);
+    heightLeft -= pageHeight - margin * 2;
+  }
+
+  pdf.save(pdfFilename(filename));
 }

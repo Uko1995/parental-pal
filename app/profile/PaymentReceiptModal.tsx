@@ -10,7 +10,7 @@ import { useRef } from "react";
 import Image from "next/image";
 
 import { type InvoiceLineItem } from "@/lib/booking-invoice";
-import { downloadHtmlDocument } from "@/lib/download-html-document";
+import { downloadElementAsPdf } from "@/lib/download-html-document";
 
 interface Payment {
   _id: string;
@@ -190,10 +190,9 @@ export default function PaymentReceiptModal({
 
   const handleDownload = () => {
     if (!receiptRef.current || !payment) return;
-    downloadHtmlDocument(
-      `Receipt-${payment.transactionId || payment._id}.html`,
-      `Payment Receipt ${payment.transactionId || payment._id}`,
-      receiptRef.current.innerHTML,
+    void downloadElementAsPdf(
+      receiptRef.current,
+      `Receipt-${payment.transactionId || payment._id}.pdf`,
     );
   };
 
@@ -381,7 +380,7 @@ export default function PaymentReceiptModal({
                 className="btn btn-secondary flex-1 gap-2"
               >
                 <ArrowDownTrayIcon className="w-5 h-5" />
-                Download Receipt
+                Download PDF
               </button>
             </div>
 
