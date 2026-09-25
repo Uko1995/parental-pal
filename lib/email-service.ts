@@ -1,4 +1,8 @@
 import nodemailer from "nodemailer";
+import {
+  paymentOptionsHtml,
+  paymentOptionsText,
+} from "@/lib/payment-instructions";
 
 // Create transporter function to handle different environments
 function createEmailTransporter() {
@@ -312,7 +316,8 @@ export const emailTemplates = {
             ${
               bookingDetails.payment?.status === "paid"
                 ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt with your service schedule and line items is sent to this email address after payment.</p>`
-                : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>`
+                : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>
+            <div class="booking-details">${paymentOptionsHtml()}</div>`
             }
             <p>View full booking details, payment status, and schedules anytime in your account under <a href="${profileBookingsUrl}">Profile → Bookings</a>.</p>
             <p>If you have any questions, please don't hesitate to contact us.</p>
@@ -329,7 +334,11 @@ export const emailTemplates = {
       bookingDetails.serviceType
     }, Children: ${childNames}, Total: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
-    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} View details in your profile: ${profileBookingsUrl}`,
+    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} ${
+      bookingDetails.payment?.status === "paid"
+        ? ""
+        : `${unpaidPaymentCopy} ${paymentOptionsText()} `
+    }View details in your profile: ${profileBookingsUrl}`,
   };
   },
 
@@ -419,6 +428,8 @@ export const emailTemplates = {
             <center>
               <a href="${profileUrl}" class="cta-button">Pay from Profile → Payments</a>
             </center>
+
+            <div class="booking-details">${paymentOptionsHtml()}</div>
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
@@ -428,7 +439,7 @@ export const emailTemplates = {
       </body>
       </html>
     `,
-      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}`,
+      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}\n${paymentOptionsText()}`,
     };
   },
 
@@ -1168,24 +1179,17 @@ export const emailTemplates = {
               }${invoiceDetails.totalAmount.toLocaleString()}</div>
             </div>
 
-            ${
-              invoiceDetails.paymentInstructions
-                ? `
             <div class="payment-section">
               <strong style="color: #856404;">Payment Instructions:</strong>
-              <p style="margin: 10px 0 0 0; color: #856404;">${invoiceDetails.paymentInstructions}</p>
+              <div style="margin: 10px 0 0 0; color: #856404;">
+                ${
+                  invoiceDetails.paymentInstructions
+                    ? `<p style="margin: 0 0 12px 0;">${invoiceDetails.paymentInstructions}</p>`
+                    : ""
+                }
+                ${paymentOptionsHtml()}
+              </div>
             </div>
-            `
-                : `
-            <div class="payment-section">
-              <strong style="color: #856404;">Payment Instructions:</strong>
-              <p style="margin: 10px 0 0 0; color: #856404;">
-                Please log in to your ParentalPal account to make payment for this invoice. 
-                Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
-              </p>
-            </div>
-            `
-            }
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 13px;">
               <p><strong>Terms & Conditions:</strong></p>
@@ -1265,9 +1269,10 @@ TOTAL AMOUNT DUE: ${
     }${invoiceDetails.totalAmount.toLocaleString()}
 
 ${
-  invoiceDetails.paymentInstructions ||
-  "Please log in to your ParentalPal account to make payment."
-}
+  invoiceDetails.paymentInstructions
+    ? `${invoiceDetails.paymentInstructions}\n`
+    : ""
+}${paymentOptionsText()}
 
 Thank you for choosing ParentalPal!
 Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}

@@ -153,8 +153,6 @@ export async function POST(
         subtotal,
         totalAmount,
         currency: booking.pricing?.currency || "₦",
-        paymentInstructions:
-          "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
         serviceSummary,
       };
 
