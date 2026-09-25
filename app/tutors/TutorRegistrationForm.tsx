@@ -8,6 +8,7 @@ import ProfessionalInfoTab from "./ProfessionalInfoTab";
 import AvailabilityTab from "./AvailabilityTab";
 import ReviewTab from "./ReviewTab";
 import toast from "react-hot-toast";
+import { isValidInternationalPhone } from "@/lib/phone";
 
 export interface TutorFormData {
   // Personal Information
@@ -137,9 +138,7 @@ export default function TutorRegistrationForm() {
   };
 
   const validatePhoneNumber = (phone: string): boolean => {
-    // Nigerian phone number: +234 followed by 10 digits
-    const phoneRegex = /^\+234\d{10}$/;
-    return phoneRegex.test(phone);
+    return isValidInternationalPhone(phone);
   };
 
   const validateName = (name: string): boolean => {
