@@ -9,6 +9,10 @@ import {
 } from "@/lib/booking-invoice";
 import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
 import { downloadElementAsPdf } from "@/lib/download-html-document";
+import {
+  BANK_TRANSFER_DETAILS,
+  OFFICIAL_CONTACT_CHANNELS,
+} from "@/lib/payment-instructions";
 import type { BookingInterface } from "@/models/Booking";
 
 interface Child {
@@ -369,9 +373,29 @@ export default function InvoiceModal({
               <div>
                 <h4 className="font-bold">Payment Instructions</h4>
                 <p className="text-sm">
-                  Please log in to your ParentalPal account to make payment for
-                  this invoice. Visit your profile and navigate to the Payments
-                  section.
+                  Pay online: log in to your ParentalPal account and use
+                  Paystack checkout from Profile → Payments.
+                </p>
+                <p className="text-sm mt-2">Or pay by direct bank transfer:</p>
+                <ul className="text-sm list-disc list-inside mt-1">
+                  <li>
+                    Account number: {BANK_TRANSFER_DETAILS.accountNumber}
+                  </li>
+                  <li>Bank: {BANK_TRANSFER_DETAILS.bankName}</li>
+                  <li>Account name: {BANK_TRANSFER_DETAILS.accountName}</li>
+                </ul>
+                <p className="text-sm mt-2">
+                  After you make the transfer, notify the admin on our official
+                  contact channels: phone{" "}
+                  {OFFICIAL_CONTACT_CHANNELS.phoneDisplay},{" "}
+                  <a
+                    href={OFFICIAL_CONTACT_CHANNELS.whatsappUrl}
+                    className="link"
+                  >
+                    WhatsApp
+                  </a>
+                  , or email {OFFICIAL_CONTACT_CHANNELS.email}. Include your
+                  booking or invoice number so we can match the payment.
                 </p>
               </div>
             </div>

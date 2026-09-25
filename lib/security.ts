@@ -1,4 +1,5 @@
 import validator from "validator";
+import { isValidInternationalPhone } from "@/lib/phone";
 import { NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { UserInterface } from "@/models";
@@ -146,7 +147,7 @@ export function validatePassword(password: string): {
  * Validate phone number
  */
 export function validatePhone(phone: string): boolean {
-  return validator.isMobilePhone(phone, "any");
+  return isValidInternationalPhone(phone);
 }
 
 /**

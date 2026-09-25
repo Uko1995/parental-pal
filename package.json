@@ -7,7 +7,7 @@
     "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx --test lib/booking-calendar.test.ts lib/booking-invoice.test.ts lib/homeschool-pricing.test.ts lib/camp-seasons.calendar.test.ts lib/camp-pricing.test.ts lib/camp-promotions.test.ts lib/boarding-capacity.test.ts lib/booking-payment-confirm.test.ts lib/booking-payment-emails.test.ts lib/booking-payment-reminders.test.ts lib/booking-revenue-stats.test.ts lib/booking-parent-email.test.ts lib/booking-schedule.test.ts lib/booking-form-fill-priority.test.ts lib/booking-cancellation.test.ts lib/parent-invoice-pricing.test.ts lib/parent-invoice.test.ts lib/google-drive.test.ts lib/htr-drive-folder.test.ts lib/email-service.test.ts lib/drive-folder-eligibility.test.ts lib/booking-document.test.ts",
+    "test": "npx tsx --test lib/booking-calendar.test.ts lib/booking-invoice.test.ts lib/homeschool-pricing.test.ts lib/camp-seasons.calendar.test.ts lib/camp-pricing.test.ts lib/camp-promotions.test.ts lib/boarding-capacity.test.ts lib/booking-payment-confirm.test.ts lib/booking-payment-emails.test.ts lib/booking-payment-reminders.test.ts lib/booking-revenue-stats.test.ts lib/booking-parent-email.test.ts lib/booking-schedule.test.ts lib/booking-form-fill-priority.test.ts lib/booking-cancellation.test.ts lib/parent-invoice-pricing.test.ts lib/parent-invoice.test.ts lib/google-drive.test.ts lib/htr-drive-folder.test.ts lib/email-service.test.ts lib/drive-folder-eligibility.test.ts lib/phone.test.ts lib/booking-document.test.ts",
     "init-db": "npx tsx lib/initialize-db.ts",
     "convert:webp": "imagemin 'public/**/*.{jpg,png}' --plugin=@vheemstra/imagemin-plugin-webp --out-dir=public"
   },
@@ -19,6 +19,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^7.0.3",
     "@types/validator": "^13.15.10",
+    "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.1",
     "cloudinary": "^2.8.0",
