@@ -145,21 +145,37 @@ export default function AddProductModal({
 
       const thumbnailData = await thumbnailRes.json();
 
-      // Upload PDF to Cloudinary
-      const pdfFormData = new FormData();
-      pdfFormData.append("file", pdfFile);
-      pdfFormData.append("type", "pdf");
+      let pdfFileData:
+        | {
+            cloudinaryId: string;
+            cloudinaryUrl: string;
+            fileName: string;
+            fileSize: number;
+          }
+        | undefined;
 
-      const pdfRes = await fetch("/api/upload", {
-        method: "POST",
-        body: pdfFormData,
-      });
+      if (pdfFile) {
+        const pdfFormData = new FormData();
+        pdfFormData.append("file", pdfFile);
+        pdfFormData.append("type", "pdf");
 
-      if (!pdfRes.ok) {
-        throw new Error("Failed to upload PDF");
+        const pdfRes = await fetch("/api/upload", {
+          method: "POST",
+          body: pdfFormData,
+        });
+
+        if (!pdfRes.ok) {
+          throw new Error("Failed to upload PDF");
+        }
+
+        const pdfData = await pdfRes.json();
+        pdfFileData = {
+          cloudinaryId: pdfData.public_id,
+          cloudinaryUrl: pdfData.secure_url || pdfData.url,
+          fileName: pdfFile.name,
+          fileSize: pdfFile.size,
+        };
       }
-
-      const pdfData = await pdfRes.json();
 
       // Create product
       const productData = {
@@ -173,12 +189,7 @@ export default function AddProductModal({
         language: formData.language,
         isbn: formData.isbn,
         thumbnail: thumbnailData.secure_url || thumbnailData.url, // Store URL directly as string
-        pdfFile: {
-          cloudinaryId: pdfData.public_id,
-          cloudinaryUrl: pdfData.secure_url || pdfData.url,
-          fileName: pdfFile.name,
-          fileSize: pdfFile.size,
-        },
+        ...(pdfFileData ? { pdfFile: pdfFileData } : {}),
         pricing: {
           softcopy: {
             price: formData.softcopyPrice,
