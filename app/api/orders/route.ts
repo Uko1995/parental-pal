@@ -7,8 +7,9 @@ import { OrderInterface } from "@/models/Order";
 import { v4 as uuidv4 } from "uuid";
 import { CACHE_TAGS } from "@/lib/cache-config";
 import {
+  productOffersFormat,
   resolveProductUnitPrice,
-  validateBdgPromoApplication,
+  validateSubmittedProductPromo,
 } from "@/lib/product-promotions";
 
 // GET /api/orders - Get all orders
@@ -145,6 +146,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (
+      body.orderType !== "softcopy" &&
+      body.orderType !== "paperback"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invalid product format" },
+        { status: 400 },
+      );
+    }
+
+    if (!productOffersFormat(product, body.orderType)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            body.orderType === "paperback"
+              ? "Paperback is not available for this product"
+              : "PDF is not available for this product",
+        },
+        { status: 400 },
+      );
+    }
+
     // Check stock for paperback
     if (body.orderType === "paperback") {
       const hasStock = await ProductRepository.checkStock(
@@ -175,10 +199,12 @@ export async function POST(request: NextRequest) {
     const promoCode = body.promoCode as string | undefined;
 
     if (promoCode) {
-      const validation = validateBdgPromoApplication({
+      const validation = validateSubmittedProductPromo({
         promoCode,
         orderType: body.orderType,
         productCategory: product.category,
+        productSlug: product.slug,
+        productTitle: product.title,
       });
       if (!validation.valid) {
         return NextResponse.json(
@@ -191,6 +217,8 @@ export async function POST(request: NextRequest) {
     const unitPrice = resolveProductUnitPrice({
       orderType: body.orderType,
       productCategory: product.category,
+      productSlug: product.slug,
+      productTitle: product.title,
       listSoftcopyPrice: product.pricing.softcopy.price,
       listPaperbackPrice: product.pricing.paperback.price,
       promoCode,

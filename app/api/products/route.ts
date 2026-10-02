@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         paperback: {
           price: body.paperbackPrice || 5000,
           currency: "NGN",
-          available: body.paperbackAvailable ?? true,
+          available: body.paperbackAvailable ?? false,
           deliveryDays: body.paperbackDeliveryDays || 2,
         },
       },

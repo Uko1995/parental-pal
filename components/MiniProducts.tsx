@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { productOffersFormat } from "@/lib/product-promotions";
 
 interface Product {
   _id: string;
@@ -158,7 +159,8 @@ export default function MiniProducts() {
                     )}
                     <div className="card-actions justify-between items-center mt-4">
                       <div className="flex flex-col gap-1">
-                        {product.pricing?.softcopy?.available && (
+                        {productOffersFormat(product, "softcopy") &&
+                          product.pricing?.softcopy && (
                           <div className="text-sm">
                             <span className="font-medium">PDF:</span>{" "}
                             <span className="text-[#90AC19] font-bold">
@@ -169,7 +171,8 @@ export default function MiniProducts() {
                             </span>
                           </div>
                         )}
-                        {product.pricing?.paperback?.available && (
+                        {productOffersFormat(product, "paperback") &&
+                          product.pricing?.paperback && (
                           <div className="text-sm">
                             <span className="font-medium">Print:</span>{" "}
                             <span className="text-[#E8931A] font-bold">
@@ -180,8 +183,8 @@ export default function MiniProducts() {
                             </span>
                           </div>
                         )}
-                        {!product.pricing?.softcopy?.available &&
-                          !product.pricing?.paperback?.available && (
+                        {!productOffersFormat(product, "softcopy") &&
+                          !productOffersFormat(product, "paperback") && (
                             <div className="text-sm text-base-content/60">
                               View price
                             </div>

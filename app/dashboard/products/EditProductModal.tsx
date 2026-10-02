@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { isGirlsHangout2026Product } from "@/lib/product-promotions";
 
 const MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024;
 const PDF_MIME_TYPES = ["application/pdf", "application/x-pdf"];
@@ -67,7 +68,7 @@ export default function EditProductModal({
     softcopyPrice: 0,
     softcopyAvailable: true,
     paperbackPrice: 0,
-    paperbackAvailable: true,
+    paperbackAvailable: false,
     paperbackStock: 0,
     status: "active",
     featured: false,
@@ -86,7 +87,9 @@ export default function EditProductModal({
         softcopyPrice: product.pricing?.softcopy?.price || 0,
         softcopyAvailable: product.pricing?.softcopy?.available ?? true,
         paperbackPrice: product.pricing?.paperback?.price || 0,
-        paperbackAvailable: product.pricing?.paperback?.available ?? true,
+        paperbackAvailable: isGirlsHangout2026Product(product)
+          ? false
+          : product.pricing?.paperback?.available === true,
         paperbackStock: product.stock?.paperback ?? 0,
         status: product.status || "active",
         featured: product.featured || false,
@@ -139,6 +142,16 @@ export default function EditProductModal({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!formData.softcopyAvailable && !formData.paperbackAvailable) {
+      toast.error("Enable the PDF or the paperback");
+      return;
+    }
+
+    if (formData.softcopyAvailable && !pdfFile && !product.pdfFile) {
+      toast.error("Please upload the PDF file");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -431,8 +444,13 @@ export default function EditProductModal({
                         checked={formData.paperbackAvailable}
                         onChange={handleChange}
                         className="checkbox checkbox-primary"
+                        disabled={isGirlsHangout2026Product(product)}
                       />
-                      <span className="label-text">Paperback Available</span>
+                      <span className="label-text">
+                        {isGirlsHangout2026Product(product)
+                          ? "Paperback unavailable for this PDF"
+                          : "Paperback Available"}
+                      </span>
                     </label>
                   </div>
                   <div className="form-control">
@@ -470,6 +488,7 @@ export default function EditProductModal({
                     onChange={handleChange}
                     className="input input-bordered"
                     min="0"
+                    disabled={!formData.paperbackAvailable}
                   />
                   <label className="label">
                     <span className="label-text-alt text-gray-500">

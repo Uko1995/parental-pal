@@ -7,7 +7,8 @@ import ProductRepository from "@/lib/ProductRepository";
 import CouponRepository from "@/lib/CouponRepository";
 import {
   getEffectiveCartItemUnitPrice,
-  isBdgPromoCode,
+  isBuiltInProductPromoCode,
+  productOffersFormat,
 } from "@/lib/product-promotions";
 import { OrderInterface } from "@/models/Order";
 import { ObjectId } from "mongodb";
@@ -74,6 +75,22 @@ export async function POST(request: NextRequest) {
       }
 
       if (
+        (item.orderType === "softcopy" || item.orderType === "paperback") &&
+        !productOffersFormat(product, item.orderType)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              item.orderType === "paperback"
+                ? `"${item.productTitle}" paperback is not available`
+                : `"${item.productTitle}" PDF is not available`,
+          },
+          { status: 400 },
+        );
+      }
+
+      if (
         item.orderType === "paperback" &&
         product.stock.paperback < item.quantity
       ) {
@@ -105,12 +122,14 @@ export async function POST(request: NextRequest) {
       let unitPrice = item.unitPrice;
       let itemTotal: number;
 
-      if (isBdgPromoCode(cart.couponCode)) {
+      if (isBuiltInProductPromoCode(cart.couponCode)) {
         unitPrice = getEffectiveCartItemUnitPrice(
           {
             orderType: item.orderType,
             unitPrice: item.unitPrice,
             productCategory,
+            productSlug: item.productSlug,
+            productTitle: item.productTitle,
           },
           cart.couponCode,
         );
@@ -189,7 +208,7 @@ export async function POST(request: NextRequest) {
     if (
       cart.couponCode &&
       totals.discount > 0 &&
-      !isBdgPromoCode(cart.couponCode)
+      !isBuiltInProductPromoCode(cart.couponCode)
     ) {
       const coupon = await CouponRepository.getCouponByCode(cart.couponCode);
       if (coupon && coupon._id) {
