@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { CartItem } from "../cart/page";
+import { productOffersFormat } from "@/lib/product-promotions";
 
 interface Product {
   _id: string;
@@ -118,8 +119,10 @@ export default function ProductListing({ products }: ProductListingProps) {
     if (priceFilter !== "all") {
       result = result.filter((p) => {
         const minPrice = Math.min(
-          p.pricing.softcopy.available ? p.pricing.softcopy.price : Infinity,
-          p.pricing.paperback.available ? p.pricing.paperback.price : Infinity
+          productOffersFormat(p, "softcopy") ? p.pricing.softcopy.price : Infinity,
+          productOffersFormat(p, "paperback")
+            ? p.pricing.paperback.price
+            : Infinity
         );
 
         switch (priceFilter) {
@@ -141,8 +144,8 @@ export default function ProductListing({ products }: ProductListingProps) {
     if (formatFilter !== "all") {
       result = result.filter((p) =>
         formatFilter === "softcopy"
-          ? p.pricing.softcopy.available
-          : p.pricing.paperback.available
+          ? productOffersFormat(p, "softcopy")
+          : productOffersFormat(p, "paperback")
       );
     }
 
@@ -158,12 +161,20 @@ export default function ProductListing({ products }: ProductListingProps) {
       case "price-low":
         result.sort((a, b) => {
           const aPrice = Math.min(
-            a.pricing.softcopy.available ? a.pricing.softcopy.price : Infinity,
-            a.pricing.paperback.available ? a.pricing.paperback.price : Infinity
+            productOffersFormat(a, "softcopy")
+              ? a.pricing.softcopy.price
+              : Infinity,
+            productOffersFormat(a, "paperback")
+              ? a.pricing.paperback.price
+              : Infinity
           );
           const bPrice = Math.min(
-            b.pricing.softcopy.available ? b.pricing.softcopy.price : Infinity,
-            b.pricing.paperback.available ? b.pricing.paperback.price : Infinity
+            productOffersFormat(b, "softcopy")
+              ? b.pricing.softcopy.price
+              : Infinity,
+            productOffersFormat(b, "paperback")
+              ? b.pricing.paperback.price
+              : Infinity
           );
           return aPrice - bPrice;
         });
@@ -171,12 +182,12 @@ export default function ProductListing({ products }: ProductListingProps) {
       case "price-high":
         result.sort((a, b) => {
           const aPrice = Math.max(
-            a.pricing.softcopy.available ? a.pricing.softcopy.price : 0,
-            a.pricing.paperback.available ? a.pricing.paperback.price : 0
+            productOffersFormat(a, "softcopy") ? a.pricing.softcopy.price : 0,
+            productOffersFormat(a, "paperback") ? a.pricing.paperback.price : 0
           );
           const bPrice = Math.max(
-            b.pricing.softcopy.available ? b.pricing.softcopy.price : 0,
-            b.pricing.paperback.available ? b.pricing.paperback.price : 0
+            productOffersFormat(b, "softcopy") ? b.pricing.softcopy.price : 0,
+            productOffersFormat(b, "paperback") ? b.pricing.paperback.price : 0
           );
           return bPrice - aPrice;
         });
@@ -357,10 +368,10 @@ export default function ProductListing({ products }: ProductListingProps) {
             productSlug: product.slug,
             productThumbnail: product.thumbnail,
             author: product.author,
-            softcopyPrice: product.pricing.softcopy.available
+            softcopyPrice: productOffersFormat(product, "softcopy")
               ? product.pricing.softcopy.price
               : undefined,
-            paperbackPrice: product.pricing.paperback.available
+            paperbackPrice: productOffersFormat(product, "paperback")
               ? product.pricing.paperback.price
               : undefined,
             addedAt: new Date().toISOString(),
@@ -704,7 +715,7 @@ export default function ProductListing({ products }: ProductListingProps) {
 
                   {/* Pricing */}
                   <div className="space-y-2 border-t border-gray-100 pt-3 lg:max-w-sm">
-                    {product.pricing.softcopy.available && (
+                    {productOffersFormat(product, "softcopy") && (
                       <div className="flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5">
                         <span className="text-xs font-medium text-gray-600">
                           PDF
@@ -714,7 +725,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                         </span>
                       </div>
                     )}
-                    {product.pricing.paperback.available && (
+                    {productOffersFormat(product, "paperback") && (
                       <div className="flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5">
                         <span className="text-xs font-medium text-gray-600">
                           Paperback:
@@ -730,13 +741,26 @@ export default function ProductListing({ products }: ProductListingProps) {
 
               {/* Action Buttons */}
               <div className="flex gap-2 px-4 pb-4 pt-1">
-                {(product.pricing.softcopy.available ||
-                  product.pricing.paperback.available) && (
+                {(productOffersFormat(product, "softcopy") ||
+                  productOffersFormat(product, "paperback")) && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      const softcopy = productOffersFormat(product, "softcopy");
+                      const paperback = productOffersFormat(
+                        product,
+                        "paperback",
+                      );
+                      if (softcopy && !paperback) {
+                        void handleAddToCart(e, product._id, "softcopy");
+                        return;
+                      }
+                      if (paperback && !softcopy) {
+                        void handleAddToCart(e, product._id, "paperback");
+                        return;
+                      }
                       setFormatPickerProduct(product);
                     }}
                     className="btn btn-sm flex-1 gap-2 border-none bg-gray-900 text-white hover:bg-gray-800"
@@ -809,7 +833,7 @@ export default function ProductListing({ products }: ProductListingProps) {
               </p>
 
               <div className="space-y-3">
-                {formatPickerProduct.pricing.softcopy.available && (
+                {productOffersFormat(formatPickerProduct, "softcopy") && (
                   <button
                     type="button"
                     onClick={() => handleFormatSelect("softcopy")}
@@ -841,7 +865,7 @@ export default function ProductListing({ products }: ProductListingProps) {
                   </button>
                 )}
 
-                {formatPickerProduct.pricing.paperback.available && (
+                {productOffersFormat(formatPickerProduct, "paperback") && (
                   <button
                     type="button"
                     onClick={() => handleFormatSelect("paperback")}

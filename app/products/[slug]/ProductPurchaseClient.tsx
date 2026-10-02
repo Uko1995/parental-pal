@@ -4,6 +4,10 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { ClientProduct } from "@/types/product";
 import PhoneInput from "@/components/PhoneInput";
+import {
+  productAcceptsPromoCode,
+  productOffersFormat,
+} from "@/lib/product-promotions";
 
 interface ProductPurchaseClientProps {
   product: ClientProduct;
@@ -12,8 +16,10 @@ interface ProductPurchaseClientProps {
 export default function ProductPurchaseClient({
   product,
 }: ProductPurchaseClientProps) {
+  const softcopyOffered = productOffersFormat(product, "softcopy");
+  const paperbackOffered = productOffersFormat(product, "paperback");
   const [selectedType, setSelectedType] = useState<"softcopy" | "paperback">(
-    product.pricing.softcopy.available ? "softcopy" : "paperback"
+    softcopyOffered ? "softcopy" : "paperback"
   );
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +57,9 @@ export default function ProductPurchaseClient({
     selectedType === "paperback" ? Math.max(1, product.stock.paperback) : 50;
   const totalPrice = currentPrice * quantity;
   const showPromoField =
-    selectedType === "softcopy" && product.category === "storybook";
+    selectedType === "softcopy" &&
+    softcopyOffered &&
+    productAcceptsPromoCode(product);
 
   const resetPromo = () => {
     setPromoCode("");
@@ -184,10 +192,12 @@ export default function ProductPurchaseClient({
     <div>
       {/* Format Selection */}
       <div className="mb-6">
-        <h3 className="font-semibold text-gray-900 mb-3">Choose Format:</h3>
+        <h3 className="font-semibold text-gray-900 mb-3">
+          {softcopyOffered && paperbackOffered ? "Choose Format:" : "Format"}
+        </h3>
         <div className="space-y-3">
           {/* Softcopy Option */}
-          {product.pricing.softcopy.available && (
+          {softcopyOffered && (
             <button
               onClick={() => {
                 setSelectedType("softcopy");
@@ -222,7 +232,7 @@ export default function ProductPurchaseClient({
           )}
 
           {/* Paperback Option */}
-          {product.pricing.paperback.available && (
+          {paperbackOffered && (
             <button
               onClick={() => {
                 setSelectedType("paperback");

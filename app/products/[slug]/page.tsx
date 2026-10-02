@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ClientProduct } from "@/types/product";
+import { productOffersFormat } from "@/lib/product-promotions";
 
 export async function generateMetadata({
   params,
@@ -216,7 +217,7 @@ export default async function ProductDetailPage({
             </div>
 
             {/* Stock Status */}
-            {product.pricing.paperback.available &&
+            {productOffersFormat(product, "paperback") &&
               product.stock.paperback < 5 &&
               product.stock.paperback > 0 && (
                 <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -227,12 +228,14 @@ export default async function ProductDetailPage({
                 </div>
               )}
 
-            {product.pricing.paperback.available &&
+            {productOffersFormat(product, "paperback") &&
               product.stock.paperback === 0 && (
                 <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-800 text-sm">
-                    ❌ Paperback currently out of stock. PDF version still
-                    available!
+                    ❌ Paperback currently out of stock.
+                    {productOffersFormat(product, "softcopy")
+                      ? " PDF version still available!"
+                      : ""}
                   </p>
                 </div>
               )}

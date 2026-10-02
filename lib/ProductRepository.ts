@@ -1,6 +1,21 @@
 import { ObjectId } from "mongodb";
 import { getCollection, getDb } from "./mongodb";
 import { ProductInterface, ProductSchema } from "../models/Product";
+import {
+  isGirlsHangout2026Product,
+  withCommercialProductRules,
+} from "./product-promotions";
+
+function presentProduct(
+  product: ProductInterface | null,
+): ProductInterface | null {
+  if (!product) return null;
+  return withCommercialProductRules(product);
+}
+
+function presentProducts(products: ProductInterface[]): ProductInterface[] {
+  return products.map((product) => withCommercialProductRules(product));
+}
 
 export class ProductRepository {
   private static collectionName = "products";
@@ -72,7 +87,7 @@ export class ProductRepository {
   ): Promise<ProductInterface> {
     const collection = await getCollection(this.collectionName);
 
-    const newProduct: ProductInterface = {
+    const newProduct: ProductInterface = withCommercialProductRules({
       ...productData,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -85,7 +100,7 @@ export class ProductRepository {
         totalReviews: 0,
         viewCount: 0,
       },
-    };
+    });
 
     const result = await collection.insertOne(newProduct);
     return { ...newProduct, _id: result.insertedId };
@@ -120,7 +135,7 @@ export class ProductRepository {
       .sort({ createdAt: -1 })
       .toArray();
 
-    return products as ProductInterface[];
+    return presentProducts(products as ProductInterface[]);
   }
 
   // Get product by ID
@@ -132,7 +147,7 @@ export class ProductRepository {
       typeof productId === "string" ? new ObjectId(productId) : productId;
 
     const product = await collection.findOne({ _id: id });
-    return product as ProductInterface | null;
+    return presentProduct(product as ProductInterface | null);
   }
 
   // Get product by slug
@@ -141,7 +156,7 @@ export class ProductRepository {
   ): Promise<ProductInterface | null> {
     const collection = await getCollection(this.collectionName);
     const product = await collection.findOne({ slug });
-    return product as ProductInterface | null;
+    return presentProduct(product as ProductInterface | null);
   }
 
   // Update product
@@ -153,18 +168,43 @@ export class ProductRepository {
     const id =
       typeof productId === "string" ? new ObjectId(productId) : productId;
 
+    const existing = await collection.findOne({ _id: id });
+    const nextTitle =
+      (updateData.title as string | undefined) ??
+      (existing?.title as string | undefined);
+    const nextSlug =
+      (updateData.slug as string | undefined) ??
+      (existing?.slug as string | undefined);
+    const data: Record<string, unknown> = { ...updateData };
+
+    if (isGirlsHangout2026Product({ title: nextTitle, slug: nextSlug })) {
+      if (data.pricing && typeof data.pricing === "object") {
+        const pricing = data.pricing as ProductInterface["pricing"];
+        data.pricing = {
+          ...pricing,
+          paperback: {
+            ...pricing.paperback,
+            available: false,
+          },
+        };
+      }
+      if ("pricing.paperback.available" in data) {
+        data["pricing.paperback.available"] = false;
+      }
+    }
+
     const result = await collection.findOneAndUpdate(
       { _id: id },
       {
         $set: {
-          ...updateData,
+          ...data,
           updatedAt: new Date(),
         },
       },
       { returnDocument: "after" }
     );
 
-    return result as ProductInterface | null;
+    return presentProduct(result as ProductInterface | null);
   }
 
   // Delete product
@@ -252,7 +292,7 @@ export class ProductRepository {
       .limit(limit)
       .toArray();
 
-    return products as ProductInterface[];
+    return presentProducts(products as ProductInterface[]);
   }
 
   // Get products by category
@@ -266,7 +306,7 @@ export class ProductRepository {
       .sort({ createdAt: -1 })
       .toArray();
 
-    return products as ProductInterface[];
+    return presentProducts(products as ProductInterface[]);
   }
 
   // Search products
@@ -281,7 +321,7 @@ export class ProductRepository {
       .sort({ score: { $meta: "textScore" } })
       .toArray();
 
-    return products as ProductInterface[];
+    return presentProducts(products as ProductInterface[]);
   }
 
   // Get best selling products
@@ -294,7 +334,7 @@ export class ProductRepository {
       .limit(limit)
       .toArray();
 
-    return products as ProductInterface[];
+    return presentProducts(products as ProductInterface[]);
   }
 }
 
