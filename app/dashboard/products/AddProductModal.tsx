@@ -33,7 +33,7 @@ export default function AddProductModal({
     softcopyPrice: 3000,
     paperbackPrice: 5000,
     softcopyAvailable: true,
-    paperbackAvailable: true,
+    paperbackAvailable: false,
     paperbackStock: 50,
     lowStockThreshold: 10,
     status: "active" as "active" | "draft" | "archived",
@@ -116,7 +116,12 @@ export default function AddProductModal({
       return;
     }
 
-    if (!pdfFile) {
+    if (!formData.softcopyAvailable && !formData.paperbackAvailable) {
+      toast.error("Enable the PDF or the paperback");
+      return;
+    }
+
+    if (formData.softcopyAvailable && !pdfFile) {
       toast.error("Please upload the PDF file");
       return;
     }
@@ -140,21 +145,37 @@ export default function AddProductModal({
 
       const thumbnailData = await thumbnailRes.json();
 
-      // Upload PDF to Cloudinary
-      const pdfFormData = new FormData();
-      pdfFormData.append("file", pdfFile);
-      pdfFormData.append("type", "pdf");
+      let pdfFileData:
+        | {
+            cloudinaryId: string;
+            cloudinaryUrl: string;
+            fileName: string;
+            fileSize: number;
+          }
+        | undefined;
 
-      const pdfRes = await fetch("/api/upload", {
-        method: "POST",
-        body: pdfFormData,
-      });
+      if (pdfFile) {
+        const pdfFormData = new FormData();
+        pdfFormData.append("file", pdfFile);
+        pdfFormData.append("type", "pdf");
 
-      if (!pdfRes.ok) {
-        throw new Error("Failed to upload PDF");
+        const pdfRes = await fetch("/api/upload", {
+          method: "POST",
+          body: pdfFormData,
+        });
+
+        if (!pdfRes.ok) {
+          throw new Error("Failed to upload PDF");
+        }
+
+        const pdfData = await pdfRes.json();
+        pdfFileData = {
+          cloudinaryId: pdfData.public_id,
+          cloudinaryUrl: pdfData.secure_url || pdfData.url,
+          fileName: pdfFile.name,
+          fileSize: pdfFile.size,
+        };
       }
-
-      const pdfData = await pdfRes.json();
 
       // Create product
       const productData = {
@@ -168,12 +189,7 @@ export default function AddProductModal({
         language: formData.language,
         isbn: formData.isbn,
         thumbnail: thumbnailData.secure_url || thumbnailData.url, // Store URL directly as string
-        pdfFile: {
-          cloudinaryId: pdfData.public_id,
-          cloudinaryUrl: pdfData.secure_url || pdfData.url,
-          fileName: pdfFile.name,
-          fileSize: pdfFile.size,
-        },
+        ...(pdfFileData ? { pdfFile: pdfFileData } : {}),
         pricing: {
           softcopy: {
             price: formData.softcopyPrice,
@@ -233,7 +249,7 @@ export default function AddProductModal({
       softcopyPrice: 3000,
       paperbackPrice: 5000,
       softcopyAvailable: true,
-      paperbackAvailable: true,
+      paperbackAvailable: false,
       paperbackStock: 50,
       lowStockThreshold: 10,
       status: "draft",
@@ -470,14 +486,16 @@ export default function AddProductModal({
 
               <div className="form-control flex flex-col gap-1">
                 <label className="label">
-                  <span className="label-text text-gray-700">PDF File *</span>
+                  <span className="label-text text-gray-700">
+                    PDF File{formData.softcopyAvailable ? " *" : ""}
+                  </span>
                 </label>
                 <input
                   type="file"
                   accept=".pdf,application/pdf"
                   onChange={(e) => handlePdfFileChange(e.target.files?.[0] || null)}
                   className="file-input file-input-bordered"
-                  required
+                  required={formData.softcopyAvailable}
                 />
                 <span className="label-text-alt mt-1 text-gray-500">
                   PDF only, maximum 50MB
@@ -547,6 +565,7 @@ export default function AddProductModal({
                       onChange={handleInputChange}
                       className="input input-bordered"
                       min="0"
+                      disabled={!formData.paperbackAvailable}
                     />
                   </div>
                   <div className="form-control">
@@ -576,6 +595,7 @@ export default function AddProductModal({
                       onChange={handleInputChange}
                       className="input input-bordered"
                       min="0"
+                      disabled={!formData.paperbackAvailable}
                     />
                   </div>
                   <div className="form-control flex flex-col gap-1">

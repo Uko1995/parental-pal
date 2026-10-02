@@ -2,6 +2,7 @@
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { productOffersFormat } from "@/lib/product-promotions";
 
 interface Product {
   _id: string;
@@ -160,23 +161,18 @@ export default function ViewProductModal({
             <div className="card-body">
               <h4 className="font-semibold text-lg">Pricing & Stock</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-base-content/70">Softcopy (PDF)</p>
-                  <p className="font-medium text-lg">
-                    ₦{product.pricing.softcopy.price.toLocaleString() || 0}
-                  </p>
-                  <div
-                    className={`badge ${
-                      product.pricing.softcopy.available
-                        ? "badge-success"
-                        : "badge-error"
-                    } badge-sm mt-1`}
-                  >
-                    {product.pricing.softcopy.available
-                      ? "Available"
-                      : "Unavailable"}
+                {productOffersFormat(product, "softcopy") && (
+                  <div>
+                    <p className="text-sm text-base-content/70">Softcopy (PDF)</p>
+                    <p className="font-medium text-lg">
+                      ₦{product.pricing.softcopy.price.toLocaleString() || 0}
+                    </p>
+                    <div className="badge badge-success badge-sm mt-1">
+                      Available
+                    </div>
                   </div>
-                </div>
+                )}
+                {productOffersFormat(product, "paperback") && (
                 <div>
                   <p className="text-sm text-base-content/70">
                     Paperback (Print)
@@ -184,16 +180,8 @@ export default function ViewProductModal({
                   <p className="font-medium text-lg">
                     ₦{product.pricing.paperback.price.toLocaleString()}
                   </p>
-                  <div
-                    className={`badge ${
-                      product.pricing.paperback.available
-                        ? "badge-success"
-                        : "badge-error"
-                    } badge-sm mt-1`}
-                  >
-                    {product.pricing.paperback.available
-                      ? "Available"
-                      : "Unavailable"}
+                  <div className="badge badge-success badge-sm mt-1">
+                    Available
                   </div>
                   <p className="text-sm mt-2">
                     Stock: {product.stock.paperback} units
@@ -203,6 +191,7 @@ export default function ViewProductModal({
                     )}
                   </p>
                 </div>
+                )}
               </div>
             </div>
           </div>
