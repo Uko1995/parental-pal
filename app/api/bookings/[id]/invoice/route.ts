@@ -17,6 +17,7 @@ import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
 import { getBankTransferDetails } from "@/lib/bank-transfer-details";
 import { formatServiceTypeLabel } from "@/lib/booking-revenue-stats";
 import validator from "validator";
+import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
 
 // Generate a unique invoice number
 function generateInvoiceNumber(): string {
@@ -75,8 +76,7 @@ export async function POST(
     }
 
     // Check if booking is confirmed or payment is completed
-    const isPaymentConfirmed =
-      booking.status === "confirmed" || booking.payment?.status === "paid";
+    const isPaymentConfirmed = isBookingPaymentReceived(booking);
 
     // Get parent name and email (booking email matches invoice modal display)
     const parentName = resolveBookingParentName(booking, parent);
@@ -155,8 +155,6 @@ export async function POST(
         subtotal,
         totalAmount,
         currency: booking.pricing?.currency || "₦",
-        paymentInstructions:
-          "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
         serviceSummary,
         bankTransfer: await getBankTransferDetails(),
         narrationReference: `Booking #${booking._id?.toString() || id} (${formatServiceTypeLabel(booking.serviceType || "service")})`,

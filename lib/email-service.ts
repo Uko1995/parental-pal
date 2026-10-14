@@ -1,9 +1,9 @@
 import nodemailer from "nodemailer";
 import {
-  formatBankTransferHtml,
-  formatBankTransferText,
-  type BankTransferDetails,
-} from "@/lib/bank-transfer-details";
+  paymentOptionsHtml,
+  paymentOptionsText,
+} from "@/lib/payment-instructions";
+import type { BankTransferDetails } from "@/models/PlatformSettings";
 
 // Create transporter function to handle different environments
 function createEmailTransporter() {
@@ -46,8 +46,14 @@ function createEmailTransporter() {
   });
 }
 
-// Create reusable transporter object
-const transporter = createEmailTransporter();
+function emailIsConfigured(): boolean {
+  return Boolean(
+    (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) ||
+      (process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASSWORD),
+  );
+}
 
 export interface EmailOptions {
   to: string;
@@ -93,13 +99,21 @@ export interface PaymentDetails {
 
 export async function sendEmail({ to, subject, html, text }: EmailOptions) {
   try {
-    // Skip sending emails if no email configuration is provided (development mode)
-    if (!process.env.EMAIL_USER && !process.env.SMTP_HOST) {
+    // A transporter created at import time keeps the unconfigured stream
+    // fallback even after EMAIL_* is available, so mail looks sent and never leaves.
+    if (!emailIsConfigured()) {
+      if (process.env.NODE_ENV === "production") {
+        const error =
+          "Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD, or SMTP_HOST, SMTP_USER, and SMTP_PASSWORD.";
+        console.error("❌", error, { to, subject });
+        return { success: false, error };
+      }
       console.log("📧 Email (Development Mode):", { to, subject });
       console.log("📧 Email content:", text || "HTML content provided");
       return { success: true, messageId: "dev-mode-" + Date.now() };
     }
 
+    const transporter = createEmailTransporter();
     const mailOptions = {
       from: `"ParentalPal" <${
         process.env.EMAIL_USER ||
@@ -190,7 +204,17 @@ export const emailTemplates = {
   }),
 
   // Booking confirmation email
-  bookingConfirmation: (userName: string, bookingDetails: BookingDetails) => {
+  bookingConfirmation: (
+    userName: string,
+    bookingDetails: BookingDetails,
+    bankTransfer?: BankTransferDetails,
+  ) => {
+    const paymentOptions = {
+      bank: bankTransfer,
+      narrationReference: bookingDetails._id
+        ? `Booking #${bookingDetails._id}`
+        : undefined,
+    };
     const profileBookingsUrl = `${process.env.NEXTAUTH_URL || ""}/profile?tab=bookings`;
     const childNames =
       bookingDetails.children
@@ -317,7 +341,8 @@ export const emailTemplates = {
             ${
               bookingDetails.payment?.status === "paid"
                 ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt with your service schedule and line items is sent to this email address after payment.</p>`
-                : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>`
+                : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>
+            <div class="booking-details">${paymentOptionsHtml(paymentOptions)}</div>`
             }
             <p>View full booking details, payment status, and schedules anytime in your account under <a href="${profileBookingsUrl}">Profile → Bookings</a>.</p>
             <p>If you have any questions, please don't hesitate to contact us.</p>
@@ -334,7 +359,11 @@ export const emailTemplates = {
       bookingDetails.serviceType
     }, Children: ${childNames}, Total: ${bookingDetails.pricing?.currency || "₦"}${
       bookingDetails.pricing?.totalAmount?.toLocaleString() || "0"
-    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} View details in your profile: ${profileBookingsUrl}`,
+    }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} ${
+      bookingDetails.payment?.status === "paid"
+        ? ""
+        : `${unpaidPaymentCopy} ${paymentOptionsText(paymentOptions)} `
+    }View details in your profile: ${profileBookingsUrl}`,
   };
   },
 
@@ -425,22 +454,14 @@ export const emailTemplates = {
 
             <p>Please complete payment to keep your booking confirmed. Payment is due 5 days before your last session.</p>
 
-            ${
-              bankTransfer
-                ? `<p style="font-weight: bold; margin-bottom: 0;">Option 1: Pay online from your profile</p>`
-                : ""
-            }
             <center>
               <a href="${profileUrl}" class="cta-button">Pay from Profile → Payments</a>
             </center>
-            ${
-              bankTransfer
-                ? `<div class="booking-details">${formatBankTransferHtml(
-                    bankTransfer,
-                    { narrationReference },
-                  )}</div>`
-                : ""
-            }
+
+            <div class="booking-details">${paymentOptionsHtml({
+              bank: bankTransfer,
+              narrationReference,
+            })}</div>
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
@@ -450,11 +471,7 @@ export const emailTemplates = {
       </body>
       </html>
     `,
-      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. ${bankTransfer ? "Option 1: " : ""}Pay from Profile → Payments: ${profileUrl}${
-        bankTransfer
-          ? `\n\n${formatBankTransferText(bankTransfer, { narrationReference })}`
-          : ""
-      }`,
+      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}\n${paymentOptionsText({ bank: bankTransfer, narrationReference })}`,
     };
   },
 
@@ -1197,29 +1214,17 @@ export const emailTemplates = {
             </div>
 
             <div class="payment-section">
-              <strong style="color: #856404;">${
-                invoiceDetails.bankTransfer
-                  ? "Payment options:"
-                  : "Payment Instructions:"
-              }</strong>
-              <div style="margin-top: 10px; color: #856404;">
+              <strong style="color: #856404;">Payment Instructions:</strong>
+              <div style="margin: 10px 0 0 0; color: #856404;">
                 ${
-                  invoiceDetails.bankTransfer
-                    ? `<strong style="display:block; margin-bottom: 6px;">Option 1: Pay online from your profile</strong>`
+                  invoiceDetails.paymentInstructions
+                    ? `<p style="margin: 0 0 12px 0;">${invoiceDetails.paymentInstructions}</p>`
                     : ""
                 }
-                <p style="margin: 0;">${
-                  invoiceDetails.paymentInstructions ||
-                  `Please log in to your ParentalPal account to make payment for this invoice. Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.`
-                }</p>
-                ${
-                  invoiceDetails.bankTransfer
-                    ? `<hr style="border:none; border-top:1px solid #f0e0a0; margin:14px 0;" />${formatBankTransferHtml(
-                        invoiceDetails.bankTransfer,
-                        { narrationReference: invoiceDetails.narrationReference },
-                      )}`
-                    : ""
-                }
+                ${paymentOptionsHtml({
+                  bank: invoiceDetails.bankTransfer,
+                  narrationReference: invoiceDetails.narrationReference,
+                })}
               </div>
             </div>
 
@@ -1300,17 +1305,15 @@ TOTAL AMOUNT DUE: ${
       invoiceDetails.currency
     }${invoiceDetails.totalAmount.toLocaleString()}
 
-${invoiceDetails.bankTransfer ? "Option 1: Pay online from your profile\n" : ""}${
-  invoiceDetails.paymentInstructions ||
-  "Please log in to your ParentalPal account to make payment."
-}
 ${
-  invoiceDetails.bankTransfer
-    ? `\n${formatBankTransferText(invoiceDetails.bankTransfer, {
-        narrationReference: invoiceDetails.narrationReference,
-      })}\n`
+  invoiceDetails.paymentInstructions
+    ? `${invoiceDetails.paymentInstructions}\n`
     : ""
-}
+}${paymentOptionsText({
+  bank: invoiceDetails.bankTransfer,
+  narrationReference: invoiceDetails.narrationReference,
+})}
+
 Thank you for choosing ParentalPal!
 Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
     `,
@@ -1726,5 +1729,3 @@ Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
     `,
   }),
 };
-
-export default transporter;

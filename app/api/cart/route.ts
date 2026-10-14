@@ -3,7 +3,10 @@ import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import CartRepository from "@/lib/CartRepository";
 import ProductRepository from "@/lib/ProductRepository";
-import { getCartPromoDisplay } from "@/lib/product-promotions";
+import {
+  getCartPromoDisplay,
+  productOffersFormat,
+} from "@/lib/product-promotions";
 import { ObjectId } from "mongodb";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
@@ -102,8 +105,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (
+      body.orderType !== "softcopy" &&
+      body.orderType !== "paperback"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invalid product format" },
+        { status: 400 },
+      );
+    }
+
     // Check availability
-    if (body.orderType === "softcopy" && !product.pricing.softcopy.available) {
+    if (
+      body.orderType === "softcopy" &&
+      !productOffersFormat(product, "softcopy")
+    ) {
       return NextResponse.json(
         { success: false, error: "Softcopy is not available for this product" },
         { status: 400 }
@@ -111,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.orderType === "paperback") {
-      if (!product.pricing.paperback.available) {
+      if (!productOffersFormat(product, "paperback")) {
         return NextResponse.json(
           {
             success: false,

@@ -1,12 +1,15 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   buildInvoiceLineItems,
   type InvoiceLineItem,
 } from "@/lib/booking-invoice";
+import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
+import { downloadElementAsPdf } from "@/lib/download-html-document";
+import { OFFICIAL_CONTACT_CHANNELS } from "@/lib/payment-instructions";
 import type { BookingInterface } from "@/models/Booking";
 import BankTransferDetailsCard from "@/components/BankTransferDetailsCard";
 
@@ -51,6 +54,7 @@ export default function InvoiceModal({
   const [invoiceItems, setInvoiceItems] = useState<InvoiceLineItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [sendToEmail, setSendToEmail] = useState("");
+  const documentRef = useRef<HTMLDivElement>(null);
 
   const bookingId = booking?._id;
   const bookingParentEmail = booking?.parentEmail;
@@ -89,8 +93,7 @@ export default function InvoiceModal({
   if (!isOpen || !booking) return null;
 
   // Check if payment is confirmed
-  const isPaymentConfirmed =
-    booking.status === "confirmed" || booking.payment?.status === "paid";
+  const isPaymentConfirmed = isBookingPaymentReceived(booking);
   const documentType = isPaymentConfirmed ? "Receipt" : "Invoice";
 
   const formatCurrency = (amount: number) => {
@@ -155,7 +158,9 @@ export default function InvoiceModal({
       } else {
         const error = await response.json();
         toast.error(
-          error.error || `Failed to send ${documentType.toLowerCase()}`
+          error.details ||
+            error.error ||
+            `Failed to send ${documentType.toLowerCase()}`,
         );
       }
     } catch {
@@ -168,6 +173,7 @@ export default function InvoiceModal({
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div ref={documentRef}>
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -368,17 +374,30 @@ export default function InvoiceModal({
                   Option 1: Pay online from your profile
                 </p>
                 <p className="text-sm">
-                  Please log in to your ParentalPal account to make payment for
-                  this invoice. Visit your profile and navigate to the Payments
-                  section.
+                  Log in to your ParentalPal account and use Paystack checkout
+                  from Profile → Payments.
                 </p>
                 <BankTransferDetailsCard
                   className="mt-3 bg-base-100 text-base-content"
                   narrationReference={`Booking #${booking._id}`}
                 />
+                <p className="text-sm mt-2">
+                  After you make the transfer, notify the admin on our official
+                  contact channels: phone{" "}
+                  {OFFICIAL_CONTACT_CHANNELS.phoneDisplay},{" "}
+                  <a
+                    href={OFFICIAL_CONTACT_CHANNELS.whatsappUrl}
+                    className="link"
+                  >
+                    WhatsApp
+                  </a>
+                  , or email {OFFICIAL_CONTACT_CHANNELS.email}. Include your
+                  booking or invoice number so we can match the payment.
+                </p>
               </div>
             </div>
           )}
+        </div>
         </div>
 
         <div className="form-control mt-4">
@@ -404,6 +423,22 @@ export default function InvoiceModal({
         <div className="modal-action">
           <button className="btn btn-ghost" onClick={onClose}>
             Close
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => {
+              if (!documentRef.current) return;
+              const number = isPaymentConfirmed
+                ? invoiceNumber.replace("INV", "RCT")
+                : invoiceNumber;
+              void downloadElementAsPdf(
+                documentRef.current,
+                `${documentType}-${number}.pdf`,
+              );
+            }}
+          >
+            Download {documentType}
           </button>
           <button
             className={`btn ${

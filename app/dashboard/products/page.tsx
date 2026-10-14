@@ -124,11 +124,13 @@ export default function ProductsPage() {
     ).length;
     const lowStockCount = productsData.filter(
       (p) =>
-        p.stock.paperback > 0 && p.stock.paperback <= p.stock.lowStockThreshold
+        p.pricing.paperback.available &&
+        p.stock.paperback > 0 &&
+        p.stock.paperback <= p.stock.lowStockThreshold
     ).length;
     const outOfStockCount = productsData.filter(
-      (p) => p.stock.paperback === 0
-    ).length;
+      (p) => p.pricing.paperback.available && p.stock.paperback === 0
+    ).length
     const featuredCount = productsData.filter((p) => p.featured).length;
 
     const categoryMap = new Map<string, { count: number; revenue: number }>();

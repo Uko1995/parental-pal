@@ -21,6 +21,13 @@ export function isBookingServiceType(value: string): value is BookingServiceType
   return ALL_SERVICES.includes(value as BookingServiceType);
 }
 
+/** Paid bookings get a receipt. Confirmed pay-later bookings stay invoices. */
+export function isBookingPaymentReceived(booking: {
+  payment?: { status?: string } | null;
+}): boolean {
+  return booking.payment?.status === "paid";
+}
+
 /** All services use pay-later at checkout (confirmed + payment pending). */
 export function requiresImmediatePayment(_serviceType?: string): boolean {
   return false;

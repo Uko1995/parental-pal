@@ -12,6 +12,7 @@ import {
 import EditProductModal from "./EditProductModal";
 import DeleteProductModal from "./DeleteProductModal";
 import Image from "next/image";
+import { productOffersFormat } from "@/lib/product-promotions";
 
 interface Product {
   _id: string;
@@ -350,22 +351,40 @@ export default function ProductsTable({
                     </td>
                     <td>
                       <div className="text-sm">
-                        <div>
-                          PDF: ₦
-                          {product.pricing.softcopy.price.toLocaleString()}
-                        </div>
-                        <div>
-                          Print: ₦
-                          {product.pricing.paperback.price.toLocaleString()}
-                        </div>
+                        {productOffersFormat(product, "softcopy") && (
+                          <div>
+                            PDF: ₦
+                            {product.pricing.softcopy.price.toLocaleString()}
+                          </div>
+                        )}
+                        {productOffersFormat(product, "paperback") && (
+                          <div>
+                            Print: ₦
+                            {product.pricing.paperback.price.toLocaleString()}
+                          </div>
+                        )}
+                        {!productOffersFormat(product, "softcopy") &&
+                          !productOffersFormat(product, "paperback") && (
+                            <div className="text-base-content/50">No format</div>
+                          )}
                       </div>
                     </td>
                     <td>
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm">
-                          {product.stock.paperback} units
-                        </span>
-                        {getStockStatus(product)}
+                        {productOffersFormat(product, "paperback") ? (
+                          <>
+                            <span className="text-sm">
+                              {product.stock.paperback} units
+                            </span>
+                            {getStockStatus(product)}
+                          </>
+                        ) : (
+                          <span className="text-sm text-base-content/50">
+                            {productOffersFormat(product, "softcopy")
+                              ? "PDF only"
+                              : "No paperback"}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>

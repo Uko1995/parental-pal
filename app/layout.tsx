@@ -8,6 +8,7 @@ import AnalyticsProvider from "../components/AnalyticsProvider";
 import ToastRouteCleanup from "../components/ToastRouteCleanup";
 import { baseMetadata } from "../lib/metadata";
 import Image from "next/image";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = baseMetadata;
 
@@ -82,6 +83,7 @@ export default function RootLayout({
             }}
           />
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );

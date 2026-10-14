@@ -6,9 +6,12 @@ import CouponRepository from "@/lib/CouponRepository";
 import ProductRepository from "@/lib/ProductRepository";
 import {
   BDG_SOFTCOPY_UNIT_PRICE,
+  GH2026_SOFTCOPY_UNIT_PRICE,
   getCartPromoDisplay,
   isBdgEligibleCategory,
   isBdgPromoCode,
+  isGh2026PromoCode,
+  isGirlsHangout2026Product,
 } from "@/lib/product-promotions";
 import { CACHE_TAGS } from "@/lib/cache-config";
 
@@ -44,6 +47,58 @@ export async function POST(request: NextRequest) {
 
     const code = String(body.code).trim().toUpperCase();
 
+    if (isGh2026PromoCode(code)) {
+      const hasEligibleItem = cart.items.some(
+        (item) =>
+          item.orderType === "softcopy" &&
+          isGirlsHangout2026Product({
+            slug: item.productSlug,
+            title: item.productTitle,
+          }),
+      );
+
+      if (!hasEligibleItem) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "This promo code applies to the Girls Hangout 2026 PDF only.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const updatedCart = await CartRepository.applyCoupon(
+        session.user.id,
+        code,
+        GH2026_SOFTCOPY_UNIT_PRICE,
+        "fixed",
+      );
+
+      if (!updatedCart) {
+        return NextResponse.json(
+          { success: false, error: "Failed to apply promo" },
+          { status: 500 },
+        );
+      }
+
+      const totals = CartRepository.calculateTotals(updatedCart);
+      const promoDisplay = getCartPromoDisplay(code);
+
+      revalidateTag(CACHE_TAGS.CART);
+
+      return NextResponse.json({
+        success: true,
+        message: promoDisplay.promoMessage,
+        data: {
+          discountType: "fixed",
+          discountValue: GH2026_SOFTCOPY_UNIT_PRICE,
+          discountAmount: totals.discount,
+          ...promoDisplay,
+          ...totals,
+        },
+      });
+    }
+
     if (isBdgPromoCode(code)) {
       let hasEligibleItem = false;
 
@@ -52,7 +107,8 @@ export async function POST(request: NextRequest) {
         if (
           item.orderType === "softcopy" &&
           product &&
-          isBdgEligibleCategory(product.category)
+          isBdgEligibleCategory(product.category) &&
+          !isGirlsHangout2026Product(product)
         ) {
           hasEligibleItem = true;
           break;

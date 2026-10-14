@@ -10,6 +10,7 @@ import { useRef } from "react";
 import Image from "next/image";
 
 import { type InvoiceLineItem } from "@/lib/booking-invoice";
+import { downloadElementAsPdf } from "@/lib/download-html-document";
 
 interface Payment {
   _id: string;
@@ -188,9 +189,11 @@ export default function PaymentReceiptModal({
   };
 
   const handleDownload = () => {
-    // In a real implementation, you would generate a PDF here
-    // For now, we'll just trigger print which allows "Save as PDF"
-    handlePrint();
+    if (!receiptRef.current || !payment) return;
+    void downloadElementAsPdf(
+      receiptRef.current,
+      `Receipt-${payment.transactionId || payment._id}.pdf`,
+    );
   };
 
   return (
@@ -383,7 +386,7 @@ export default function PaymentReceiptModal({
 
             {/* Info Text */}
             <p className="text-sm text-base-content/70 text-center mt-4 no-print">
-              You can print this receipt or save it as a PDF for your records.
+              You can print this receipt or download a copy for your records.
             </p>
           </div>
         </div>

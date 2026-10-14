@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import ProductRepository from "@/lib/ProductRepository";
 import {
-  BDG_SOFTCOPY_UNIT_PRICE,
-  validateBdgPromoApplication,
+  GH2026_PROMO_APPLIED_MESSAGE,
+  isGh2026PromoCode,
+  resolveProductUnitPrice,
+  validateSubmittedProductPromo,
 } from "@/lib/product-promotions";
 
 export async function POST(request: NextRequest) {
@@ -27,10 +29,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validation = validateBdgPromoApplication({
+    const validation = validateSubmittedProductPromo({
       promoCode: code,
       orderType,
       productCategory: product.category,
+      productSlug: product.slug,
+      productTitle: product.title,
     });
 
     if (!validation.valid) {
@@ -40,12 +44,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const unitPrice = resolveProductUnitPrice({
+      orderType,
+      productCategory: product.category,
+      productSlug: product.slug,
+      productTitle: product.title,
+      listSoftcopyPrice: product.pricing.softcopy.price,
+      listPaperbackPrice: product.pricing.paperback.price,
+      promoCode: code,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
         valid: true,
-        unitPrice: BDG_SOFTCOPY_UNIT_PRICE,
-        message: "Promo applied.",
+        unitPrice,
+        message: isGh2026PromoCode(code)
+          ? GH2026_PROMO_APPLIED_MESSAGE
+          : "Promo applied.",
       },
     });
   } catch (error) {

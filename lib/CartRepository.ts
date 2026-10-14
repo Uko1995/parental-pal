@@ -3,7 +3,7 @@ import { getCollection, getDb } from "./mongodb";
 import { CartInterface, CartItemInterface, CartSchema } from "../models/Cart";
 import {
   getEffectiveCartItemUnitPrice,
-  isBdgPromoCode,
+  isBuiltInProductPromoCode,
 } from "./product-promotions";
 
 export class CartRepository {
@@ -290,7 +290,7 @@ export class CartRepository {
       0,
     );
 
-    if (isBdgPromoCode(cart.couponCode)) {
+    if (isBuiltInProductPromoCode(cart.couponCode)) {
       const total = cart.items.reduce(
         (sum, item) =>
           sum +

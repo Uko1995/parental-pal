@@ -6,6 +6,11 @@ import {
   getCountryCallingCode,
   type CountryCode,
 } from "libphonenumber-js";
+import {
+  DEFAULT_PHONE_COUNTRY,
+  formatPhoneE164,
+  parseStoredPhone,
+} from "@/lib/phone";
 
 interface PhoneInputProps {
   name?: string;
@@ -22,35 +27,14 @@ interface PhoneInputProps {
   showPreview?: boolean;
 }
 
-const FALLBACK_COUNTRY_CODE = "+234";
+const PREFERRED_COUNTRIES = new Set(["NG", "IE", "GB", "US", "CA", "ZA"]);
 
-function splitPhoneNumber(fullPhone: string, fallbackCountryCode: string) {
-  const normalized = (fullPhone || "").trim();
-  if (!normalized) {
-    return { countryCode: fallbackCountryCode, phoneNumber: "" };
+function resolveDefaultCountry(code?: string): CountryCode {
+  if (!code || code === "+234" || code === "NG") return DEFAULT_PHONE_COUNTRY;
+  if (/^[A-Z]{2}$/.test(code) && getCountries().includes(code as CountryCode)) {
+    return code as CountryCode;
   }
-
-  if (!normalized.startsWith("+")) {
-    return {
-      countryCode: fallbackCountryCode,
-      phoneNumber: normalized.replace(/[^0-9]/g, ""),
-    };
-  }
-
-  const countries = getCountries() as CountryCode[];
-  let bestMatch = fallbackCountryCode;
-
-  countries.forEach((country) => {
-    const code = `+${getCountryCallingCode(country)}`;
-    if (normalized.startsWith(code) && code.length > bestMatch.length) {
-      bestMatch = code;
-    }
-  });
-
-  return {
-    countryCode: bestMatch,
-    phoneNumber: normalized.slice(bestMatch.length).replace(/[^0-9]/g, ""),
-  };
+  return DEFAULT_PHONE_COUNTRY;
 }
 
 export default function PhoneInput({
@@ -58,7 +42,7 @@ export default function PhoneInput({
   label = "Phone Number",
   required = false,
   placeholder = "Enter phone number",
-  defaultCountryCode = FALLBACK_COUNTRY_CODE,
+  defaultCountryCode,
   defaultPhoneNumber = "",
   value,
   onValueChange,
@@ -67,45 +51,41 @@ export default function PhoneInput({
   wrapperClassName,
   showPreview = false,
 }: PhoneInputProps) {
-  const fallbackCode = defaultCountryCode || FALLBACK_COUNTRY_CODE;
-  const [countryCode, setCountryCode] = useState(fallbackCode);
+  const fallbackCountry = resolveDefaultCountry(defaultCountryCode);
+  const [country, setCountry] = useState<CountryCode>(fallbackCountry);
   const [phoneNumber, setPhoneNumber] = useState(
-    defaultPhoneNumber.replace(/[^0-9]/g, ""),
+    defaultPhoneNumber.replace(/\D/g, ""),
   );
+
   const countryCodes = useMemo(() => {
     const countryNameIntl = new Intl.DisplayNames(["en"], { type: "region" });
-    const preferredCountries = new Set(["NG", "IE", "GB", "US", "CA", "ZA"]);
-
     const options = (getCountries() as CountryCode[]).map((countryCode) => {
       const dialCode = `+${getCountryCallingCode(countryCode)}`;
       const countryName = countryNameIntl.of(countryCode) || countryCode;
       return {
-        key: `${countryCode}-${dialCode}`,
+        key: countryCode,
         flag: countryCode,
-        code: dialCode,
+        dialCode,
         country: countryName,
       };
     });
 
     return options.sort((a, b) => {
-      const aPreferred = preferredCountries.has(a.flag);
-      const bPreferred = preferredCountries.has(b.flag);
-      if (aPreferred !== bPreferred) {
-        return aPreferred ? -1 : 1;
-      }
+      const aPreferred = PREFERRED_COUNTRIES.has(a.flag);
+      const bPreferred = PREFERRED_COUNTRIES.has(b.flag);
+      if (aPreferred !== bPreferred) return aPreferred ? -1 : 1;
       return a.country.localeCompare(b.country);
     });
   }, []);
 
   useEffect(() => {
-    if (typeof value !== "string") return;
-    const parsed = splitPhoneNumber(value, fallbackCode);
-    setCountryCode(parsed.countryCode);
-    setPhoneNumber(parsed.phoneNumber);
-  }, [value, fallbackCode]);
+    if (typeof value !== "string" || !value.trim()) return;
+    const parsed = parseStoredPhone(value);
+    setCountry(parsed.country);
+    setPhoneNumber(parsed.nationalNumber);
+  }, [value]);
 
-  // Combine country code and phone number for form submission
-  const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+  const fullPhoneNumber = formatPhoneE164(country, phoneNumber);
 
   return (
     <div className={wrapperClassName || "form-control"}>
@@ -117,35 +97,36 @@ export default function PhoneInput({
         </label>
       )}
       <div className="flex gap-0">
-        {/* Country Code Selector */}
         <select
-          value={countryCode}
+          value={country}
           onChange={(e) => {
-            const nextCountryCode = e.target.value;
-            setCountryCode(nextCountryCode);
-            onValueChange?.(`${nextCountryCode}${phoneNumber}`);
+            const nextCountry = e.target.value as CountryCode;
+            setCountry(nextCountry);
+            onValueChange?.(formatPhoneE164(nextCountry, phoneNumber));
           }}
           className={
             selectClassName ||
             "select select-bordered w-25 ps-1 bg-base-100 border-base-300 focus:outline-none focus:border-[#90AC19] focus:ring focus:ring-[#90AC19]/20 text-base-content"
           }
         >
-          {countryCodes.map((country) => (
-            <option key={country.key} value={country.code}>
-              {country.flag} {country.code}
+          {countryCodes.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.flag} {option.dialCode}
             </option>
           ))}
         </select>
 
-        {/* Phone Number Input */}
         <input
           type="tel"
           value={phoneNumber}
           onChange={(e) => {
-            // Only allow numbers
-            const value = e.target.value.replace(/[^0-9]/g, "");
-            setPhoneNumber(value);
-            onValueChange?.(`${countryCode}${value}`);
+            const digits = e.target.value.replace(/\D/g, "");
+            const e164 = formatPhoneE164(country, digits);
+            const display = e164
+              ? parseStoredPhone(e164).nationalNumber
+              : digits;
+            setPhoneNumber(display);
+            onValueChange?.(e164);
           }}
           className={
             inputClassName ||
@@ -156,10 +137,8 @@ export default function PhoneInput({
         />
       </div>
 
-      {/* Hidden input with full phone number for form submission */}
       {name && <input type="hidden" name={name} value={fullPhoneNumber} />}
 
-      {/* Display formatted phone number */}
       {showPreview && phoneNumber && (
         <label className="label">
           <span className="label-text-alt text-sm text-base-content/70">

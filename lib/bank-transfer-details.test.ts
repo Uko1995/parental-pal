@@ -1,52 +1,44 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  formatBankTransferHtml,
-  formatBankTransferText,
-  formatNarrationLine,
-  formatPaymentOptionsHtml,
-  formatPaymentOptionsText,
-} from "@/lib/bank-transfer-details";
+  narrationLine,
+  paymentOptionsHtml,
+  paymentOptionsText,
+} from "@/lib/payment-instructions";
 import { DEFAULT_BANK_TRANSFER } from "@/models/PlatformSettings";
 
-describe("bank-transfer-details", () => {
-  it("includes account number and narration reference in text", () => {
-    const text = formatBankTransferText(DEFAULT_BANK_TRANSFER, {
+const editedBank = {
+  accountName: "ParentalPal Test Ltd",
+  accountNumber: "9999999999",
+  bankName: "Test Bank",
+  narrationHint: "Quote your booking ID",
+};
+
+describe("payment options with admin-editable bank details", () => {
+  it("defaults to the seeded Wema account", () => {
+    const text = paymentOptionsText();
+    assert.match(text, new RegExp(DEFAULT_BANK_TRANSFER.accountNumber));
+    assert.match(text, /Wema Bank/);
+  });
+
+  it("uses edited bank details and the narration reference", () => {
+    const html = paymentOptionsHtml({
+      bank: editedBank,
       narrationReference: "Booking #abc123",
     });
-    assert.match(text, /0125232203/);
-    assert.match(text, /Wema Bank/);
-    assert.match(text, /ParentalPal Ltd/);
-    assert.match(text, /Booking #abc123/);
+    assert.match(html, /9999999999/);
+    assert.match(html, /Test Bank/);
+    assert.match(html, /Booking #abc123/);
+    assert.doesNotMatch(html, /0125232203/);
   });
 
-  it("includes account details in HTML", () => {
-    const html = formatBankTransferHtml(DEFAULT_BANK_TRANSFER, {
-      narrationReference: "INV-2026-001",
-    });
-    assert.match(html, /0125232203/);
-    assert.match(html, /Option 2: Direct bank transfer/);
-    assert.match(html, /INV-2026-001/);
+  it("keeps both payment options", () => {
+    const text = paymentOptionsText({ bank: editedBank });
+    assert.match(text, /Option 1: Pay online/);
+    assert.match(text, /Option 2: Direct bank transfer/);
   });
 
-  it("combined options keep login-to-pay and bank transfer", () => {
-    const html = formatPaymentOptionsHtml(DEFAULT_BANK_TRANSFER, {
-      narrationReference: "#booking1",
-      profileUrl: "https://example.com/profile?tab=payments",
-    });
-    assert.match(html, /Option 1: Pay online/);
-    assert.match(html, /Option 2: Direct bank transfer/);
-    assert.match(html, /profile\?tab=payments/);
-
-    const text = formatPaymentOptionsText(DEFAULT_BANK_TRANSFER, {
-      narrationReference: "#booking1",
-    });
-    assert.match(text, /Option 1/);
-    assert.match(text, /Option 2/);
-  });
-
-  it("falls back to narration hint when no reference", () => {
-    const line = formatNarrationLine(DEFAULT_BANK_TRANSFER);
-    assert.match(line, /booking ID or service/i);
+  it("falls back to the narration hint without a reference", () => {
+    assert.equal(narrationLine(editedBank), "Quote your booking ID");
   });
 });

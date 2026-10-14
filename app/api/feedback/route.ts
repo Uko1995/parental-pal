@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import FeedbackRepository from "@/lib/FeedbackRepository";
 import { InterestLevel } from "@/models/Feedback";
 import { getCollection } from "@/lib/mongodb";
+import { isValidInternationalPhone } from "@/lib/phone";
 
 const ALLOWED_INTEREST_LEVELS: InterestLevel[] = [
   "very-interested",
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (phone && !validator.isMobilePhone(phone, "any")) {
+    if (phone && !isValidInternationalPhone(phone)) {
       return NextResponse.json(
         { success: false, error: "Invalid phone number" },
         { status: 400 }
