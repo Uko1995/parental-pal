@@ -10,6 +10,13 @@ import { BookingInterface } from "@/models/Booking";
 import { getDb } from "@/lib/mongodb";
 import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 import {
+  getPromotionReason,
+  resolveBestBookingPromotion,
+  type BookingPromotionInput,
+  type BookingPromotionMatch,
+} from "@/lib/booking-promotions";
+import { CouponRepository } from "@/lib/CouponRepository";
+import {
   applyVirtualTutoringDiscount,
   getVirtualTutoringDiscountLabel,
   isVirtualTutoringDiscountActive,
@@ -59,6 +66,20 @@ const EDUVANTA_PROMO_VIRTUAL_RATE = 11000;
 
 function isServerDateInJune(now: Date): boolean {
   return now.getMonth() === 5;
+}
+
+async function resolveAdminBookingPromotion(
+  input: BookingPromotionInput,
+): Promise<{
+  promotion: BookingPromotionMatch | null;
+  codeError: string | null;
+}> {
+  try {
+    return await resolveBestBookingPromotion(input);
+  } catch (error) {
+    console.error("Admin promo lookup failed:", error);
+    return { promotion: null, codeError: null };
+  }
 }
 
 async function getTutoringRatesFromService() {
@@ -208,9 +229,19 @@ async function assertHolidayCampBookingAllowed(
   }
 }
 
+export type BookingPricePreview = {
+  totalAmount: number;
+  currency: string;
+  baseAmount: number;
+  discount?: { value: number; reason?: string };
+  adminPromotion?: BookingInterface["serviceData"]["adminPromotion"];
+  adminPromoCode?: string;
+  adminPromoCodeError?: string;
+};
+
 export async function previewBookingPrice(
   formEntries: BookingFormEntries,
-): Promise<{ totalAmount: number; currency: string }> {
+): Promise<BookingPricePreview> {
   const session = await auth();
   if (!session?.user?.email) {
     throw new Error("Unauthorized");
@@ -230,9 +261,18 @@ export async function previewBookingPrice(
     session.user,
   );
 
+  const discount = bookingData.pricing?.discount;
   return {
     totalAmount: bookingData.pricing?.totalAmount || 0,
     currency: bookingData.pricing?.currency || "NGN",
+    baseAmount: bookingData.pricing?.baseAmount || 0,
+    discount:
+      discount && discount.value > 0
+        ? { value: discount.value, reason: discount.reason }
+        : undefined,
+    adminPromotion: bookingData.serviceData.adminPromotion,
+    adminPromoCode: bookingData.serviceData.adminPromoCode,
+    adminPromoCodeError: bookingData.serviceData.adminPromoCodeError,
   };
 }
 
@@ -280,6 +320,23 @@ export async function createBookingFromFormEntries(
   }
 
   const savedBooking = await BookingRepository.createBooking(bookingData);
+
+  const appliedPromotion = bookingData.serviceData?.adminPromotion as
+    | { couponId: string; code: string; discountAmount: number }
+    | undefined;
+  if (appliedPromotion && savedBooking._id) {
+    try {
+      await CouponRepository.recordUsage(
+        new ObjectId(appliedPromotion.couponId),
+        appliedPromotion.code,
+        user._id!,
+        { bookingId: savedBooking._id },
+        appliedPromotion.discountAmount,
+      );
+    } catch (error) {
+      console.error("Failed to record promo usage:", error);
+    }
+  }
 
   let driveFolderUrl: string | undefined;
   try {
@@ -1166,6 +1223,46 @@ export async function parseFormDataToBooking(
         };
         totalAmount += (rates[service.service] || 0) * (service.quantity || 1);
       });
+    }
+  }
+
+  // Admin promos (dashboard). No stacking: only replaces a smaller discount.
+  const adminPromoCode = (cleanedData.adminPromoCode || "")
+    .toString()
+    .trim()
+    .toUpperCase();
+  const promoBaseAmount = pricingBaseAmount || totalAmount;
+  const promoCautionFee =
+    serviceType === "space-rental"
+      ? (serviceData.cautionFee as number) || 0
+      : 0;
+  const { promotion: adminPromotion, codeError: adminPromoCodeError } =
+    await resolveAdminBookingPromotion({
+      serviceType,
+      tutoringLocation:
+        serviceType === "tutoring"
+          ? (serviceData.tutoringLocation as "virtual" | "physical")
+          : null,
+      userId: userId.toString(),
+      baseAmount: promoBaseAmount - promoCautionFee,
+      promoCode: adminPromoCode || null,
+    });
+  if (adminPromotion && adminPromotion.discountAmount > pricingDiscount) {
+    pricingBaseAmount = promoBaseAmount;
+    pricingDiscount = adminPromotion.discountAmount;
+    pricingDiscountReason = getPromotionReason(adminPromotion);
+    totalAmount = promoBaseAmount - adminPromotion.discountAmount;
+    serviceData.adminPromotion = {
+      couponId: adminPromotion.coupon._id!.toString(),
+      code: adminPromotion.coupon.code,
+      discountAmount: adminPromotion.discountAmount,
+      automatic: adminPromotion.automatic,
+    };
+  }
+  if (adminPromoCode) {
+    serviceData.adminPromoCode = adminPromoCode;
+    if (adminPromoCodeError) {
+      serviceData.adminPromoCodeError = adminPromoCodeError;
     }
   }
 

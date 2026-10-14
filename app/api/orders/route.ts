@@ -6,6 +6,9 @@ import ProductRepository from "@/lib/ProductRepository";
 import { OrderInterface } from "@/models/Order";
 import { v4 as uuidv4 } from "uuid";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import { ObjectId } from "mongodb";
+import CouponRepository from "@/lib/CouponRepository";
+import { findAutoPromotionForPurchase } from "@/lib/product-auto-promotions";
 import {
   productOffersFormat,
   resolveProductUnitPrice,
@@ -223,7 +226,19 @@ export async function POST(request: NextRequest) {
       listPaperbackPrice: product.pricing.paperback.price,
       promoCode,
     });
-    const totalAmount = unitPrice * quantity;
+
+    // Built-in promo codes (GH2026/BDG) take priority over automatic promos.
+    const autoPromotion = promoCode
+      ? null
+      : await findAutoPromotionForPurchase({
+          product,
+          orderType: body.orderType,
+          unitPrice,
+          quantity,
+          userId: session?.user?.id ?? null,
+        });
+    const totalAmount =
+      unitPrice * quantity - (autoPromotion?.discountAmount ?? 0);
 
     // Generate unique reference for Paystack
     const paymentReference = `PAY-${Date.now()}-${uuidv4().slice(0, 8)}`;
@@ -285,6 +300,21 @@ export async function POST(request: NextRequest) {
     }
 
     const newOrder = await OrderRepository.createOrder(orderData);
+
+    if (autoPromotion && newOrder._id) {
+      try {
+        await CouponRepository.recordUsage(
+          new ObjectId(autoPromotion.couponId),
+          autoPromotion.code,
+          session?.user?.id ? new ObjectId(session.user.id) : null,
+          { orderId: newOrder._id },
+          autoPromotion.discountAmount,
+        );
+        revalidateTag(CACHE_TAGS.COUPONS);
+      } catch (error) {
+        console.error("Failed to record promo usage:", error);
+      }
+    }
 
     // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.ORDERS);

@@ -39,6 +39,8 @@ interface Cart {
   subtotal: number;
   discount: number;
   total: number;
+  autoPromotion?: { code: string; label: string; discountAmount: number } | null;
+  couponError?: string;
 }
 
 export default function CartPage() {
@@ -499,6 +501,19 @@ export default function CartPage() {
                   >
                     <XMarkIcon className="w-5 h-5" />
                   </button>
+                </div>
+              )}
+
+              {cart.couponError && (
+                <p className="-mt-4 mb-6 text-sm text-red-600">
+                  {cart.couponError}
+                </p>
+              )}
+
+              {cart.autoPromotion && (
+                <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+                  <TagIcon className="w-4 h-4 inline mr-1" />
+                  Discount applied automatically: {cart.autoPromotion.label}
                 </div>
               )}
 

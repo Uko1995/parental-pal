@@ -105,7 +105,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate totals
-    const totals = CartRepository.calculateTotals(cart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
 
     // Create a single payment reference for all orders
     const batchReference = `BATCH-${Date.now()}-${uuidv4().slice(0, 8)}`;
@@ -205,7 +208,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Record coupon usage if applied (database coupons only)
-    if (
+    if (totals.autoPromotion && orders[0]?._id) {
+      await CouponRepository.recordUsage(
+        new ObjectId(totals.autoPromotion.couponId),
+        totals.autoPromotion.code,
+        new ObjectId(session.user.id),
+        { orderId: orders[0]._id },
+        totals.discount,
+      );
+    } else if (
       cart.couponCode &&
       totals.discount > 0 &&
       !isBuiltInProductPromoCode(cart.couponCode)
@@ -217,7 +228,7 @@ export async function POST(request: NextRequest) {
           coupon._id,
           cart.couponCode,
           new ObjectId(session.user.id),
-          orders[0]._id!,
+          { orderId: orders[0]._id! },
           totals.discount
         );
       }
@@ -244,7 +255,7 @@ export async function POST(request: NextRequest) {
             cartTotal: totals.total,
             itemCount: cart.items.length,
             customerName: body.customerName,
-            couponCode: cart.couponCode,
+            couponCode: cart.couponCode ?? totals.autoPromotion?.code,
             discount: totals.discount,
           },
         }),

@@ -1,10 +1,31 @@
-import { ObjectId } from "mongodb";
+import type { ObjectId } from "mongodb";
+
+export type CouponTarget = "products" | "bookings";
+export type CouponTutoringLocation = "virtual" | "physical";
+
+export const BOOKING_PROMO_SERVICE_TYPES = [
+  "tutoring",
+  "childcare",
+  "homeschooling",
+  "holiday-camps",
+  "kiddies-enrichment",
+  "space-rental",
+] as const;
 
 // TypeScript interface for Coupon
 export interface CouponInterface {
   _id?: ObjectId;
   code: string; // Unique coupon code (e.g., "SAVE20")
   description: string;
+
+  /** Missing on legacy coupons, which are treated as "products". */
+  target?: CouponTarget;
+  /** True = applied automatically without the parent entering a code. */
+  autoApply?: boolean;
+  /** Bookings only; empty = all services. */
+  applicableServiceTypes?: string[];
+  /** Tutoring bookings only; unset = any location. */
+  tutoringLocation?: CouponTutoringLocation;
 
   // Discount details
   discountType: "percentage" | "fixed";
@@ -44,8 +65,9 @@ export interface CouponUsageInterface {
   _id?: ObjectId;
   couponId: ObjectId;
   couponCode: string;
-  userId: ObjectId;
-  orderId: ObjectId;
+  userId?: ObjectId; // absent for guest buy-now orders
+  orderId?: ObjectId;
+  bookingId?: ObjectId;
   discountApplied: number;
   usedAt: Date;
 }
@@ -77,6 +99,13 @@ export const CouponSchema = {
           description: "Unique coupon code",
         },
         description: { bsonType: "string" },
+        target: { enum: ["products", "bookings"] },
+        autoApply: { bsonType: "bool" },
+        applicableServiceTypes: {
+          bsonType: "array",
+          items: { bsonType: "string" },
+        },
+        tutoringLocation: { enum: ["virtual", "physical"] },
         discountType: { enum: ["percentage", "fixed"] },
         discountValue: { bsonType: "number", minimum: 0 },
         maxUses: { bsonType: "int", minimum: 0 },
@@ -105,6 +134,10 @@ export interface ClientCoupon {
   _id: string;
   code: string;
   description: string;
+  target: CouponTarget;
+  autoApply: boolean;
+  applicableServiceTypes: string[];
+  tutoringLocation?: CouponTutoringLocation;
   discountType: "percentage" | "fixed";
   discountValue: number;
   maxUses: number;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { ClientProduct } from "@/types/product";
 import PhoneInput from "@/components/PhoneInput";
@@ -55,7 +55,48 @@ export default function ProductPurchaseClient({
       : listPrice;
   const maxQuantity =
     selectedType === "paperback" ? Math.max(1, product.stock.paperback) : 50;
-  const totalPrice = currentPrice * quantity;
+  const builtInPromoApplied =
+    promoStatus === "applied" && promoUnitPrice !== null;
+  const [autoPromotion, setAutoPromotion] = useState<{
+    label: string;
+    discountAmount: number;
+  } | null>(null);
+  const autoDiscount = builtInPromoApplied
+    ? 0
+    : (autoPromotion?.discountAmount ?? 0);
+  const totalPrice = Math.max(0, currentPrice * quantity - autoDiscount);
+
+  useEffect(() => {
+    if (builtInPromoApplied) {
+      setAutoPromotion(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/promotions/products/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            auto: true,
+            orderType: selectedType,
+            productId: product._id,
+            quantity,
+          }),
+        });
+        const data = await response.json();
+        if (!cancelled) {
+          setAutoPromotion(data.success ? data.data.autoPromotion : null);
+        }
+      } catch {
+        if (!cancelled) setAutoPromotion(null);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [builtInPromoApplied, selectedType, quantity, product._id]);
   const showPromoField =
     selectedType === "softcopy" &&
     softcopyOffered &&
@@ -351,6 +392,13 @@ export default function ProductPurchaseClient({
             </div>
           )}
 
+          {autoDiscount > 0 && autoPromotion && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              Discount applied: {autoPromotion.label} −₦
+              {autoDiscount.toLocaleString()}
+            </div>
+          )}
+
           <button
             onClick={() => setShowCheckoutForm(true)}
             className="w-full bg-[#90AC19] hover:bg-[#7A9216] text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
@@ -507,6 +555,12 @@ export default function ProductPurchaseClient({
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Promo price</span>
                   <span>₦{currentPrice.toLocaleString()} each</span>
+                </div>
+              )}
+              {autoDiscount > 0 && autoPromotion && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>{autoPromotion.label}</span>
+                  <span>−₦{autoDiscount.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
