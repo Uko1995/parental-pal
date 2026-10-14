@@ -10,6 +10,10 @@ import {
 } from "@/lib/booking-parent-email";
 import { formatServiceTypeLabel } from "@/lib/booking-revenue-stats";
 import { emailTemplates, sendEmail } from "@/lib/email-service";
+import {
+  getBankTransferDetails,
+  type BankTransferDetails,
+} from "@/lib/bank-transfer-details";
 
 export type PaymentReminderType = "4_day" | "1_day";
 
@@ -93,6 +97,7 @@ export function buildPaymentReminderEmail(
   booking: BookingInterface,
   parentName: string,
   daysRemaining: number,
+  bankTransfer?: BankTransferDetails,
 ): { subject: string; html: string; text: string } {
   const profileUrl = `${process.env.NEXTAUTH_URL || ""}/profile?tab=payments`;
   const serviceLabel = formatServiceTypeLabel(booking.serviceType);
@@ -108,6 +113,10 @@ export function buildPaymentReminderEmail(
     dueLine,
     daysRemaining,
     profileUrl,
+    bankTransfer,
+    narrationReference: booking._id
+      ? `Booking #${booking._id.toString()} (${serviceLabel})`
+      : serviceLabel,
   });
 }
 
@@ -128,6 +137,7 @@ export async function processPaymentReminders(
   };
   const sentAt = formatLocalDate(today);
   const userCache = new Map<string, UserInterface | null>();
+  const bankTransfer = await getBankTransferDetails();
 
   for (const { type, days } of REMINDER_OFFSETS) {
     const dueDate = getDueDateForReminderType(today, type);
@@ -163,7 +173,12 @@ export async function processPaymentReminders(
       }
 
       const parentName = resolveBookingParentName(booking, user);
-      const template = buildPaymentReminderEmail(booking, parentName, days);
+      const template = buildPaymentReminderEmail(
+        booking,
+        parentName,
+        days,
+        bankTransfer,
+      );
       const result = await sendEmail({
         to: parentEmail,
         subject: template.subject,

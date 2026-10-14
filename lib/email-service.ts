@@ -3,6 +3,7 @@ import {
   paymentOptionsHtml,
   paymentOptionsText,
 } from "@/lib/payment-instructions";
+import type { BankTransferDetails } from "@/models/PlatformSettings";
 
 // Create transporter function to handle different environments
 function createEmailTransporter() {
@@ -203,7 +204,17 @@ export const emailTemplates = {
   }),
 
   // Booking confirmation email
-  bookingConfirmation: (userName: string, bookingDetails: BookingDetails) => {
+  bookingConfirmation: (
+    userName: string,
+    bookingDetails: BookingDetails,
+    bankTransfer?: BankTransferDetails,
+  ) => {
+    const paymentOptions = {
+      bank: bankTransfer,
+      narrationReference: bookingDetails._id
+        ? `Booking #${bookingDetails._id}`
+        : undefined,
+    };
     const profileBookingsUrl = `${process.env.NEXTAUTH_URL || ""}/profile?tab=bookings`;
     const childNames =
       bookingDetails.children
@@ -331,7 +342,7 @@ export const emailTemplates = {
               bookingDetails.payment?.status === "paid"
                 ? `<p>Your booking is fully confirmed and paid. A detailed payment receipt with your service schedule and line items is sent to this email address after payment.</p>`
                 : `<p>Your booking is confirmed. ${unpaidPaymentCopy}</p>
-            <div class="booking-details">${paymentOptionsHtml()}</div>`
+            <div class="booking-details">${paymentOptionsHtml(paymentOptions)}</div>`
             }
             <p>View full booking details, payment status, and schedules anytime in your account under <a href="${profileBookingsUrl}">Profile → Bookings</a>.</p>
             <p>If you have any questions, please don't hesitate to contact us.</p>
@@ -351,7 +362,7 @@ export const emailTemplates = {
     }. Booking ID: #${bookingDetails._id || "N/A"}.${camperText}${driveFolderText} ${
       bookingDetails.payment?.status === "paid"
         ? ""
-        : `${unpaidPaymentCopy} ${paymentOptionsText()} `
+        : `${unpaidPaymentCopy} ${paymentOptionsText(paymentOptions)} `
     }View details in your profile: ${profileBookingsUrl}`,
   };
   },
@@ -364,6 +375,8 @@ export const emailTemplates = {
     dueLine,
     daysRemaining,
     profileUrl,
+    bankTransfer,
+    narrationReference,
   }: {
     parentName: string;
     serviceLabel: string;
@@ -372,6 +385,8 @@ export const emailTemplates = {
     dueLine: string;
     daysRemaining: number;
     profileUrl: string;
+    bankTransfer?: BankTransferDetails;
+    narrationReference?: string;
   }) => {
     const dueDateDisplay = dueDate
       ? new Date(dueDate).toLocaleDateString("en-US", {
@@ -437,13 +452,16 @@ export const emailTemplates = {
               Amount due: ₦${amount.toLocaleString()}
             </div>
 
-            <p>Please complete payment from your profile to keep your booking confirmed. Payment is due 5 days before your last session.</p>
+            <p>Please complete payment to keep your booking confirmed. Payment is due 5 days before your last session.</p>
 
             <center>
               <a href="${profileUrl}" class="cta-button">Pay from Profile → Payments</a>
             </center>
 
-            <div class="booking-details">${paymentOptionsHtml()}</div>
+            <div class="booking-details">${paymentOptionsHtml({
+              bank: bankTransfer,
+              narrationReference,
+            })}</div>
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
@@ -453,7 +471,7 @@ export const emailTemplates = {
       </body>
       </html>
     `,
-      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}\n${paymentOptionsText()}`,
+      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}\n${paymentOptionsText({ bank: bankTransfer, narrationReference })}`,
     };
   },
 
@@ -977,6 +995,8 @@ export const emailTemplates = {
       currency: string;
       paymentInstructions?: string;
       serviceSummary?: string;
+      bankTransfer?: BankTransferDetails;
+      narrationReference?: string;
     }
   ) => ({
     subject: `Invoice #${invoiceDetails.invoiceNumber} - ParentalPal Services`,
@@ -1201,7 +1221,10 @@ export const emailTemplates = {
                     ? `<p style="margin: 0 0 12px 0;">${invoiceDetails.paymentInstructions}</p>`
                     : ""
                 }
-                ${paymentOptionsHtml()}
+                ${paymentOptionsHtml({
+                  bank: invoiceDetails.bankTransfer,
+                  narrationReference: invoiceDetails.narrationReference,
+                })}
               </div>
             </div>
 
@@ -1286,7 +1309,10 @@ ${
   invoiceDetails.paymentInstructions
     ? `${invoiceDetails.paymentInstructions}\n`
     : ""
-}${paymentOptionsText()}
+}${paymentOptionsText({
+  bank: invoiceDetails.bankTransfer,
+  narrationReference: invoiceDetails.narrationReference,
+})}
 
 Thank you for choosing ParentalPal!
 Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}

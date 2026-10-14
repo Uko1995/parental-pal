@@ -6,6 +6,7 @@ import {
   PaymentDetails,
 } from "@/lib/email-service";
 import { auth } from "@/auth";
+import { getBankTransferDetails } from "@/lib/bank-transfer-details";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
         }
         emailContent = emailTemplates.bookingConfirmation(
           userName,
-          data as BookingDetails
+          data as BookingDetails,
+          await getBankTransferDetails(),
         );
         break;
 

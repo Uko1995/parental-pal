@@ -9,11 +9,9 @@ import {
 } from "@/lib/booking-invoice";
 import { isBookingPaymentReceived } from "@/lib/booking-payment-policy";
 import { downloadElementAsPdf } from "@/lib/download-html-document";
-import {
-  BANK_TRANSFER_DETAILS,
-  OFFICIAL_CONTACT_CHANNELS,
-} from "@/lib/payment-instructions";
+import { OFFICIAL_CONTACT_CHANNELS } from "@/lib/payment-instructions";
 import type { BookingInterface } from "@/models/Booking";
+import BankTransferDetailsCard from "@/components/BankTransferDetailsCard";
 
 interface Child {
   name: string;
@@ -370,20 +368,19 @@ export default function InvoiceModal({
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              <div>
-                <h4 className="font-bold">Payment Instructions</h4>
-                <p className="text-sm">
-                  Pay online: log in to your ParentalPal account and use
-                  Paystack checkout from Profile → Payments.
+              <div className="w-full">
+                <h4 className="font-bold">Payment options</h4>
+                <p className="text-sm font-semibold mt-1">
+                  Option 1: Pay online from your profile
                 </p>
-                <p className="text-sm mt-2">Or pay by direct bank transfer:</p>
-                <ul className="text-sm list-disc list-inside mt-1">
-                  <li>
-                    Account number: {BANK_TRANSFER_DETAILS.accountNumber}
-                  </li>
-                  <li>Bank: {BANK_TRANSFER_DETAILS.bankName}</li>
-                  <li>Account name: {BANK_TRANSFER_DETAILS.accountName}</li>
-                </ul>
+                <p className="text-sm">
+                  Log in to your ParentalPal account and use Paystack checkout
+                  from Profile → Payments.
+                </p>
+                <BankTransferDetailsCard
+                  className="mt-3 bg-base-100 text-base-content"
+                  narrationReference={`Booking #${booking._id}`}
+                />
                 <p className="text-sm mt-2">
                   After you make the transfer, notify the admin on our official
                   contact channels: phone{" "}

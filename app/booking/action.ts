@@ -10,6 +10,11 @@ import { BookingInterface } from "@/models/Booking";
 import { getDb } from "@/lib/mongodb";
 import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 import {
+  applyVirtualTutoringDiscount,
+  getVirtualTutoringDiscountLabel,
+  isVirtualTutoringDiscountActive,
+} from "@/lib/tutoring-promotions";
+import {
   type CampLocation,
   canChildBoard,
   getCampSeason,
@@ -990,16 +995,26 @@ export async function parseFormDataToBooking(
       tutoringLocation === "virtual" &&
       isJunePromoWindow &&
       normalizedPromoCode === EDUVANTA_PROMO_CODE;
-    const effectiveHourlyRate = hasEduvantaPromo
-      ? EDUVANTA_PROMO_VIRTUAL_RATE
-      : baseHourlyRate;
+    const autoDiscountedVirtualRate =
+      tutoringLocation === "virtual" && isVirtualTutoringDiscountActive(now)
+        ? applyVirtualTutoringDiscount(virtualRate)
+        : null;
+    const promoRate = hasEduvantaPromo ? EDUVANTA_PROMO_VIRTUAL_RATE : null;
+    const effectiveHourlyRate = Math.min(
+      baseHourlyRate,
+      autoDiscountedVirtualRate ?? baseHourlyRate,
+      promoRate ?? baseHourlyRate,
+    );
 
     pricingBaseAmount = totalHours * baseHourlyRate;
     totalAmount = totalHours * effectiveHourlyRate;
 
-    if (hasEduvantaPromo) {
+    if (effectiveHourlyRate < baseHourlyRate) {
       pricingDiscount = Math.max(0, pricingBaseAmount - totalAmount);
-      pricingDiscountReason = `Promo code: ${EDUVANTA_PROMO_CODE} (${EDUVANTA_SERVICE_NAME})`;
+      pricingDiscountReason =
+        promoRate !== null && promoRate === effectiveHourlyRate
+          ? `Promo code: ${EDUVANTA_PROMO_CODE} (${EDUVANTA_SERVICE_NAME})`
+          : getVirtualTutoringDiscountLabel();
     }
 
     serviceData.virtualRate = virtualRate;
