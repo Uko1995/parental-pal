@@ -5,6 +5,33 @@ import {
   getEffectiveCartItemUnitPrice,
   isBuiltInProductPromoCode,
 } from "./product-promotions";
+import { CouponRepository } from "./CouponRepository";
+import type { CouponInterface } from "../models/Coupon";
+
+export interface AutoProductPromotion {
+  couponId: string;
+  code: string;
+  label: string;
+  discountAmount: number;
+}
+
+export function toAutoProductPromotion(
+  coupon: CouponInterface,
+  discountAmount: number,
+): AutoProductPromotion {
+  const value =
+    coupon.discountType === "percentage"
+      ? `${coupon.discountValue}% off`
+      : `₦${coupon.discountValue.toLocaleString()} off`;
+  return {
+    couponId: coupon._id!.toString(),
+    code: coupon.code,
+    label: coupon.description?.trim()
+      ? `${coupon.description.trim()} (${value})`
+      : `${coupon.code} (${value})`,
+    discountAmount,
+  };
+}
 
 export class CartRepository {
   private static collectionName = "carts";
@@ -320,6 +347,61 @@ export class CartRepository {
       subtotal,
       discount,
       total: subtotal - discount,
+    };
+  }
+
+  /**
+   * Totals including admin promos. Priority: built-in codes (GH2026/BDG),
+   * then an applied admin code, then the best automatic product promo.
+   */
+  static async calculateTotalsWithPromotions(
+    cart: CartInterface,
+    userId: string | ObjectId | null,
+  ): Promise<{
+    subtotal: number;
+    discount: number;
+    total: number;
+    autoPromotion: AutoProductPromotion | null;
+    couponError?: string;
+  }> {
+    const base = this.calculateTotals(cart);
+    if (cart.items.length === 0 || isBuiltInProductPromoCode(cart.couponCode)) {
+      return { ...base, autoPromotion: null };
+    }
+
+    const [validation, best] = await Promise.all([
+      cart.couponCode && userId
+        ? CouponRepository.validateCoupon(cart.couponCode, userId, cart)
+        : Promise.resolve(null),
+      CouponRepository.findBestAutoProductCoupon(userId, cart),
+    ]);
+    const codeDiscount = validation?.valid ? validation.discountAmount ?? 0 : 0;
+    const autoDiscount =
+      best?.valid && best.coupon ? best.discountAmount ?? 0 : 0;
+    const couponError =
+      validation && !validation.valid
+        ? validation.error
+        : cart.couponCode && autoDiscount > codeDiscount
+          ? "A bigger automatic discount is already applied, so your code isn't needed."
+          : undefined;
+
+    // No stacking: the larger of the entered code and the automatic promo.
+    if (autoDiscount > codeDiscount && best?.coupon) {
+      return {
+        subtotal: base.subtotal,
+        discount: autoDiscount,
+        total: base.subtotal - autoDiscount,
+        autoPromotion: toAutoProductPromotion(best.coupon, autoDiscount),
+        ...(couponError ? { couponError } : {}),
+      };
+    }
+
+    return {
+      subtotal: base.subtotal,
+      discount: codeDiscount,
+      total: base.subtotal - codeDiscount,
+      autoPromotion: null,
+      ...(couponError ? { couponError } : {}),
     };
   }
 

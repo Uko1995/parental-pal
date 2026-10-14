@@ -31,7 +31,10 @@ export async function GET() {
     }
 
     const cart = await CartRepository.getOrCreateCart(session.user.id);
-    const totals = CartRepository.calculateTotals(cart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
     const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     // Serialize for client
@@ -170,7 +173,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const totals = CartRepository.calculateTotals(cart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
     const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     const serializedCart = {
@@ -244,7 +250,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const totals = CartRepository.calculateTotals(cart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
     const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
     const serializedCart = {
@@ -309,7 +318,10 @@ export async function DELETE(request: NextRequest) {
         );
       }
 
-      const totals = CartRepository.calculateTotals(cart);
+      const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
       const promoDisplay = getCartPromoDisplay(cart.couponCode);
 
       const serializedCart = {

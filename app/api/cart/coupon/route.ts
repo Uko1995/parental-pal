@@ -185,19 +185,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const totals = CartRepository.calculateTotals(updatedCart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      updatedCart,
+      session.user.id,
+    );
     const promoDisplay = getCartPromoDisplay(validation.coupon!.code);
 
     revalidateTag(CACHE_TAGS.CART);
 
     return NextResponse.json({
       success: true,
-      message: `Coupon applied! You save ₦${validation.discountAmount?.toLocaleString()}`,
+      message: totals.autoPromotion
+        ? totals.couponError
+        : `Coupon applied! You save ₦${totals.discount.toLocaleString()}`,
       data: {
         couponCode: validation.coupon!.code,
         discountType: validation.coupon!.discountType,
         discountValue: validation.coupon!.discountValue,
-        discountAmount: validation.discountAmount,
+        discountAmount: totals.discount,
         ...promoDisplay,
         ...totals,
       },
@@ -231,7 +236,10 @@ export async function DELETE() {
       );
     }
 
-    const totals = CartRepository.calculateTotals(cart);
+    const totals = await CartRepository.calculateTotalsWithPromotions(
+      cart,
+      session.user.id,
+    );
 
     // Invalidate cart cache immediately
     revalidateTag(CACHE_TAGS.CART);

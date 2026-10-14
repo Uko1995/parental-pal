@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { auth } from "@/auth";
 import CouponRepository from "@/lib/CouponRepository";
 import { CACHE_TAGS } from "@/lib/cache-config";
+import {
+  parseCouponInput,
+  requireAdminUser,
+  serializeCoupon,
+} from "@/lib/coupon-admin";
 
-// GET /api/coupons/[id] - Get coupon by ID
+// GET /api/coupons/[id] - Get coupon by ID (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
+    const admin = await requireAdminUser();
+    if (!admin.ok) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { success: false, error: admin.error },
+        { status: admin.status }
       );
     }
 
@@ -28,24 +32,11 @@ export async function GET(
       );
     }
 
-    // Get usage stats
     const stats = await CouponRepository.getCouponStats(id);
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...coupon,
-        _id: coupon._id?.toString(),
-        applicableProducts: coupon.applicableProducts.map((p) => p.toString()),
-        excludedProducts: coupon.excludedProducts.map((p) => p.toString()),
-        applicableUsers: coupon.applicableUsers.map((u) => u.toString()),
-        createdBy: coupon.createdBy.toString(),
-        validFrom: coupon.validFrom.toISOString(),
-        validUntil: coupon.validUntil.toISOString(),
-        createdAt: coupon.createdAt.toISOString(),
-        updatedAt: coupon.updatedAt.toISOString(),
-        stats,
-      },
+      data: { ...serializeCoupon(coupon), stats },
     });
   } catch (error) {
     console.error("Error fetching coupon:", error);
@@ -56,32 +47,51 @@ export async function GET(
   }
 }
 
-// PATCH /api/coupons/[id] - Update coupon
+// PATCH /api/coupons/[id] - Update coupon (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
+    const admin = await requireAdminUser();
+    if (!admin.ok) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { success: false, error: admin.error },
+        { status: admin.status }
       );
     }
 
     const { id } = await params;
+    const existing = await CouponRepository.getCouponById(id);
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: "Coupon not found" },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
-
-    // Handle date conversions
-    if (body.validFrom) {
-      body.validFrom = new Date(body.validFrom);
+    let input;
+    try {
+      input = parseCouponInput(body, { partial: true, existing });
+    } catch (validationError) {
+      return NextResponse.json(
+        { success: false, error: (validationError as Error).message },
+        { status: 400 }
+      );
     }
-    if (body.validUntil) {
-      body.validUntil = new Date(body.validUntil);
+
+    if (input.code && input.code !== existing.code) {
+      const duplicate = await CouponRepository.getCouponByCode(input.code);
+      if (duplicate) {
+        return NextResponse.json(
+          { success: false, error: "Coupon code already exists" },
+          { status: 400 }
+        );
+      }
     }
 
-    const coupon = await CouponRepository.updateCoupon(id, body);
+    const coupon = await CouponRepository.updateCoupon(id, input);
 
     if (!coupon) {
       return NextResponse.json(
@@ -90,18 +100,13 @@ export async function PATCH(
       );
     }
 
+    revalidateTag(CACHE_TAGS.COUPONS);
+    revalidateTag(CACHE_TAGS.DASHBOARD);
+
     return NextResponse.json({
       success: true,
       message: "Coupon updated successfully",
-      data: {
-        ...coupon,
-        _id: coupon._id?.toString(),
-        createdBy: coupon.createdBy.toString(),
-        validFrom: coupon.validFrom.toISOString(),
-        validUntil: coupon.validUntil.toISOString(),
-        createdAt: coupon.createdAt.toISOString(),
-        updatedAt: coupon.updatedAt.toISOString(),
-      },
+      data: serializeCoupon(coupon),
     });
   } catch (error) {
     console.error("Error updating coupon:", error);
@@ -112,17 +117,17 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/coupons/[id] - Delete coupon
+// DELETE /api/coupons/[id] - Delete coupon (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
+    const admin = await requireAdminUser();
+    if (!admin.ok) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { success: false, error: admin.error },
+        { status: admin.status }
       );
     }
 
@@ -136,7 +141,6 @@ export async function DELETE(
       );
     }
 
-    // Invalidate cache immediately
     revalidateTag(CACHE_TAGS.COUPONS);
     revalidateTag(CACHE_TAGS.DASHBOARD);
 

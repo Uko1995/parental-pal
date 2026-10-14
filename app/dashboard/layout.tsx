@@ -21,6 +21,7 @@ import {
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
   ClipboardDocumentListIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -58,6 +59,11 @@ const navigation: NavigationItem[] = [
     icon: ChatBubbleLeftRightIcon,
   },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBagIcon },
+  {
+    name: "Discounts & Promos",
+    href: "/dashboard/coupons",
+    icon: TagIcon,
+  },
   { name: "Blog", href: "/dashboard/blog", icon: DocumentTextIcon },
   {
     name: "Audit Trail",

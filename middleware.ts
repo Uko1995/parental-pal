@@ -21,6 +21,7 @@ const adminOnlyRoutes = [
   "/dashboard/blog",
   "/dashboard/audit",
   "/dashboard/settings",
+  "/dashboard/coupons",
   "/api/analytics",
   "/api/dashboard",
 ];

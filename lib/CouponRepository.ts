@@ -5,8 +5,15 @@ import {
   CouponUsageInterface,
   CouponSchema,
   CouponValidationResult,
+  type CouponTarget,
 } from "../models/Coupon";
 import { CartInterface } from "../models/Cart";
+import {
+  computeCouponDiscount,
+  getCouponTarget,
+  isCouponUsable,
+  pickBestDiscount,
+} from "./coupon-discount";
 
 export class CouponRepository {
   private static collectionName = "coupons";
@@ -75,8 +82,11 @@ export class CouponRepository {
   ): Promise<CouponInterface> {
     const collection = await getCollection(this.collectionName);
 
+    const definedData = Object.fromEntries(
+      Object.entries(couponData).filter(([, value]) => value !== undefined),
+    ) as typeof couponData;
     const newCoupon: CouponInterface = {
-      ...couponData,
+      ...definedData,
       code: couponData.code.toUpperCase(),
       usedCount: 0,
       createdAt: new Date(),
@@ -132,6 +142,28 @@ export class CouponRepository {
     return coupons as CouponInterface[];
   }
 
+  /** Active, in-window automatic promos for a target (bookings or products). */
+  static async getActiveAutoApplyCoupons(
+    target: CouponTarget,
+    now: Date = new Date(),
+  ): Promise<CouponInterface[]> {
+    const collection = await getCollection(this.collectionName);
+    const targetQuery =
+      target === "products"
+        ? { $or: [{ target: "products" }, { target: { $exists: false } }] }
+        : { target };
+    const coupons = await collection
+      .find({
+        ...targetQuery,
+        autoApply: true,
+        isActive: true,
+        validFrom: { $lte: now },
+        validUntil: { $gte: now },
+      })
+      .toArray();
+    return coupons as CouponInterface[];
+  }
+
   // Validate coupon for a cart
   static async validateCoupon(
     code: string,
@@ -140,27 +172,46 @@ export class CouponRepository {
   ): Promise<CouponValidationResult> {
     const coupon = await this.getCouponByCode(code);
 
-    if (!coupon) {
+    if (!coupon || getCouponTarget(coupon) !== "products") {
       return { valid: false, error: "Invalid coupon code" };
     }
 
-    // Check if coupon is active
-    if (!coupon.isActive) {
-      return { valid: false, error: "This coupon is no longer active" };
+    return this.evaluateCouponForCart(coupon, userId, cart);
+  }
+
+  /** Best automatic product promo for this cart, if any. */
+  static async findBestAutoProductCoupon(
+    userId: string | ObjectId | null,
+    cart: Pick<CartInterface, "items">,
+  ): Promise<CouponValidationResult | null> {
+    const candidates = await this.getActiveAutoApplyCoupons("products");
+    const results: Array<CouponValidationResult & { discountAmount: number }> =
+      [];
+    for (const coupon of candidates) {
+      const result = await this.evaluateCouponForCart(coupon, userId, cart);
+      if (result.valid && result.discountAmount) {
+        results.push({ ...result, discountAmount: result.discountAmount });
+      }
+    }
+    return pickBestDiscount(results);
+  }
+
+  private static async evaluateCouponForCart(
+    coupon: CouponInterface,
+    userId: string | ObjectId | null,
+    cart: Pick<CartInterface, "items">,
+  ): Promise<CouponValidationResult> {
+    const usable = isCouponUsable(coupon);
+    if (!usable.ok) {
+      return { valid: false, error: usable.error };
     }
 
-    // Check validity dates
-    const now = new Date();
-    if (now < coupon.validFrom) {
-      return { valid: false, error: "This coupon is not yet valid" };
-    }
-    if (now > coupon.validUntil) {
-      return { valid: false, error: "This coupon has expired" };
-    }
-
-    // Check max uses
-    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
-      return { valid: false, error: "This coupon has reached its usage limit" };
+    const hasCustomerRules =
+      coupon.applicableUsers.length > 0 ||
+      coupon.maxUsesPerUser > 0 ||
+      coupon.firstTimeOnly;
+    if (!userId && hasCustomerRules) {
+      return { valid: false, error: "Please sign in to use this coupon" };
     }
 
     // Calculate cart subtotal
@@ -178,7 +229,7 @@ export class CouponRepository {
     }
 
     // Check user-specific restrictions
-    if (coupon.applicableUsers.length > 0) {
+    if (userId && coupon.applicableUsers.length > 0) {
       const uid = typeof userId === "string" ? new ObjectId(userId) : userId;
       const userAllowed = coupon.applicableUsers.some((u) => u.equals(uid));
       if (!userAllowed) {
@@ -190,7 +241,7 @@ export class CouponRepository {
     }
 
     // Check per-user usage limit
-    if (coupon.maxUsesPerUser > 0) {
+    if (userId && coupon.maxUsesPerUser > 0) {
       const userUsageCount = await this.getUserUsageCount(coupon._id!, userId);
       if (userUsageCount >= coupon.maxUsesPerUser) {
         return { valid: false, error: "You have already used this coupon" };
@@ -198,7 +249,7 @@ export class CouponRepository {
     }
 
     // Check first-time buyer restriction
-    if (coupon.firstTimeOnly) {
+    if (userId && coupon.firstTimeOnly) {
       const hasOrdered = await this.hasUserOrderedBefore(userId);
       if (hasOrdered) {
         return {
@@ -208,55 +259,59 @@ export class CouponRepository {
       }
     }
 
-    // Check product restrictions
-    if (
-      coupon.applicableProducts.length > 0 ||
-      coupon.excludedProducts.length > 0
-    ) {
-      const applicableItems = cart.items.filter((item) => {
-        const itemProductId = item.productId;
-
-        // Check if excluded
-        if (coupon.excludedProducts.some((p) => p.equals(itemProductId))) {
-          return false;
-        }
-
-        // Check if must be in applicable list
-        if (coupon.applicableProducts.length > 0) {
-          return coupon.applicableProducts.some((p) => p.equals(itemProductId));
-        }
-
-        return true;
-      });
-
-      if (applicableItems.length === 0) {
-        return {
-          valid: false,
-          error: "This coupon does not apply to items in your cart",
-        };
-      }
+    const eligibleSubtotal = this.getEligibleCartSubtotal(coupon, cart);
+    if (eligibleSubtotal <= 0) {
+      return {
+        valid: false,
+        error: "This coupon does not apply to items in your cart",
+      };
     }
 
-    // Calculate discount
-    let discountAmount: number;
-    if (coupon.discountType === "percentage") {
-      discountAmount = Math.round((subtotal * coupon.discountValue) / 100);
-      // Apply maximum discount cap if set
-      if (coupon.maximumDiscount && discountAmount > coupon.maximumDiscount) {
-        discountAmount = coupon.maximumDiscount;
-      }
-    } else {
-      discountAmount = coupon.discountValue;
-    }
-
-    // Ensure discount doesn't exceed subtotal
-    discountAmount = Math.min(discountAmount, subtotal);
+    const discountAmount = computeCouponDiscount(
+      { ...coupon, minimumOrderAmount: 0 },
+      eligibleSubtotal,
+    );
 
     return {
       valid: true,
       coupon,
       discountAmount,
     };
+  }
+
+  /** Subtotal of cart items covered by the coupon's product/category rules. */
+  static getEligibleCartSubtotal(
+    coupon: Pick<
+      CouponInterface,
+      "applicableProducts" | "excludedProducts" | "applicableCategories"
+    >,
+    cart: Pick<CartInterface, "items">,
+  ): number {
+    const applicableProducts = coupon.applicableProducts ?? [];
+    const excludedProducts = coupon.excludedProducts ?? [];
+    const categories = coupon.applicableCategories ?? [];
+
+    return cart.items
+      .filter((item) => {
+        const productId = item.productId.toString();
+        if (excludedProducts.some((p) => p.toString() === productId)) {
+          return false;
+        }
+        if (
+          applicableProducts.length > 0 &&
+          !applicableProducts.some((p) => p.toString() === productId)
+        ) {
+          return false;
+        }
+        if (
+          categories.length > 0 &&
+          (!item.productCategory || !categories.includes(item.productCategory))
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   }
 
   // Get user's usage count for a coupon
@@ -294,8 +349,8 @@ export class CouponRepository {
   static async recordUsage(
     couponId: ObjectId,
     couponCode: string,
-    userId: ObjectId,
-    orderId: ObjectId,
+    userId: ObjectId | null,
+    ref: { orderId?: ObjectId; bookingId?: ObjectId },
     discountApplied: number
   ): Promise<void> {
     const collection = await getCollection(this.usageCollectionName);
@@ -305,8 +360,9 @@ export class CouponRepository {
     const usage: CouponUsageInterface = {
       couponId,
       couponCode,
-      userId,
-      orderId,
+      ...(userId ? { userId } : {}),
+      ...(ref.orderId ? { orderId: ref.orderId } : {}),
+      ...(ref.bookingId ? { bookingId: ref.bookingId } : {}),
       discountApplied,
       usedAt: new Date(),
     };
@@ -336,14 +392,17 @@ export class CouponRepository {
       updateData.code = updateData.code.toUpperCase();
     }
 
+    // Undefined values clear the field instead of storing null.
+    const $set: Record<string, unknown> = { updatedAt: new Date() };
+    const $unset: Record<string, ""> = {};
+    for (const [key, value] of Object.entries(updateData)) {
+      if (value === undefined) $unset[key] = "";
+      else $set[key] = value;
+    }
+
     const result = await collection.findOneAndUpdate(
       { _id: id },
-      {
-        $set: {
-          ...updateData,
-          updatedAt: new Date(),
-        },
-      },
+      Object.keys($unset).length ? { $set, $unset } : { $set },
       { returnDocument: "after" }
     );
 

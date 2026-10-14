@@ -78,6 +78,20 @@ interface BookingServiceOption {
   label: string;
 }
 
+type PromoPreview = {
+  baseAmount: number;
+  totalAmount: number;
+  discount: { value: number; reason?: string } | null;
+  promotion: {
+    code: string;
+    automatic: boolean;
+    discountAmount: number;
+    label: string;
+  } | null;
+  codeApplied: boolean;
+  codeError: string | null;
+};
+
 type SubmitFeedback = {
   type: "error" | "warning" | "info";
   title?: string;
@@ -143,6 +157,11 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [isRepeatedCustomer, setIsRepeatedCustomer] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [adminPromoCode, setAdminPromoCode] = useState("");
+  const [promoPreview, setPromoPreview] = useState<PromoPreview | null>(null);
+  const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+  const [formChangeTick, setFormChangeTick] = useState(0);
+  const promoRequestRef = useRef(0);
   const [billingPeriodMonths, setBillingPeriodMonths] = useState(1);
   const [services, setServices] = useState<BookingServiceOption[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
@@ -492,6 +511,76 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
     saveCurrentFormData();
   }, [saveCurrentFormData, storageHydrated]);
 
+  // Any edit inside the form may change the price, so re-check promos.
+  useEffect(() => {
+    const form = document.getElementById("booking-form");
+    if (!form) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const bump = (event: Event) => {
+      if ((event.target as HTMLInputElement | null)?.name === "adminPromoCode") {
+        return;
+      }
+      clearTimeout(timer);
+      timer = setTimeout(() => setFormChangeTick((tick) => tick + 1), 600);
+    };
+    form.addEventListener("input", bump, true);
+    form.addEventListener("change", bump, true);
+    return () => {
+      clearTimeout(timer);
+      form.removeEventListener("input", bump, true);
+      form.removeEventListener("change", bump, true);
+    };
+  }, [selectedService]);
+
+  useEffect(() => {
+    if (!session?.user || !selectedService) {
+      setPromoPreview(null);
+      setIsCheckingPromo(false);
+      return;
+    }
+
+    const requestId = ++promoRequestRef.current;
+    const timer = setTimeout(async () => {
+      const form = document.getElementById(
+        "booking-form",
+      ) as HTMLFormElement | null;
+      if (!form) return;
+
+      const formEntries: Record<string, string> = {};
+      new FormData(form).forEach((value, key) => {
+        if (typeof value === "string" && !key.startsWith("$ACTION")) {
+          formEntries[key] = value;
+        }
+      });
+      formEntries.selectedService = selectedService;
+
+      setIsCheckingPromo(true);
+      try {
+        const response = await fetch("/api/promotions/bookings/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formEntries }),
+        });
+        const result = await response.json();
+        if (requestId !== promoRequestRef.current) return;
+        setPromoPreview(result.success ? result.data : null);
+      } catch {
+        if (requestId === promoRequestRef.current) setPromoPreview(null);
+      } finally {
+        if (requestId === promoRequestRef.current) setIsCheckingPromo(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    session?.user,
+    selectedService,
+    adminPromoCode,
+    totalAmount,
+    billingPeriodMonths,
+    formChangeTick,
+  ]);
+
   // Wrapper function to handle form reset after submission
   const handleFormSubmit = async (formData: FormData) => {
     setSubmitFeedback(null);
@@ -569,6 +658,8 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
       setFollowUpRequired(false);
       setIsRepeatedCustomer(false);
       setTotalAmount(0);
+      setAdminPromoCode("");
+      setPromoPreview(null);
       setBillingPeriodMonths(1);
 
       window.location.href = "/profile?tab=bookings&booked=1";
@@ -1225,6 +1316,79 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
             )}
           </div>
 
+          {selectedService && (
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                Promo code
+              </h2>
+              <p className="text-sm text-base-content/70 mb-4">
+                Have a ParentalPal promo code? Enter it here. Any automatic
+                discount you qualify for is applied for you.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  name="adminPromoCode"
+                  value={adminPromoCode}
+                  onChange={(e) =>
+                    setAdminPromoCode(
+                      e.target.value.toUpperCase().replace(/\s+/g, ""),
+                    )
+                  }
+                  placeholder="e.g. SAVE10"
+                  autoComplete="off"
+                  className="w-full sm:max-w-xs px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#90AC19] focus:border-[#90AC19] text-gray-900 uppercase"
+                />
+                {isCheckingPromo && (
+                  <span className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="loading loading-spinner loading-xs" />
+                    Checking…
+                  </span>
+                )}
+              </div>
+
+              {!session?.user && adminPromoCode && (
+                <p className="mt-3 text-sm text-gray-600">
+                  Sign in to see your discount. The code will be checked when
+                  you submit.
+                </p>
+              )}
+
+              {promoPreview?.promotion && (
+                <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
+                  <p className="font-semibold">
+                    Discount applied: {promoPreview.promotion.label} −₦
+                    {promoPreview.promotion.discountAmount.toLocaleString()}
+                  </p>
+                  <p className="text-sm mt-1">
+                    <span className="line-through text-green-700/70 mr-2">
+                      ₦{promoPreview.baseAmount.toLocaleString()}
+                    </span>
+                    New total: ₦{promoPreview.totalAmount.toLocaleString()}
+                  </p>
+                </div>
+              )}
+
+              {adminPromoCode && promoPreview && !isCheckingPromo && (
+                <>
+                  {promoPreview.codeError ? (
+                    <p className="mt-3 text-sm text-red-600">
+                      {promoPreview.codeError}. You can still book at the normal
+                      price.
+                    </p>
+                  ) : (
+                    !promoPreview.codeApplied && (
+                      <p className="mt-3 text-sm text-amber-700">
+                        Your code is valid, but you already have a bigger
+                        discount on this booking. Only one discount applies.
+                      </p>
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
             {submitFeedback && (
@@ -1269,7 +1433,12 @@ export default function BookingForm({ submitAction }: BookingFormProps) {
               {isSubmitting && (
                 <span className="loading loading-spinner loading-md" />
               )}
-              {getSubmitButtonLabel(totalAmount, billingPeriodMonths)}
+              {getSubmitButtonLabel(
+                promoPreview?.promotion
+                  ? promoPreview.totalAmount
+                  : totalAmount,
+                billingPeriodMonths,
+              )}
             </button>
             <p className="text-xs sm:text-sm text-gray-500 text-center mt-4">
               By registering, you agree to our{" "}

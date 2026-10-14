@@ -28,6 +28,16 @@ export interface BookingInterface {
 
   // Service-specific data
   serviceData: {
+    // Admin dashboard promo (code entered and/or the promo actually applied)
+    adminPromoCode?: string;
+    adminPromoCodeError?: string;
+    adminPromotion?: {
+      couponId: string;
+      code: string;
+      discountAmount: number;
+      automatic: boolean;
+    };
+
     // Tutoring location type
     tutoringLocation?: "virtual" | "physical";
     virtualRate?: number;
