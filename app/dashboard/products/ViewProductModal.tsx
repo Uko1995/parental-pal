@@ -113,7 +113,12 @@ export default function ViewProductModal({
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70">Age Range</p>
-                  <p className="font-medium">{product.ageRange} years</p>
+                  <p className="font-medium">
+                    {/^all ages$/i.test(product.ageRange) ||
+                    /years?$/i.test(product.ageRange)
+                      ? product.ageRange
+                      : `${product.ageRange} years`}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70">Pages</p>

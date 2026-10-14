@@ -224,6 +224,7 @@ export async function middleware(request: NextRequest) {
     const authenticatedUserApiRoutes = [
       "/api/users",
       "/api/audit-logs",
+      "/api/settings/bank-transfer",
     ];
 
     if (authenticatedUserApiRoutes.some((route) => pathname.startsWith(route))) {

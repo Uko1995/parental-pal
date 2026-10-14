@@ -322,6 +322,7 @@ export default function AddProductModal({
                   onChange={handleInputChange}
                   className="select select-bordered ps-2"
                 >
+                  <option value="All ages">All ages</option>
                   <option value="0-2">0-2 years</option>
                   <option value="3-5">3-5 years</option>
                   <option value="6-8">6-8 years</option>

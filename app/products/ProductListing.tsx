@@ -111,7 +111,11 @@ export default function ProductListing({ products }: ProductListingProps) {
 
     // Age filter
     if (ageFilter !== "all") {
-      result = result.filter((p) => p.ageRange.includes(ageFilter));
+      result = result.filter(
+        (p) =>
+          /^all ages$/i.test(p.ageRange.trim()) ||
+          p.ageRange.includes(ageFilter),
+      );
     }
 
     // Price filter

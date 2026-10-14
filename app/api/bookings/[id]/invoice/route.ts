@@ -14,6 +14,8 @@ import {
   resolveBookingParentName,
 } from "@/lib/booking-parent-email";
 import { resolveBookingScheduleDates } from "@/lib/booking-schedule";
+import { getBankTransferDetails } from "@/lib/bank-transfer-details";
+import { formatServiceTypeLabel } from "@/lib/booking-revenue-stats";
 import validator from "validator";
 
 // Generate a unique invoice number
@@ -156,6 +158,8 @@ export async function POST(
         paymentInstructions:
           "Please log in to your ParentalPal account to make payment for this invoice or contact us via WhatsApp. Visit your profile and navigate to the Payments section.",
         serviceSummary,
+        bankTransfer: await getBankTransferDetails(),
+        narrationReference: `Booking #${booking._id?.toString() || id} (${formatServiceTypeLabel(booking.serviceType || "service")})`,
       };
 
       emailContent = emailTemplates.invoice(parentName, invoiceDetails);

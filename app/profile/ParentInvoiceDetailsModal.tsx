@@ -7,6 +7,7 @@ import {
 } from "@/lib/booking-payment-due";
 import { canParentCancelInvoice } from "@/lib/parent-invoice";
 import { HOMESCHOOL_PROGRAM_SHORT_NAME } from "@/lib/homeschool-program";
+import BankTransferDetailsCard from "@/components/BankTransferDetailsCard";
 import type {
   ParentInvoiceLineItem,
   ParentInvoiceStatus,
@@ -196,6 +197,28 @@ export default function ParentInvoiceDetailsModal({
               Invoice total: ₦{invoice.totalAmount.toLocaleString()}
             </p>
           </div>
+
+          {canPay && (
+            <div className="space-y-3">
+              <h4 className="font-semibold">Payment options</h4>
+              <p className="text-sm">
+                <span className="font-semibold">
+                  Option 1: Pay online
+                </span>{" "}
+                {onPay ? (
+                  <>
+                    — use the <span className="font-medium">Pay now</span>{" "}
+                    button below for card / Paystack checkout.
+                  </>
+                ) : (
+                  "— log in and pay from Profile → Invoices."
+                )}
+              </p>
+              <BankTransferDetailsCard
+                narrationReference={invoice.invoiceNumber}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 p-6 border-t border-base-300 shrink-0">

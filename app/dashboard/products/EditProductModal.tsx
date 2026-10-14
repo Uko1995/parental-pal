@@ -296,8 +296,17 @@ export default function EditProductModal({
                     value={formData.ageRange}
                     onChange={handleChange}
                     className="input input-bordered"
-                    placeholder="e.g., 3-5 years"
+                    placeholder="e.g., 3-5 years or All ages"
+                    list="product-age-range-options"
                   />
+                  <datalist id="product-age-range-options">
+                    <option value="All ages" />
+                    <option value="0-2" />
+                    <option value="3-5" />
+                    <option value="6-8" />
+                    <option value="9-12" />
+                    <option value="13+" />
+                  </datalist>
                 </div>
 
                 <div className="form-control">

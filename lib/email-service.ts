@@ -1,4 +1,9 @@
 import nodemailer from "nodemailer";
+import {
+  formatBankTransferHtml,
+  formatBankTransferText,
+  type BankTransferDetails,
+} from "@/lib/bank-transfer-details";
 
 // Create transporter function to handle different environments
 function createEmailTransporter() {
@@ -341,6 +346,8 @@ export const emailTemplates = {
     dueLine,
     daysRemaining,
     profileUrl,
+    bankTransfer,
+    narrationReference,
   }: {
     parentName: string;
     serviceLabel: string;
@@ -349,6 +356,8 @@ export const emailTemplates = {
     dueLine: string;
     daysRemaining: number;
     profileUrl: string;
+    bankTransfer?: BankTransferDetails;
+    narrationReference?: string;
   }) => {
     const dueDateDisplay = dueDate
       ? new Date(dueDate).toLocaleDateString("en-US", {
@@ -414,11 +423,24 @@ export const emailTemplates = {
               Amount due: ₦${amount.toLocaleString()}
             </div>
 
-            <p>Please complete payment from your profile to keep your booking confirmed. Payment is due 5 days before your last session.</p>
+            <p>Please complete payment to keep your booking confirmed. Payment is due 5 days before your last session.</p>
 
+            ${
+              bankTransfer
+                ? `<p style="font-weight: bold; margin-bottom: 0;">Option 1: Pay online from your profile</p>`
+                : ""
+            }
             <center>
               <a href="${profileUrl}" class="cta-button">Pay from Profile → Payments</a>
             </center>
+            ${
+              bankTransfer
+                ? `<div class="booking-details">${formatBankTransferHtml(
+                    bankTransfer,
+                    { narrationReference },
+                  )}</div>`
+                : ""
+            }
           </div>
           <div class="footer">
             <p>© 2024 ParentalPal. All rights reserved.</p>
@@ -428,7 +450,11 @@ export const emailTemplates = {
       </body>
       </html>
     `,
-      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. Pay from Profile → Payments: ${profileUrl}`,
+      text: `Hello ${parentName}, ${urgencyCopy} ${dueLine}. Service: ${serviceLabel}. Amount due: ₦${amount.toLocaleString()}. Due date: ${dueDateDisplay}. ${bankTransfer ? "Option 1: " : ""}Pay from Profile → Payments: ${profileUrl}${
+        bankTransfer
+          ? `\n\n${formatBankTransferText(bankTransfer, { narrationReference })}`
+          : ""
+      }`,
     };
   },
 
@@ -952,6 +978,8 @@ export const emailTemplates = {
       currency: string;
       paymentInstructions?: string;
       serviceSummary?: string;
+      bankTransfer?: BankTransferDetails;
+      narrationReference?: string;
     }
   ) => ({
     subject: `Invoice #${invoiceDetails.invoiceNumber} - ParentalPal Services`,
@@ -1168,24 +1196,32 @@ export const emailTemplates = {
               }${invoiceDetails.totalAmount.toLocaleString()}</div>
             </div>
 
-            ${
-              invoiceDetails.paymentInstructions
-                ? `
             <div class="payment-section">
-              <strong style="color: #856404;">Payment Instructions:</strong>
-              <p style="margin: 10px 0 0 0; color: #856404;">${invoiceDetails.paymentInstructions}</p>
+              <strong style="color: #856404;">${
+                invoiceDetails.bankTransfer
+                  ? "Payment options:"
+                  : "Payment Instructions:"
+              }</strong>
+              <div style="margin-top: 10px; color: #856404;">
+                ${
+                  invoiceDetails.bankTransfer
+                    ? `<strong style="display:block; margin-bottom: 6px;">Option 1: Pay online from your profile</strong>`
+                    : ""
+                }
+                <p style="margin: 0;">${
+                  invoiceDetails.paymentInstructions ||
+                  `Please log in to your ParentalPal account to make payment for this invoice. Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.`
+                }</p>
+                ${
+                  invoiceDetails.bankTransfer
+                    ? `<hr style="border:none; border-top:1px solid #f0e0a0; margin:14px 0;" />${formatBankTransferHtml(
+                        invoiceDetails.bankTransfer,
+                        { narrationReference: invoiceDetails.narrationReference },
+                      )}`
+                    : ""
+                }
+              </div>
             </div>
-            `
-                : `
-            <div class="payment-section">
-              <strong style="color: #856404;">Payment Instructions:</strong>
-              <p style="margin: 10px 0 0 0; color: #856404;">
-                Please log in to your ParentalPal account to make payment for this invoice. 
-                Visit <a href="${process.env.NEXTAUTH_URL}/profile" style="color: #E8931A;">your profile</a> and navigate to the Payments section.
-              </p>
-            </div>
-            `
-            }
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; color: #666; font-size: 13px;">
               <p><strong>Terms & Conditions:</strong></p>
@@ -1264,11 +1300,17 @@ TOTAL AMOUNT DUE: ${
       invoiceDetails.currency
     }${invoiceDetails.totalAmount.toLocaleString()}
 
-${
+${invoiceDetails.bankTransfer ? "Option 1: Pay online from your profile\n" : ""}${
   invoiceDetails.paymentInstructions ||
   "Please log in to your ParentalPal account to make payment."
 }
-
+${
+  invoiceDetails.bankTransfer
+    ? `\n${formatBankTransferText(invoiceDetails.bankTransfer, {
+        narrationReference: invoiceDetails.narrationReference,
+      })}\n`
+    : ""
+}
 Thank you for choosing ParentalPal!
 Contact: ${process.env.EMAIL_USER || "info@parentalpal.com"}
     `,

@@ -8,6 +8,7 @@ import {
   type InvoiceLineItem,
 } from "@/lib/booking-invoice";
 import type { BookingInterface } from "@/models/Booking";
+import BankTransferDetailsCard from "@/components/BankTransferDetailsCard";
 
 interface Child {
   name: string;
@@ -361,13 +362,20 @@ export default function InvoiceModal({
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              <div>
-                <h4 className="font-bold">Payment Instructions</h4>
+              <div className="w-full">
+                <h4 className="font-bold">Payment options</h4>
+                <p className="text-sm font-semibold mt-1">
+                  Option 1: Pay online from your profile
+                </p>
                 <p className="text-sm">
                   Please log in to your ParentalPal account to make payment for
                   this invoice. Visit your profile and navigate to the Payments
                   section.
                 </p>
+                <BankTransferDetailsCard
+                  className="mt-3 bg-base-100 text-base-content"
+                  narrationReference={`Booking #${booking._id}`}
+                />
               </div>
             </div>
           )}

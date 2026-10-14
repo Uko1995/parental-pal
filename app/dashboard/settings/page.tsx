@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BellIcon,
   ShieldCheckIcon,
@@ -8,19 +8,83 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import {
+  DEFAULT_BANK_TRANSFER,
+  type BankTransferDetails,
+} from "@/models/PlatformSettings";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingBank, setIsLoadingBank] = useState(false);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferDetails>({
+    ...DEFAULT_BANK_TRANSFER,
+  });
+
+  const loadBankTransfer = useCallback(async () => {
+    setIsLoadingBank(true);
+    try {
+      const res = await fetch("/api/settings/bank-transfer");
+      if (!res.ok) throw new Error("Failed to load");
+      const data = (await res.json()) as { bankTransfer?: BankTransferDetails };
+      if (data.bankTransfer) {
+        setBankTransfer({ ...DEFAULT_BANK_TRANSFER, ...data.bankTransfer });
+      }
+    } catch {
+      toast.error("Could not load bank transfer details");
+    } finally {
+      setIsLoadingBank(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "payment") void loadBankTransfer();
+  }, [activeTab, loadBankTransfer]);
+
+  const updateBankField = (field: keyof BankTransferDetails, value: string) =>
+    setBankTransfer((prev) => ({ ...prev, [field]: value }));
 
   const handleSaveChanges = async () => {
+    if (activeTab !== "payment") {
+      toast.success("Settings saved successfully!");
+      return;
+    }
+
+    const accountName = bankTransfer.accountName.trim();
+    const accountNumber = bankTransfer.accountNumber.trim();
+    const bankName = bankTransfer.bankName.trim();
+    if (!accountName || !accountNumber || !bankName) {
+      toast.error("Account name, bank, and account number are required");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Settings saved successfully!");
-    } catch {
-      toast.error("Failed to save settings");
+      const res = await fetch("/api/settings/bank-transfer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bankTransfer: {
+            accountName,
+            accountNumber,
+            bankName,
+            narrationHint: bankTransfer.narrationHint.trim(),
+          },
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        bankTransfer?: BankTransferDetails;
+        error?: string;
+      } | null;
+      if (!res.ok) throw new Error(data?.error || "Failed to save");
+      if (data?.bankTransfer) {
+        setBankTransfer({ ...DEFAULT_BANK_TRANSFER, ...data.bankTransfer });
+      }
+      toast.success("Bank transfer details saved");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save settings",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -39,7 +103,7 @@ export default function SettingsPage() {
         <button
           className={`btn btn-primary ${isSaving ? "loading" : ""}`}
           onClick={handleSaveChanges}
-          disabled={isSaving}
+          disabled={isSaving || (activeTab === "payment" && isLoadingBank)}
         >
           {isSaving ? "Saving..." : "Save All Changes"}
         </button>
@@ -296,6 +360,89 @@ export default function SettingsPage() {
                     </label>
                   </div>
                 </div>
+
+                <div className="divider" />
+
+                <h3 className="font-semibold text-lg">Bank transfer details</h3>
+                <p className="text-sm text-base-content/70 mb-4">
+                  Shown on invoices and payment reminder emails as an
+                  alternative to paying online from the parent profile.
+                </p>
+
+                {isLoadingBank ? (
+                  <div className="flex items-center gap-2 text-sm text-base-content/70 py-4">
+                    <span className="loading loading-spinner loading-sm" />
+                    Loading bank details…
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-control md:col-span-2">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Account name
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered"
+                        value={bankTransfer.accountName}
+                        onChange={(e) =>
+                          updateBankField("accountName", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">Bank name</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered"
+                        value={bankTransfer.bankName}
+                        onChange={(e) =>
+                          updateBankField("bankName", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Account number
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        className="input input-bordered font-mono"
+                        value={bankTransfer.accountNumber}
+                        onChange={(e) =>
+                          updateBankField("accountNumber", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="form-control md:col-span-2">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Narration hint
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered"
+                        value={bankTransfer.narrationHint}
+                        onChange={(e) =>
+                          updateBankField("narrationHint", e.target.value)
+                        }
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-base-content/70">
+                          Invoices and reminders insert the specific booking ID
+                          or invoice number when one is available.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
