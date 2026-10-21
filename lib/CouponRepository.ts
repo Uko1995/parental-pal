@@ -14,10 +14,70 @@ import {
   isCouponUsable,
   pickBestDiscount,
 } from "./coupon-discount";
+import {
+  VIRTUAL_TUTORING_DISCOUNT_PERCENT,
+  VIRTUAL_TUTORING_PROMO_CODE,
+  getVirtualTutoringDiscountLabel,
+  getVirtualTutoringPromoValidity,
+} from "./tutoring-promotions";
+
+/** Stable id used as createdBy for seeded system promos. */
+const SYSTEM_PROMO_CREATED_BY = new ObjectId("000000000000000000000001");
+
+let systemPromosEnsured: Promise<void> | null = null;
 
 export class CouponRepository {
   private static collectionName = "coupons";
   private static usageCollectionName = "coupon_usages";
+
+  /**
+   * Upsert built-in promos (e.g. VIRTUAL15) so they appear on Discounts & Promos
+   * and apply via the booking promo engine. Safe to call repeatedly.
+   */
+  static async ensureSystemPromos(): Promise<void> {
+    if (!systemPromosEnsured) {
+      systemPromosEnsured = this.seedVirtualTutoringPromo().catch((error) => {
+        systemPromosEnsured = null;
+        throw error;
+      });
+    }
+    await systemPromosEnsured;
+  }
+
+  private static async seedVirtualTutoringPromo(): Promise<void> {
+    const collection = await getCollection(this.collectionName);
+    const existing = await collection.findOne({
+      code: VIRTUAL_TUTORING_PROMO_CODE,
+    });
+    if (existing) return;
+
+    const { validFrom, validUntil } = getVirtualTutoringPromoValidity();
+    await collection.insertOne({
+      code: VIRTUAL_TUTORING_PROMO_CODE,
+      description: getVirtualTutoringDiscountLabel(),
+      target: "bookings",
+      autoApply: true,
+      applicableServiceTypes: ["tutoring"],
+      tutoringLocation: "virtual",
+      discountType: "percentage",
+      discountValue: VIRTUAL_TUTORING_DISCOUNT_PERCENT,
+      maxUses: 0,
+      usedCount: 0,
+      maxUsesPerUser: 0,
+      minimumOrderAmount: 0,
+      applicableProducts: [],
+      applicableCategories: [],
+      excludedProducts: [],
+      applicableUsers: [],
+      firstTimeOnly: false,
+      validFrom,
+      validUntil,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: SYSTEM_PROMO_CREATED_BY,
+    });
+  }
 
   // Initialize collection with schema and indexes
   static async initialize() {
@@ -67,6 +127,7 @@ export class CouponRepository {
       }
 
       console.log("✅ Coupons collection initialized with schema and indexes");
+      await this.ensureSystemPromos();
     } catch (error) {
       console.error("❌ Error initializing coupons collection:", error);
       throw error;
@@ -120,6 +181,7 @@ export class CouponRepository {
     isActive?: boolean;
     validOnly?: boolean;
   }): Promise<CouponInterface[]> {
+    await this.ensureSystemPromos();
     const collection = await getCollection(this.collectionName);
 
     const query: Record<string, unknown> = {};
@@ -147,6 +209,7 @@ export class CouponRepository {
     target: CouponTarget,
     now: Date = new Date(),
   ): Promise<CouponInterface[]> {
+    await this.ensureSystemPromos();
     const collection = await getCollection(this.collectionName);
     const targetQuery =
       target === "products"

@@ -5,6 +5,7 @@ import {
   type BookingFormEntries,
 } from "@/app/booking/action";
 import { BookingRepository } from "@/lib/BookingRepository";
+import { CouponRepository } from "@/lib/CouponRepository";
 import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 import type { BookingInterface } from "@/models/Booking";
 import type { UserInterface } from "@/models/User";
@@ -114,6 +115,25 @@ export async function createAdminBookingFromEntries(
     bookingData.status = "pending";
 
     const booking = await BookingRepository.createBooking(bookingData);
+
+    const appliedPromotion = bookingData.serviceData?.adminPromotion;
+    if (appliedPromotion && booking._id && parent._id) {
+      try {
+        await CouponRepository.recordUsage(
+          new ObjectId(appliedPromotion.couponId),
+          appliedPromotion.code,
+          parent._id,
+          { bookingId: booking._id },
+          appliedPromotion.discountAmount,
+        );
+      } catch (usageError) {
+        console.error("Failed to record promo usage for admin booking:", {
+          usageError,
+          bookingId: booking._id?.toString(),
+          code: appliedPromotion.code,
+        });
+      }
+    }
 
     try {
       await ensureHtrDriveFolderForBooking(booking, parent);

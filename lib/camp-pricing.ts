@@ -37,6 +37,8 @@ export interface CampPackageDiscount {
 
 export interface CampPricingOptions {
   promoCode?: string;
+  /** When false, skip HOTR package and full-season multi-week discounts. */
+  applyDiscounts?: boolean;
 }
 
 export interface CampPricingResult {
@@ -128,7 +130,9 @@ export function calculateCampPricing(
     };
   }
 
+  const applyDiscounts = options?.applyDiscounts !== false;
   const hotrPromoActive =
+    applyDiscounts &&
     location === "gbagada" &&
     isHotr26PromoCode(options?.promoCode ?? "");
 
@@ -191,20 +195,22 @@ export function calculateCampPricing(
   let autoDiscount = 0;
   let anyChildQualifiesForAuto = false;
 
-  for (const child of children) {
-    if (packageChildIds.has(child.childId)) {
-      continue;
-    }
-    if (child.weekCount < SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks) {
-      continue;
-    }
+  if (applyDiscounts) {
+    for (const child of children) {
+      if (packageChildIds.has(child.childId)) {
+        continue;
+      }
+      if (child.weekCount < SUMMER_CAMP_RATES.multiWeekDiscountMinWeeks) {
+        continue;
+      }
 
-    anyChildQualifiesForAuto = true;
-    const line = lines.find((l) => l.childId === child.childId);
-    if (line) {
-      autoDiscount += Math.round(
-        (line.lineSubtotal * SUMMER_CAMP_RATES.multiWeekDiscountPercent) / 100,
-      );
+      anyChildQualifiesForAuto = true;
+      const line = lines.find((l) => l.childId === child.childId);
+      if (line) {
+        autoDiscount += Math.round(
+          (line.lineSubtotal * SUMMER_CAMP_RATES.multiWeekDiscountPercent) / 100,
+        );
+      }
     }
   }
 

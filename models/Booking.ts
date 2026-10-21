@@ -37,6 +37,8 @@ export interface BookingInterface {
       discountAmount: number;
       automatic: boolean;
     };
+    /** Explicit false when admin opted out of discounts on create. */
+    applyDiscounts?: boolean;
 
     // Tutoring location type
     tutoringLocation?: "virtual" | "physical";
