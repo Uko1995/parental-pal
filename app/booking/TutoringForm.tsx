@@ -36,12 +36,6 @@ import AddAnotherChildButton from "./AddAnotherChildButton";
 import { useBookingProfilePrefill } from "./useBookingProfilePrefill";
 import { formatLocalDate } from "@/lib/booking-calendar";
 import { INITIAL_CHILD_ID } from "@/lib/booking-child-id";
-import {
-  getEffectiveVirtualRate,
-  getVirtualTutoringDiscountLabel,
-  isVirtualTutoringDiscountActive,
-} from "@/lib/tutoring-promotions";
-
 export interface TutoringFormRef {
   resetForm: () => void;
   validate: () => { isValid: boolean; errors: string[] };
@@ -114,9 +108,6 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
     "idle" | "checking" | "applied" | "invalid"
   >("idle");
   const [promoMessage, setPromoMessage] = useState("");
-  const virtualDiscountActive = isVirtualTutoringDiscountActive();
-  const effectiveVirtualRate = getEffectiveVirtualRate(virtualRate);
-
   // Create refs for each child's WeekdaysSchedule
   const scheduleRefs = useRef<{ [key: string]: WeekdaysScheduleRef | null }>(
     {}
@@ -288,10 +279,10 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
   useEffect(() => {
     if (promoStatus !== "applied") {
       setHourlyRate(
-        tutoringLocation === "virtual" ? effectiveVirtualRate : physicalRate,
+        tutoringLocation === "virtual" ? virtualRate : physicalRate,
       );
     }
-  }, [promoStatus, tutoringLocation, effectiveVirtualRate, physicalRate]);
+  }, [promoStatus, tutoringLocation, virtualRate, physicalRate]);
 
   // Reset promo only when the user actually changes location
   useEffect(() => {
@@ -302,11 +293,11 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         "Promo reset after location change. Apply again for virtual sessions.",
       );
       setHourlyRate(
-        tutoringLocation === "virtual" ? effectiveVirtualRate : physicalRate,
+        tutoringLocation === "virtual" ? virtualRate : physicalRate,
       );
     }
     previousTutoringLocation.current = tutoringLocation;
-  }, [promoStatus, tutoringLocation, effectiveVirtualRate, physicalRate]);
+  }, [promoStatus, tutoringLocation, virtualRate, physicalRate]);
 
   const applyPromoCode = async () => {
     if (!promoCode.trim()) {
@@ -333,9 +324,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
         setPromoStatus("applied");
         setPromoMessage(result.data.message || "Promo code applied.");
         if (typeof result.data.discountedRate === "number") {
-          setHourlyRate(
-            Math.min(result.data.discountedRate, effectiveVirtualRate),
-          );
+          setHourlyRate(Math.min(result.data.discountedRate, virtualRate));
         }
         return;
       }
@@ -343,7 +332,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
       setPromoStatus("invalid");
       setPromoMessage(result?.error || "Promo code is not valid.");
       setHourlyRate(
-        tutoringLocation === "virtual" ? effectiveVirtualRate : physicalRate,
+        tutoringLocation === "virtual" ? virtualRate : physicalRate,
       );
     } catch (error) {
       console.error("Promo validation failed:", error);
@@ -674,23 +663,9 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
               Online sessions via video call with digital learning tools
             </p>
             <div className="mt-auto pt-3 border-t  border-gray-200">
-              {virtualDiscountActive ? (
-                <>
-                  <p className="text-sm text-gray-500 line-through">
-                    ₦{virtualRate.toLocaleString()}/hour
-                  </p>
-                  <p className="text-lg font-bold text-[#5f7211]">
-                    ₦{effectiveVirtualRate.toLocaleString()}/hour
-                  </p>
-                  <span className="inline-block mt-1 rounded-full bg-[#90AC19]/15 px-2 py-0.5 text-xs font-semibold text-[#5f7211]">
-                    {getVirtualTutoringDiscountLabel()}
-                  </span>
-                </>
-              ) : (
-                <p className="text-lg font-bold ">
-                  ₦{virtualRate.toLocaleString()}/hour
-                </p>
-              )}
+              <p className="text-lg font-bold ">
+                ₦{virtualRate.toLocaleString()}/hour
+              </p>
             </div>
           </label>
 
@@ -750,9 +725,7 @@ const TutoringForm = forwardRef<TutoringFormRef, TutoringFormProps>(
                   setPromoStatus("idle");
                   setPromoMessage("");
                   setHourlyRate(
-                    tutoringLocation === "virtual"
-                      ? effectiveVirtualRate
-                      : physicalRate,
+                    tutoringLocation === "virtual" ? virtualRate : physicalRate,
                   );
                 }
               }}

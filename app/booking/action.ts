@@ -17,11 +17,6 @@ import {
 } from "@/lib/booking-promotions";
 import { CouponRepository } from "@/lib/CouponRepository";
 import {
-  applyVirtualTutoringDiscount,
-  getVirtualTutoringDiscountLabel,
-  isVirtualTutoringDiscountActive,
-} from "@/lib/tutoring-promotions";
-import {
   type CampLocation,
   canChildBoard,
   getCampSeason,
@@ -1027,6 +1022,12 @@ export async function parseFormDataToBooking(
   let pricingDiscount = 0;
   let pricingDiscountReason: string | undefined;
 
+  // Admin create can opt out; public form omits the field → discounts apply.
+  const applyDiscounts = cleanedData.applyDiscounts !== "false";
+  if (!applyDiscounts) {
+    serviceData.applyDiscounts = false;
+  }
+
   if (serviceType === "tutoring") {
     // Sum up hours from all children
     const childrenData = serviceData.childrenData as Array<{
@@ -1048,18 +1049,14 @@ export async function parseFormDataToBooking(
     const baseHourlyRate =
       tutoringLocation === "virtual" ? virtualRate : physicalRate;
     const hasEduvantaPromo =
+      applyDiscounts &&
       isEduvantaService &&
       tutoringLocation === "virtual" &&
       isJunePromoWindow &&
       normalizedPromoCode === EDUVANTA_PROMO_CODE;
-    const autoDiscountedVirtualRate =
-      tutoringLocation === "virtual" && isVirtualTutoringDiscountActive(now)
-        ? applyVirtualTutoringDiscount(virtualRate)
-        : null;
     const promoRate = hasEduvantaPromo ? EDUVANTA_PROMO_VIRTUAL_RATE : null;
     const effectiveHourlyRate = Math.min(
       baseHourlyRate,
-      autoDiscountedVirtualRate ?? baseHourlyRate,
       promoRate ?? baseHourlyRate,
     );
 
@@ -1068,10 +1065,7 @@ export async function parseFormDataToBooking(
 
     if (effectiveHourlyRate < baseHourlyRate) {
       pricingDiscount = Math.max(0, pricingBaseAmount - totalAmount);
-      pricingDiscountReason =
-        promoRate !== null && promoRate === effectiveHourlyRate
-          ? `Promo code: ${EDUVANTA_PROMO_CODE} (${EDUVANTA_SERVICE_NAME})`
-          : getVirtualTutoringDiscountLabel();
+      pricingDiscountReason = `Promo code: ${EDUVANTA_PROMO_CODE} (${EDUVANTA_SERVICE_NAME})`;
     }
 
     serviceData.virtualRate = virtualRate;
@@ -1177,11 +1171,14 @@ export async function parseFormDataToBooking(
       pricingInputs,
       undefined,
       {
-        promoCode: resolveAppliedHotr26PromoCode({
-          seasonId: campSeasonId,
-          location: campLocation,
-          code: (cleanedData.promoCode || "").toString(),
-        }),
+        applyDiscounts,
+        promoCode: applyDiscounts
+          ? resolveAppliedHotr26PromoCode({
+              seasonId: campSeasonId,
+              location: campLocation,
+              code: (cleanedData.promoCode || "").toString(),
+            })
+          : undefined,
       },
     );
 
@@ -1226,44 +1223,48 @@ export async function parseFormDataToBooking(
     }
   }
 
-  // Admin promos (dashboard). No stacking: only replaces a smaller discount.
+  // Admin Discounts & Promos. No stacking: only replaces a smaller discount.
   const adminPromoCode = (cleanedData.adminPromoCode || "")
     .toString()
     .trim()
     .toUpperCase();
-  const promoBaseAmount = pricingBaseAmount || totalAmount;
-  const promoCautionFee =
-    serviceType === "space-rental"
-      ? (serviceData.cautionFee as number) || 0
-      : 0;
-  const { promotion: adminPromotion, codeError: adminPromoCodeError } =
-    await resolveAdminBookingPromotion({
-      serviceType,
-      tutoringLocation:
-        serviceType === "tutoring"
-          ? (serviceData.tutoringLocation as "virtual" | "physical")
-          : null,
-      userId: userId.toString(),
-      baseAmount: promoBaseAmount - promoCautionFee,
-      promoCode: adminPromoCode || null,
-    });
-  if (adminPromotion && adminPromotion.discountAmount > pricingDiscount) {
-    pricingBaseAmount = promoBaseAmount;
-    pricingDiscount = adminPromotion.discountAmount;
-    pricingDiscountReason = getPromotionReason(adminPromotion);
-    totalAmount = promoBaseAmount - adminPromotion.discountAmount;
-    serviceData.adminPromotion = {
-      couponId: adminPromotion.coupon._id!.toString(),
-      code: adminPromotion.coupon.code,
-      discountAmount: adminPromotion.discountAmount,
-      automatic: adminPromotion.automatic,
-    };
-  }
-  if (adminPromoCode) {
-    serviceData.adminPromoCode = adminPromoCode;
-    if (adminPromoCodeError) {
-      serviceData.adminPromoCodeError = adminPromoCodeError;
+  if (applyDiscounts) {
+    const promoBaseAmount = pricingBaseAmount || totalAmount;
+    const promoCautionFee =
+      serviceType === "space-rental"
+        ? (serviceData.cautionFee as number) || 0
+        : 0;
+    const { promotion: adminPromotion, codeError: adminPromoCodeError } =
+      await resolveAdminBookingPromotion({
+        serviceType,
+        tutoringLocation:
+          serviceType === "tutoring"
+            ? (serviceData.tutoringLocation as "virtual" | "physical")
+            : null,
+        userId: userId.toString(),
+        baseAmount: promoBaseAmount - promoCautionFee,
+        promoCode: adminPromoCode || null,
+      });
+    if (adminPromotion && adminPromotion.discountAmount > pricingDiscount) {
+      pricingBaseAmount = promoBaseAmount;
+      pricingDiscount = adminPromotion.discountAmount;
+      pricingDiscountReason = getPromotionReason(adminPromotion);
+      totalAmount = promoBaseAmount - adminPromotion.discountAmount;
+      serviceData.adminPromotion = {
+        couponId: adminPromotion.coupon._id!.toString(),
+        code: adminPromotion.coupon.code,
+        discountAmount: adminPromotion.discountAmount,
+        automatic: adminPromotion.automatic,
+      };
     }
+    if (adminPromoCode) {
+      serviceData.adminPromoCode = adminPromoCode;
+      if (adminPromoCodeError) {
+        serviceData.adminPromoCodeError = adminPromoCodeError;
+      }
+    }
+  } else if (adminPromoCode) {
+    serviceData.adminPromoCode = adminPromoCode;
   }
 
   // Determine parent name and email with fallbacks

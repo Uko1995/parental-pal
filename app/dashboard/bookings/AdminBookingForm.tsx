@@ -81,6 +81,7 @@ export default function AdminBookingForm({
 }: AdminBookingFormProps) {
   const [selectedService, setSelectedService] = useState("");
   const [billingPeriodMonths, setBillingPeriodMonths] = useState(1);
+  const [applyDiscounts, setApplyDiscounts] = useState(true);
   const [campTotal, setCampTotal] = useState(0);
   const [previewTotal, setPreviewTotal] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -188,10 +189,18 @@ export default function AdminBookingForm({
 
   useEffect(() => {
     schedulePreview();
-  }, [selectedService, billingPeriodMonths, campTotal, schedulePreview]);
+  }, [
+    selectedService,
+    billingPeriodMonths,
+    campTotal,
+    applyDiscounts,
+    schedulePreview,
+  ]);
 
+  // Camp form total is client-side and may include camp promos; when discounts
+  // are off, always trust the server preview (full rate).
   const displayTotal =
-    selectedService === "holiday-camps" && campTotal > 0
+    applyDiscounts && selectedService === "holiday-camps" && campTotal > 0
       ? campTotal
       : previewTotal;
 
@@ -385,6 +394,11 @@ export default function AdminBookingForm({
           name="billingPeriodMonths"
           value={billingPeriodMonths}
         />
+        <input
+          type="hidden"
+          name="applyDiscounts"
+          value={applyDiscounts ? "true" : "false"}
+        />
 
         <div className="rounded-xl border border-base-300 bg-base-100 p-4 sm:p-5">
           <h4 className="font-semibold text-base-content mb-1">Service</h4>
@@ -425,29 +439,52 @@ export default function AdminBookingForm({
         )}
 
         {selectedService && parentPrefill && (
-          <div className="rounded-xl border border-base-300 bg-base-200/60 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-base-content">
-                Calculated total
-              </p>
-              <p className="text-xs text-base-content/60">
-                Based on the same pricing rules as the public booking form.
-              </p>
-            </div>
-            <div className="text-right">
-              {previewLoading ? (
-                <span className="loading loading-spinner loading-sm text-primary" />
-              ) : previewError ? (
-                <p className="text-sm text-warning">{previewError}</p>
-              ) : displayTotal != null && displayTotal > 0 ? (
-                <p className="text-xl font-bold text-primary">
-                  {formatCurrency(displayTotal)}
+          <div className="rounded-xl border border-base-300 bg-base-200/60 p-4 space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="toggle toggle-primary mt-0.5"
+                checked={applyDiscounts}
+                onChange={(e) => setApplyDiscounts(e.target.checked)}
+              />
+              <span>
+                <span className="block text-sm font-medium text-base-content">
+                  Apply running discounts / promos
+                </span>
+                <span className="block text-xs text-base-content/60 mt-0.5 leading-snug">
+                  {applyDiscounts
+                    ? "Automatic and code promos for this service will be applied (same as the public form)."
+                    : "Turned off — this booking will be charged at the full service rate with no discounts."}
+                </span>
+              </span>
+            </label>
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-base-300 pt-4">
+              <div>
+                <p className="text-sm font-medium text-base-content">
+                  Calculated total
                 </p>
-              ) : (
-                <p className="text-sm text-base-content/50">
-                  Fill in booking details to see total
+                <p className="text-xs text-base-content/60">
+                  {applyDiscounts
+                    ? "Based on the same pricing rules as the public booking form."
+                    : "Full rate — discounts and promos are not applied."}
                 </p>
-              )}
+              </div>
+              <div className="text-right">
+                {previewLoading ? (
+                  <span className="loading loading-spinner loading-sm text-primary" />
+                ) : previewError ? (
+                  <p className="text-sm text-warning">{previewError}</p>
+                ) : displayTotal != null && displayTotal > 0 ? (
+                  <p className="text-xl font-bold text-primary">
+                    {formatCurrency(displayTotal)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-base-content/50">
+                    Fill in booking details to see total
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
