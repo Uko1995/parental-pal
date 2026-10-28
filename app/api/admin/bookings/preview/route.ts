@@ -24,5 +24,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     totalAmount: result.totalAmount,
     currency: result.currency,
+    baseAmount: result.baseAmount,
   });
 }

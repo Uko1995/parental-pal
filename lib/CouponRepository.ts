@@ -227,6 +227,24 @@ export class CouponRepository {
     return coupons as CouponInterface[];
   }
 
+  /** Active, in-window booking promos (auto and code-based) for admin picker. */
+  static async getActiveBookingCoupons(
+    now: Date = new Date(),
+  ): Promise<CouponInterface[]> {
+    await this.ensureSystemPromos();
+    const collection = await getCollection(this.collectionName);
+    const coupons = await collection
+      .find({
+        target: "bookings",
+        isActive: true,
+        validFrom: { $lte: now },
+        validUntil: { $gte: now },
+      })
+      .sort({ code: 1 })
+      .toArray();
+    return coupons as CouponInterface[];
+  }
+
   // Validate coupon for a cart
   static async validateCoupon(
     code: string,

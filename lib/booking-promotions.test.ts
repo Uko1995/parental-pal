@@ -8,6 +8,7 @@ import {
   matchesBookingScope,
 } from "@/lib/coupon-discount";
 import {
+  listEligibleBookingPromotions,
   resolveBestBookingPromotion,
   resolveBookingPromotion,
   type BookingPromotionDeps,
@@ -53,6 +54,8 @@ function makeDeps(
       coupons.find((c) => c.code === code.toUpperCase()) ?? null,
     getActiveAutoBookingCoupons: async () =>
       coupons.filter((c) => c.autoApply && c.target === "bookings"),
+    getActiveBookingCoupons: async () =>
+      coupons.filter((c) => c.target === "bookings"),
     getUserUsageCount: async () => 0,
     hasPriorBooking: async () => false,
     ...overrides,
@@ -199,5 +202,67 @@ describe("resolveBestBookingPromotion", () => {
     );
     assert.equal(result.promotion?.coupon.code, "AUTO5");
     assert.equal(result.codeError, "Invalid promo code");
+  });
+});
+
+describe("listEligibleBookingPromotions", () => {
+  it("returns every matching booking promo, not only the largest", async () => {
+    const autoSmall = makeCoupon({
+      code: "VIRTUAL10",
+      autoApply: true,
+      discountValue: 10,
+      applicableServiceTypes: ["tutoring"],
+      tutoringLocation: "virtual",
+    });
+    const autoBig = makeCoupon({
+      code: "VIRTUAL15",
+      autoApply: true,
+      discountValue: 15.3,
+      applicableServiceTypes: ["tutoring"],
+      tutoringLocation: "virtual",
+    });
+    const codeOnly = makeCoupon({
+      code: "SAVE5",
+      autoApply: false,
+      discountValue: 5,
+      applicableServiceTypes: ["tutoring"],
+    });
+    const otherService = makeCoupon({
+      code: "CARE20",
+      autoApply: true,
+      discountValue: 20,
+      applicableServiceTypes: ["childcare"],
+    });
+
+    const listed = await listEligibleBookingPromotions(
+      {
+        serviceType: "tutoring",
+        tutoringLocation: "virtual",
+        baseAmount: 100000,
+        now: NOW,
+      },
+      makeDeps([autoSmall, autoBig, codeOnly, otherService]),
+    );
+
+    assert.deepEqual(
+      listed.map((p) => p.code),
+      ["VIRTUAL15", "VIRTUAL10", "SAVE5"],
+    );
+    assert.equal(listed[0].discountAmount, 15300);
+  });
+
+  it("returns an empty list when nothing matches", async () => {
+    const listed = await listEligibleBookingPromotions(
+      { serviceType: "childcare", baseAmount: 50000, now: NOW },
+      makeDeps([
+        makeCoupon({
+          code: "VIRT",
+          autoApply: true,
+          applicableServiceTypes: ["tutoring"],
+          tutoringLocation: "virtual",
+        }),
+      ]),
+    );
+    assert.equal(listed.length, 0);
   });
 });

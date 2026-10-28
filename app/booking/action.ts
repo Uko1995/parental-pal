@@ -12,6 +12,7 @@ import { EDUVANTA_SERVICE_NAME } from "@/lib/service-utils";
 import {
   getPromotionReason,
   resolveBestBookingPromotion,
+  resolveBookingPromotion,
   type BookingPromotionInput,
   type BookingPromotionMatch,
 } from "@/lib/booking-promotions";
@@ -63,16 +64,27 @@ function isServerDateInJune(now: Date): boolean {
   return now.getMonth() === 5;
 }
 
-async function resolveAdminBookingPromotion(
+async function resolveCouponBookingPromotion(
   input: BookingPromotionInput,
+  options: { adminExplicitPick: boolean },
 ): Promise<{
   promotion: BookingPromotionMatch | null;
   codeError: string | null;
 }> {
   try {
+    // Admin create: only the selected code (or none). Public: best of auto + code.
+    if (options.adminExplicitPick) {
+      if (!input.promoCode?.trim()) {
+        return { promotion: null, codeError: null };
+      }
+      const coded = await resolveBookingPromotion(input);
+      return coded.ok
+        ? { promotion: coded.promotion, codeError: null }
+        : { promotion: null, codeError: coded.error };
+    }
     return await resolveBestBookingPromotion(input);
   } catch (error) {
-    console.error("Admin promo lookup failed:", error);
+    console.error("Booking promo lookup failed:", error);
     return { promotion: null, codeError: null };
   }
 }
@@ -1022,7 +1034,11 @@ export async function parseFormDataToBooking(
   let pricingDiscount = 0;
   let pricingDiscountReason: string | undefined;
 
-  // Admin create can opt out; public form omits the field → discounts apply.
+  // Public form omits applyDiscounts → discounts apply (auto-best).
+  // Admin always sends "true" | "false" and picks at most one coupon.
+  const isAdminPricing =
+    cleanedData.applyDiscounts === "true" ||
+    cleanedData.applyDiscounts === "false";
   const applyDiscounts = cleanedData.applyDiscounts !== "false";
   if (!applyDiscounts) {
     serviceData.applyDiscounts = false;
@@ -1223,7 +1239,7 @@ export async function parseFormDataToBooking(
     }
   }
 
-  // Admin Discounts & Promos. No stacking: only replaces a smaller discount.
+  // Discounts & Promos. No stacking with a larger service built-in discount.
   const adminPromoCode = (cleanedData.adminPromoCode || "")
     .toString()
     .trim()
@@ -1235,16 +1251,19 @@ export async function parseFormDataToBooking(
         ? (serviceData.cautionFee as number) || 0
         : 0;
     const { promotion: adminPromotion, codeError: adminPromoCodeError } =
-      await resolveAdminBookingPromotion({
-        serviceType,
-        tutoringLocation:
-          serviceType === "tutoring"
-            ? (serviceData.tutoringLocation as "virtual" | "physical")
-            : null,
-        userId: userId.toString(),
-        baseAmount: promoBaseAmount - promoCautionFee,
-        promoCode: adminPromoCode || null,
-      });
+      await resolveCouponBookingPromotion(
+        {
+          serviceType,
+          tutoringLocation:
+            serviceType === "tutoring"
+              ? (serviceData.tutoringLocation as "virtual" | "physical")
+              : null,
+          userId: userId.toString(),
+          baseAmount: promoBaseAmount - promoCautionFee,
+          promoCode: adminPromoCode || null,
+        },
+        { adminExplicitPick: isAdminPricing },
+      );
     if (adminPromotion && adminPromotion.discountAmount > pricingDiscount) {
       pricingBaseAmount = promoBaseAmount;
       pricingDiscount = adminPromotion.discountAmount;
