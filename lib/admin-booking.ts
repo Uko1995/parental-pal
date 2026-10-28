@@ -6,6 +6,10 @@ import {
 } from "@/app/booking/action";
 import { BookingRepository } from "@/lib/BookingRepository";
 import { CouponRepository } from "@/lib/CouponRepository";
+import {
+  listEligibleBookingPromotions,
+  type EligibleBookingPromotion,
+} from "@/lib/booking-promotions";
 import { ensureHtrDriveFolderForBooking } from "@/lib/htr-drive-folder";
 import type { BookingInterface } from "@/models/Booking";
 import type { UserInterface } from "@/models/User";
@@ -43,7 +47,12 @@ function parentSessionUser(parent: UserInterface) {
 export async function previewAdminBookingPrice(
   formEntries: BookingFormEntries,
 ): Promise<
-  | { ok: true; totalAmount: number; currency: string }
+  | {
+      ok: true;
+      totalAmount: number;
+      currency: string;
+      baseAmount: number;
+    }
   | { ok: false; status: number; error: string }
 > {
   const parentEmail =
@@ -72,12 +81,92 @@ export async function previewAdminBookingPrice(
       ok: true,
       totalAmount: bookingData.pricing?.totalAmount || 0,
       currency: bookingData.pricing?.currency || "NGN",
+      baseAmount: bookingData.pricing?.baseAmount || 0,
     };
   } catch (error) {
     return {
       ok: false,
       status: 400,
       error: error instanceof Error ? error.message : "Could not calculate price",
+    };
+  }
+}
+
+/** Eligible Discounts & Promos for the admin single-select picker. */
+export async function listAdminBookingPromotions(
+  formEntries: BookingFormEntries,
+): Promise<
+  | {
+      ok: true;
+      baseAmount: number;
+      promotions: EligibleBookingPromotion[];
+    }
+  | { ok: false; status: number; error: string }
+> {
+  const parentEmail = formEntries.parentEmail?.trim();
+  if (!parentEmail) {
+    return { ok: false, status: 400, error: "Parent email is required" };
+  }
+
+  const parentResult = await resolveParentUserForAdminBooking(parentEmail);
+  if (!parentResult.ok) {
+    return {
+      ok: false,
+      status: parentResult.status,
+      error: parentResult.error,
+    };
+  }
+
+  const parent = parentResult.parent;
+  const serviceType =
+    formEntries.selectedService || formEntries.serviceType || "";
+  if (!serviceType) {
+    return { ok: false, status: 400, error: "Service is required" };
+  }
+
+  try {
+    // Price without coupon promos so discount amounts are against full base.
+    const undiscountedEntries: BookingFormEntries = {
+      ...formEntries,
+      applyDiscounts: "false",
+      adminPromoCode: "",
+    };
+    const bookingData = await parseFormDataToBooking(
+      undiscountedEntries,
+      parent._id!,
+      parentSessionUser(parent),
+    );
+
+    const cautionFee =
+      serviceType === "space-rental"
+        ? Number(bookingData.serviceData?.cautionFee) || 0
+        : 0;
+    const baseAmount = Math.max(
+      0,
+      (bookingData.pricing?.baseAmount ||
+        bookingData.pricing?.totalAmount ||
+        0) - cautionFee,
+    );
+
+    const tutoringLocation =
+      serviceType === "tutoring"
+        ? bookingData.serviceData?.tutoringLocation ?? null
+        : null;
+
+    const promotions = await listEligibleBookingPromotions({
+      serviceType,
+      tutoringLocation,
+      userId: parent._id!.toString(),
+      baseAmount,
+    });
+
+    return { ok: true, baseAmount, promotions };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 400,
+      error:
+        error instanceof Error ? error.message : "Could not load promotions",
     };
   }
 }

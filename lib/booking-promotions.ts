@@ -33,11 +33,23 @@ export type BookingPromotionResult =
 export interface BookingPromotionDeps {
   getCouponByCode: (code: string) => Promise<CouponInterface | null>;
   getActiveAutoBookingCoupons: (now: Date) => Promise<CouponInterface[]>;
+  /** All active booking coupons (auto + code) for the admin picker. */
+  getActiveBookingCoupons?: (now: Date) => Promise<CouponInterface[]>;
   getUserUsageCount: (
     couponId: NonNullable<CouponInterface["_id"]>,
     userId: string,
   ) => Promise<number>;
   hasPriorBooking: (userId: string) => Promise<boolean>;
+}
+
+export interface EligibleBookingPromotion {
+  id: string;
+  code: string;
+  label: string;
+  discountAmount: number;
+  automatic: boolean;
+  discountType: CouponInterface["discountType"];
+  discountValue: number;
 }
 
 export function getPromotionLabel(coupon: CouponInterface): string {
@@ -150,6 +162,45 @@ export async function resolveBookingPromotion(
 }
 
 /**
+ * All booking promos that currently qualify for this draft (admin picker).
+ * Includes both automatic and code-based coupons — no "best wins" filter.
+ */
+export async function listEligibleBookingPromotions(
+  input: Omit<BookingPromotionInput, "promoCode">,
+  deps?: BookingPromotionDeps,
+): Promise<EligibleBookingPromotion[]> {
+  const resolvedDeps = deps ?? (await defaultDeps());
+  const now = input.now ?? new Date();
+  const getAll =
+    resolvedDeps.getActiveBookingCoupons ??
+    resolvedDeps.getActiveAutoBookingCoupons;
+  const candidates = await getAll(now);
+  const matches: EligibleBookingPromotion[] = [];
+
+  for (const coupon of candidates) {
+    const result = await evaluate(
+      coupon,
+      input,
+      now,
+      resolvedDeps,
+      Boolean(coupon.autoApply),
+    );
+    if (!("match" in result) || !result.match.coupon._id) continue;
+    matches.push({
+      id: result.match.coupon._id.toString(),
+      code: result.match.coupon.code,
+      label: result.match.label,
+      discountAmount: result.match.discountAmount,
+      automatic: result.match.automatic,
+      discountType: result.match.coupon.discountType,
+      discountValue: result.match.coupon.discountValue,
+    });
+  }
+
+  return matches.sort((a, b) => b.discountAmount - a.discountAmount);
+}
+
+/**
  * Best of the entered code (if valid) and any automatic promo. An invalid
  * code never blocks: its error is returned alongside the automatic result.
  */
@@ -182,6 +233,8 @@ async function defaultDeps(): Promise<BookingPromotionDeps> {
     getCouponByCode: (code) => CouponRepository.getCouponByCode(code),
     getActiveAutoBookingCoupons: (now) =>
       CouponRepository.getActiveAutoApplyCoupons("bookings", now),
+    getActiveBookingCoupons: (now) =>
+      CouponRepository.getActiveBookingCoupons(now),
     getUserUsageCount: (couponId, userId) =>
       CouponRepository.getUserUsageCount(couponId, userId),
     hasPriorBooking: async (userId) =>
